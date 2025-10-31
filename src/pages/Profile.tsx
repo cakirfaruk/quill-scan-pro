@@ -333,6 +333,34 @@ const Profile = () => {
     }
   };
 
+  const openShareDialog = async (analysis: Analysis) => {
+    setSelectedAnalysis(analysis);
+    
+    // Load existing share settings if any
+    const { data: existingShare } = await supabase
+      .from("shared_analyses")
+      .select("visibility_type, is_visible, allowed_user_ids, blocked_user_ids")
+      .eq("user_id", currentUserId)
+      .eq("analysis_id", analysis.id)
+      .eq("analysis_type", analysis.analysis_type)
+      .maybeSingle();
+
+    if (existingShare) {
+      setVisibilityType(existingShare.visibility_type as any);
+      setIsVisible(existingShare.is_visible);
+      setSelectedFriendIds(
+        existingShare.allowed_user_ids || existingShare.blocked_user_ids || []
+      );
+    } else {
+      // Reset to defaults for new share
+      setVisibilityType("friends");
+      setIsVisible(true);
+      setSelectedFriendIds([]);
+    }
+    
+    setShareDialogOpen(true);
+  };
+
   const toggleFriendSelection = (friendId: string) => {
     setSelectedFriendIds(prev => 
       prev.includes(friendId) 
@@ -570,10 +598,7 @@ const Profile = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => {
-                              setSelectedAnalysis(analysis);
-                              setShareDialogOpen(true);
-                            }}
+                            onClick={() => openShareDialog(analysis)}
                           >
                             <Share2 className="w-4 h-4 mr-2" />
                             Paylaşım Ayarları

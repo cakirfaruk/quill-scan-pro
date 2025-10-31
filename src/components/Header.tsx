@@ -169,6 +169,12 @@ export const Header = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
+                <Link to="/match">
+                  <Button variant="ghost" size="sm">
+                    Eşleşme
+                  </Button>
+                </Link>
+                
                 <Link to="/history">
                   <Button variant="ghost" size="sm">
                     Analizlerim
