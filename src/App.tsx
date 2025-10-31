@@ -15,6 +15,7 @@ import BirthChart from "./pages/BirthChart";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
 import Friends from "./pages/Friends";
+import Messages from "./pages/Messages";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/birth-chart" element={<BirthChart />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/friends" element={<Friends />} />
+          <Route path="/messages" element={<Messages />} />
           <Route path="/admin" element={<Admin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

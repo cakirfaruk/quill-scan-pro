@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FileText, Coins, LogOut, User, Heart, CreditCard, ChevronDown, Sparkles, Calendar, Menu, Users } from "lucide-react";
+import { FileText, Coins, LogOut, User, Heart, CreditCard, ChevronDown, Sparkles, Calendar, Menu, MessageCircle } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -26,6 +27,7 @@ export const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -58,13 +60,14 @@ export const Header = () => {
       setIsLoggedIn(true);
       const { data: profile } = await supabase
         .from("profiles")
-        .select("credits, username")
+        .select("credits, username, profile_photo")
         .eq("user_id", user.id)
         .single();
 
       if (profile) {
         setCredits(profile.credits);
         setUsername(profile.username);
+        setProfilePhoto(profile.profile_photo || "");
       }
 
       // Check if user is admin
@@ -164,18 +167,6 @@ export const Header = () => {
                     Analizlerim
                   </Button>
                 </Link>
-
-                <Link to="/profile">
-                  <Button variant="ghost" size="sm">
-                    Profilim
-                  </Button>
-                </Link>
-
-                <Link to="/friends">
-                  <Button variant="ghost" size="sm">
-                    Arkadaşlarım
-                  </Button>
-                </Link>
               </>
             )}
             <Link to="/about">
@@ -201,17 +192,49 @@ export const Header = () => {
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon">
-                      <User className="w-4 h-4" />
-                    </Button>
+                    <button className="relative">
+                      <Avatar className="w-9 h-9 border-2 border-primary/20 hover:border-primary transition-colors cursor-pointer">
+                        <AvatarImage src={profilePhoto} alt={username} />
+                        <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                          {username.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-card">
+                  <DropdownMenuContent align="end" className="w-56 bg-card z-50">
                     <DropdownMenuLabel>
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium">{username}</p>
-                        <p className="text-xs text-muted-foreground">{credits} kredi</p>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={profilePhoto} alt={username} />
+                          <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                            {username.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                          <p className="text-sm font-medium">{username}</p>
+                          <p className="text-xs text-muted-foreground">{credits} kredi</p>
+                        </div>
                       </div>
                     </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile" className="cursor-pointer flex items-center">
+                        <User className="w-4 h-4 mr-2" />
+                        Profilim
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/friends" className="cursor-pointer flex items-center">
+                        <Heart className="w-4 h-4 mr-2" />
+                        Arkadaşlarım
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/messages" className="cursor-pointer flex items-center">
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Mesajlar
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => navigate("/credits")} className="cursor-pointer">
                       <CreditCard className="w-4 h-4 mr-2" />
@@ -301,20 +324,6 @@ export const Header = () => {
                       <Link to="/history" onClick={() => setMobileMenuOpen(false)}>
                         <Button variant="ghost" className="w-full justify-start">
                           Analizlerim
-                        </Button>
-                      </Link>
-
-                      <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant="ghost" className="w-full justify-start gap-2">
-                          <User className="w-4 h-4" />
-                          Profilim
-                        </Button>
-                      </Link>
-
-                      <Link to="/friends" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant="ghost" className="w-full justify-start gap-2">
-                          <Users className="w-4 h-4" />
-                          Arkadaşlarım
                         </Button>
                       </Link>
 
