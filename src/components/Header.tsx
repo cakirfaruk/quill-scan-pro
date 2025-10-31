@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FileText, Coins, LogOut, User, Heart, CreditCard, ChevronDown, Sparkles, Calendar, Menu } from "lucide-react";
+import { FileText, Coins, LogOut, User, Heart, CreditCard, ChevronDown, Sparkles, Calendar, Menu, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -164,6 +164,18 @@ export const Header = () => {
                     Analizlerim
                   </Button>
                 </Link>
+
+                <Link to="/profile">
+                  <Button variant="ghost" size="sm">
+                    Profilim
+                  </Button>
+                </Link>
+
+                <Link to="/friends">
+                  <Button variant="ghost" size="sm">
+                    Arkadaşlarım
+                  </Button>
+                </Link>
               </>
             )}
             <Link to="/about">
@@ -289,6 +301,20 @@ export const Header = () => {
                       <Link to="/history" onClick={() => setMobileMenuOpen(false)}>
                         <Button variant="ghost" className="w-full justify-start">
                           Analizlerim
+                        </Button>
+                      </Link>
+
+                      <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant="ghost" className="w-full justify-start gap-2">
+                          <User className="w-4 h-4" />
+                          Profilim
+                        </Button>
+                      </Link>
+
+                      <Link to="/friends" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant="ghost" className="w-full justify-start gap-2">
+                          <Users className="w-4 h-4" />
+                          Arkadaşlarım
                         </Button>
                       </Link>
 

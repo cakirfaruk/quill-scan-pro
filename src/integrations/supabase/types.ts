@@ -182,6 +182,48 @@ export type Database = {
         }
         Relationships: []
       }
+      friends: {
+        Row: {
+          created_at: string | null
+          friend_id: string
+          id: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          friend_id: string
+          id?: string
+          status: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          friend_id?: string
+          id?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friends_friend_id_fkey"
+            columns: ["friend_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "friends_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       numerology_analyses: {
         Row: {
           birth_date: string
@@ -217,25 +259,46 @@ export type Database = {
       }
       profiles: {
         Row: {
+          bio: string | null
+          birth_date: string | null
+          birth_place: string | null
+          birth_time: string | null
           created_at: string
           credits: number
+          full_name: string | null
+          gender: string | null
           id: string
+          profile_photo: string | null
           updated_at: string
           user_id: string
           username: string
         }
         Insert: {
+          bio?: string | null
+          birth_date?: string | null
+          birth_place?: string | null
+          birth_time?: string | null
           created_at?: string
           credits?: number
+          full_name?: string | null
+          gender?: string | null
           id?: string
+          profile_photo?: string | null
           updated_at?: string
           user_id: string
           username: string
         }
         Update: {
+          bio?: string | null
+          birth_date?: string | null
+          birth_place?: string | null
+          birth_time?: string | null
           created_at?: string
           credits?: number
+          full_name?: string | null
+          gender?: string | null
           id?: string
+          profile_photo?: string | null
           updated_at?: string
           user_id?: string
           username?: string

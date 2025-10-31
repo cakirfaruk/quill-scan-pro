@@ -13,6 +13,8 @@ import FAQ from "./pages/FAQ";
 import Numerology from "./pages/Numerology";
 import BirthChart from "./pages/BirthChart";
 import Admin from "./pages/Admin";
+import Profile from "./pages/Profile";
+import Friends from "./pages/Friends";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,8 +33,10 @@ const App = () => (
           <Route path="/history" element={<History />} />
           <Route path="/about" element={<About />} />
           <Route path="/faq" element={<FAQ />} />
-          <Route path="/numeroloji" element={<Numerology />} />
-          <Route path="/dogum-haritasi" element={<BirthChart />} />
+          <Route path="/numerology" element={<Numerology />} />
+          <Route path="/birth-chart" element={<BirthChart />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/friends" element={<Friends />} />
           <Route path="/admin" element={<Admin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
