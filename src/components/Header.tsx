@@ -17,6 +17,7 @@ export const Header = () => {
   const [credits, setCredits] = useState(0);
   const [username, setUsername] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -57,8 +58,19 @@ export const Header = () => {
         setCredits(profile.credits);
         setUsername(profile.username);
       }
+
+      // Check if user is admin
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      setIsAdmin(!!roles);
     } else {
       setIsLoggedIn(false);
+      setIsAdmin(false);
     }
   };
 
@@ -92,6 +104,13 @@ export const Header = () => {
           <div className="flex items-center gap-4">
             {isLoggedIn && (
               <>
+                {isAdmin && (
+                  <Link to="/admin">
+                    <Button variant="default" size="sm" className="gap-2 bg-gradient-primary hover:opacity-90">
+                      Admin Panel
+                    </Button>
+                  </Link>
+                )}
                 <Link to="/history">
                   <Button variant="ghost" size="sm">
                     Geçmiş

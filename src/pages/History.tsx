@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Calendar, Sparkles, Heart } from "lucide-react";
+import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 
 interface AnalysisRecord {
   id: string;
@@ -297,15 +298,12 @@ const History = () => {
                 </Button>
               </div>
 
-              <div className="space-y-4">
-                {selectedAnalysis.result && typeof selectedAnalysis.result === "object" && (
-                  <div className="prose prose-sm max-w-none">
-                    <pre className="whitespace-pre-wrap bg-muted p-4 rounded-lg text-sm">
-                      {JSON.stringify(selectedAnalysis.result, null, 2)}
-                    </pre>
-                  </div>
-                )}
-              </div>
+              {selectedAnalysis.result && typeof selectedAnalysis.result === "object" && (
+                <AnalysisDetailView 
+                  result={selectedAnalysis.result} 
+                  analysisType={selectedAnalysis.analysis_type} 
+                />
+              )}
             </Card>
           </div>
         )}
