@@ -112,29 +112,29 @@ export const UploadZone = ({ onFileSelect }: UploadZoneProps) => {
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
       />
       
-      <div className="p-12 flex flex-col items-center justify-center text-center space-y-6">
+      <div className="p-6 sm:p-8 md:p-10 lg:p-12 flex flex-col items-center justify-center text-center space-y-4 sm:space-y-5 md:space-y-6">
         <div className="relative">
           <div className="absolute inset-0 bg-primary/10 rounded-full blur-2xl animate-pulse" />
-          <div className="relative bg-gradient-to-br from-primary/10 to-accent/10 p-6 rounded-full">
-            <Upload className="w-12 h-12 text-primary" />
+          <div className="relative bg-gradient-to-br from-primary/10 to-accent/10 p-4 sm:p-5 md:p-6 rounded-full">
+            <Upload className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 text-primary" />
           </div>
         </div>
 
-        <div className="space-y-2">
-          <h3 className="text-2xl font-bold text-foreground">
+        <div className="space-y-1.5 sm:space-y-2">
+          <h3 className="text-xl sm:text-xl md:text-2xl font-bold text-foreground">
             El Yazısı Yükleyin
           </h3>
-          <p className="text-muted-foreground max-w-md">
+          <p className="text-sm sm:text-base text-muted-foreground max-w-md px-2">
             Analiz edilecek el yazısı görselini veya PDF dosyasını sürükleyip bırakın ya da tıklayarak seçin
           </p>
         </div>
 
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <ImageIcon className="w-4 h-4" />
             <span>JPG, PNG, WEBP</span>
           </div>
-          <div className="w-px h-4 bg-border" />
+          <div className="hidden sm:block w-px h-4 bg-border" />
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             <span>PDF</span>

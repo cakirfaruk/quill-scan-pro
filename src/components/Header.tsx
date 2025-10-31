@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FileText, Coins, LogOut, User, Heart, CreditCard, ChevronDown, Sparkles, Calendar } from "lucide-react";
+import { FileText, Coins, LogOut, User, Heart, CreditCard, ChevronDown, Sparkles, Calendar, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,6 +10,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -18,6 +25,7 @@ export const Header = () => {
   const [username, setUsername] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -85,23 +93,24 @@ export const Header = () => {
 
   return (
     <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-4 py-3 md:py-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-primary rounded-lg">
-              <FileText className="w-6 h-6 text-primary-foreground" />
+          <Link to="/" className="flex items-center gap-2 md:gap-3">
+            <div className="p-1.5 md:p-2 bg-gradient-primary rounded-lg">
+              <FileText className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <div className="hidden sm:block">
+              <h1 className="text-base md:text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 Kişisel Analiz Merkezi
               </h1>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground hidden md:block">
                 AI destekli çoklu analiz platformu
               </p>
             </div>
           </Link>
 
-          <div className="flex items-center gap-4">
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex items-center gap-3 xl:gap-4">
             {isLoggedIn && (
               <>
                 {isAdmin && (
@@ -172,10 +181,10 @@ export const Header = () => {
               <>
             <button 
               onClick={() => navigate("/credits")}
-              className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors cursor-pointer"
+              className="flex items-center gap-2 px-3 xl:px-4 py-2 bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors cursor-pointer"
             >
-              <Coins className="w-5 h-5 text-primary" />
-              <span className="font-semibold text-primary">{credits}</span>
+              <Coins className="w-4 h-4 xl:w-5 xl:h-5 text-primary" />
+              <span className="font-semibold text-sm xl:text-base text-primary">{credits}</span>
             </button>
 
                 <DropdownMenu>
@@ -205,10 +214,147 @@ export const Header = () => {
                 </DropdownMenu>
               </>
             ) : (
-              <Button onClick={() => navigate("/auth")} className="bg-gradient-primary hover:opacity-90">
-                Giriş Yap / Üye Ol
+              <Button onClick={() => navigate("/auth")} className="bg-gradient-primary hover:opacity-90" size="sm">
+                Giriş Yap
               </Button>
             )}
+          </div>
+
+          {/* Mobile Navigation */}
+          <div className="flex lg:hidden items-center gap-2">
+            {isLoggedIn && (
+              <button 
+                onClick={() => navigate("/credits")}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary/10 rounded-lg"
+              >
+                <Coins className="w-4 h-4 text-primary" />
+                <span className="font-semibold text-sm text-primary">{credits}</span>
+              </button>
+            )}
+            
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Menu className="w-5 h-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[280px] sm:w-[350px]">
+                <SheetHeader>
+                  <SheetTitle>Menü</SheetTitle>
+                </SheetHeader>
+                <div className="flex flex-col gap-4 mt-6">
+                  {isLoggedIn ? (
+                    <>
+                      <div className="p-4 bg-secondary rounded-lg">
+                        <p className="text-sm font-medium">{username}</p>
+                        <p className="text-xs text-muted-foreground">{credits} kredi</p>
+                      </div>
+
+                      {isAdmin && (
+                        <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="default" className="w-full justify-start gap-2">
+                            Admin Panel
+                          </Button>
+                        </Link>
+                      )}
+
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase px-2">Analiz Türleri</p>
+                        <Link to="/" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start gap-2">
+                            <FileText className="w-4 h-4" />
+                            El Yazısı Analizi
+                          </Button>
+                        </Link>
+                        <Link to="/numeroloji" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start gap-2">
+                            <Sparkles className="w-4 h-4" />
+                            Numeroloji Analizi
+                          </Button>
+                        </Link>
+                        <Link to="/dogum-haritasi" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start gap-2">
+                            <Calendar className="w-4 h-4" />
+                            Doğum Haritası
+                          </Button>
+                        </Link>
+                        <Link to="/compatibility" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start gap-2">
+                            <Heart className="w-4 h-4" />
+                            Uyum Analizi
+                          </Button>
+                        </Link>
+                      </div>
+
+                      <Link to="/history" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant="ghost" className="w-full justify-start">
+                          Analizlerim
+                        </Button>
+                      </Link>
+
+                      <Link to="/about" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant="ghost" className="w-full justify-start">
+                          Hakkımızda
+                        </Button>
+                      </Link>
+
+                      <Link to="/faq" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant="ghost" className="w-full justify-start">
+                          SSS
+                        </Button>
+                      </Link>
+
+                      <div className="border-t pt-4 space-y-2">
+                        <Button 
+                          onClick={() => {
+                            navigate("/credits");
+                            setMobileMenuOpen(false);
+                          }} 
+                          variant="outline" 
+                          className="w-full justify-start gap-2"
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          Kredi Satın Al
+                        </Button>
+                        <Button 
+                          onClick={() => {
+                            handleLogout();
+                            setMobileMenuOpen(false);
+                          }} 
+                          variant="ghost" 
+                          className="w-full justify-start gap-2 text-destructive"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Çıkış Yap
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <Link to="/about" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant="ghost" className="w-full justify-start">
+                          Hakkımızda
+                        </Button>
+                      </Link>
+                      <Link to="/faq" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant="ghost" className="w-full justify-start">
+                          SSS
+                        </Button>
+                      </Link>
+                      <Button 
+                        onClick={() => {
+                          navigate("/auth");
+                          setMobileMenuOpen(false);
+                        }} 
+                        className="bg-gradient-primary hover:opacity-90 w-full"
+                      >
+                        Giriş Yap / Üye Ol
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </div>

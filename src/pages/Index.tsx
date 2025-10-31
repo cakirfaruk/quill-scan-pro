@@ -160,42 +160,42 @@ const Index = () => {
       <Header />
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-20 text-center max-w-5xl">
-        <div className="mb-12 animate-fade-in">
-          <h1 className="text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+      <section className="container mx-auto px-4 py-8 sm:py-12 md:py-16 lg:py-20 text-center max-w-5xl">
+        <div className="mb-8 sm:mb-10 md:mb-12 animate-fade-in">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-5 md:mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent px-2">
             El Yazınız, Kişiliğinizin Aynası
           </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground mb-6 sm:mb-7 md:mb-8 max-w-3xl mx-auto px-4">
             Yapay zeka destekli grafologi analizimiz ile el yazınızdan 
             kişilik özelliklerinizi keşfedin. Profesyonel, hızlı ve güvenilir.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 mb-16">
-          <Card className="p-6 hover:shadow-elegant transition-all group">
-            <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
-              <FileText className="w-6 h-6 text-primary-foreground" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-8 sm:mb-12 md:mb-16">
+          <Card className="p-4 sm:p-5 md:p-6 hover:shadow-elegant transition-all group">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-primary rounded-lg flex items-center justify-center mb-3 sm:mb-3.5 md:mb-4 mx-auto group-hover:scale-110 transition-transform">
+              <FileText className="w-5 h-5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 text-primary-foreground" />
             </div>
-            <h3 className="font-semibold text-lg mb-2">Kolay Kullanım</h3>
-            <p className="text-sm text-muted-foreground">
+            <h3 className="font-semibold text-base sm:text-base md:text-lg mb-1.5 sm:mb-1.5 md:mb-2">Kolay Kullanım</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground">
               El yazısını yükle, konuları seç, dakikalar içinde sonuçları gör
             </p>
           </Card>
-          <Card className="p-6 hover:shadow-elegant transition-all group">
-            <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
-              <Sparkles className="w-6 h-6 text-primary-foreground" />
+          <Card className="p-4 sm:p-5 md:p-6 hover:shadow-elegant transition-all group">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-primary rounded-lg flex items-center justify-center mb-3 sm:mb-3.5 md:mb-4 mx-auto group-hover:scale-110 transition-transform">
+              <Sparkles className="w-5 h-5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 text-primary-foreground" />
             </div>
-            <h3 className="font-semibold text-lg mb-2">AI Teknolojisi</h3>
-            <p className="text-sm text-muted-foreground">
+            <h3 className="font-semibold text-base sm:text-base md:text-lg mb-1.5 sm:mb-1.5 md:mb-2">AI Teknolojisi</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Gelişmiş yapay zeka ile hassas ve detaylı analizler
             </p>
           </Card>
-          <Card className="p-6 hover:shadow-elegant transition-all group">
-            <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
-              <Shield className="w-6 h-6 text-primary-foreground" />
+          <Card className="p-4 sm:p-5 md:p-6 hover:shadow-elegant transition-all group sm:col-span-2 md:col-span-1">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-primary rounded-lg flex items-center justify-center mb-3 sm:mb-3.5 md:mb-4 mx-auto group-hover:scale-110 transition-transform">
+              <Shield className="w-5 h-5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 text-primary-foreground" />
             </div>
-            <h3 className="font-semibold text-lg mb-2">Güvenli ve Gizli</h3>
-            <p className="text-sm text-muted-foreground">
+            <h3 className="font-semibold text-base sm:text-base md:text-lg mb-1.5 sm:mb-1.5 md:mb-2">Güvenli ve Gizli</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Verileriniz şifrelenir ve kimseyle paylaşılmaz
             </p>
           </Card>
@@ -203,24 +203,24 @@ const Index = () => {
       </section>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-12 max-w-6xl">
+      <main className="container mx-auto px-4 py-6 sm:py-8 md:py-10 lg:py-12 max-w-6xl">
         {!analysisResult ? (
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-7 md:space-y-8">
             {/* Upload Zone */}
             <UploadZone onFileSelect={handleFileSelect} />
 
             {/* Preview and Analyze */}
             {selectedFile && previewUrl && (
               <>
-                <Card className="p-6 space-y-4 shadow-card">
-                  <h2 className="text-xl font-bold text-foreground">Yüklenen Dosya</h2>
+                <Card className="p-4 sm:p-5 md:p-6 space-y-3 sm:space-y-3.5 md:space-y-4 shadow-card">
+                  <h2 className="text-lg sm:text-xl font-bold text-foreground">Yüklenen Dosya</h2>
                   
                   {previewUrl === "pdf" ? (
-                    <div className="flex items-center gap-4 p-6 bg-muted rounded-lg">
-                      <FileText className="w-12 h-12 text-primary" />
-                      <div>
-                        <p className="font-semibold text-foreground">{selectedFile.name}</p>
-                        <p className="text-sm text-muted-foreground">
+                    <div className="flex items-center gap-3 sm:gap-4 p-4 sm:p-5 md:p-6 bg-muted rounded-lg">
+                      <FileText className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 text-primary flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm sm:text-base text-foreground truncate">{selectedFile.name}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           {(selectedFile.size / 1024).toFixed(2)} KB
                         </p>
                       </div>
@@ -230,15 +230,15 @@ const Index = () => {
                       <img
                         src={previewUrl}
                         alt="Yüklenen el yazısı"
-                        className="w-full h-auto max-h-96 object-contain bg-muted"
+                        className="w-full h-auto max-h-64 sm:max-h-80 md:max-h-96 object-contain bg-muted"
                       />
                     </div>
                   )}
                 </Card>
 
                 {isAnalyzing && (
-                  <Card className="p-6">
-                    <div className="space-y-3">
+                  <Card className="p-4 sm:p-5 md:p-6">
+                    <div className="space-y-2.5 sm:space-y-3">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-medium text-foreground">Analiz ediliyor...</span>
                         <span className="text-primary font-bold">{analysisProgress}%</span>
@@ -262,15 +262,15 @@ const Index = () => {
             )}
           </div>
         ) : (
-          <div className="space-y-8">
-            <div className="flex items-center justify-between">
+          <div className="space-y-6 sm:space-y-7 md:space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h2 className="text-3xl font-bold text-foreground">Analiz Sonuçları</h2>
-                <p className="text-muted-foreground mt-2">
+                <h2 className="text-2xl sm:text-2xl md:text-3xl font-bold text-foreground">Analiz Sonuçları</h2>
+                <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">
                   Detaylı grafologi değerlendirmesi
                 </p>
               </div>
-              <Button onClick={handleReset} variant="outline">
+              <Button onClick={handleReset} variant="outline" className="w-full sm:w-auto">
                 Yeni Analiz
               </Button>
             </div>

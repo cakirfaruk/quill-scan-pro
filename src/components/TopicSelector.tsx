@@ -50,17 +50,17 @@ export const TopicSelector = ({ onAnalyze, isAnalyzing, availableCredits }: Topi
   const hasEnoughCredits = creditsNeeded <= availableCredits;
 
   return (
-    <Card className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <Card className="p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-5 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h3 className="text-lg font-semibold text-foreground">Analiz Başlıklarını Seçin</h3>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h3 className="text-base sm:text-lg font-semibold text-foreground">Analiz Başlıklarını Seçin</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Her başlık 1 kredi tüketir
           </p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-lg">
-          <Coins className="w-5 h-5 text-primary" />
-          <span className="font-semibold text-primary">{availableCredits} kredi</span>
+        <div className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary/10 rounded-lg self-start sm:self-auto">
+          <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+          <span className="text-sm sm:text-base font-semibold text-primary">{availableCredits} kredi</span>
         </div>
       </div>
 
@@ -77,24 +77,25 @@ export const TopicSelector = ({ onAnalyze, isAnalyzing, availableCredits }: Topi
         </span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 max-h-64 sm:max-h-80 md:max-h-96 overflow-y-auto">
         {allTopics.map((topic) => (
           <div
             key={topic}
-            className="flex items-center space-x-3 p-3 rounded-lg hover:bg-secondary/50 transition-colors"
+            className="flex items-center space-x-2 sm:space-x-3 p-2.5 sm:p-3 rounded-lg hover:bg-secondary/50 transition-colors"
           >
             <Checkbox
               id={topic}
               checked={selectedTopics.includes(topic)}
               onCheckedChange={() => toggleTopic(topic)}
+              className="flex-shrink-0"
             />
             <Label
               htmlFor={topic}
-              className="flex-1 cursor-pointer text-sm font-medium leading-tight"
+              className="flex-1 cursor-pointer text-xs sm:text-sm font-medium leading-tight"
             >
               {topic}
             </Label>
-            <span className="text-xs text-muted-foreground">1 kredi</span>
+            <span className="text-xs text-muted-foreground flex-shrink-0">1 kredi</span>
           </div>
         ))}
       </div>
