@@ -44,6 +44,45 @@ export type Database = {
         }
         Relationships: []
       }
+      birth_chart_analyses: {
+        Row: {
+          birth_date: string
+          birth_place: string
+          birth_time: string
+          created_at: string
+          credits_used: number
+          full_name: string
+          id: string
+          result: Json | null
+          selected_topics: string[]
+          user_id: string
+        }
+        Insert: {
+          birth_date: string
+          birth_place: string
+          birth_time: string
+          created_at?: string
+          credits_used: number
+          full_name: string
+          id?: string
+          result?: Json | null
+          selected_topics: string[]
+          user_id: string
+        }
+        Update: {
+          birth_date?: string
+          birth_place?: string
+          birth_time?: string
+          created_at?: string
+          credits_used?: number
+          full_name?: string
+          id?: string
+          result?: Json | null
+          selected_topics?: string[]
+          user_id?: string
+        }
+        Relationships: []
+      }
       compatibility_analyses: {
         Row: {
           created_at: string

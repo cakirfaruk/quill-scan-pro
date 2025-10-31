@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    const { image1, image2, gender1, gender2 } = await req.json();
+    const { image1, image2, gender1, gender2, analysisTypes = ["handwriting"] } = await req.json();
 
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY not configured");
@@ -42,7 +42,8 @@ serve(async (req) => {
       throw new Error("Unauthorized");
     }
 
-    const creditsNeeded = 50;
+    // Check if user has enough credits - 50 per analysis type
+    const requiredCredits = analysisTypes.length * 50;
 
     // Get user profile and check credits
     const { data: profile, error: profileError } = await supabase
@@ -55,11 +56,11 @@ serve(async (req) => {
       throw new Error("Profile not found");
     }
 
-    if (profile.credits < creditsNeeded) {
+    if (profile.credits < requiredCredits) {
       return new Response(
         JSON.stringify({ 
           error: "Insufficient credits", 
-          required: creditsNeeded, 
+          required: requiredCredits, 
           available: profile.credits 
         }),
         { 
@@ -69,12 +70,40 @@ serve(async (req) => {
       );
     }
 
-    const systemPrompt = `Sen profesyonel bir grafolog ve ilişki danışmanısın. İki kişinin el yazısını analiz ederek aralarındaki uyumu değerlendirmelisin.
+    console.log(`Analyzing compatibility with types: ${analysisTypes.join(", ")}...`);
 
-İlk el yazısı: ${gender1 === 'male' ? 'Erkek' : 'Kadın'}
-İkinci el yazısı: ${gender2 === 'male' ? 'Erkek' : 'Kadın'}
+    // Build system prompt based on selected analysis types
+    let systemPrompt = `Sen profesyonel bir ilişki danışmanı ve uzman analistisin. İki kişi arasındaki uyumu farklı yöntemlerle değerlendiriyorsun.
 
-Her iki el yazısını ayrı ayrı analiz et ve ardından şu başlıklar altında karşılaştırmalı uyum analizi yap:
+Seçilen Analiz Türleri: ${analysisTypes.join(", ")}
+
+Birinci kişi: ${gender1 === "male" ? "Erkek" : "Kadın"}
+İkinci kişi: ${gender2 === "male" ? "Erkek" : "Kadın"}`;
+
+    if (analysisTypes.includes("handwriting")) {
+      systemPrompt += `
+
+## El Yazısı Analizi
+Her iki kişinin el yazısını da detaylı olarak analiz et ve şu konularda uyum değerlendirmesi yap:`;
+    }
+    
+    if (analysisTypes.includes("numerology")) {
+      systemPrompt += `
+
+## Numeroloji Analizi  
+Görüntülerdeki isimlere ve doğum bilgilerine göre (eğer varsa) numerolojik uyum değerlendir.`;
+    }
+    
+    if (analysisTypes.includes("birth_chart")) {
+      systemPrompt += `
+
+## Doğum Haritası Analizi
+Görüntülerdeki astrolojik bilgilere göre (eğer varsa) burç uyumlarını değerlendir.`;
+    }
+
+    systemPrompt += `
+
+Her iki kişinin analizini de detaylı olarak yap ve uyum değerlendirmesi yap:
 
 1. Genel Kişilik Uyumu
 2. İletişim Tarzı Uyumu
@@ -169,7 +198,7 @@ ZORUNLU: Yanıtını aşağıdaki JSON formatında döndür:
     // Deduct credits and save analysis
     const { error: updateError } = await supabase
       .from("profiles")
-      .update({ credits: profile.credits - creditsNeeded })
+      .update({ credits: profile.credits - requiredCredits })
       .eq("user_id", user.id);
 
     if (updateError) {
@@ -185,8 +214,11 @@ ZORUNLU: Yanıtını aşağıdaki JSON formatında döndür:
         image2_data: image2.substring(0, 100),
         gender1,
         gender2,
-        result: result,
-        credits_used: creditsNeeded,
+        result: {
+          ...result,
+          analysisTypes,
+        },
+        credits_used: requiredCredits,
       });
 
     if (historyError) {
@@ -196,9 +228,9 @@ ZORUNLU: Yanıtını aşağıdaki JSON formatında döndür:
     // Record transaction
     await supabase.from("credit_transactions").insert({
       user_id: user.id,
-      amount: -creditsNeeded,
+      amount: -requiredCredits,
       transaction_type: "compatibility",
-      description: "Uyum analizi (50 kredi)",
+      description: `Uyum analizi (${analysisTypes.join(", ")}) - ${requiredCredits} kredi`,
     });
 
     return new Response(JSON.stringify(result), {

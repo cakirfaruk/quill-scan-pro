@@ -108,6 +108,11 @@ export const Header = () => {
                     Numeroloji
                   </Button>
                 </Link>
+                <Link to="/dogum-haritasi">
+                  <Button variant="ghost" size="sm">
+                    Doğum Haritası
+                  </Button>
+                </Link>
               </>
             )}
             <Link to="/about">

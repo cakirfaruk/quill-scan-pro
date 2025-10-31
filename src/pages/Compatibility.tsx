@@ -40,6 +40,14 @@ const Compatibility = () => {
   const [result, setResult] = useState<CompatibilityResult | null>(null);
   const [credits, setCredits] = useState(0);
   
+  const [selectedAnalysisTypes, setSelectedAnalysisTypes] = useState<string[]>(["handwriting"]);
+  
+  const analysisTypes = [
+    { id: "handwriting", name: "El Yazısı Analizi", cost: 50 },
+    { id: "numerology", name: "Numeroloji Analizi", cost: 50 },
+    { id: "birth_chart", name: "Doğum Haritası Analizi", cost: 50 },
+  ];
+  
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -70,13 +78,27 @@ const Compatibility = () => {
     }
   };
 
-  const handleAnalyze = async () => {
-    if (!file1 || !file2) return;
+  const toggleAnalysisType = (typeId: string) => {
+    setSelectedAnalysisTypes(prev =>
+      prev.includes(typeId)
+        ? prev.filter(t => t !== typeId)
+        : [...prev, typeId]
+    );
+  };
 
-    if (credits < 50) {
+  const getTotalCost = () => {
+    return selectedAnalysisTypes.length * 50;
+  };
+
+  const handleAnalyze = async () => {
+    if (!file1 || !file2 || selectedAnalysisTypes.length === 0) return;
+
+    const totalCost = getTotalCost();
+    
+    if (credits < totalCost) {
       toast({
         title: "Yetersiz kredi",
-        description: "Uyum analizi için 50 kredi gerekli.",
+        description: `Bu analiz için ${totalCost} kredi gerekli. Mevcut krediniz: ${credits}`,
         variant: "destructive",
       });
       return;
@@ -101,7 +123,13 @@ const Compatibility = () => {
       const [image1, image2] = await Promise.all([base64Promise1, base64Promise2]);
 
       const { data, error } = await supabase.functions.invoke("analyze-compatibility", {
-        body: { image1, image2, gender1, gender2 },
+        body: { 
+          image1, 
+          image2, 
+          gender1, 
+          gender2,
+          analysisTypes: selectedAnalysisTypes,
+        },
       });
 
       if (error) throw error;
@@ -249,12 +277,52 @@ const Compatibility = () => {
             Uyum Analizi
           </h1>
           <p className="text-lg text-muted-foreground">
-            İki kişinin el yazısını karşılaştırarak aralarındaki uyumu analiz edin
-          </p>
-          <p className="text-sm text-muted-foreground mt-2">
-            Analiz maliyeti: <span className="font-bold text-primary">50 kredi</span>
+            İki kişi arasındaki uyumu farklı analiz yöntemleriyle değerlendirin
           </p>
         </div>
+
+        <Card className="p-6 mb-8">
+          <h3 className="text-xl font-bold text-foreground mb-4">Analiz Türlerini Seçin</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Her analiz türü 50 kredi. İstediğiniz türleri seçebilirsiniz.
+          </p>
+          <div className="space-y-3">
+            {analysisTypes.map((type) => (
+              <div
+                key={type.id}
+                className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-colors ${
+                  selectedAnalysisTypes.includes(type.id)
+                    ? "bg-primary/10 border-primary"
+                    : "bg-card hover:bg-accent"
+                }`}
+                onClick={() => toggleAnalysisType(type.id)}
+              >
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedAnalysisTypes.includes(type.id)}
+                    onChange={() => toggleAnalysisType(type.id)}
+                    className="cursor-pointer"
+                  />
+                  <Label className="cursor-pointer font-semibold">{type.name}</Label>
+                </div>
+                <span className="text-primary font-bold">{type.cost} kredi</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 p-4 bg-muted rounded-lg flex items-center justify-between">
+            <div>
+              <p className="font-semibold">Toplam Maliyet</p>
+              <p className="text-sm text-muted-foreground">
+                {selectedAnalysisTypes.length} analiz türü × 50 kredi
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-3xl font-bold text-primary">{getTotalCost()} kredi</p>
+              <p className="text-sm text-muted-foreground">Mevcut: {credits} kredi</p>
+            </div>
+          </div>
+        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Person 1 */}
@@ -349,7 +417,7 @@ const Compatibility = () => {
         <div className="mt-8 text-center">
           <Button
             onClick={handleAnalyze}
-            disabled={!file1 || !file2 || isAnalyzing || credits < 50}
+            disabled={!file1 || !file2 || isAnalyzing || credits < getTotalCost() || selectedAnalysisTypes.length === 0}
             className="bg-gradient-primary hover:opacity-90 px-12"
             size="lg"
           >
@@ -361,14 +429,20 @@ const Compatibility = () => {
             ) : (
               <>
                 <Heart className="mr-2 h-5 w-5" />
-                Uyum Analizini Başlat (50 kredi)
+                Uyum Analizini Başlat ({getTotalCost()} kredi)
               </>
             )}
           </Button>
 
-          {credits < 50 && (
+          {credits < getTotalCost() && (
             <p className="text-sm text-destructive mt-4">
-              Yetersiz kredi! Uyum analizi için 50 kredi gerekli.
+              Yetersiz kredi! Bu analiz için {getTotalCost()} kredi gerekli.
+            </p>
+          )}
+          
+          {selectedAnalysisTypes.length === 0 && (
+            <p className="text-sm text-destructive mt-4">
+              Lütfen en az bir analiz türü seçin.
             </p>
           )}
         </div>
