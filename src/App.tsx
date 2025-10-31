@@ -18,6 +18,11 @@ import Friends from "./pages/Friends";
 import Messages from "./pages/Messages";
 import Settings from "./pages/Settings";
 import Match from "./pages/Match";
+import Tarot from "./pages/Tarot";
+import CoffeeFortune from "./pages/CoffeeFortune";
+import DreamInterpretation from "./pages/DreamInterpretation";
+import DailyHoroscope from "./pages/DailyHoroscope";
+import Palmistry from "./pages/Palmistry";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +49,11 @@ const App = () => (
           <Route path="/messages" element={<Messages />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/match" element={<Match />} />
+          <Route path="/tarot" element={<Tarot />} />
+          <Route path="/coffee-fortune" element={<CoffeeFortune />} />
+          <Route path="/dream" element={<DreamInterpretation />} />
+          <Route path="/daily-horoscope" element={<DailyHoroscope />} />
+          <Route path="/palmistry" element={<Palmistry />} />
           <Route path="/admin" element={<Admin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

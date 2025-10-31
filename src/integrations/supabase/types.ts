@@ -86,6 +86,39 @@ export type Database = {
         }
         Relationships: []
       }
+      coffee_fortune_readings: {
+        Row: {
+          created_at: string
+          credits_used: number
+          id: string
+          image1_data: string
+          image2_data: string
+          image3_data: string
+          interpretation: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_used?: number
+          id?: string
+          image1_data: string
+          image2_data: string
+          image3_data: string
+          interpretation?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_used?: number
+          id?: string
+          image1_data?: string
+          image2_data?: string
+          image3_data?: string
+          interpretation?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       compatibility_analyses: {
         Row: {
           created_at: string
@@ -178,6 +211,57 @@ export type Database = {
           id?: string
           reference_id?: string | null
           transaction_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_horoscopes: {
+        Row: {
+          created_at: string
+          credits_used: number
+          horoscope_text: Json | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_used?: number
+          horoscope_text?: Json | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_used?: number
+          horoscope_text?: Json | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      dream_interpretations: {
+        Row: {
+          created_at: string
+          credits_used: number
+          dream_description: string
+          id: string
+          interpretation: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_used?: number
+          dream_description: string
+          id?: string
+          interpretation?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_used?: number
+          dream_description?: string
+          id?: string
+          interpretation?: Json | null
           user_id?: string
         }
         Relationships: []
@@ -329,6 +413,33 @@ export type Database = {
         }
         Relationships: []
       }
+      palmistry_readings: {
+        Row: {
+          created_at: string
+          credits_used: number
+          hand_image_data: string
+          id: string
+          interpretation: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_used?: number
+          hand_image_data: string
+          id?: string
+          interpretation?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_used?: number
+          hand_image_data?: string
+          id?: string
+          interpretation?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           bio: string | null
@@ -457,6 +568,39 @@ export type Database = {
           credits_used?: number
           id?: string
           target_user_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tarot_readings: {
+        Row: {
+          created_at: string
+          credits_used: number
+          id: string
+          interpretation: Json | null
+          question: string | null
+          selected_cards: Json
+          spread_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_used?: number
+          id?: string
+          interpretation?: Json | null
+          question?: string | null
+          selected_cards: Json
+          spread_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_used?: number
+          id?: string
+          interpretation?: Json | null
+          question?: string | null
+          selected_cards?: Json
+          spread_type?: string
           user_id?: string
         }
         Relationships: []

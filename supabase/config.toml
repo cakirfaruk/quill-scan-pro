@@ -14,3 +14,18 @@ verify_jwt = true
 
 [functions.summarize-analyses]
 verify_jwt = true
+
+[functions.analyze-tarot]
+verify_jwt = true
+
+[functions.analyze-coffee-fortune]
+verify_jwt = true
+
+[functions.interpret-dream]
+verify_jwt = true
+
+[functions.generate-daily-horoscope]
+verify_jwt = true
+
+[functions.analyze-palmistry]
+verify_jwt = true
