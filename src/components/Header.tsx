@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 export const Header = () => {
   const [credits, setCredits] = useState(0);
   const [username, setUsername] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -45,6 +46,7 @@ export const Header = () => {
   const loadUserProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      setIsLoggedIn(true);
       const { data: profile } = await supabase
         .from("profiles")
         .select("credits, username")
@@ -55,6 +57,8 @@ export const Header = () => {
         setCredits(profile.credits);
         setUsername(profile.username);
       }
+    } else {
+      setIsLoggedIn(false);
     }
   };
 
@@ -93,36 +97,44 @@ export const Header = () => {
               </Button>
             </Link>
 
-            <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-lg">
-              <Coins className="w-5 h-5 text-primary" />
-              <span className="font-semibold text-primary">{credits}</span>
-            </div>
+            {isLoggedIn ? (
+              <>
+                <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-lg">
+                  <Coins className="w-5 h-5 text-primary" />
+                  <span className="font-semibold text-primary">{credits}</span>
+                </div>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <User className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-card">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">{username}</p>
-                    <p className="text-xs text-muted-foreground">{credits} kredi</p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("/credits")} className="cursor-pointer">
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Kredi Satın Al
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Çıkış Yap
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <User className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 bg-card">
+                    <DropdownMenuLabel>
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium">{username}</p>
+                        <p className="text-xs text-muted-foreground">{credits} kredi</p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => navigate("/credits")} className="cursor-pointer">
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Kredi Satın Al
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Çıkış Yap
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <Button onClick={() => navigate("/auth")} className="bg-gradient-primary hover:opacity-90">
+                Giriş Yap / Üye Ol
+              </Button>
+            )}
           </div>
         </div>
       </div>

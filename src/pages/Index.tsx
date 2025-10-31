@@ -22,17 +22,8 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    checkAuth();
     loadCredits();
   }, []);
-
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate("/auth");
-      return;
-    }
-  };
 
   const loadCredits = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -56,7 +47,30 @@ const Index = () => {
   };
 
   const handleAnalyze = async (selectedTopics: string[]) => {
+    // Check authentication first
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({
+        title: "Giriş Gerekli",
+        description: "Analiz yapmak için giriş yapmanız gerekiyor.",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
     if (!selectedFile || selectedTopics.length === 0) return;
+
+    // Check credits
+    if (credits < selectedTopics.length) {
+      toast({
+        title: "Yetersiz Kredi",
+        description: `Bu analiz için ${selectedTopics.length} kredi gerekiyor. Mevcut krediniz: ${credits}`,
+        variant: "destructive",
+      });
+      navigate("/credits");
+      return;
+    }
 
     setIsAnalyzing(true);
     setAnalysisProgress(0);

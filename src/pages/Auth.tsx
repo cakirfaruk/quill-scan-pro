@@ -55,8 +55,9 @@ const Auth = () => {
 
       toast({
         title: "Kayıt başarılı!",
-        description: "Hesabınız oluşturuldu. Giriş yapabilirsiniz.",
+        description: "Hesabınız oluşturuldu.",
       });
+      navigate("/");
     } catch (error: any) {
       toast({
         title: "Kayıt hatası",
