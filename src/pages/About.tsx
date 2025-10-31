@@ -44,30 +44,43 @@ const About = () => {
         {/* Hero Section */}
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-4">
-            El Yazısı Analizi Hakkında
+            Hakkımızda
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Grafologi bilimi ve yapay zeka teknolojisinin gücünü birleştirerek, 
-            el yazısından kişilik özelliklerini ortaya çıkarıyoruz
+            El yazısı analizi, numeroloji, doğum haritası ve uyum analizleri ile kendinizi keşfedin
           </p>
         </div>
 
-        {/* What is Graphology */}
+        {/* What we offer */}
         <Card className="p-8 mb-12 shadow-elegant">
           <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Grafologi Nedir?
+            Neler Sunuyoruz?
           </h2>
-          <div className="prose prose-lg max-w-none text-foreground">
-            <p className="text-muted-foreground leading-relaxed mb-4">
-              Grafologi, el yazısını inceleyerek kişilik özelliklerini, duygusal durumları ve 
-              davranış kalıplarını analiz eden bir bilim dalıdır. El yazısındaki her detay - 
-              harflerin boyutu, eğimi, basıncı, kelimelerin aralığı - kişinin karakteri 
-              hakkında ipuçları taşır.
-            </p>
-            <p className="text-muted-foreground leading-relaxed">
-              Bizim platformumuz, bu yüzyıllık bilgiyi modern yapay zeka teknolojisi ile 
-              birleştirerek, dakikalar içinde detaylı ve güvenilir analizler sunmaktadır.
-            </p>
+          <div className="prose prose-lg max-w-none text-foreground space-y-4">
+            <div>
+              <h3 className="text-xl font-semibold mb-2">El Yazısı Analizi</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Grafologi biliminin temellerini kullanarak el yazınızı analiz eder, kişilik özelliklerinizi ortaya çıkarırız.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2">Numeroloji Analizi</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Adınız ve doğum tarihinizden yola çıkarak sayıların gücüyle hayatınızdaki potansiyelleri keşfedin.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2">Doğum Haritası</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Doğum saatiniz, yeriniz ve tarihinize göre astrolojik haritanızı oluşturur, kişilik özelliklerinizi analiz ederiz.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2">Uyum Analizi</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                İki kişinin el yazısını karşılaştırarak karakteristik uyumlarını değerlendirir, ilişki potansiyelini analiz ederiz.
+              </p>
+            </div>
           </div>
         </Card>
 
@@ -100,18 +113,18 @@ const About = () => {
               <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
                 1
               </div>
-              <h3 className="font-semibold text-lg mb-2">El Yazısını Yükle</h3>
+              <h3 className="font-semibold text-lg mb-2">Analiz Türünü Seç</h3>
               <p className="text-muted-foreground">
-                El yazısı örneğinizi fotoğraflayın veya tarayın ve sistemimize yükleyin
+                El yazısı, numeroloji, doğum haritası veya uyum analizi arasından seçim yapın
               </p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
                 2
               </div>
-              <h3 className="font-semibold text-lg mb-2">Konuları Seç</h3>
+              <h3 className="font-semibold text-lg mb-2">Bilgileri Gir</h3>
               <p className="text-muted-foreground">
-                İlgilendiğiniz kişilik özelliklerini ve analiz konularını seçin
+                Seçtiğiniz analiz türüne göre gerekli bilgileri girin (görsel, tarih, isim vb.)
               </p>
             </div>
             <div className="text-center">

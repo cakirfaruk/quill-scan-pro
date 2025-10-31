@@ -93,10 +93,10 @@ export const Header = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                El Yazısı Analizi
+                Kişisel Analiz Merkezi
               </h1>
               <p className="text-xs text-muted-foreground">
-                AI destekli profesyonel analiz
+                AI destekli çoklu analiz platformu
               </p>
             </div>
           </Link>
@@ -106,7 +106,7 @@ export const Header = () => {
               <>
                 {isAdmin && (
                   <Link to="/admin">
-                    <Button variant="default" size="sm" className="gap-2 bg-gradient-primary hover:opacity-90">
+                    <Button variant="default" size="sm" className="gap-2 bg-gradient-primary text-primary-foreground hover:opacity-90">
                       Admin Panel
                     </Button>
                   </Link>
@@ -152,7 +152,7 @@ export const Header = () => {
 
                 <Link to="/history">
                   <Button variant="ghost" size="sm">
-                    Geçmiş
+                    Analizlerim
                   </Button>
                 </Link>
               </>

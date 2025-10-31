@@ -11,6 +11,11 @@ import { HelpCircle } from "lucide-react";
 const FAQ = () => {
   const faqs = [
     {
+      question: "Hangi analiz türlerini sunuyorsunuz?",
+      answer:
+        "El yazısı analizi, numeroloji analizi, doğum haritası ve uyum analizi olmak üzere dört farklı analiz türü sunuyoruz. Her biri farklı yöntemlerle kişilik özelliklerinizi ortaya çıkarır.",
+    },
+    {
       question: "El yazısı analizi nasıl çalışır?",
       answer:
         "El yazısı analizi, grafologi biliminin temel prensiplerini kullanarak yapılır. Sistemimiz, el yazınızdaki harf şekilleri, eğimler, basınç, kelime aralıkları ve diğer özellikleri analiz eder. AI destekli algoritmalarımız bu verileri işleyerek kişilik özellikleriniz hakkında detaylı raporlar oluşturur.",
@@ -28,7 +33,7 @@ const FAQ = () => {
     {
       question: "Kredi sistemi nasıl çalışır?",
       answer:
-        "Her analiz konusu 1 kredi tüketir. Kayıt olduğunuzda 10 ücretsiz kredi kazanırsınız. Daha fazla analiz yapmak için kredi paketleri satın alabilirsiniz. Uyum analizi 50 kredi tüketir.",
+        "Her analiz konusu 1 kredi tüketir. Kayıt olduğunuzda 10 ücretsiz kredi kazanırsınız. Daha fazla analiz yapmak için kredi paketleri satın alabilirsiniz. Uyum analizi 50 kredi tüketir. Analiz özetleme için ise her analizin kredisinin toplamının 1/3'ü kadar kredi harcanır.",
     },
     {
       question: "Verilerim güvende mi?",
@@ -43,7 +48,12 @@ const FAQ = () => {
     {
       question: "Geçmiş analizlerimi görebilir miyim?",
       answer:
-      "Evet, 'Geçmiş Analizler' sayfasından tüm önceki analizlerinizi görüntüleyebilir, detaylarını inceleyebilir ve sonuçları tekrar gözden geçirebilirsiniz.",
+      "Evet, 'Analizlerim' sayfasından tüm önceki analizlerinizi görüntüleyebilir, detaylarını inceleyebilir ve sonuçları tekrar gözden geçirebilirsiniz. Ayrıca birden fazla analizi seçip özetleyebilirsiniz.",
+    },
+    {
+      question: "Analiz özetleme özelliği nedir?",
+      answer:
+        "Analizlerim sayfasında bir veya birden fazla analizi seçip özetleyebilirsiniz. Özet, analiz yöntemlerine dair teknik detayları içermez, sadece size yararlı kişilik özelliklerini ve içgörüleri sunar. Birden fazla analizi özetlerken, her biri ayrı ayrı özetlenir ve ardından tutarlı bir şekilde birleştirilir.",
     },
     {
       question: "Analiz ne kadar sürer?",
@@ -51,7 +61,7 @@ const FAQ = () => {
         "Analiz süreci genellikle 1-3 dakika arasında tamamlanır. Bu süre, seçilen konu sayısına ve sistemin yüküne göre değişebilir. Analiz sırasında ilerleme çubuğundan süreci takip edebilirsiniz.",
     },
     {
-      question: "Hangi konularda analiz yapabilirim?",
+      question: "El yazısı analizinde hangi konularda analiz yapabilirim?",
       answer:
         "13 farklı konuda analiz yapabilirsiniz: Genel Kişilik, Duygusal Zeka, Sosyal Beceriler, Zihinsel Kapasite, İş Hayatı Profili, İletişim Tarzı, Karar Verme, Stres Yönetimi, Yaratıcılık, Liderlik Özellikleri, Detaycılık, Risk Alma Eğilimi ve Empati Düzeyi.",
     },
@@ -75,7 +85,7 @@ const FAQ = () => {
             Sıkça Sorulan Sorular
           </h1>
           <p className="text-xl text-muted-foreground">
-            El yazısı analizi hakkında merak ettikleriniz
+            Analiz platformumuz hakkında merak ettikleriniz
           </p>
         </div>
 
