@@ -11,8 +11,20 @@ import { Sparkles, ArrowRight, Shuffle } from "lucide-react";
 
 // Import tarot card images
 import deliImg from "@/assets/tarot/deli.png";
-import dengeImg from "@/assets/tarot/denge.png";
+import buyucuImg from "@/assets/tarot/buyucu.png";
+import basRahibeAzizeImg from "@/assets/tarot/bas-rahibe-azize.png";
+import imparatoriceImg from "@/assets/tarot/imparatorice.png";
+import imparatorImg from "@/assets/tarot/imparator.png";
+import basRahipAzizImg from "@/assets/tarot/bas-rahip-aziz.png";
+import asiklarImg from "@/assets/tarot/asiklar.png";
+import savasArabasiImg from "@/assets/tarot/savas-arabasi.png";
+import gucImg from "@/assets/tarot/guc.png";
+import ermisImg from "@/assets/tarot/ermis.png";
+import kaderCarkiImg from "@/assets/tarot/kader-carki.png";
+import adaletImg from "@/assets/tarot/adalet.png";
+import asilanAdamImg from "@/assets/tarot/asilan-adam.png";
 import olumImg from "@/assets/tarot/olum.png";
+import dengeImg from "@/assets/tarot/denge.png";
 import seytanImg from "@/assets/tarot/seytan.png";
 import yikilanKuleImg from "@/assets/tarot/yikilan-kule.png";
 import yildizImg from "@/assets/tarot/yildiz.png";
@@ -20,22 +32,12 @@ import ayImg from "@/assets/tarot/ay.png";
 import gunesImg from "@/assets/tarot/gunes.png";
 import mahkemeImg from "@/assets/tarot/mahkeme.png";
 import dunyaImg from "@/assets/tarot/dunya.png";
-import asilanAdamImg from "@/assets/tarot/asilan-adam.png";
-import adaletImg from "@/assets/tarot/adalet.png";
-import kaderCarkiImg from "@/assets/tarot/kader-carki.png";
-import ermisImg from "@/assets/tarot/ermis.png";
-import gucImg from "@/assets/tarot/guc.png";
-import savasArabasiImg from "@/assets/tarot/savas-arabasi.png";
-import asiklarImg from "@/assets/tarot/asiklar.png";
-import basRahipAzizImg from "@/assets/tarot/bas-rahip-aziz.png";
-import imparatorImg from "@/assets/tarot/imparator.png";
-import imparatoriceImg from "@/assets/tarot/imparatorice.png";
 
 // Tarot card deck
 const MAJOR_ARCANA = [
   { name: "Deli", englishName: "The Fool", suit: "Major Arcana", number: 0, image: deliImg },
-  { name: "Büyücü", englishName: "The Magician", suit: "Major Arcana", number: 1, image: null },
-  { name: "Azize", englishName: "The High Priestess", suit: "Major Arcana", number: 2, image: null },
+  { name: "Büyücü", englishName: "The Magician", suit: "Major Arcana", number: 1, image: buyucuImg },
+  { name: "Baş Rahibe", englishName: "The High Priestess", suit: "Major Arcana", number: 2, image: basRahibeAzizeImg },
   { name: "İmparatoriçe", englishName: "The Empress", suit: "Major Arcana", number: 3, image: imparatoriceImg },
   { name: "İmparator", englishName: "The Emperor", suit: "Major Arcana", number: 4, image: imparatorImg },
   { name: "Baş Rahip", englishName: "The Hierophant", suit: "Major Arcana", number: 5, image: basRahipAzizImg },
