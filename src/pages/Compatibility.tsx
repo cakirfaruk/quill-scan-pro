@@ -1,0 +1,380 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Header } from "@/components/Header";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { UploadZone } from "@/components/UploadZone";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Heart, Loader2, User, FileText } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+
+interface CompatibilityResult {
+  person1Analysis: string;
+  person2Analysis: string;
+  compatibilityAreas: Array<{
+    name: string;
+    person1Finding: string;
+    person2Finding: string;
+    compatibilityScore: number;
+    strengths: string;
+    challenges: string;
+    recommendations: string;
+  }>;
+  overallScore: number;
+  overallSummary: string;
+}
+
+const Compatibility = () => {
+  const [file1, setFile1] = useState<File | null>(null);
+  const [preview1, setPreview1] = useState<string | null>(null);
+  const [gender1, setGender1] = useState<"male" | "female">("male");
+  
+  const [file2, setFile2] = useState<File | null>(null);
+  const [preview2, setPreview2] = useState<string | null>(null);
+  const [gender2, setGender2] = useState<"male" | "female">("female");
+  
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [result, setResult] = useState<CompatibilityResult | null>(null);
+  const [credits, setCredits] = useState(0);
+  
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    checkAuth();
+    loadCredits();
+  }, []);
+
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth");
+    }
+  };
+
+  const loadCredits = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("credits")
+        .eq("user_id", user.id)
+        .single();
+
+      if (profile) {
+        setCredits(profile.credits);
+      }
+    }
+  };
+
+  const handleAnalyze = async () => {
+    if (!file1 || !file2) return;
+
+    if (credits < 50) {
+      toast({
+        title: "Yetersiz kredi",
+        description: "Uyum analizi için 50 kredi gerekli.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
+
+    try {
+      const reader1 = new FileReader();
+      const reader2 = new FileReader();
+
+      const base64Promise1 = new Promise<string>((resolve) => {
+        reader1.onload = () => resolve(reader1.result as string);
+      });
+      const base64Promise2 = new Promise<string>((resolve) => {
+        reader2.onload = () => resolve(reader2.result as string);
+      });
+
+      reader1.readAsDataURL(file1);
+      reader2.readAsDataURL(file2);
+
+      const [image1, image2] = await Promise.all([base64Promise1, base64Promise2]);
+
+      const { data, error } = await supabase.functions.invoke("analyze-compatibility", {
+        body: { image1, image2, gender1, gender2 },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      setResult(data);
+      await loadCredits();
+
+      toast({
+        title: "Uyum analizi tamamlandı",
+        description: "Sonuçları aşağıda inceleyebilirsiniz.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Analiz hatası",
+        description: error.message || "Bir hata oluştu.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleReset = () => {
+    setFile1(null);
+    setPreview1(null);
+    setFile2(null);
+    setPreview2(null);
+    setResult(null);
+  };
+
+  if (result) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle">
+        <Header />
+        <main className="container mx-auto px-4 py-12 max-w-6xl">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-3xl font-bold text-foreground">Uyum Analizi Sonuçları</h2>
+              <p className="text-muted-foreground mt-2">İki kişi arasındaki uyum değerlendirmesi</p>
+            </div>
+            <Button onClick={handleReset} variant="outline">
+              Yeni Analiz
+            </Button>
+          </div>
+
+          <Card className="p-8 mb-6 bg-gradient-to-br from-primary/5 via-accent/5 to-background border-2 border-primary/20">
+            <div className="text-center space-y-6">
+              <div className="inline-flex items-center justify-center p-4 bg-gradient-primary rounded-full">
+                <Heart className="w-12 h-12 text-primary-foreground" />
+              </div>
+              <div>
+                <h3 className="text-4xl font-bold text-primary mb-2">
+                  %{result.overallScore} Uyum
+                </h3>
+                <Progress value={result.overallScore} className="h-3 mt-4" />
+              </div>
+              <p className="text-lg leading-relaxed text-foreground">
+                {result.overallSummary}
+              </p>
+            </div>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <Card className="p-6">
+              <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                <User className="w-5 h-5 text-primary" />
+                {gender1 === "male" ? "Erkek" : "Kadın"} - Kişilik Analizi
+              </h4>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {result.person1Analysis}
+              </p>
+            </Card>
+
+            <Card className="p-6">
+              <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                <User className="w-5 h-5 text-accent" />
+                {gender2 === "male" ? "Erkek" : "Kadın"} - Kişilik Analizi
+              </h4>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {result.person2Analysis}
+              </p>
+            </Card>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-2xl font-bold text-foreground">Uyum Alanları</h3>
+            {result.compatibilityAreas.map((area, index) => (
+              <Card key={index} className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-lg font-semibold text-foreground">{area.name}</h4>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold text-primary">%{area.compatibilityScore}</span>
+                    <Progress value={area.compatibilityScore} className="w-24 h-2" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">
+                      {gender1 === "male" ? "Erkek" : "Kadın"}
+                    </p>
+                    <p className="text-sm text-foreground/80">{area.person1Finding}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">
+                      {gender2 === "male" ? "Erkek" : "Kadın"}
+                    </p>
+                    <p className="text-sm text-foreground/80">{area.person2Finding}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-4 border-t border-border">
+                  <div>
+                    <p className="text-xs font-semibold text-success uppercase mb-1">Güçlü Yanlar</p>
+                    <p className="text-sm text-foreground">{area.strengths}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-warning uppercase mb-1">Potansiyel Zorluklar</p>
+                    <p className="text-sm text-foreground">{area.challenges}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-primary uppercase mb-1">Öneriler</p>
+                    <p className="text-sm text-foreground">{area.recommendations}</p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-subtle">
+      <Header />
+
+      <main className="container mx-auto px-4 py-12 max-w-6xl">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center p-3 bg-gradient-primary rounded-full mb-4">
+            <Heart className="w-8 h-8 text-primary-foreground" />
+          </div>
+          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            Uyum Analizi
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            İki kişinin el yazısını karşılaştırarak aralarındaki uyumu analiz edin
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Analiz maliyeti: <span className="font-bold text-primary">50 kredi</span>
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Person 1 */}
+          <Card className="p-6 space-y-6">
+            <div>
+              <h3 className="text-xl font-bold text-foreground mb-4">Birinci Kişi</h3>
+              
+              <div className="mb-4">
+                <Label className="mb-3 block">Cinsiyet</Label>
+                <RadioGroup value={gender1} onValueChange={(v) => setGender1(v as "male" | "female")}>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="male" id="gender1-male" />
+                    <Label htmlFor="gender1-male">Erkek</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="female" id="gender1-female" />
+                    <Label htmlFor="gender1-female">Kadın</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {!file1 ? (
+                <UploadZone onFileSelect={(file, preview) => { setFile1(file); setPreview1(preview); }} />
+              ) : (
+                <div className="space-y-4">
+                  {preview1 === "pdf" ? (
+                    <div className="flex items-center gap-4 p-6 bg-muted rounded-lg">
+                      <FileText className="w-12 h-12 text-primary" />
+                      <div>
+                        <p className="font-semibold text-foreground">{file1.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {(file1.size / 1024).toFixed(2)} KB
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <img src={preview1} alt="Birinci yazı" className="w-full h-48 object-contain bg-muted rounded-lg" />
+                  )}
+                  <Button variant="outline" onClick={() => { setFile1(null); setPreview1(null); }}>
+                    Değiştir
+                  </Button>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Person 2 */}
+          <Card className="p-6 space-y-6">
+            <div>
+              <h3 className="text-xl font-bold text-foreground mb-4">İkinci Kişi</h3>
+              
+              <div className="mb-4">
+                <Label className="mb-3 block">Cinsiyet</Label>
+                <RadioGroup value={gender2} onValueChange={(v) => setGender2(v as "male" | "female")}>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="male" id="gender2-male" />
+                    <Label htmlFor="gender2-male">Erkek</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="female" id="gender2-female" />
+                    <Label htmlFor="gender2-female">Kadın</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {!file2 ? (
+                <UploadZone onFileSelect={(file, preview) => { setFile2(file); setPreview2(preview); }} />
+              ) : (
+                <div className="space-y-4">
+                  {preview2 === "pdf" ? (
+                    <div className="flex items-center gap-4 p-6 bg-muted rounded-lg">
+                      <FileText className="w-12 h-12 text-primary" />
+                      <div>
+                        <p className="font-semibold text-foreground">{file2.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {(file2.size / 1024).toFixed(2)} KB
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <img src={preview2} alt="İkinci yazı" className="w-full h-48 object-contain bg-muted rounded-lg" />
+                  )}
+                  <Button variant="outline" onClick={() => { setFile2(null); setPreview2(null); }}>
+                    Değiştir
+                  </Button>
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+
+        <div className="mt-8 text-center">
+          <Button
+            onClick={handleAnalyze}
+            disabled={!file1 || !file2 || isAnalyzing || credits < 50}
+            className="bg-gradient-primary hover:opacity-90 px-12"
+            size="lg"
+          >
+            {isAnalyzing ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Analiz ediliyor...
+              </>
+            ) : (
+              <>
+                <Heart className="mr-2 h-5 w-5" />
+                Uyum Analizini Başlat (50 kredi)
+              </>
+            )}
+          </Button>
+
+          {credits < 50 && (
+            <p className="text-sm text-destructive mt-4">
+              Yetersiz kredi! Uyum analizi için 50 kredi gerekli.
+            </p>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default Compatibility;

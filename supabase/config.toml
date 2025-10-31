@@ -1,4 +1,7 @@
 project_id = "ekkymypfvixlysrgtabz"
 
 [functions.analyze-handwriting]
-verify_jwt = false
+verify_jwt = true
+
+[functions.analyze-compatibility]
+verify_jwt = true

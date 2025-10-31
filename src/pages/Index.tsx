@@ -1,18 +1,53 @@
-import { useState } from "react";
-import { FileText, Loader2, Sparkles } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { FileText, Loader2 } from "lucide-react";
+import { Header } from "@/components/Header";
 import { UploadZone } from "@/components/UploadZone";
+import { TopicSelector } from "@/components/TopicSelector";
 import { AnalysisResults, type AnalysisResult } from "@/components/AnalysisResults";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Progress } from "@/components/ui/progress";
 
 const Index = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [credits, setCredits] = useState(0);
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    checkAuth();
+    loadCredits();
+  }, []);
+
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth");
+      return;
+    }
+  };
+
+  const loadCredits = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("credits")
+        .eq("user_id", user.id)
+        .single();
+
+      if (profile) {
+        setCredits(profile.credits);
+      }
+    }
+  };
 
   const handleFileSelect = (file: File, preview: string) => {
     setSelectedFile(file);
@@ -20,11 +55,20 @@ const Index = () => {
     setAnalysisResult(null);
   };
 
-  const handleAnalyze = async () => {
-    if (!selectedFile) return;
+  const handleAnalyze = async (selectedTopics: string[]) => {
+    if (!selectedFile || selectedTopics.length === 0) return;
 
     setIsAnalyzing(true);
+    setAnalysisProgress(0);
     
+    // Simulate progress
+    const progressInterval = setInterval(() => {
+      setAnalysisProgress((prev) => {
+        if (prev >= 90) return prev;
+        return prev + 5;
+      });
+    }, 500);
+
     try {
       // Convert file to base64
       const reader = new FileReader();
@@ -42,8 +86,14 @@ const Index = () => {
       console.log("Calling analyze-handwriting function...");
       
       const { data, error } = await supabase.functions.invoke("analyze-handwriting", {
-        body: { image: base64Image },
+        body: { 
+          image: base64Image,
+          selectedTopics: selectedTopics.length > 0 ? selectedTopics : undefined
+        },
       });
+
+      clearInterval(progressInterval);
+      setAnalysisProgress(100);
 
       if (error) {
         console.error("Function error:", error);
@@ -51,17 +101,29 @@ const Index = () => {
       }
 
       if (data.error) {
+        if (data.error === "Insufficient credits") {
+          toast({
+            title: "Yetersiz kredi",
+            description: `${data.required} kredi gerekli, ${data.available} krediniz var.`,
+            variant: "destructive",
+          });
+          clearInterval(progressInterval);
+          setIsAnalyzing(false);
+          return;
+        }
         throw new Error(data.error);
       }
 
       console.log("Analysis completed:", data);
       setAnalysisResult(data);
+      await loadCredits();
       
       toast({
         title: "Analiz tamamlandı",
         description: "El yazısı başarıyla analiz edildi.",
       });
     } catch (error: any) {
+      clearInterval(progressInterval);
       console.error("Analysis error:", error);
       toast({
         title: "Analiz hatası",
@@ -81,26 +143,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
-      {/* Header */}
-      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-primary rounded-lg">
-                <FileText className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  El Yazısı Analizi
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  Grafolog uzmanı AI ile profesyonel analiz
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-12 max-w-6xl">
@@ -111,8 +154,8 @@ const Index = () => {
 
             {/* Preview and Analyze */}
             {selectedFile && previewUrl && (
-              <Card className="p-8 space-y-6 shadow-card">
-                <div className="space-y-4">
+              <>
+                <Card className="p-6 space-y-4 shadow-card">
                   <h2 className="text-xl font-bold text-foreground">Yüklenen Dosya</h2>
                   
                   {previewUrl === "pdf" ? (
@@ -134,38 +177,31 @@ const Index = () => {
                       />
                     </div>
                   )}
-                </div>
+                </Card>
 
-                <div className="flex gap-4">
-                  <Button
-                    onClick={handleAnalyze}
-                    disabled={isAnalyzing}
-                    className="flex-1 bg-gradient-primary hover:opacity-90 text-primary-foreground shadow-elegant"
-                    size="lg"
-                  >
-                    {isAnalyzing ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Analiz ediliyor...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="mr-2 h-5 w-5" />
-                        Analizi Başlat
-                      </>
-                    )}
-                  </Button>
-                  
-                  <Button
-                    onClick={handleReset}
-                    variant="outline"
-                    size="lg"
-                    disabled={isAnalyzing}
-                  >
-                    İptal
-                  </Button>
-                </div>
-              </Card>
+                {isAnalyzing && (
+                  <Card className="p-6">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium text-foreground">Analiz ediliyor...</span>
+                        <span className="text-primary font-bold">{analysisProgress}%</span>
+                      </div>
+                      <Progress value={analysisProgress} className="h-2" />
+                      <p className="text-xs text-muted-foreground text-center">
+                        Bu işlem birkaç dakika sürebilir. Lütfen bekleyin.
+                      </p>
+                    </div>
+                  </Card>
+                )}
+
+                {!isAnalyzing && (
+                  <TopicSelector 
+                    onAnalyze={handleAnalyze}
+                    isAnalyzing={isAnalyzing}
+                    availableCredits={credits}
+                  />
+                )}
+              </>
             )}
           </div>
         ) : (

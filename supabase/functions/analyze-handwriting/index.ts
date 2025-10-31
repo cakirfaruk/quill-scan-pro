@@ -1,4 +1,22 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.78.0";
+
+const allTopics = [
+  "Marjlar (Sol, Sağ, Üst, Alt)",
+  "Satır Yönü",
+  "Satır Aralığı",
+  "Kelime Aralığı",
+  "Harf Aralığı",
+  "Yazı Boyutu",
+  "Yazı Eğimi",
+  "Baskı",
+  "Yazı Hızı",
+  "Form Seviyesi",
+  "Hareket",
+  "Bağlantı Şekilleri",
+  "Kişisel Zamirler",
+];
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,7 +29,58 @@ serve(async (req) => {
   }
 
   try {
-    const { image } = await req.json();
+    const { image, selectedTopics } = await req.json();
+    
+    // Get authorization token
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      throw new Error("Authorization header missing");
+    }
+    
+    // Create Supabase client for user verification
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      {
+        global: { headers: { Authorization: authHeader } },
+      }
+    );
+    
+    // Verify user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error("Unauthorized");
+    }
+    
+    // Check if specific topics are selected or full analysis
+    const isFullAnalysis = !selectedTopics || selectedTopics.length === 0;
+    const topicsToAnalyze = isFullAnalysis ? allTopics : selectedTopics;
+    const creditsNeeded = topicsToAnalyze.length;
+    
+    // Get user profile and check credits
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("credits")
+      .eq("user_id", user.id)
+      .single();
+    
+    if (profileError || !profile) {
+      throw new Error("Profile not found");
+    }
+    
+    if (profile.credits < creditsNeeded) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Insufficient credits", 
+          required: creditsNeeded, 
+          available: profile.credits 
+        }),
+        { 
+          status: 402, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
@@ -190,6 +259,33 @@ Yanıtını JSON formatında ver:
       console.error("Failed to parse JSON response:", e);
       throw new Error("AI yanıtı beklenmeyen formatta. Lütfen tekrar deneyin.");
     }
+
+    // Deduct credits and save analysis
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ credits: profile.credits - creditsNeeded })
+      .eq("user_id", user.id);
+    
+    if (updateError) {
+      console.error("Error updating credits:", updateError);
+    }
+    
+    // Save analysis to history
+    await supabase.from("analysis_history").insert({
+      user_id: user.id,
+      analysis_type: isFullAnalysis ? "full" : "selective",
+      selected_topics: topicsToAnalyze,
+      credits_used: creditsNeeded,
+      result: analysisResult,
+    });
+    
+    // Record transaction
+    await supabase.from("credit_transactions").insert({
+      user_id: user.id,
+      amount: -creditsNeeded,
+      transaction_type: "analysis",
+      description: `${isFullAnalysis ? 'Tam' : 'Seçmeli'} analiz (${creditsNeeded} kredi)`,
+    });
 
     return new Response(JSON.stringify(analysisResult), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
