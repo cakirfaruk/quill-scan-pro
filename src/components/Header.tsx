@@ -154,13 +154,6 @@ export const Header = () => {
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link to="/match" className="flex items-center gap-2 cursor-pointer">
-                        <Heart className="w-4 h-4" />
-                        Eşleşme
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
                       <Link to="/compatibility" className="flex items-center gap-2 cursor-pointer">
                         <Heart className="w-4 h-4" />
                         Uyum Analizi
@@ -371,12 +364,6 @@ export const Header = () => {
                           <Button variant="ghost" className="w-full justify-start gap-2">
                             <Calendar className="w-4 h-4" />
                             Doğum Haritası
-                          </Button>
-                        </Link>
-                        <Link to="/match" onClick={() => setMobileMenuOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start gap-2">
-                            <Heart className="w-4 h-4" />
-                            Eşleşme
                           </Button>
                         </Link>
                         <Link to="/compatibility" onClick={() => setMobileMenuOpen(false)}>

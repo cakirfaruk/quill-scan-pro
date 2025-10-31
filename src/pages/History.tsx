@@ -51,10 +51,14 @@ const History = () => {
 
   const loadHistory = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       // Fetch handwriting analyses
       const { data: handwritingData, error: handwritingError } = await supabase
         .from("analysis_history")
         .select("*")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (handwritingError) throw handwritingError;
@@ -63,6 +67,7 @@ const History = () => {
       const { data: numerologyData, error: numerologyError } = await supabase
         .from("numerology_analyses")
         .select("*")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (numerologyError) throw numerologyError;
@@ -71,6 +76,7 @@ const History = () => {
       const { data: birthChartData, error: birthChartError } = await supabase
         .from("birth_chart_analyses")
         .select("*")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (birthChartError) throw birthChartError;
@@ -79,6 +85,7 @@ const History = () => {
       const { data: compatibilityData, error: compatibilityError } = await supabase
         .from("compatibility_analyses")
         .select("*")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (compatibilityError) throw compatibilityError;
