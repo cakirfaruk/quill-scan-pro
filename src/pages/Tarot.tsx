@@ -9,30 +9,42 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Sparkles, ArrowRight, Shuffle } from "lucide-react";
 
+// Import tarot card images
+import deliImg from "@/assets/tarot/deli.png";
+import dengeImg from "@/assets/tarot/denge.png";
+import olumImg from "@/assets/tarot/olum.png";
+import seytanImg from "@/assets/tarot/seytan.png";
+import yikilanKuleImg from "@/assets/tarot/yikilan-kule.png";
+import yildizImg from "@/assets/tarot/yildiz.png";
+import ayImg from "@/assets/tarot/ay.png";
+import gunesImg from "@/assets/tarot/gunes.png";
+import mahkemeImg from "@/assets/tarot/mahkeme.png";
+import dunyaImg from "@/assets/tarot/dunya.png";
+
 // Tarot card deck
 const MAJOR_ARCANA = [
-  { name: "The Fool", suit: "Major Arcana", number: 0 },
-  { name: "The Magician", suit: "Major Arcana", number: 1 },
-  { name: "The High Priestess", suit: "Major Arcana", number: 2 },
-  { name: "The Empress", suit: "Major Arcana", number: 3 },
-  { name: "The Emperor", suit: "Major Arcana", number: 4 },
-  { name: "The Hierophant", suit: "Major Arcana", number: 5 },
-  { name: "The Lovers", suit: "Major Arcana", number: 6 },
-  { name: "The Chariot", suit: "Major Arcana", number: 7 },
-  { name: "Strength", suit: "Major Arcana", number: 8 },
-  { name: "The Hermit", suit: "Major Arcana", number: 9 },
-  { name: "Wheel of Fortune", suit: "Major Arcana", number: 10 },
-  { name: "Justice", suit: "Major Arcana", number: 11 },
-  { name: "The Hanged Man", suit: "Major Arcana", number: 12 },
-  { name: "Death", suit: "Major Arcana", number: 13 },
-  { name: "Temperance", suit: "Major Arcana", number: 14 },
-  { name: "The Devil", suit: "Major Arcana", number: 15 },
-  { name: "The Tower", suit: "Major Arcana", number: 16 },
-  { name: "The Star", suit: "Major Arcana", number: 17 },
-  { name: "The Moon", suit: "Major Arcana", number: 18 },
-  { name: "The Sun", suit: "Major Arcana", number: 19 },
-  { name: "Judgment", suit: "Major Arcana", number: 20 },
-  { name: "The World", suit: "Major Arcana", number: 21 },
+  { name: "Deli", englishName: "The Fool", suit: "Major Arcana", number: 0, image: deliImg },
+  { name: "Büyücü", englishName: "The Magician", suit: "Major Arcana", number: 1, image: null },
+  { name: "Azize", englishName: "The High Priestess", suit: "Major Arcana", number: 2, image: null },
+  { name: "İmparatoriçe", englishName: "The Empress", suit: "Major Arcana", number: 3, image: null },
+  { name: "İmparator", englishName: "The Emperor", suit: "Major Arcana", number: 4, image: null },
+  { name: "Din Adamı", englishName: "The Hierophant", suit: "Major Arcana", number: 5, image: null },
+  { name: "Aşıklar", englishName: "The Lovers", suit: "Major Arcana", number: 6, image: null },
+  { name: "Savaş Arabası", englishName: "The Chariot", suit: "Major Arcana", number: 7, image: null },
+  { name: "Güç", englishName: "Strength", suit: "Major Arcana", number: 8, image: null },
+  { name: "Ermiş", englishName: "The Hermit", suit: "Major Arcana", number: 9, image: null },
+  { name: "Kader Çarkı", englishName: "Wheel of Fortune", suit: "Major Arcana", number: 10, image: null },
+  { name: "Adalet", englishName: "Justice", suit: "Major Arcana", number: 11, image: null },
+  { name: "Asılan Adam", englishName: "The Hanged Man", suit: "Major Arcana", number: 12, image: null },
+  { name: "Ölüm", englishName: "Death", suit: "Major Arcana", number: 13, image: olumImg },
+  { name: "Denge", englishName: "Temperance", suit: "Major Arcana", number: 14, image: dengeImg },
+  { name: "Şeytan", englishName: "The Devil", suit: "Major Arcana", number: 15, image: seytanImg },
+  { name: "Yıkılan Kule", englishName: "The Tower", suit: "Major Arcana", number: 16, image: yikilanKuleImg },
+  { name: "Yıldız", englishName: "The Star", suit: "Major Arcana", number: 17, image: yildizImg },
+  { name: "Ay", englishName: "The Moon", suit: "Major Arcana", number: 18, image: ayImg },
+  { name: "Güneş", englishName: "The Sun", suit: "Major Arcana", number: 19, image: gunesImg },
+  { name: "Mahkeme", englishName: "Judgment", suit: "Major Arcana", number: 20, image: mahkemeImg },
+  { name: "Dünya", englishName: "The World", suit: "Major Arcana", number: 21, image: dunyaImg },
 ];
 
 const SPREAD_TYPES = [
@@ -101,9 +113,6 @@ const Tarot = () => {
     setSelectedCards([...selectedCards, { ...card, isReversed, deckIndex: index }]);
   };
 
-  const removeCard = (indexToRemove: number) => {
-    setSelectedCards(selectedCards.filter((_, i) => i !== indexToRemove));
-  };
 
   const handleAnalyze = async () => {
     if (selectedCards.length !== selectedSpread?.cards) {
@@ -217,15 +226,23 @@ const Tarot = () => {
                           key={index}
                           onClick={() => !isSelected && selectCard(card, index)}
                           disabled={isSelected}
-                          className={`aspect-[2/3] rounded-lg border-2 transition-all ${
+                          className={`aspect-[2/3] rounded-lg overflow-hidden border-2 transition-all ${
                             isSelected
-                              ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-400 opacity-50 cursor-not-allowed'
-                              : 'bg-gradient-to-br from-purple-600 to-pink-600 hover:scale-105 border-purple-400 hover:shadow-lg cursor-pointer'
+                              ? 'border-purple-400 opacity-50 cursor-not-allowed'
+                              : 'border-purple-400 hover:scale-105 hover:shadow-lg cursor-pointer'
                           }`}
                         >
-                          <div className="h-full flex items-center justify-center text-white text-xs font-bold p-1">
-                            {isSelected ? '✓' : '🔮'}
-                          </div>
+                          {card.image ? (
+                            <img 
+                              src={card.image} 
+                              alt={card.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-pink-600 text-white text-xs font-bold p-1">
+                              {isSelected ? '✓' : '🔮'}
+                            </div>
+                          )}
                         </button>
                       );
                     })}
@@ -235,19 +252,28 @@ const Tarot = () => {
                 {selectedCards.length > 0 && (
                   <div className="mt-6 p-4 bg-muted rounded-lg">
                     <h3 className="font-semibold mb-3">Seçilen Kartlar:</h3>
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                       {selectedCards.map((card, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-background rounded">
-                          <span className="font-medium">
-                            {index + 1}. {card.name} {card.isReversed && '(Ters)'}
-                          </span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => removeCard(index)}
-                          >
-                            Kaldır
-                          </Button>
+                        <div key={index} className="text-center">
+                          <div className="aspect-[2/3] rounded-lg overflow-hidden border-2 border-purple-400 mb-2">
+                            {card.image ? (
+                              <img 
+                                src={card.image} 
+                                alt={card.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-pink-600 text-white text-xs font-bold">
+                                🔮
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-sm font-medium">
+                            {index + 1}. {card.name}
+                          </p>
+                          {card.isReversed && (
+                            <p className="text-xs text-muted-foreground">(Ters)</p>
+                          )}
                         </div>
                       ))}
                     </div>
