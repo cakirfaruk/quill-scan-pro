@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Sparkles, ArrowRight, Shuffle } from "lucide-react";
 
 // Import tarot card images
+import cardBackImg from "@/assets/tarot/card-back.png";
 import deliImg from "@/assets/tarot/deli.png";
 import buyucuImg from "@/assets/tarot/buyucu.png";
 import basRahibeAzizeImg from "@/assets/tarot/bas-rahibe-azize.png";
@@ -244,17 +245,11 @@ const Tarot = () => {
                               : 'border-purple-400 hover:scale-105 hover:shadow-lg cursor-pointer'
                           }`}
                         >
-                          {card.image ? (
-                            <img 
-                              src={card.image} 
-                              alt={card.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="h-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-pink-600 text-white text-xs font-bold p-1">
-                              {isSelected ? '✓' : '🔮'}
-                            </div>
-                          )}
+                          <img 
+                            src={cardBackImg} 
+                            alt="Tarot kartı"
+                            className="w-full h-full object-cover"
+                          />
                         </button>
                       );
                     })}
