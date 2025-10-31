@@ -120,18 +120,33 @@ Yorumun mistik, anlayışlı ve rehberlik edici olsun. JSON formatında şu yap�
     });
 
     const data = await response.json();
-    console.log('OpenAI response received:', JSON.stringify(data).slice(0, 200));
+    console.log('AI response received:', JSON.stringify(data).slice(0, 200));
 
     if (!response.ok || !data.choices || !data.choices[0]) {
-      console.error('OpenAI API error:', data);
-      throw new Error(data.error?.message || 'OpenAI API hatası');
+      console.error('AI API error:', data);
+      throw new Error(data.error?.message || 'AI API hatası');
     }
 
     let interpretation;
+    const content = data.choices[0].message.content;
+    
     try {
-      interpretation = JSON.parse(data.choices[0].message.content);
+      // Try to extract JSON from markdown code blocks
+      let jsonStr = content;
+      if (content.includes('```json')) {
+        jsonStr = content.split('```json')[1].split('```')[0].trim();
+      } else if (content.includes('```')) {
+        jsonStr = content.split('```')[1].split('```')[0].trim();
+      }
+      interpretation = JSON.parse(jsonStr);
     } catch {
-      interpretation = { raw: data.choices[0].message.content };
+      // If parsing fails, try direct parse
+      try {
+        interpretation = JSON.parse(content);
+      } catch {
+        // If still fails, wrap in raw
+        interpretation = { raw: content };
+      }
     }
 
     // Deduct credits
