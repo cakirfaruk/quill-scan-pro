@@ -277,6 +277,7 @@ Yanıtını JSON formatında ver:
       selected_topics: topicsToAnalyze,
       credits_used: creditsNeeded,
       result: analysisResult,
+      image_data: image,
     });
     
     // Record transaction

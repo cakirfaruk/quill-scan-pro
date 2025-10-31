@@ -23,6 +23,7 @@ interface AnalysisRecord {
   created_at: string;
   analysis_type: string;
   credits_used: number;
+  image_data?: string;
 }
 
 const Admin = () => {
@@ -300,12 +301,22 @@ const Admin = () => {
                             key={analysis.id}
                             className="p-3 rounded-lg border bg-card hover:bg-accent transition-colors"
                           >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-semibold text-sm">
-                                  {getAnalysisTypeLabel(analysis.analysis_type)}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
+                            <div className="flex items-start gap-3">
+                              {analysis.image_data && (
+                                <img 
+                                  src={analysis.image_data} 
+                                  alt="Analiz görseli" 
+                                  className="w-16 h-16 object-cover rounded border"
+                                />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="font-semibold text-sm">
+                                    {getAnalysisTypeLabel(analysis.analysis_type)}
+                                  </p>
+                                  <Badge variant="outline" className="shrink-0">{analysis.credits_used} kredi</Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
                                   {new Date(analysis.created_at).toLocaleDateString("tr-TR", {
                                     year: "numeric",
                                     month: "short",
@@ -315,7 +326,6 @@ const Admin = () => {
                                   })}
                                 </p>
                               </div>
-                              <Badge variant="outline">{analysis.credits_used} kredi</Badge>
                             </div>
                           </div>
                         ))

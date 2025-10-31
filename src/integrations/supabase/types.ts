@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           credits_used: number
           id: string
+          image_data: string | null
           result: Json | null
           selected_topics: string[] | null
           user_id: string
@@ -29,6 +30,7 @@ export type Database = {
           created_at?: string
           credits_used: number
           id?: string
+          image_data?: string | null
           result?: Json | null
           selected_topics?: string[] | null
           user_id: string
@@ -38,6 +40,7 @@ export type Database = {
           created_at?: string
           credits_used?: number
           id?: string
+          image_data?: string | null
           result?: Json | null
           selected_topics?: string[] | null
           user_id?: string
