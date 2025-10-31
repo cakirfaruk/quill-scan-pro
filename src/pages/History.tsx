@@ -139,6 +139,21 @@ const History = () => {
     );
   };
 
+  const calculateSummaryCost = () => {
+    if (selectedAnalysisIds.length === 0) return 0;
+    
+    const selectedAnalyses = analyses.filter(a => selectedAnalysisIds.includes(a.id));
+    const totalCredits = selectedAnalyses.reduce((sum, a) => sum + a.credits_used, 0);
+    
+    if (selectedAnalysisIds.length === 1) {
+      // Tek analiz için: kredi / 3 (yukarı yuvarlama)
+      return Math.ceil(totalCredits / 3);
+    } else {
+      // Birden fazla analiz için: (toplam kredi * analiz sayısı) / 3
+      return Math.ceil((totalCredits * selectedAnalysisIds.length) / 3);
+    }
+  };
+
   const handleSummarize = async () => {
     if (selectedAnalysisIds.length === 0) {
       toast({
@@ -269,20 +284,27 @@ const History = () => {
             </p>
           </div>
           {analyses.length > 0 && (
-            <Button 
-              onClick={handleSummarize}
-              disabled={selectedAnalysisIds.length === 0 || isSummarizing}
-              variant="default"
-            >
-              {isSummarizing ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Özetleniyor...
-                </>
-              ) : (
-                `Özetle (${selectedAnalysisIds.length})`
+            <div className="flex items-center gap-3">
+              {selectedAnalysisIds.length > 0 && (
+                <span className="text-sm text-muted-foreground">
+                  {calculateSummaryCost()} kredi harcanacak
+                </span>
               )}
-            </Button>
+              <Button 
+                onClick={handleSummarize}
+                disabled={selectedAnalysisIds.length === 0 || isSummarizing}
+                variant="default"
+              >
+                {isSummarizing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Özetleniyor...
+                  </>
+                ) : (
+                  `Özetle (${selectedAnalysisIds.length})`
+                )}
+              </Button>
+            </div>
           )}
         </div>
 
