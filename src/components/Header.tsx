@@ -169,6 +169,42 @@ export const Header = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="flex items-center gap-1">
+                      Fallar & Kehanetler
+                      <ChevronDown className="w-4 h-4 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-card z-50">
+                    <DropdownMenuItem asChild>
+                      <Link to="/tarot" className="cursor-pointer">
+                        🔮 Tarot Falı
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/coffee-fortune" className="cursor-pointer">
+                        ☕ Kahve Falı
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/dream" className="cursor-pointer">
+                        🌙 Rüya Tabiri
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/daily-horoscope" className="cursor-pointer">
+                        🌟 Günlük Kehanet
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/palmistry" className="cursor-pointer">
+                        🤲 El Okuma
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 <Link to="/match">
                   <Button variant="ghost" size="sm">
                     Eşleşme
@@ -347,6 +383,35 @@ export const Header = () => {
                           <Button variant="ghost" className="w-full justify-start gap-2">
                             <Heart className="w-4 h-4" />
                             Uyum Analizi
+                          </Button>
+                        </Link>
+                      </div>
+
+                      <div className="space-y-2 border-t pt-4">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase px-2">Fallar & Kehanetler</p>
+                        <Link to="/tarot" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start">
+                            🔮 Tarot Falı
+                          </Button>
+                        </Link>
+                        <Link to="/coffee-fortune" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start">
+                            ☕ Kahve Falı
+                          </Button>
+                        </Link>
+                        <Link to="/dream" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start">
+                            🌙 Rüya Tabiri
+                          </Button>
+                        </Link>
+                        <Link to="/daily-horoscope" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start">
+                            🌟 Günlük Kehanet
+                          </Button>
+                        </Link>
+                        <Link to="/palmistry" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start">
+                            🤲 El Okuma
                           </Button>
                         </Link>
                       </div>
