@@ -31,10 +31,18 @@ const Compatibility = () => {
   const [file1, setFile1] = useState<File | null>(null);
   const [preview1, setPreview1] = useState<string | null>(null);
   const [gender1, setGender1] = useState<"male" | "female">("male");
+  const [name1, setName1] = useState("");
+  const [birthDate1, setBirthDate1] = useState("");
+  const [birthTime1, setBirthTime1] = useState("");
+  const [birthPlace1, setBirthPlace1] = useState("");
   
   const [file2, setFile2] = useState<File | null>(null);
   const [preview2, setPreview2] = useState<string | null>(null);
   const [gender2, setGender2] = useState<"male" | "female">("female");
+  const [name2, setName2] = useState("");
+  const [birthDate2, setBirthDate2] = useState("");
+  const [birthTime2, setBirthTime2] = useState("");
+  const [birthPlace2, setBirthPlace2] = useState("");
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<CompatibilityResult | null>(null);
@@ -90,8 +98,47 @@ const Compatibility = () => {
     return selectedAnalysisTypes.length * 50;
   };
 
+  const validateInputs = () => {
+    const needsHandwriting = selectedAnalysisTypes.includes("handwriting");
+    const needsNumerology = selectedAnalysisTypes.includes("numerology");
+    const needsBirthChart = selectedAnalysisTypes.includes("birth_chart");
+
+    // El yazısı seçiliyse dosya zorunlu
+    if (needsHandwriting && (!file1 || !file2)) {
+      return "El yazısı analizi için her iki kişinin de yazı örneği gerekli.";
+    }
+
+    // Numeroloji seçiliyse isim ve doğum tarihi zorunlu
+    if (needsNumerology) {
+      if (!name1 || !birthDate1) return "Numeroloji analizi için birinci kişinin adı ve doğum tarihi gerekli.";
+      if (!name2 || !birthDate2) return "Numeroloji analizi için ikinci kişinin adı ve doğum tarihi gerekli.";
+    }
+
+    // Doğum haritası seçiliyse tüm bilgiler zorunlu
+    if (needsBirthChart) {
+      if (!name1 || !birthDate1 || !birthTime1 || !birthPlace1) {
+        return "Doğum haritası analizi için birinci kişinin tüm bilgileri gerekli.";
+      }
+      if (!name2 || !birthDate2 || !birthTime2 || !birthPlace2) {
+        return "Doğum haritası analizi için ikinci kişinin tüm bilgileri gerekli.";
+      }
+    }
+
+    return null;
+  };
+
   const handleAnalyze = async () => {
-    if (!file1 || !file2 || selectedAnalysisTypes.length === 0) return;
+    if (selectedAnalysisTypes.length === 0) return;
+
+    const validationError = validateInputs();
+    if (validationError) {
+      toast({
+        title: "Eksik bilgi",
+        description: validationError,
+        variant: "destructive",
+      });
+      return;
+    }
 
     const totalCost = getTotalCost();
     
@@ -117,10 +164,15 @@ const Compatibility = () => {
         reader2.onload = () => resolve(reader2.result as string);
       });
 
-      reader1.readAsDataURL(file1);
-      reader2.readAsDataURL(file2);
+      let image1 = null;
+      let image2 = null;
 
-      const [image1, image2] = await Promise.all([base64Promise1, base64Promise2]);
+      // Sadece el yazısı analizi seçiliyse dosyaları oku
+      if (selectedAnalysisTypes.includes("handwriting")) {
+        reader1.readAsDataURL(file1!);
+        reader2.readAsDataURL(file2!);
+        [image1, image2] = await Promise.all([base64Promise1, base64Promise2]);
+      }
 
       const { data, error } = await supabase.functions.invoke("analyze-compatibility", {
         body: { 
@@ -128,6 +180,14 @@ const Compatibility = () => {
           image2, 
           gender1, 
           gender2,
+          name1,
+          birthDate1,
+          birthTime1,
+          birthPlace1,
+          name2,
+          birthDate2,
+          birthTime2,
+          birthPlace2,
           analysisTypes: selectedAnalysisTypes,
         },
       });
@@ -158,6 +218,14 @@ const Compatibility = () => {
     setPreview1(null);
     setFile2(null);
     setPreview2(null);
+    setName1("");
+    setBirthDate1("");
+    setBirthTime1("");
+    setBirthPlace1("");
+    setName2("");
+    setBirthDate2("");
+    setBirthTime2("");
+    setBirthPlace2("");
     setResult(null);
   };
 
@@ -344,27 +412,80 @@ const Compatibility = () => {
                 </RadioGroup>
               </div>
 
-              {!file1 ? (
-                <UploadZone onFileSelect={(file, preview) => { setFile1(file); setPreview1(preview); }} />
-              ) : (
-                <div className="space-y-4">
-                  {preview1 === "pdf" ? (
-                    <div className="flex items-center gap-4 p-6 bg-muted rounded-lg">
-                      <FileText className="w-12 h-12 text-primary" />
+              {(selectedAnalysisTypes.includes("numerology") || selectedAnalysisTypes.includes("birth_chart")) && (
+                <div className="space-y-4 mb-4">
+                  <div>
+                    <Label htmlFor="name1">Ad Soyad *</Label>
+                    <input
+                      id="name1"
+                      type="text"
+                      value={name1}
+                      onChange={(e) => setName1(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                      placeholder="Tam adınızı girin"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="birthDate1">Doğum Tarihi *</Label>
+                    <input
+                      id="birthDate1"
+                      type="date"
+                      value={birthDate1}
+                      onChange={(e) => setBirthDate1(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                    />
+                  </div>
+                  {selectedAnalysisTypes.includes("birth_chart") && (
+                    <>
                       <div>
-                        <p className="font-semibold text-foreground">{file1.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {(file1.size / 1024).toFixed(2)} KB
-                        </p>
+                        <Label htmlFor="birthTime1">Doğum Saati *</Label>
+                        <input
+                          id="birthTime1"
+                          type="time"
+                          value={birthTime1}
+                          onChange={(e) => setBirthTime1(e.target.value)}
+                          className="w-full mt-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                        />
                       </div>
-                    </div>
-                  ) : (
-                    <img src={preview1} alt="Birinci yazı" className="w-full h-48 object-contain bg-muted rounded-lg" />
+                      <div>
+                        <Label htmlFor="birthPlace1">Doğum Yeri *</Label>
+                        <input
+                          id="birthPlace1"
+                          type="text"
+                          value={birthPlace1}
+                          onChange={(e) => setBirthPlace1(e.target.value)}
+                          className="w-full mt-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                          placeholder="Şehir, Ülke"
+                        />
+                      </div>
+                    </>
                   )}
-                  <Button variant="outline" onClick={() => { setFile1(null); setPreview1(null); }}>
-                    Değiştir
-                  </Button>
                 </div>
+              )}
+
+              {selectedAnalysisTypes.includes("handwriting") && (
+                !file1 ? (
+                  <UploadZone onFileSelect={(file, preview) => { setFile1(file); setPreview1(preview); }} />
+                ) : (
+                  <div className="space-y-4">
+                    {preview1 === "pdf" ? (
+                      <div className="flex items-center gap-4 p-6 bg-muted rounded-lg">
+                        <FileText className="w-12 h-12 text-primary" />
+                        <div>
+                          <p className="font-semibold text-foreground">{file1.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {(file1.size / 1024).toFixed(2)} KB
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <img src={preview1} alt="Birinci yazı" className="w-full h-48 object-contain bg-muted rounded-lg" />
+                    )}
+                    <Button variant="outline" onClick={() => { setFile1(null); setPreview1(null); }}>
+                      Değiştir
+                    </Button>
+                  </div>
+                )
               )}
             </div>
           </Card>
@@ -388,27 +509,80 @@ const Compatibility = () => {
                 </RadioGroup>
               </div>
 
-              {!file2 ? (
-                <UploadZone onFileSelect={(file, preview) => { setFile2(file); setPreview2(preview); }} />
-              ) : (
-                <div className="space-y-4">
-                  {preview2 === "pdf" ? (
-                    <div className="flex items-center gap-4 p-6 bg-muted rounded-lg">
-                      <FileText className="w-12 h-12 text-primary" />
+              {(selectedAnalysisTypes.includes("numerology") || selectedAnalysisTypes.includes("birth_chart")) && (
+                <div className="space-y-4 mb-4">
+                  <div>
+                    <Label htmlFor="name2">Ad Soyad *</Label>
+                    <input
+                      id="name2"
+                      type="text"
+                      value={name2}
+                      onChange={(e) => setName2(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                      placeholder="Tam adınızı girin"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="birthDate2">Doğum Tarihi *</Label>
+                    <input
+                      id="birthDate2"
+                      type="date"
+                      value={birthDate2}
+                      onChange={(e) => setBirthDate2(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                    />
+                  </div>
+                  {selectedAnalysisTypes.includes("birth_chart") && (
+                    <>
                       <div>
-                        <p className="font-semibold text-foreground">{file2.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {(file2.size / 1024).toFixed(2)} KB
-                        </p>
+                        <Label htmlFor="birthTime2">Doğum Saati *</Label>
+                        <input
+                          id="birthTime2"
+                          type="time"
+                          value={birthTime2}
+                          onChange={(e) => setBirthTime2(e.target.value)}
+                          className="w-full mt-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                        />
                       </div>
-                    </div>
-                  ) : (
-                    <img src={preview2} alt="İkinci yazı" className="w-full h-48 object-contain bg-muted rounded-lg" />
+                      <div>
+                        <Label htmlFor="birthPlace2">Doğum Yeri *</Label>
+                        <input
+                          id="birthPlace2"
+                          type="text"
+                          value={birthPlace2}
+                          onChange={(e) => setBirthPlace2(e.target.value)}
+                          className="w-full mt-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                          placeholder="Şehir, Ülke"
+                        />
+                      </div>
+                    </>
                   )}
-                  <Button variant="outline" onClick={() => { setFile2(null); setPreview2(null); }}>
-                    Değiştir
-                  </Button>
                 </div>
+              )}
+
+              {selectedAnalysisTypes.includes("handwriting") && (
+                !file2 ? (
+                  <UploadZone onFileSelect={(file, preview) => { setFile2(file); setPreview2(preview); }} />
+                ) : (
+                  <div className="space-y-4">
+                    {preview2 === "pdf" ? (
+                      <div className="flex items-center gap-4 p-6 bg-muted rounded-lg">
+                        <FileText className="w-12 h-12 text-primary" />
+                        <div>
+                          <p className="font-semibold text-foreground">{file2.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {(file2.size / 1024).toFixed(2)} KB
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <img src={preview2} alt="İkinci yazı" className="w-full h-48 object-contain bg-muted rounded-lg" />
+                    )}
+                    <Button variant="outline" onClick={() => { setFile2(null); setPreview2(null); }}>
+                      Değiştir
+                    </Button>
+                  </div>
+                )
               )}
             </div>
           </Card>
@@ -417,7 +591,7 @@ const Compatibility = () => {
         <div className="mt-8 text-center">
           <Button
             onClick={handleAnalyze}
-            disabled={!file1 || !file2 || isAnalyzing || credits < getTotalCost() || selectedAnalysisTypes.length === 0}
+            disabled={isAnalyzing || credits < getTotalCost() || selectedAnalysisTypes.length === 0}
             className="bg-gradient-primary hover:opacity-90 px-12"
             size="lg"
           >

@@ -15,7 +15,21 @@ serve(async (req) => {
   }
 
   try {
-    const { image1, image2, gender1, gender2, analysisTypes = ["handwriting"] } = await req.json();
+    const { 
+      image1, 
+      image2, 
+      gender1, 
+      gender2,
+      name1,
+      birthDate1,
+      birthTime1,
+      birthPlace1,
+      name2,
+      birthDate2,
+      birthTime2,
+      birthPlace2,
+      analysisTypes = ["handwriting"]
+    } = await req.json();
 
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY not configured");
@@ -91,14 +105,18 @@ Her iki kişinin el yazısını da detaylı olarak analiz et ve şu konularda uy
       systemPrompt += `
 
 ## Numeroloji Analizi  
-Görüntülerdeki isimlere ve doğum bilgilerine göre (eğer varsa) numerolojik uyum değerlendir.`;
+Birinci kişi: ${name1}, Doğum Tarihi: ${birthDate1}
+İkinci kişi: ${name2}, Doğum Tarihi: ${birthDate2}
+İsimlerden ve doğum tarihlerinden numerolojik sayıları hesaplayıp uyum değerlendir.`;
     }
     
     if (analysisTypes.includes("birth_chart")) {
       systemPrompt += `
 
 ## Doğum Haritası Analizi
-Görüntülerdeki astrolojik bilgilere göre (eğer varsa) burç uyumlarını değerlendir.`;
+Birinci kişi: ${name1}, Doğum: ${birthDate1} ${birthTime1}, Yer: ${birthPlace1}
+İkinci kişi: ${name2}, Doğum: ${birthDate2} ${birthTime2}, Yer: ${birthPlace2}
+Astrolojik doğum haritalarını ve gezegen konumlarını değerlendirerek uyum analizi yap.`;
     }
 
     systemPrompt += `
@@ -144,6 +162,25 @@ ZORUNLU: Yanıtını aşağıdaki JSON formatında döndür:
 
     console.log("Calling Lovable AI for compatibility analysis...");
 
+    // Build messages content array
+    const messageContent: any[] = [
+      { type: "text", text: systemPrompt }
+    ];
+
+    // Add images only if handwriting analysis is selected
+    if (analysisTypes.includes("handwriting") && image1 && image2) {
+      messageContent.push(
+        {
+          type: "image_url",
+          image_url: { url: image1 },
+        },
+        {
+          type: "image_url",
+          image_url: { url: image2 },
+        }
+      );
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -155,17 +192,7 @@ ZORUNLU: Yanıtını aşağıdaki JSON formatında döndür:
         messages: [
           {
             role: "user",
-            content: [
-              { type: "text", text: systemPrompt },
-              {
-                type: "image_url",
-                image_url: { url: image1 },
-              },
-              {
-                type: "image_url",
-                image_url: { url: image2 },
-              },
-            ],
+            content: messageContent,
           },
         ],
       }),
@@ -210,8 +237,8 @@ ZORUNLU: Yanıtını aşağıdaki JSON formatında döndür:
       .from("compatibility_analyses")
       .insert({
         user_id: user.id,
-        image1_data: image1.substring(0, 100), // Save truncated for reference
-        image2_data: image2.substring(0, 100),
+        image1_data: image1 ? image1.substring(0, 100) : "", // Save truncated for reference
+        image2_data: image2 ? image2.substring(0, 100) : "",
         gender1,
         gender2,
         result: {
