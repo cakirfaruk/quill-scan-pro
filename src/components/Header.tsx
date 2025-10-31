@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FileText, Coins, LogOut, User, Heart, CreditCard } from "lucide-react";
+import { FileText, Coins, LogOut, User, Heart, CreditCard, ChevronDown, Sparkles, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -111,25 +111,48 @@ export const Header = () => {
                     </Button>
                   </Link>
                 )}
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="gap-2">
+                      Analizler
+                      <ChevronDown className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 bg-card z-50">
+                    <DropdownMenuLabel>Analiz Türleri</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/" className="flex items-center gap-2 cursor-pointer">
+                        <FileText className="w-4 h-4" />
+                        El Yazısı Analizi
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/numeroloji" className="flex items-center gap-2 cursor-pointer">
+                        <Sparkles className="w-4 h-4" />
+                        Numeroloji Analizi
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/dogum-haritasi" className="flex items-center gap-2 cursor-pointer">
+                        <Calendar className="w-4 h-4" />
+                        Doğum Haritası
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/compatibility" className="flex items-center gap-2 cursor-pointer">
+                        <Heart className="w-4 h-4" />
+                        Uyum Analizi
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 <Link to="/history">
                   <Button variant="ghost" size="sm">
                     Geçmiş
-                  </Button>
-                </Link>
-                <Link to="/compatibility">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Heart className="w-4 h-4" />
-                    Uyum
-                  </Button>
-                </Link>
-                <Link to="/numeroloji">
-                  <Button variant="ghost" size="sm">
-                    Numeroloji
-                  </Button>
-                </Link>
-                <Link to="/dogum-haritasi">
-                  <Button variant="ghost" size="sm">
-                    Doğum Haritası
                   </Button>
                 </Link>
               </>
