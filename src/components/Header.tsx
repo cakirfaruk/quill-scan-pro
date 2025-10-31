@@ -103,6 +103,11 @@ export const Header = () => {
                     Uyum
                   </Button>
                 </Link>
+                <Link to="/numeroloji">
+                  <Button variant="ghost" size="sm">
+                    Numeroloji
+                  </Button>
+                </Link>
               </>
             )}
             <Link to="/about">

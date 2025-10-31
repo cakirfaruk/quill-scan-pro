@@ -10,6 +10,7 @@ import Compatibility from "./pages/Compatibility";
 import History from "./pages/History";
 import About from "./pages/About";
 import FAQ from "./pages/FAQ";
+import Numerology from "./pages/Numerology";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/history" element={<History />} />
           <Route path="/about" element={<About />} />
           <Route path="/faq" element={<FAQ />} />
+          <Route path="/numeroloji" element={<Numerology />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -140,6 +140,39 @@ export type Database = {
         }
         Relationships: []
       }
+      numerology_analyses: {
+        Row: {
+          birth_date: string
+          created_at: string
+          credits_used: number
+          full_name: string
+          id: string
+          result: Json | null
+          selected_topics: string[]
+          user_id: string
+        }
+        Insert: {
+          birth_date: string
+          created_at?: string
+          credits_used: number
+          full_name: string
+          id?: string
+          result?: Json | null
+          selected_topics: string[]
+          user_id: string
+        }
+        Update: {
+          birth_date?: string
+          created_at?: string
+          credits_used?: number
+          full_name?: string
+          id?: string
+          result?: Json | null
+          selected_topics?: string[]
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
