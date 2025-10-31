@@ -20,22 +20,32 @@ import ayImg from "@/assets/tarot/ay.png";
 import gunesImg from "@/assets/tarot/gunes.png";
 import mahkemeImg from "@/assets/tarot/mahkeme.png";
 import dunyaImg from "@/assets/tarot/dunya.png";
+import asilanAdamImg from "@/assets/tarot/asilan-adam.png";
+import adaletImg from "@/assets/tarot/adalet.png";
+import kaderCarkiImg from "@/assets/tarot/kader-carki.png";
+import ermisImg from "@/assets/tarot/ermis.png";
+import gucImg from "@/assets/tarot/guc.png";
+import savasArabasiImg from "@/assets/tarot/savas-arabasi.png";
+import asiklarImg from "@/assets/tarot/asiklar.png";
+import basRahipAzizImg from "@/assets/tarot/bas-rahip-aziz.png";
+import imparatorImg from "@/assets/tarot/imparator.png";
+import imparatoriceImg from "@/assets/tarot/imparatorice.png";
 
 // Tarot card deck
 const MAJOR_ARCANA = [
   { name: "Deli", englishName: "The Fool", suit: "Major Arcana", number: 0, image: deliImg },
   { name: "Büyücü", englishName: "The Magician", suit: "Major Arcana", number: 1, image: null },
   { name: "Azize", englishName: "The High Priestess", suit: "Major Arcana", number: 2, image: null },
-  { name: "İmparatoriçe", englishName: "The Empress", suit: "Major Arcana", number: 3, image: null },
-  { name: "İmparator", englishName: "The Emperor", suit: "Major Arcana", number: 4, image: null },
-  { name: "Din Adamı", englishName: "The Hierophant", suit: "Major Arcana", number: 5, image: null },
-  { name: "Aşıklar", englishName: "The Lovers", suit: "Major Arcana", number: 6, image: null },
-  { name: "Savaş Arabası", englishName: "The Chariot", suit: "Major Arcana", number: 7, image: null },
-  { name: "Güç", englishName: "Strength", suit: "Major Arcana", number: 8, image: null },
-  { name: "Ermiş", englishName: "The Hermit", suit: "Major Arcana", number: 9, image: null },
-  { name: "Kader Çarkı", englishName: "Wheel of Fortune", suit: "Major Arcana", number: 10, image: null },
-  { name: "Adalet", englishName: "Justice", suit: "Major Arcana", number: 11, image: null },
-  { name: "Asılan Adam", englishName: "The Hanged Man", suit: "Major Arcana", number: 12, image: null },
+  { name: "İmparatoriçe", englishName: "The Empress", suit: "Major Arcana", number: 3, image: imparatoriceImg },
+  { name: "İmparator", englishName: "The Emperor", suit: "Major Arcana", number: 4, image: imparatorImg },
+  { name: "Baş Rahip", englishName: "The Hierophant", suit: "Major Arcana", number: 5, image: basRahipAzizImg },
+  { name: "Aşıklar", englishName: "The Lovers", suit: "Major Arcana", number: 6, image: asiklarImg },
+  { name: "Savaş Arabası", englishName: "The Chariot", suit: "Major Arcana", number: 7, image: savasArabasiImg },
+  { name: "Güç", englishName: "Strength", suit: "Major Arcana", number: 8, image: gucImg },
+  { name: "Ermiş", englishName: "The Hermit", suit: "Major Arcana", number: 9, image: ermisImg },
+  { name: "Kader Çarkı", englishName: "Wheel of Fortune", suit: "Major Arcana", number: 10, image: kaderCarkiImg },
+  { name: "Adalet", englishName: "Justice", suit: "Major Arcana", number: 11, image: adaletImg },
+  { name: "Asılan Adam", englishName: "The Hanged Man", suit: "Major Arcana", number: 12, image: asilanAdamImg },
   { name: "Ölüm", englishName: "Death", suit: "Major Arcana", number: 13, image: olumImg },
   { name: "Denge", englishName: "Temperance", suit: "Major Arcana", number: 14, image: dengeImg },
   { name: "Şeytan", englishName: "The Devil", suit: "Major Arcana", number: 15, image: seytanImg },
