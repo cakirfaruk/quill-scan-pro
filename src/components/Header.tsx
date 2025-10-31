@@ -141,15 +141,22 @@ export const Header = () => {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/numeroloji" className="flex items-center gap-2 cursor-pointer">
+                      <Link to="/numerology" className="flex items-center gap-2 cursor-pointer">
                         <Sparkles className="w-4 h-4" />
                         Numeroloji Analizi
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/dogum-haritasi" className="flex items-center gap-2 cursor-pointer">
+                      <Link to="/birth-chart" className="flex items-center gap-2 cursor-pointer">
                         <Calendar className="w-4 h-4" />
                         Doğum Haritası
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/match" className="flex items-center gap-2 cursor-pointer">
+                        <Heart className="w-4 h-4" />
+                        Eşleşme
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -312,16 +319,22 @@ export const Header = () => {
                             El Yazısı Analizi
                           </Button>
                         </Link>
-                        <Link to="/numeroloji" onClick={() => setMobileMenuOpen(false)}>
+                        <Link to="/numerology" onClick={() => setMobileMenuOpen(false)}>
                           <Button variant="ghost" className="w-full justify-start gap-2">
                             <Sparkles className="w-4 h-4" />
                             Numeroloji Analizi
                           </Button>
                         </Link>
-                        <Link to="/dogum-haritasi" onClick={() => setMobileMenuOpen(false)}>
+                        <Link to="/birth-chart" onClick={() => setMobileMenuOpen(false)}>
                           <Button variant="ghost" className="w-full justify-start gap-2">
                             <Calendar className="w-4 h-4" />
                             Doğum Haritası
+                          </Button>
+                        </Link>
+                        <Link to="/match" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start gap-2">
+                            <Heart className="w-4 h-4" />
+                            Eşleşme
                           </Button>
                         </Link>
                         <Link to="/compatibility" onClick={() => setMobileMenuOpen(false)}>

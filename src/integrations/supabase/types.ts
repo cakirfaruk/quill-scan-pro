@@ -224,6 +224,36 @@ export type Database = {
           },
         ]
       }
+      matches: {
+        Row: {
+          compatibility_birth_chart: Json | null
+          compatibility_numerology: Json | null
+          id: string
+          matched_at: string | null
+          overall_compatibility_score: number | null
+          user1_id: string
+          user2_id: string
+        }
+        Insert: {
+          compatibility_birth_chart?: Json | null
+          compatibility_numerology?: Json | null
+          id?: string
+          matched_at?: string | null
+          overall_compatibility_score?: number | null
+          user1_id: string
+          user2_id: string
+        }
+        Update: {
+          compatibility_birth_chart?: Json | null
+          compatibility_numerology?: Json | null
+          id?: string
+          matched_at?: string | null
+          overall_compatibility_score?: number | null
+          user1_id?: string
+          user2_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -404,6 +434,33 @@ export type Database = {
           },
         ]
       }
+      swipes: {
+        Row: {
+          action: string
+          created_at: string | null
+          credits_used: number
+          id: string
+          target_user_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          credits_used?: number
+          id?: string
+          target_user_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          credits_used?: number
+          id?: string
+          target_user_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_photos: {
         Row: {
           created_at: string | null
@@ -503,6 +560,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_mutual_match: {
+        Args: { p_user1_id: string; p_user2_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
