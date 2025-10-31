@@ -241,13 +241,13 @@ const Tarot = () => {
                           disabled={isSelected}
                           className={`aspect-[2/3] rounded-lg overflow-hidden border-2 transition-all ${
                             isSelected
-                              ? 'border-purple-400 opacity-50 cursor-not-allowed'
+                              ? 'border-purple-400 cursor-not-allowed'
                               : 'border-purple-400 hover:scale-105 hover:shadow-lg cursor-pointer'
                           }`}
                         >
                           <img 
-                            src={cardBackImg} 
-                            alt="Tarot kartı"
+                            src={isSelected ? card.image : cardBackImg} 
+                            alt={isSelected ? card.name : "Tarot kartı"}
                             className="w-full h-full object-cover"
                           />
                         </button>
