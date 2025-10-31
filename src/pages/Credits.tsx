@@ -56,48 +56,9 @@ const Credits = () => {
 
   const handlePurchase = async (pkg: CreditPackage) => {
     toast({
-      title: "Demo Mod",
-      description: `${pkg.name} satın alma işlemi simüle edildi. ${pkg.credits} kredi hesabınıza ekleniyor...`,
+      title: "Ödeme Altyapısı Hazırlanıyor",
+      description: "Ödeme sistemi yakında aktif olacak. Lütfen daha sonra tekrar deneyin.",
     });
-
-    // Simulate purchase - in production, integrate payment gateway
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("credits")
-        .eq("user_id", user.id)
-        .single();
-
-      if (profile) {
-        await supabase
-          .from("profiles")
-          .update({ credits: profile.credits + pkg.credits })
-          .eq("user_id", user.id);
-
-        await supabase.from("credit_transactions").insert({
-          user_id: user.id,
-          amount: pkg.credits,
-          transaction_type: "purchase",
-          description: `${pkg.name} satın alındı`,
-        });
-
-        toast({
-          title: "Başarılı!",
-          description: `${pkg.credits} kredi hesabınıza eklendi.`,
-        });
-
-        setTimeout(() => navigate("/"), 1500);
-      }
-    } catch (error: any) {
-      toast({
-        title: "Hata",
-        description: "İşlem tamamlanamadı.",
-        variant: "destructive",
-      });
-    }
   };
 
   return (
