@@ -272,7 +272,7 @@ const History = () => {
             <Button 
               onClick={handleSummarize}
               disabled={selectedAnalysisIds.length === 0 || isSummarizing}
-              className="bg-gradient-primary text-primary-foreground hover:opacity-90"
+              variant="default"
             >
               {isSummarizing ? (
                 <>

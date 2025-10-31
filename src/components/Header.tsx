@@ -106,7 +106,7 @@ export const Header = () => {
               <>
                 {isAdmin && (
                   <Link to="/admin">
-                    <Button variant="default" size="sm" className="gap-2 bg-gradient-primary text-primary-foreground hover:opacity-90">
+                    <Button variant="default" size="sm" className="gap-2">
                       Admin Panel
                     </Button>
                   </Link>
