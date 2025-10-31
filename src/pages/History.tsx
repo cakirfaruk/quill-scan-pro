@@ -7,8 +7,6 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Calendar, Sparkles, Heart } from "lucide-react";
-import { format } from "date-fns";
-import { tr } from "date-fns/locale";
 
 interface AnalysisRecord {
   id: string;
@@ -133,8 +131,12 @@ const History = () => {
 
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="w-4 h-4" />
-                  {format(new Date(analysis.created_at), "d MMMM yyyy, HH:mm", {
-                    locale: tr,
+                  {new Date(analysis.created_at).toLocaleDateString("tr-TR", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
                   })}
                 </div>
               </Card>
@@ -158,8 +160,12 @@ const History = () => {
                   </h2>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="w-4 h-4" />
-                    {format(new Date(selectedAnalysis.created_at), "d MMMM yyyy, HH:mm", {
-                      locale: tr,
+                    {new Date(selectedAnalysis.created_at).toLocaleDateString("tr-TR", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
                     })}
                   </div>
                 </div>
