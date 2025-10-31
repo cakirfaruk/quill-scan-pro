@@ -14,7 +14,159 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      analysis_history: {
+        Row: {
+          analysis_type: string
+          created_at: string
+          credits_used: number
+          id: string
+          result: Json | null
+          selected_topics: string[] | null
+          user_id: string
+        }
+        Insert: {
+          analysis_type: string
+          created_at?: string
+          credits_used: number
+          id?: string
+          result?: Json | null
+          selected_topics?: string[] | null
+          user_id: string
+        }
+        Update: {
+          analysis_type?: string
+          created_at?: string
+          credits_used?: number
+          id?: string
+          result?: Json | null
+          selected_topics?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      compatibility_analyses: {
+        Row: {
+          created_at: string
+          credits_used: number
+          gender1: string
+          gender2: string
+          id: string
+          image1_data: string
+          image2_data: string
+          result: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_used?: number
+          gender1: string
+          gender2: string
+          id?: string
+          image1_data: string
+          image2_data: string
+          result?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_used?: number
+          gender1?: string
+          gender2?: string
+          id?: string
+          image1_data?: string
+          image2_data?: string
+          result?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      credit_packages: {
+        Row: {
+          created_at: string
+          credits: number
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          price_try: number
+        }
+        Insert: {
+          created_at?: string
+          credits: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          price_try: number
+        }
+        Update: {
+          created_at?: string
+          credits?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_try?: number
+        }
+        Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          reference_id: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          credits: number
+          id: string
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          credits?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          credits?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
