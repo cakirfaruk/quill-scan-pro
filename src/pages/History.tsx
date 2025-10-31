@@ -12,9 +12,15 @@ interface AnalysisRecord {
   id: string;
   created_at: string;
   analysis_type: string;
-  selected_topics: string[] | null;
+  selected_topics?: string[] | null;
   credits_used: number;
   result: any;
+  full_name?: string;
+  birth_date?: string;
+  birth_time?: string;
+  birth_place?: string;
+  gender1?: string;
+  gender2?: string;
 }
 
 const History = () => {
@@ -39,14 +45,63 @@ const History = () => {
 
   const loadHistory = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch handwriting analyses
+      const { data: handwritingData, error: handwritingError } = await supabase
         .from("analysis_history")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setAnalyses(data || []);
+      if (handwritingError) throw handwritingError;
+
+      // Fetch numerology analyses
+      const { data: numerologyData, error: numerologyError } = await supabase
+        .from("numerology_analyses")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (numerologyError) throw numerologyError;
+
+      // Fetch birth chart analyses
+      const { data: birthChartData, error: birthChartError } = await supabase
+        .from("birth_chart_analyses")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (birthChartError) throw birthChartError;
+
+      // Fetch compatibility analyses
+      const { data: compatibilityData, error: compatibilityError } = await supabase
+        .from("compatibility_analyses")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (compatibilityError) throw compatibilityError;
+
+      // Combine all analyses into a single array
+      const allAnalyses: AnalysisRecord[] = [
+        ...(handwritingData || []),
+        ...(numerologyData || []).map(item => ({
+          ...item,
+          analysis_type: "numerology"
+        })),
+        ...(birthChartData || []).map(item => ({
+          ...item,
+          analysis_type: "birth_chart"
+        })),
+        ...(compatibilityData || []).map(item => ({
+          ...item,
+          analysis_type: "compatibility"
+        })),
+      ];
+
+      // Sort by created_at descending
+      allAnalyses.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      setAnalyses(allAnalyses);
     } catch (error: any) {
+      console.error("Error loading history:", error);
       toast({
         title: "Hata",
         description: "Geçmiş analizler yüklenemedi.",
@@ -60,12 +115,78 @@ const History = () => {
   const getAnalysisTypeLabel = (type: string) => {
     if (type === "handwriting") return "El Yazısı Analizi";
     if (type === "compatibility") return "Uyum Analizi";
+    if (type === "numerology") return "Numeroloji Analizi";
+    if (type === "birth_chart") return "Doğum Haritası Analizi";
     return type;
   };
 
   const getAnalysisIcon = (type: string) => {
     if (type === "compatibility") return <Heart className="w-5 h-5" />;
+    if (type === "numerology") return <Sparkles className="w-5 h-5" />;
+    if (type === "birth_chart") return <Calendar className="w-5 h-5" />;
     return <FileText className="w-5 h-5" />;
+  };
+
+  const renderAnalysisDetails = (analysis: AnalysisRecord) => {
+    if (analysis.analysis_type === "numerology") {
+      return (
+        <div className="space-y-2 mb-3">
+          {analysis.full_name && (
+            <p className="text-sm text-muted-foreground">
+              <span className="font-semibold">Ad Soyad:</span> {analysis.full_name}
+            </p>
+          )}
+          {analysis.birth_date && (
+            <p className="text-sm text-muted-foreground">
+              <span className="font-semibold">Doğum Tarihi:</span> {new Date(analysis.birth_date).toLocaleDateString("tr-TR")}
+            </p>
+          )}
+        </div>
+      );
+    }
+    
+    if (analysis.analysis_type === "birth_chart") {
+      return (
+        <div className="space-y-2 mb-3">
+          {analysis.full_name && (
+            <p className="text-sm text-muted-foreground">
+              <span className="font-semibold">Ad Soyad:</span> {analysis.full_name}
+            </p>
+          )}
+          {analysis.birth_date && (
+            <p className="text-sm text-muted-foreground">
+              <span className="font-semibold">Doğum:</span> {new Date(analysis.birth_date).toLocaleDateString("tr-TR")} {analysis.birth_time}
+            </p>
+          )}
+          {analysis.birth_place && (
+            <p className="text-sm text-muted-foreground">
+              <span className="font-semibold">Yer:</span> {analysis.birth_place}
+            </p>
+          )}
+        </div>
+      );
+    }
+    
+    if (analysis.analysis_type === "compatibility") {
+      return (
+        <div className="space-y-2 mb-3">
+          <p className="text-sm text-muted-foreground">
+            <span className="font-semibold">İki kişi arası uyum analizi</span>
+          </p>
+          {analysis.result?.analysisTypes && (
+            <div className="flex flex-wrap gap-1">
+              {analysis.result.analysisTypes.map((type: string, idx: number) => (
+                <Badge key={idx} variant="outline" className="text-xs">
+                  {type === "handwriting" ? "El Yazısı" : type === "numerology" ? "Numeroloji" : "Doğum Haritası"}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    return null;
   };
 
   return (
@@ -113,6 +234,8 @@ const History = () => {
                 <h3 className="font-semibold text-lg mb-2">
                   {getAnalysisTypeLabel(analysis.analysis_type)}
                 </h3>
+
+                {renderAnalysisDetails(analysis)}
 
                 {analysis.selected_topics && analysis.selected_topics.length > 0 && (
                   <div className="flex flex-wrap gap-1 mb-3">
