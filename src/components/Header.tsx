@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FileText, Coins, LogOut, User, Heart, CreditCard, ChevronDown, Sparkles, Calendar, Menu, MessageCircle } from "lucide-react";
+import { FileText, Coins, LogOut, User, Heart, CreditCard, ChevronDown, Sparkles, Calendar, Menu, MessageCircle, Settings } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -351,6 +351,22 @@ export const Header = () => {
                         </Link>
                       </div>
 
+                      <div className="space-y-2 border-t pt-4">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase px-2">Sosyal</p>
+                        <Link to="/friends" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start gap-2">
+                            <Heart className="w-4 h-4" />
+                            Arkadaşlarım
+                          </Button>
+                        </Link>
+                        <Link to="/messages" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start gap-2">
+                            <MessageCircle className="w-4 h-4" />
+                            Mesajlar
+                          </Button>
+                        </Link>
+                      </div>
+
                       <Link to="/history" onClick={() => setMobileMenuOpen(false)}>
                         <Button variant="ghost" className="w-full justify-start">
                           Analizlerim
@@ -358,6 +374,18 @@ export const Header = () => {
                       </Link>
 
                       <div className="border-t pt-4 space-y-2">
+                        <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start gap-2">
+                            <User className="w-4 h-4" />
+                            Profilim
+                          </Button>
+                        </Link>
+                        <Link to="/settings" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start gap-2">
+                            <Settings className="w-4 h-4" />
+                            Ayarlar
+                          </Button>
+                        </Link>
                         <Button 
                           onClick={() => {
                             navigate("/credits");
