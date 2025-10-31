@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Loader2 } from "lucide-react";
+import { FileText, Loader2, Sparkles, Shield } from "lucide-react";
 import { Header } from "@/components/Header";
 import { UploadZone } from "@/components/UploadZone";
 import { TopicSelector } from "@/components/TopicSelector";
@@ -158,6 +158,49 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Header />
+
+      {/* Hero Section */}
+      <section className="container mx-auto px-4 py-20 text-center max-w-5xl">
+        <div className="mb-12 animate-fade-in">
+          <h1 className="text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+            El Yazınız, Kişiliğinizin Aynası
+          </h1>
+          <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+            Yapay zeka destekli grafologi analizimiz ile el yazınızdan 
+            kişilik özelliklerinizi keşfedin. Profesyonel, hızlı ve güvenilir.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8 mb-16">
+          <Card className="p-6 hover:shadow-elegant transition-all group">
+            <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
+              <FileText className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <h3 className="font-semibold text-lg mb-2">Kolay Kullanım</h3>
+            <p className="text-sm text-muted-foreground">
+              El yazısını yükle, konuları seç, dakikalar içinde sonuçları gör
+            </p>
+          </Card>
+          <Card className="p-6 hover:shadow-elegant transition-all group">
+            <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
+              <Sparkles className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <h3 className="font-semibold text-lg mb-2">AI Teknolojisi</h3>
+            <p className="text-sm text-muted-foreground">
+              Gelişmiş yapay zeka ile hassas ve detaylı analizler
+            </p>
+          </Card>
+          <Card className="p-6 hover:shadow-elegant transition-all group">
+            <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
+              <Shield className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <h3 className="font-semibold text-lg mb-2">Güvenli ve Gizli</h3>
+            <p className="text-sm text-muted-foreground">
+              Verileriniz şifrelenir ve kimseyle paylaşılmaz
+            </p>
+          </Card>
+        </div>
+      </section>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-12 max-w-6xl">

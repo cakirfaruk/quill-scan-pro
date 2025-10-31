@@ -90,19 +90,41 @@ export const Header = () => {
           </Link>
 
           <div className="flex items-center gap-4">
-            <Link to="/compatibility">
-              <Button variant="outline" size="sm" className="gap-2">
-                <Heart className="w-4 h-4" />
-                Uyum Analizi
+            {isLoggedIn && (
+              <>
+                <Link to="/history">
+                  <Button variant="ghost" size="sm">
+                    Geçmiş
+                  </Button>
+                </Link>
+                <Link to="/compatibility">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Heart className="w-4 h-4" />
+                    Uyum
+                  </Button>
+                </Link>
+              </>
+            )}
+            <Link to="/about">
+              <Button variant="ghost" size="sm">
+                Hakkımızda
+              </Button>
+            </Link>
+            <Link to="/faq">
+              <Button variant="ghost" size="sm">
+                SSS
               </Button>
             </Link>
 
             {isLoggedIn ? (
               <>
-                <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-lg">
-                  <Coins className="w-5 h-5 text-primary" />
-                  <span className="font-semibold text-primary">{credits}</span>
-                </div>
+            <button 
+              onClick={() => navigate("/credits")}
+              className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors cursor-pointer"
+            >
+              <Coins className="w-5 h-5 text-primary" />
+              <span className="font-semibold text-primary">{credits}</span>
+            </button>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
