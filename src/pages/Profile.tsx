@@ -1,17 +1,16 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { User, Calendar, MapPin, Clock, Loader2, Camera, Plus, X, Play, Share2, Users } from "lucide-react";
+import { Loader2, Camera, Plus, X, Settings, Calendar, MapPin, Share2 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Link } from "react-router-dom";
 
 interface UserPhoto {
   id: string;
@@ -20,37 +19,41 @@ interface UserPhoto {
   display_order: number;
 }
 
-interface UserVideo {
+interface Analysis {
   id: string;
-  video_url: string;
-  thumbnail_url: string;
-  title: string;
-  description: string;
+  analysis_type: string;
   created_at: string;
+  result: any;
 }
 
 const Profile = () => {
+  const { username } = useParams();
   const [profile, setProfile] = useState({
+    user_id: "",
     username: "",
     full_name: "",
     birth_date: "",
-    birth_time: "",
     birth_place: "",
     bio: "",
     gender: "",
     profile_photo: "",
   });
   const [photos, setPhotos] = useState<UserPhoto[]>([]);
-  const [videos, setVideos] = useState<UserVideo[]>([]);
+  const [analyses, setAnalyses] = useState<Analysis[]>([]);
+  const [friends, setFriends] = useState<any[]>([]);
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [selectedAnalysis, setSelectedAnalysis] = useState<Analysis | null>(null);
+  const [shareType, setShareType] = useState<"public" | "friends">("friends");
+  const [selectedFriendId, setSelectedFriendId] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [userId, setUserId] = useState("");
+  const [currentUserId, setCurrentUserId] = useState("");
 
   useEffect(() => {
     loadProfile();
-  }, []);
+  }, [username]);
 
   const loadProfile = async () => {
     try {
@@ -60,46 +63,46 @@ const Profile = () => {
         return;
       }
 
-      setUserId(user.id);
+      setCurrentUserId(user.id);
 
-      const { data, error } = await supabase
+      // If no username in URL, show current user's profile
+      const targetUsername = username || user.email?.split('@')[0];
+      
+      const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("username", targetUsername)
         .single();
 
-      if (error) throw error;
+      if (profileError) throw profileError;
 
-      if (data) {
-        setProfile({
-          username: data.username || "",
-          full_name: data.full_name || "",
-          birth_date: data.birth_date || "",
-          birth_time: data.birth_time || "",
-          birth_place: data.birth_place || "",
-          bio: data.bio || "",
-          gender: data.gender || "",
-          profile_photo: data.profile_photo || "",
-        });
-      }
+      setProfile(profileData);
+      setIsOwnProfile(profileData.user_id === user.id);
 
       // Load photos
       const { data: photosData } = await supabase
         .from("user_photos")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", profileData.user_id)
         .order("display_order");
 
       if (photosData) setPhotos(photosData);
 
-      // Load videos
-      const { data: videosData } = await supabase
-        .from("user_videos")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+      // Load analyses (only if own profile or shared)
+      if (profileData.user_id === user.id) {
+        await loadAnalyses(profileData.user_id);
+      } else {
+        await loadSharedAnalyses(profileData.user_id);
+      }
 
-      if (videosData) setVideos(videosData);
+      // Load friends count
+      const { data: friendsData } = await supabase
+        .from("friends")
+        .select("*")
+        .or(`user_id.eq.${profileData.user_id},friend_id.eq.${profileData.user_id}`)
+        .eq("status", "accepted");
+
+      setFriends(friendsData || []);
     } catch (error: any) {
       toast({
         title: "Hata",
@@ -111,63 +114,64 @@ const Profile = () => {
     }
   };
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  const loadAnalyses = async (userId: string) => {
+    const types = ['analysis_history', 'numerology_analyses', 'birth_chart_analyses', 'compatibility_analyses'];
+    const allAnalyses: Analysis[] = [];
 
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          full_name: profile.full_name,
-          birth_date: profile.birth_date || null,
-          birth_time: profile.birth_time || null,
-          birth_place: profile.birth_place || null,
-          bio: profile.bio || null,
-          gender: profile.gender || null,
-          profile_photo: profile.profile_photo || null,
-        })
-        .eq("user_id", user.id);
+    for (const type of types) {
+      const { data } = await supabase
+        .from(type as any)
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
 
-      if (error) throw error;
-
-      toast({
-        title: "Başarılı",
-        description: "Profiliniz güncellendi.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Hata",
-        description: "Profil güncellenemedi.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
+      if (data) {
+        allAnalyses.push(...(data as any[]).map((a: any) => ({
+          id: a.id,
+          analysis_type: type.replace('_analyses', '').replace('analysis_', ''),
+          created_at: a.created_at,
+          result: a.result || {},
+        })));
+      }
     }
+
+    setAnalyses(allAnalyses);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const loadSharedAnalyses = async (userId: string) => {
+    const { data } = await supabase
+      .from("shared_analyses")
+      .select("*")
+      .eq("user_id", userId)
+      .or(`shared_with_user_id.eq.${currentUserId},is_public.eq.true`);
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "Hata",
-        description: "Dosya boyutu 5MB'dan küçük olmalıdır.",
-        variant: "destructive",
-      });
-      return;
+    if (data) {
+      // Load full analysis details
+      const analysesWithDetails = await Promise.all(
+        data.map(async (share: any) => {
+          const tableName = `${share.analysis_type}_analyses`;
+          const { data: analysis } = await supabase
+            .from(tableName as any)
+            .select("*")
+            .eq("id", share.analysis_id)
+            .single();
+
+          return analysis ? {
+            id: (analysis as any).id,
+            analysis_type: share.analysis_type,
+            created_at: (analysis as any).created_at,
+            result: (analysis as any).result || {},
+          } : null;
+        })
+      );
+
+      setAnalyses(analysesWithDetails.filter(a => a !== null) as Analysis[]);
     }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setProfile({ ...profile, profile_photo: reader.result as string });
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleAddPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isOwnProfile) return;
+    
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -185,7 +189,7 @@ const Profile = () => {
       const { error } = await supabase
         .from("user_photos")
         .insert({
-          user_id: userId,
+          user_id: currentUserId,
           photo_url: reader.result as string,
           display_order: photos.length,
         });
@@ -209,6 +213,8 @@ const Profile = () => {
   };
 
   const handleDeletePhoto = async (photoId: string) => {
+    if (!isOwnProfile) return;
+
     const { error } = await supabase
       .from("user_photos")
       .delete()
@@ -230,6 +236,79 @@ const Profile = () => {
     });
   };
 
+  const handleShareAnalysis = async () => {
+    if (!selectedAnalysis) return;
+
+    try {
+      const { error } = await supabase
+        .from("shared_analyses")
+        .insert({
+          user_id: currentUserId,
+          analysis_id: selectedAnalysis.id,
+          analysis_type: selectedAnalysis.analysis_type,
+          is_public: shareType === "public",
+          shared_with_user_id: shareType === "friends" && selectedFriendId ? selectedFriendId : null,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Başarılı",
+        description: shareType === "public" ? "Analiz herkesle paylaşıldı" : "Analiz arkadaşınızla paylaşıldı",
+      });
+
+      setShareDialogOpen(false);
+      setSelectedAnalysis(null);
+      setSelectedFriendId("");
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: "Analiz paylaşılamadı.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isOwnProfile) return;
+
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Hata",
+        description: "Dosya boyutu 5MB'dan küçük olmalıdır.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ profile_photo: reader.result as string })
+        .eq("user_id", currentUserId);
+
+      if (error) {
+        toast({
+          title: "Hata",
+          description: "Profil fotoğrafı güncellenemedi.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      loadProfile();
+      toast({
+        title: "Başarılı",
+        description: "Profil fotoğrafı güncellendi.",
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-subtle">
@@ -246,10 +325,9 @@ const Profile = () => {
       <Header />
 
       <main className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Profile Header - Social Media Style */}
+        {/* Profile Header */}
         <Card className="p-6 mb-6">
           <div className="flex flex-col md:flex-row gap-6 items-start">
-            {/* Profile Photo */}
             <div className="relative flex-shrink-0">
               <Avatar className="w-32 h-32 md:w-40 md:h-40 border-4 border-primary/20">
                 <AvatarImage src={profile.profile_photo} alt={profile.full_name} />
@@ -257,42 +335,43 @@ const Profile = () => {
                   {profile.username.substring(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <label
-                htmlFor="photo-upload"
-                className="absolute bottom-0 right-0 p-2.5 bg-primary rounded-full cursor-pointer hover:opacity-90 transition-opacity shadow-lg"
-              >
-                <Camera className="w-5 h-5 text-primary-foreground" />
-                <input
-                  id="photo-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageUpload}
-                />
-              </label>
+              {isOwnProfile && (
+                <label className="absolute bottom-0 right-0 p-2.5 bg-primary rounded-full cursor-pointer hover:opacity-90 transition-opacity shadow-lg">
+                  <Camera className="w-5 h-5 text-primary-foreground" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
+                </label>
+              )}
             </div>
 
-            {/* Profile Info */}
             <div className="flex-1">
-              <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center gap-4 mb-4 flex-wrap">
                 <h1 className="text-2xl md:text-3xl font-bold">
                   {profile.full_name || profile.username}
                 </h1>
-                <Button onClick={handleSave} disabled={isSaving} size="sm">
-                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Kaydet"}
-                </Button>
+                {isOwnProfile && (
+                  <Link to="/settings">
+                    <Button size="sm" variant="outline">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Düzenle
+                    </Button>
+                  </Link>
+                )}
               </div>
 
-              <div className="flex gap-6 mb-4 text-sm">
+              <div className="flex gap-6 mb-4 text-sm flex-wrap">
                 <div>
                   <span className="font-bold">{photos.length}</span> fotoğraf
                 </div>
                 <div>
-                  <span className="font-bold">{videos.length}</span> video
+                  <span className="font-bold">{analyses.length}</span> analiz
                 </div>
-                <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
-                  <Users className="w-4 h-4" />
-                  <span className="font-bold">Arkadaşlar</span>
+                <div>
+                  <span className="font-bold">{friends.length}</span> arkadaş
                 </div>
               </div>
 
@@ -302,15 +381,15 @@ const Profile = () => {
                 <p className="text-sm mb-3">{profile.bio}</p>
               )}
 
-              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                 {profile.birth_date && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 bg-muted px-3 py-1 rounded-full">
                     <Calendar className="w-3 h-3" />
                     {new Date(profile.birth_date).toLocaleDateString('tr-TR')}
                   </div>
                 )}
                 {profile.birth_place && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 bg-muted px-3 py-1 rounded-full">
                     <MapPin className="w-3 h-3" />
                     {profile.birth_place}
                   </div>
@@ -320,32 +399,30 @@ const Profile = () => {
           </div>
         </Card>
 
-        {/* Tabs for different content */}
         <Tabs defaultValue="photos" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="photos">Fotoğraflar</TabsTrigger>
-            <TabsTrigger value="videos">Videolar</TabsTrigger>
-            <TabsTrigger value="info">Bilgiler</TabsTrigger>
+            <TabsTrigger value="analyses">Analizler</TabsTrigger>
           </TabsList>
 
           <TabsContent value="photos">
             <Card className="p-6">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {/* Add Photo Button */}
-                <label className="aspect-square border-2 border-dashed border-border rounded-lg flex items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
-                  <div className="text-center">
-                    <Plus className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-xs text-muted-foreground">Fotoğraf Ekle</p>
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleAddPhoto}
-                  />
-                </label>
+                {isOwnProfile && (
+                  <label className="aspect-square border-2 border-dashed border-border rounded-lg flex items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                    <div className="text-center">
+                      <Plus className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground">Fotoğraf Ekle</p>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAddPhoto}
+                    />
+                  </label>
+                )}
 
-                {/* Photo Grid */}
                 {photos.map((photo) => (
                   <div key={photo.id} className="relative aspect-square group">
                     <img
@@ -353,130 +430,117 @@ const Profile = () => {
                       alt=""
                       className="w-full h-full object-cover rounded-lg"
                     />
-                    <button
-                      onClick={() => handleDeletePhoto(photo.id)}
-                      className="absolute top-2 right-2 p-1.5 bg-destructive rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-4 h-4 text-destructive-foreground" />
-                    </button>
+                    {isOwnProfile && (
+                      <button
+                        onClick={() => handleDeletePhoto(photo.id)}
+                        className="absolute top-2 right-2 p-1.5 bg-destructive rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-4 h-4 text-destructive-foreground" />
+                      </button>
+                    )}
                   </div>
                 ))}
+
+                {photos.length === 0 && !isOwnProfile && (
+                  <div className="col-span-full text-center py-12 text-muted-foreground">
+                    Henüz fotoğraf eklenmemiş
+                  </div>
+                )}
               </div>
             </Card>
           </TabsContent>
 
-          <TabsContent value="videos">
+          <TabsContent value="analyses">
             <Card className="p-6">
-              <div className="text-center py-12">
-                <Play className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground mb-4">Video yükleme özelliği yakında eklenecek</p>
-                <Button disabled>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Video Ekle
-                </Button>
-              </div>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="info">
-            <Card className="p-6">
-              <div className="space-y-6 max-w-2xl">
-                <div>
-                  <Label htmlFor="full_name">Tam Ad</Label>
-                  <Input
-                    id="full_name"
-                    value={profile.full_name}
-                    onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                    placeholder="Adınız ve soyadınız"
-                    className="mt-2"
-                  />
+              {analyses.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  {isOwnProfile ? "Henüz analiziniz yok" : "Paylaşılmış analiz bulunmuyor"}
                 </div>
+              ) : (
+                <div className="grid gap-4">
+                  {analyses.map((analysis) => (
+                    <Card key={analysis.id} className="p-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="font-semibold capitalize mb-1">
+                            {analysis.analysis_type.replace('_', ' ')} Analizi
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(analysis.created_at).toLocaleDateString('tr-TR', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric'
+                            })}
+                          </p>
+                        </div>
+                        {isOwnProfile && (
+                          <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setSelectedAnalysis(analysis)}
+                              >
+                                <Share2 className="w-4 h-4 mr-2" />
+                                Paylaş
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Analizi Paylaş</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4 pt-4">
+                                <div>
+                                  <label className="text-sm font-medium mb-2 block">
+                                    Kimlerle paylaşmak istersiniz?
+                                  </label>
+                                  <Select value={shareType} onValueChange={(value: any) => setShareType(value)}>
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="public">Herkes</SelectItem>
+                                      <SelectItem value="friends">Sadece Arkadaşlarım</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
 
-                <div>
-                  <Label htmlFor="gender">Cinsiyet</Label>
-                  <Select
-                    value={profile.gender}
-                    onValueChange={(value) => setProfile({ ...profile, gender: value })}
-                  >
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Cinsiyet seçin" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="male">Erkek</SelectItem>
-                      <SelectItem value="female">Kadın</SelectItem>
-                      <SelectItem value="other">Diğer</SelectItem>
-                    </SelectContent>
-                  </Select>
+                                {shareType === "friends" && (
+                                  <div>
+                                    <label className="text-sm font-medium mb-2 block">
+                                      Hangi arkadaşınızla?
+                                    </label>
+                                    <Select value={selectedFriendId} onValueChange={setSelectedFriendId}>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Arkadaş seçin" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {friends.map((friend) => (
+                                          <SelectItem key={friend.id} value={friend.friend_id}>
+                                            Arkadaş
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                )}
+
+                                <Button
+                                  onClick={handleShareAnalysis}
+                                  className="w-full"
+                                  disabled={shareType === "friends" && !selectedFriendId}
+                                >
+                                  Paylaş
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
                 </div>
-
-                <div>
-                  <Label htmlFor="birth_date">
-                    <Calendar className="w-4 h-4 inline mr-2" />
-                    Doğum Tarihi
-                  </Label>
-                  <Input
-                    id="birth_date"
-                    type="date"
-                    value={profile.birth_date}
-                    onChange={(e) => setProfile({ ...profile, birth_date: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="birth_time">
-                    <Clock className="w-4 h-4 inline mr-2" />
-                    Doğum Saati
-                  </Label>
-                  <Input
-                    id="birth_time"
-                    type="time"
-                    value={profile.birth_time}
-                    onChange={(e) => setProfile({ ...profile, birth_time: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="birth_place">
-                    <MapPin className="w-4 h-4 inline mr-2" />
-                    Doğum Yeri
-                  </Label>
-                  <Input
-                    id="birth_place"
-                    value={profile.birth_place}
-                    onChange={(e) => setProfile({ ...profile, birth_place: e.target.value })}
-                    placeholder="Şehir, Ülke"
-                    className="mt-2"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="bio">Hakkımda</Label>
-                  <Textarea
-                    id="bio"
-                    value={profile.bio}
-                    onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                    placeholder="Kendiniz hakkında kısa bir açıklama yazın..."
-                    className="mt-2 min-h-[100px]"
-                  />
-                </div>
-
-                <Button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="w-full bg-gradient-primary hover:opacity-90"
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Kaydediliyor...
-                    </>
-                  ) : (
-                    "Kaydet"
-                  )}
-                </Button>
-              </div>
+              )}
             </Card>
           </TabsContent>
         </Tabs>

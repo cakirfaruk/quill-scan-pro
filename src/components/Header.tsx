@@ -169,16 +169,21 @@ export const Header = () => {
                 </Link>
               </>
             )}
-            <Link to="/about">
-              <Button variant="ghost" size="sm">
-                Hakkımızda
-              </Button>
-            </Link>
-            <Link to="/faq">
-              <Button variant="ghost" size="sm">
-                SSS
-              </Button>
-            </Link>
+            
+            {!isLoggedIn && (
+              <>
+                <Link to="/about">
+                  <Button variant="ghost" size="sm">
+                    Hakkımızda
+                  </Button>
+                </Link>
+                <Link to="/faq">
+                  <Button variant="ghost" size="sm">
+                    SSS
+                  </Button>
+                </Link>
+              </>
+            )}
 
             {isLoggedIn ? (
               <>
@@ -233,6 +238,12 @@ export const Header = () => {
                       <Link to="/messages" className="cursor-pointer flex items-center">
                         <MessageCircle className="w-4 h-4 mr-2" />
                         Mesajlar
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/settings" className="cursor-pointer flex items-center">
+                        <User className="w-4 h-4 mr-2" />
+                        Ayarlar
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -324,18 +335,6 @@ export const Header = () => {
                       <Link to="/history" onClick={() => setMobileMenuOpen(false)}>
                         <Button variant="ghost" className="w-full justify-start">
                           Analizlerim
-                        </Button>
-                      </Link>
-
-                      <Link to="/about" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant="ghost" className="w-full justify-start">
-                          Hakkımızda
-                        </Button>
-                      </Link>
-
-                      <Link to="/faq" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant="ghost" className="w-full justify-start">
-                          SSS
                         </Button>
                       </Link>
 
