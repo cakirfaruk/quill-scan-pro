@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Users, CreditCard, History, Loader2 } from "lucide-react";
+import { Shield, Users, CreditCard, History, Loader2, Eye } from "lucide-react";
+import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 
 interface Profile {
   id: string;
@@ -24,12 +26,15 @@ interface AnalysisRecord {
   analysis_type: string;
   credits_used: number;
   image_data?: string;
+  result?: any;
 }
 
 const Admin = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
   const [userAnalyses, setUserAnalyses] = useState<AnalysisRecord[]>([]);
+  const [selectedAnalysis, setSelectedAnalysis] = useState<AnalysisRecord | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [creditAmount, setCreditAmount] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -179,6 +184,11 @@ const Admin = () => {
     return type;
   };
 
+  const handleViewAnalysis = (analysis: AnalysisRecord) => {
+    setSelectedAnalysis(analysis);
+    setIsDetailModalOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Header />
@@ -299,7 +309,8 @@ const Admin = () => {
                         userAnalyses.map((analysis) => (
                           <div
                             key={analysis.id}
-                            className="p-3 rounded-lg border bg-card hover:bg-accent transition-colors"
+                            className="p-3 rounded-lg border bg-card hover:bg-accent transition-colors cursor-pointer group"
+                            onClick={() => handleViewAnalysis(analysis)}
                           >
                             <div className="flex items-start gap-3">
                               {analysis.image_data && (
@@ -314,7 +325,10 @@ const Admin = () => {
                                   <p className="font-semibold text-sm">
                                     {getAnalysisTypeLabel(analysis.analysis_type)}
                                   </p>
-                                  <Badge variant="outline" className="shrink-0">{analysis.credits_used} kredi</Badge>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="shrink-0">{analysis.credits_used} kredi</Badge>
+                                    <Eye className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                  </div>
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
                                   {new Date(analysis.created_at).toLocaleDateString("tr-TR", {
@@ -346,6 +360,22 @@ const Admin = () => {
           </div>
         )}
       </main>
+
+      <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedAnalysis && getAnalysisTypeLabel(selectedAnalysis.analysis_type)} - Analiz Detayları
+            </DialogTitle>
+          </DialogHeader>
+          {selectedAnalysis?.result && (
+            <AnalysisDetailView 
+              result={selectedAnalysis.result} 
+              analysisType={selectedAnalysis.analysis_type}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
