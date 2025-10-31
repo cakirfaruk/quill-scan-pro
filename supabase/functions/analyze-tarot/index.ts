@@ -120,7 +120,12 @@ Yorumun mistik, anlayışlı ve rehberlik edici olsun. JSON formatında şu yap�
     });
 
     const data = await response.json();
-    console.log('OpenAI response received');
+    console.log('OpenAI response received:', JSON.stringify(data).slice(0, 200));
+
+    if (!response.ok || !data.choices || !data.choices[0]) {
+      console.error('OpenAI API error:', data);
+      throw new Error(data.error?.message || 'OpenAI API hatası');
+    }
 
     let interpretation;
     try {
