@@ -6,11 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, Plus, X, Settings, Calendar, MapPin, Share2 } from "lucide-react";
+import { Loader2, Camera, Plus, X, Settings, Calendar, MapPin, Share2, Eye, EyeOff } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
+import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 
 interface UserPhoto {
   id: string;
@@ -44,12 +48,16 @@ const Profile = () => {
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedAnalysis, setSelectedAnalysis] = useState<Analysis | null>(null);
-  const [shareType, setShareType] = useState<"public" | "friends">("friends");
-  const [selectedFriendId, setSelectedFriendId] = useState("");
+  const [visibilityType, setVisibilityType] = useState<"public" | "friends" | "specific_friends" | "friends_except">("friends");
+  const [isVisible, setIsVisible] = useState(true);
+  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [currentUserId, setCurrentUserId] = useState("");
+  const [latestBirthChart, setLatestBirthChart] = useState<any>(null);
+  const [latestNumerology, setLatestNumerology] = useState<any>(null);
 
   useEffect(() => {
     loadProfile();
@@ -91,6 +99,7 @@ const Profile = () => {
       // Load analyses (only if own profile or shared)
       if (profileData.user_id === user.id) {
         await loadAnalyses(profileData.user_id);
+        await loadLatestAnalyses(profileData.user_id);
       } else {
         await loadSharedAnalyses(profileData.user_id);
       }
@@ -136,6 +145,30 @@ const Profile = () => {
     }
 
     setAnalyses(allAnalyses);
+  };
+
+  const loadLatestAnalyses = async (userId: string) => {
+    // Load latest birth chart
+    const { data: birthChart } = await supabase
+      .from("birth_chart_analyses")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (birthChart) setLatestBirthChart(birthChart);
+
+    // Load latest numerology
+    const { data: numerology } = await supabase
+      .from("numerology_analyses")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (numerology) setLatestNumerology(numerology);
   };
 
   const loadSharedAnalyses = async (userId: string) => {
@@ -240,26 +273,57 @@ const Profile = () => {
     if (!selectedAnalysis) return;
 
     try {
-      const { error } = await supabase
+      // Check if already shared
+      const { data: existing } = await supabase
         .from("shared_analyses")
-        .insert({
-          user_id: currentUserId,
-          analysis_id: selectedAnalysis.id,
-          analysis_type: selectedAnalysis.analysis_type,
-          is_public: shareType === "public",
-          shared_with_user_id: shareType === "friends" && selectedFriendId ? selectedFriendId : null,
-        });
+        .select("id")
+        .eq("user_id", currentUserId)
+        .eq("analysis_id", selectedAnalysis.id)
+        .eq("analysis_type", selectedAnalysis.analysis_type)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (existing) {
+        // Update existing share
+        const { error } = await supabase
+          .from("shared_analyses")
+          .update({
+            visibility_type: visibilityType,
+            is_visible: isVisible,
+            allowed_user_ids: visibilityType === "specific_friends" ? selectedFriendIds : null,
+            blocked_user_ids: visibilityType === "friends_except" ? selectedFriendIds : null,
+            is_public: visibilityType === "public",
+          })
+          .eq("id", existing.id);
+
+        if (error) throw error;
+      } else {
+        // Create new share
+        const { error } = await supabase
+          .from("shared_analyses")
+          .insert({
+            user_id: currentUserId,
+            analysis_id: selectedAnalysis.id,
+            analysis_type: selectedAnalysis.analysis_type,
+            visibility_type: visibilityType,
+            is_visible: isVisible,
+            allowed_user_ids: visibilityType === "specific_friends" ? selectedFriendIds : null,
+            blocked_user_ids: visibilityType === "friends_except" ? selectedFriendIds : null,
+            is_public: visibilityType === "public",
+          });
+
+        if (error) throw error;
+      }
 
       toast({
         title: "Başarılı",
-        description: shareType === "public" ? "Analiz herkesle paylaşıldı" : "Analiz arkadaşınızla paylaşıldı",
+        description: "Analiz paylaşım ayarları güncellendi",
       });
 
       setShareDialogOpen(false);
       setSelectedAnalysis(null);
-      setSelectedFriendId("");
+      setSelectedFriendIds([]);
+      setVisibilityType("friends");
+      setIsVisible(true);
     } catch (error: any) {
       toast({
         title: "Hata",
@@ -267,6 +331,14 @@ const Profile = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const toggleFriendSelection = (friendId: string) => {
+    setSelectedFriendIds(prev => 
+      prev.includes(friendId) 
+        ? prev.filter(id => id !== friendId)
+        : [...prev, friendId]
+    );
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -383,15 +455,30 @@ const Profile = () => {
 
               <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                 {profile.birth_date && (
-                  <div className="flex items-center gap-1 bg-muted px-3 py-1 rounded-full">
+                  <div className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-full">
                     <Calendar className="w-3 h-3" />
                     {new Date(profile.birth_date).toLocaleDateString('tr-TR')}
                   </div>
                 )}
                 {profile.birth_place && (
-                  <div className="flex items-center gap-1 bg-muted px-3 py-1 rounded-full">
+                  <div className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-full">
                     <MapPin className="w-3 h-3" />
                     {profile.birth_place}
+                  </div>
+                )}
+                {latestBirthChart?.result?.sun_sign && (
+                  <div className="flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-full text-primary font-medium">
+                    ☀️ {latestBirthChart.result.sun_sign}
+                  </div>
+                )}
+                {latestBirthChart?.result?.ascendant && (
+                  <div className="flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-full text-primary font-medium">
+                    ⬆️ Yükselen: {latestBirthChart.result.ascendant}
+                  </div>
+                )}
+                {latestNumerology?.result?.life_path_number && (
+                  <div className="flex items-center gap-1 bg-secondary/10 px-3 py-1.5 rounded-full text-secondary font-medium">
+                    🔢 Yaşam Yolu: {latestNumerology.result.life_path_number}
                   </div>
                 )}
               </div>
@@ -459,9 +546,15 @@ const Profile = () => {
               ) : (
                 <div className="grid gap-4">
                   {analyses.map((analysis) => (
-                    <Card key={analysis.id} className="p-4">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
+                    <Card key={analysis.id} className="p-4 hover:shadow-md transition-shadow">
+                      <div className="flex justify-between items-start gap-4">
+                        <button 
+                          onClick={() => {
+                            setSelectedAnalysis(analysis);
+                            setDetailDialogOpen(true);
+                          }}
+                          className="flex-1 text-left hover:opacity-80 transition-opacity"
+                        >
                           <h3 className="font-semibold capitalize mb-1">
                             {analysis.analysis_type.replace('_', ' ')} Analizi
                           </h3>
@@ -472,75 +565,140 @@ const Profile = () => {
                               year: 'numeric'
                             })}
                           </p>
-                        </div>
+                        </button>
                         {isOwnProfile && (
-                          <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
-                            <DialogTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setSelectedAnalysis(analysis)}
-                              >
-                                <Share2 className="w-4 h-4 mr-2" />
-                                Paylaş
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Analizi Paylaş</DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4 pt-4">
-                                <div>
-                                  <label className="text-sm font-medium mb-2 block">
-                                    Kimlerle paylaşmak istersiniz?
-                                  </label>
-                                  <Select value={shareType} onValueChange={(value: any) => setShareType(value)}>
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="public">Herkes</SelectItem>
-                                      <SelectItem value="friends">Sadece Arkadaşlarım</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-
-                                {shareType === "friends" && (
-                                  <div>
-                                    <label className="text-sm font-medium mb-2 block">
-                                      Hangi arkadaşınızla?
-                                    </label>
-                                    <Select value={selectedFriendId} onValueChange={setSelectedFriendId}>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Arkadaş seçin" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {friends.map((friend) => (
-                                          <SelectItem key={friend.id} value={friend.friend_id}>
-                                            Arkadaş
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                )}
-
-                                <Button
-                                  onClick={handleShareAnalysis}
-                                  className="w-full"
-                                  disabled={shareType === "friends" && !selectedFriendId}
-                                >
-                                  Paylaş
-                                </Button>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedAnalysis(analysis);
+                              setShareDialogOpen(true);
+                            }}
+                          >
+                            <Share2 className="w-4 h-4 mr-2" />
+                            Paylaşım Ayarları
+                          </Button>
                         )}
                       </div>
                     </Card>
                   ))}
                 </div>
               )}
+
+              {/* Analysis Detail Dialog */}
+              <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="capitalize">
+                      {selectedAnalysis?.analysis_type.replace('_', ' ')} Analizi
+                    </DialogTitle>
+                  </DialogHeader>
+                  {selectedAnalysis && (
+                    <div className="pt-4">
+                      <AnalysisDetailView 
+                        result={selectedAnalysis.result} 
+                        analysisType={selectedAnalysis.analysis_type}
+                      />
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+
+              {/* Share Settings Dialog */}
+              <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Analiz Paylaşım Ayarları</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-6 pt-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Detayları Göster</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Kapalıysa sadece analiz sayısı görünür
+                        </p>
+                      </div>
+                      <Switch
+                        checked={isVisible}
+                        onCheckedChange={setIsVisible}
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label>Kimler Görebilir?</Label>
+                      <Select value={visibilityType} onValueChange={(value: any) => setVisibilityType(value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="public">
+                            <div className="flex items-center gap-2">
+                              <Eye className="w-4 h-4" />
+                              Herkes
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="friends">
+                            <div className="flex items-center gap-2">
+                              👥 Tüm Arkadaşlarım
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="specific_friends">
+                            <div className="flex items-center gap-2">
+                              ✅ Sadece Seçtiklerim
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="friends_except">
+                            <div className="flex items-center gap-2">
+                              <EyeOff className="w-4 h-4" />
+                              Arkadaşlarım (Bazıları Hariç)
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {(visibilityType === "specific_friends" || visibilityType === "friends_except") && (
+                      <div className="space-y-3">
+                        <Label>
+                          {visibilityType === "specific_friends" ? "Görebilecek Arkadaşlar" : "Göremeyecek Arkadaşlar"}
+                        </Label>
+                        <div className="border rounded-lg p-3 space-y-2 max-h-48 overflow-y-auto">
+                          {friends.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-4">
+                              Henüz arkadaşınız yok
+                            </p>
+                          ) : (
+                            friends.map((friend) => (
+                              <div key={friend.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`friend-${friend.id}`}
+                                  checked={selectedFriendIds.includes(friend.friend_id === currentUserId ? friend.user_id : friend.friend_id)}
+                                  onCheckedChange={() => toggleFriendSelection(friend.friend_id === currentUserId ? friend.user_id : friend.friend_id)}
+                                />
+                                <label
+                                  htmlFor={`friend-${friend.id}`}
+                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                                >
+                                  Arkadaş
+                                </label>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <Button
+                      onClick={handleShareAnalysis}
+                      className="w-full"
+                      disabled={(visibilityType === "specific_friends" || visibilityType === "friends_except") && selectedFriendIds.length === 0}
+                    >
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Ayarları Kaydet
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </Card>
           </TabsContent>
         </Tabs>

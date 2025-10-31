@@ -349,31 +349,43 @@ export type Database = {
       }
       shared_analyses: {
         Row: {
+          allowed_user_ids: string[] | null
           analysis_id: string
           analysis_type: string
+          blocked_user_ids: string[] | null
           created_at: string | null
           id: string
           is_public: boolean | null
+          is_visible: boolean | null
           shared_with_user_id: string | null
           user_id: string
+          visibility_type: string | null
         }
         Insert: {
+          allowed_user_ids?: string[] | null
           analysis_id: string
           analysis_type: string
+          blocked_user_ids?: string[] | null
           created_at?: string | null
           id?: string
           is_public?: boolean | null
+          is_visible?: boolean | null
           shared_with_user_id?: string | null
           user_id: string
+          visibility_type?: string | null
         }
         Update: {
+          allowed_user_ids?: string[] | null
           analysis_id?: string
           analysis_type?: string
+          blocked_user_ids?: string[] | null
           created_at?: string | null
           id?: string
           is_public?: boolean | null
+          is_visible?: boolean | null
           shared_with_user_id?: string | null
           user_id?: string
+          visibility_type?: string | null
         }
         Relationships: [
           {
