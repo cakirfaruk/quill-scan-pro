@@ -136,7 +136,46 @@ export default function Numerology() {
     setSelectAll(false);
   };
 
+  const renderAnalysisSection = (key: string, data: any) => {
+    if (typeof data === 'string') {
+      return <p className="text-muted-foreground whitespace-pre-wrap">{data}</p>;
+    }
+    
+    if (typeof data === 'number') {
+      return <p className="text-muted-foreground">{data}</p>;
+    }
+    
+    if (Array.isArray(data)) {
+      return (
+        <ul className="list-disc pl-5 text-muted-foreground">
+          {data.map((item, idx) => (
+            <li key={idx}>{typeof item === 'object' ? JSON.stringify(item) : item}</li>
+          ))}
+        </ul>
+      );
+    }
+    
+    if (typeof data === 'object' && data !== null) {
+      return (
+        <div className="space-y-3 ml-4">
+          {Object.entries(data).map(([subKey, subValue]: [string, any]) => (
+            <div key={subKey}>
+              <h4 className="text-sm font-semibold text-primary capitalize mb-1">
+                {subKey.replace(/_/g, ' ')}:
+              </h4>
+              {renderAnalysisSection(subKey, subValue)}
+            </div>
+          ))}
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
   if (analysisResult) {
+    const analysisData = analysisResult.analiz || analysisResult;
+    
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -144,15 +183,23 @@ export default function Numerology() {
           <Card>
             <CardHeader>
               <CardTitle className="text-3xl">Numeroloji Analiz Sonuçları</CardTitle>
-              <CardDescription>{fullName} - {new Date(birthDate).toLocaleDateString("tr-TR")}</CardDescription>
+              <CardDescription>
+                {analysisData.isim || fullName} - {analysisData.dogum_tarihi ? new Date(analysisData.dogum_tarihi).toLocaleDateString("tr-TR") : new Date(birthDate).toLocaleDateString("tr-TR")}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {Object.entries(analysisResult).map(([topic, content]: [string, any]) => (
-                <div key={topic} className="border-b pb-4">
-                  <h3 className="text-xl font-semibold mb-2">{topic}</h3>
-                  <div className="text-muted-foreground whitespace-pre-wrap">{content}</div>
-                </div>
-              ))}
+              {Object.entries(analysisData).map(([topic, content]: [string, any]) => {
+                if (topic === 'isim' || topic === 'dogum_tarihi') return null;
+                
+                return (
+                  <div key={topic} className="border-b pb-6 last:border-b-0">
+                    <h3 className="text-xl font-semibold mb-4 capitalize">
+                      {topic.replace(/_/g, ' ')}
+                    </h3>
+                    {renderAnalysisSection(topic, content)}
+                  </div>
+                );
+              })}
               <Button onClick={handleReset} className="w-full">Yeni Analiz Yap</Button>
             </CardContent>
           </Card>
