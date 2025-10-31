@@ -80,11 +80,16 @@ const CoffeeFortune = () => {
     setIsAnalyzing(true);
     
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const { data, error } = await supabase.functions.invoke('analyze-coffee-fortune', {
         body: { 
           image1: images[0],
           image2: images[1],
           image3: images[2]
+        },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`
         }
       });
 

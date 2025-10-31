@@ -57,8 +57,13 @@ const DreamInterpretation = () => {
     setIsAnalyzing(true);
     
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const { data, error } = await supabase.functions.invoke('interpret-dream', {
-        body: { dreamDescription }
+        body: { dreamDescription },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`
+        }
       });
 
       if (error) throw error;

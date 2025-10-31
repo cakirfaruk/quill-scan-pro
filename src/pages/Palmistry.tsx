@@ -72,8 +72,13 @@ const Palmistry = () => {
     setIsAnalyzing(true);
     
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const { data, error } = await supabase.functions.invoke('analyze-palmistry', {
-        body: { handImage }
+        body: { handImage },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`
+        }
       });
 
       if (error) throw error;

@@ -51,8 +51,13 @@ const DailyHoroscope = () => {
     setIsGenerating(true);
     
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const { data, error } = await supabase.functions.invoke('generate-daily-horoscope', {
-        body: {}
+        body: {},
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`
+        }
       });
 
       if (error) throw error;

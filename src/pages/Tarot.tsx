@@ -120,11 +120,16 @@ const Tarot = () => {
     setIsAnalyzing(true);
     
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const { data, error } = await supabase.functions.invoke('analyze-tarot', {
         body: { 
           spreadType,
           question: question || null,
           selectedCards
+        },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`
         }
       });
 
