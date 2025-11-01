@@ -451,7 +451,7 @@ const History = () => {
           return;
         }
 
-        const messageContent = `📊 ${getAnalysisTypeLabel(analysisToShare.analysis_type)} sonucumu paylaştım!\n\n${shareNote || "Analiz sonucumu görmek için tıkla."}\n\n[Analiz ID: ${analysisToShare.id}]`;
+        const messageContent = `📊 ${getAnalysisTypeLabel(analysisToShare.analysis_type)} sonucumu paylaştım!\n\n${shareNote || "Analiz sonucumu görmek için tıkla."}\n\n[Analiz ID: ${analysisToShare.id}]\n[Analiz Türü: ${analysisToShare.analysis_type}]`;
 
         const { error } = await supabase
           .from("messages")

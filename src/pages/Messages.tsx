@@ -208,11 +208,13 @@ const Messages = () => {
 
       // Parse messages to detect analysis shares
       const parsedMessages = data?.map(msg => {
-        const analysisMatch = msg.content.match(/\[Analiz ID: ([^\]]+)\]/);
-        if (analysisMatch) {
+        const analysisIdMatch = msg.content.match(/\[Analiz ID: ([^\]]+)\]/);
+        const analysisTypeMatch = msg.content.match(/\[Analiz Türü: ([^\]]+)\]/);
+        if (analysisIdMatch && analysisTypeMatch) {
           return {
             ...msg,
-            analysis_id: analysisMatch[1],
+            analysis_id: analysisIdMatch[1],
+            analysis_type: analysisTypeMatch[1],
           };
         }
         return msg;
@@ -237,20 +239,49 @@ const Messages = () => {
     }
   };
 
-  const handleAnalysisClick = async (analysisId: string) => {
+  const handleAnalysisClick = async (analysisId: string, analysisType: string) => {
     try {
-      // Fetch analysis from analysis_history
-      const { data: analysisData, error } = await supabase
-        .from("analysis_history")
-        .select("*")
-        .eq("id", analysisId)
-        .single();
+      let analysisData = null;
 
-      if (error) throw error;
+      // Check different tables based on analysis type
+      if (analysisType === "numerology") {
+        const { data } = await supabase
+          .from("numerology_analyses")
+          .select("*")
+          .eq("id", analysisId)
+          .maybeSingle();
+        analysisData = data;
+      } else if (analysisType === "birth_chart") {
+        const { data } = await supabase
+          .from("birth_chart_analyses")
+          .select("*")
+          .eq("id", analysisId)
+          .maybeSingle();
+        analysisData = data;
+      } else if (analysisType === "compatibility") {
+        const { data } = await supabase
+          .from("compatibility_analyses")
+          .select("*")
+          .eq("id", analysisId)
+          .maybeSingle();
+        analysisData = data;
+      } else {
+        const { data } = await supabase
+          .from("analysis_history")
+          .select("*")
+          .eq("id", analysisId)
+          .maybeSingle();
+        analysisData = data;
+      }
 
       if (analysisData) {
-        setSelectedAnalysis(analysisData);
+        setSelectedAnalysis({
+          ...analysisData,
+          analysis_type: analysisType,
+        });
         setAnalysisDialogOpen(true);
+      } else {
+        throw new Error("Analiz bulunamadı");
       }
     } catch (error: any) {
       console.error("Error loading analysis:", error);
@@ -429,7 +460,7 @@ const Messages = () => {
                                   ? "bg-primary/10 border-primary/20"
                                   : "bg-muted"
                               }`}
-                              onClick={() => handleAnalysisClick(msg.analysis_id!)}
+                              onClick={() => handleAnalysisClick(msg.analysis_id!, msg.analysis_type!)}
                             >
                               <div className="p-4">
                                 <div className="flex items-center gap-3 mb-2">
