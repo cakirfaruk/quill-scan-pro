@@ -209,12 +209,6 @@ const DreamInterpretation = () => {
                   </div>
                 )}
 
-                {result.raw && (
-                  <div className="p-4 bg-muted rounded-lg">
-                    <p className="whitespace-pre-wrap">{result.raw}</p>
-                  </div>
-                )}
-
                 <Button onClick={() => { setResult(null); setDreamDescription(""); }} className="w-full">
                   Yeni Rüya Yorumla
                 </Button>

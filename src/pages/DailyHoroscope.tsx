@@ -226,12 +226,6 @@ const DailyHoroscope = () => {
                   </div>
                 )}
 
-                {result.raw && (
-                  <div className="p-4 bg-muted rounded-lg">
-                    <p className="whitespace-pre-wrap">{result.raw}</p>
-                  </div>
-                )}
-
                 <div className="pt-4 text-center text-sm text-muted-foreground">
                   Yarın yeni bir fal için geri gelin! 🌟
                 </div>

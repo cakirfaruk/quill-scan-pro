@@ -272,12 +272,6 @@ const Palmistry = () => {
                   </div>
                 )}
 
-                {result.raw && (
-                  <div className="p-4 bg-muted rounded-lg">
-                    <p className="whitespace-pre-wrap">{result.raw}</p>
-                  </div>
-                )}
-
                 <Button onClick={() => { setResult(null); setHandImage(""); }} className="w-full">
                   Yeni Okuma Yap
                 </Button>

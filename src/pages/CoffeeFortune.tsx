@@ -265,12 +265,6 @@ const CoffeeFortune = () => {
                   </div>
                 )}
 
-                {result.raw && (
-                  <div className="p-4 bg-muted rounded-lg">
-                    <p className="whitespace-pre-wrap">{result.raw}</p>
-                  </div>
-                )}
-
                 <Button onClick={() => { setResult(null); setImages([]); }} className="w-full">
                   Yeni Fal Baktır
                 </Button>

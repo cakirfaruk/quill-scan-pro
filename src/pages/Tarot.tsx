@@ -356,12 +356,6 @@ const Tarot = () => {
                   </div>
                 )}
 
-                {result.raw && (
-                  <div className="p-4 bg-muted rounded-lg">
-                    <p className="whitespace-pre-wrap">{result.raw}</p>
-                  </div>
-                )}
-
                 <Button onClick={() => { setResult(null); setSelectedCards([]); shuffleDeck(); }} className="w-full">
                   Yeni Okuma Yap
                 </Button>

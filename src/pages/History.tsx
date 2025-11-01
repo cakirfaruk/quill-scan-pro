@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Calendar, Sparkles, Heart, Loader2 } from "lucide-react";
+import { FileText, Calendar, Sparkles, Heart, Loader2, Moon, Hand, Coffee, Star } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -90,6 +90,51 @@ const History = () => {
 
       if (compatibilityError) throw compatibilityError;
 
+      // Fetch tarot readings
+      const { data: tarotData, error: tarotError } = await supabase
+        .from("tarot_readings")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (tarotError) throw tarotError;
+
+      // Fetch coffee fortune readings
+      const { data: coffeeData, error: coffeeError } = await supabase
+        .from("coffee_fortune_readings")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (coffeeError) throw coffeeError;
+
+      // Fetch dream interpretations
+      const { data: dreamData, error: dreamError } = await supabase
+        .from("dream_interpretations")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (dreamError) throw dreamError;
+
+      // Fetch palmistry readings
+      const { data: palmistryData, error: palmistryError } = await supabase
+        .from("palmistry_readings")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (palmistryError) throw palmistryError;
+
+      // Fetch daily horoscopes
+      const { data: horoscopeData, error: horoscopeError } = await supabase
+        .from("daily_horoscopes")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (horoscopeError) throw horoscopeError;
+
       // Combine all analyses into a single array
       const allAnalyses: AnalysisRecord[] = [
         ...(handwritingData || []),
@@ -104,6 +149,31 @@ const History = () => {
         ...(compatibilityData || []).map(item => ({
           ...item,
           analysis_type: "compatibility"
+        })),
+        ...(tarotData || []).map(item => ({
+          ...item,
+          analysis_type: "tarot",
+          result: item.interpretation
+        })),
+        ...(coffeeData || []).map(item => ({
+          ...item,
+          analysis_type: "coffee_fortune",
+          result: item.interpretation
+        })),
+        ...(dreamData || []).map(item => ({
+          ...item,
+          analysis_type: "dream",
+          result: item.interpretation
+        })),
+        ...(palmistryData || []).map(item => ({
+          ...item,
+          analysis_type: "palmistry",
+          result: item.interpretation
+        })),
+        ...(horoscopeData || []).map(item => ({
+          ...item,
+          analysis_type: "daily_horoscope",
+          result: item.horoscope_text
         })),
       ];
 
@@ -130,6 +200,11 @@ const History = () => {
     if (type === "compatibility") return "Uyum Analizi";
     if (type === "numerology") return "Numeroloji Analizi";
     if (type === "birth_chart") return "Doğum Haritası Analizi";
+    if (type === "tarot") return "Tarot Okuma";
+    if (type === "coffee_fortune") return "Kahve Falı";
+    if (type === "dream") return "Rüya Tabiri";
+    if (type === "palmistry") return "El Okuma";
+    if (type === "daily_horoscope") return "Günlük Kehanet";
     return type;
   };
 
@@ -137,6 +212,11 @@ const History = () => {
     if (type === "compatibility") return Heart;
     if (type === "numerology") return Sparkles;
     if (type === "birth_chart") return Calendar;
+    if (type === "tarot") return Sparkles;
+    if (type === "coffee_fortune") return Coffee;
+    if (type === "dream") return Moon;
+    if (type === "palmistry") return Hand;
+    if (type === "daily_horoscope") return Star;
     return FileText;
   };
 
