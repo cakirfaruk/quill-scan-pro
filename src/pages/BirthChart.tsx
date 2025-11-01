@@ -89,10 +89,26 @@ const BirthChart = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!personData.fullName || !personData.birthDate || !personData.birthTime || !personData.birthPlace || selectedTopics.length === 0) {
+    // Check if profile is complete
+    const missingFields: string[] = [];
+    if (!personData.fullName?.trim()) missingFields.push("Ad Soyad");
+    if (!personData.birthDate) missingFields.push("Doğum Tarihi");
+    if (!personData.birthTime) missingFields.push("Doğum Saati");
+    if (!personData.birthPlace?.trim()) missingFields.push("Doğum Yeri");
+    
+    if (missingFields.length > 0) {
+      toast({
+        title: "Eksik Profil Bilgileri",
+        description: `Lütfen profil bilgilerinizi eksiksiz doldurun: ${missingFields.join(", ")}. Ayarlar > Profil Düzenle sayfasından bilgilerinizi güncelleyebilirsiniz.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedTopics.length === 0) {
       toast({
         title: "Eksik Bilgi",
-        description: "Lütfen tüm alanları doldurun ve en az bir konu seçin.",
+        description: "Lütfen en az bir konu seçin.",
         variant: "destructive",
       });
       return;

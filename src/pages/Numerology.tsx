@@ -74,10 +74,15 @@ export default function Numerology() {
   };
 
   const handleAnalyze = async () => {
-    if (!personData.fullName?.trim() || !personData.birthDate) {
+    // Check if profile is complete when using "myself" option
+    const missingFields: string[] = [];
+    if (!personData.fullName?.trim()) missingFields.push("Ad Soyad");
+    if (!personData.birthDate) missingFields.push("Doğum Tarihi");
+    
+    if (missingFields.length > 0) {
       toast({
-        title: "Eksik Bilgi",
-        description: "Lütfen ad soyad ve doğum tarihinizi girin.",
+        title: "Eksik Profil Bilgileri",
+        description: `Lütfen profil bilgilerinizi eksiksiz doldurun: ${missingFields.join(", ")}. Ayarlar > Profil Düzenle sayfasından bilgilerinizi güncelleyebilirsiniz.`,
         variant: "destructive",
       });
       return;

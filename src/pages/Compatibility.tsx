@@ -115,17 +115,42 @@ const Compatibility = () => {
 
     // Numeroloji seçiliyse isim ve doğum tarihi zorunlu
     if (needsNumerology) {
-      if (!person1Data.fullName || !person1Data.birthDate) return "Numeroloji analizi için birinci kişinin adı ve doğum tarihi gerekli.";
-      if (!person2Data.fullName || !person2Data.birthDate) return "Numeroloji analizi için ikinci kişinin adı ve doğum tarihi gerekli.";
+      const missingFields1: string[] = [];
+      const missingFields2: string[] = [];
+      
+      if (!person1Data.fullName) missingFields1.push("Ad Soyad");
+      if (!person1Data.birthDate) missingFields1.push("Doğum Tarihi");
+      if (!person2Data.fullName) missingFields2.push("Ad Soyad");
+      if (!person2Data.birthDate) missingFields2.push("Doğum Tarihi");
+      
+      if (missingFields1.length > 0) {
+        return `Birinci kişi için eksik bilgiler: ${missingFields1.join(", ")}. Lütfen Ayarlar > Profil Düzenle sayfasından profil bilgilerinizi güncelleyin.`;
+      }
+      if (missingFields2.length > 0) {
+        return `İkinci kişi için eksik bilgiler: ${missingFields2.join(", ")}.`;
+      }
     }
 
     // Doğum haritası seçiliyse tüm bilgiler zorunlu
     if (needsBirthChart) {
-      if (!person1Data.fullName || !person1Data.birthDate || !person1Data.birthTime || !person1Data.birthPlace) {
-        return "Doğum haritası analizi için birinci kişinin tüm bilgileri gerekli.";
+      const missingFields1: string[] = [];
+      const missingFields2: string[] = [];
+      
+      if (!person1Data.fullName) missingFields1.push("Ad Soyad");
+      if (!person1Data.birthDate) missingFields1.push("Doğum Tarihi");
+      if (!person1Data.birthTime) missingFields1.push("Doğum Saati");
+      if (!person1Data.birthPlace) missingFields1.push("Doğum Yeri");
+      
+      if (!person2Data.fullName) missingFields2.push("Ad Soyad");
+      if (!person2Data.birthDate) missingFields2.push("Doğum Tarihi");
+      if (!person2Data.birthTime) missingFields2.push("Doğum Saati");
+      if (!person2Data.birthPlace) missingFields2.push("Doğum Yeri");
+      
+      if (missingFields1.length > 0) {
+        return `Birinci kişi için eksik bilgiler: ${missingFields1.join(", ")}. Lütfen Ayarlar > Profil Düzenle sayfasından profil bilgilerinizi güncelleyin.`;
       }
-      if (!person2Data.fullName || !person2Data.birthDate || !person2Data.birthTime || !person2Data.birthPlace) {
-        return "Doğum haritası analizi için ikinci kişinin tüm bilgileri gerekli.";
+      if (missingFields2.length > 0) {
+        return `İkinci kişi için eksik bilgiler: ${missingFields2.join(", ")}.`;
       }
     }
 

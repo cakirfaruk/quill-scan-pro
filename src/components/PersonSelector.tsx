@@ -60,13 +60,30 @@ export const PersonSelector = ({
 
   useEffect(() => {
     if (selectionType === "myself" && currentUser) {
-      onChange({
+      const profileData = {
         fullName: currentUser.full_name || "",
         birthDate: currentUser.birth_date || "",
         birthTime: currentUser.birth_time || "",
         birthPlace: currentUser.birth_place || "",
         gender: currentUser.gender || "",
-      });
+      };
+      
+      // Check for missing required fields when "myself" is selected
+      const missingFields: string[] = [];
+      if (requiredFields.fullName && !profileData.fullName) missingFields.push("Ad Soyad");
+      if (requiredFields.birthDate && !profileData.birthDate) missingFields.push("Doğum Tarihi");
+      if (requiredFields.birthTime && !profileData.birthTime) missingFields.push("Doğum Saati");
+      if (requiredFields.birthPlace && !profileData.birthPlace) missingFields.push("Doğum Yeri");
+      if (requiredFields.gender && !profileData.gender) missingFields.push("Cinsiyet");
+      
+      onChange(profileData);
+      
+      // Store validation state for parent component
+      if (missingFields.length > 0) {
+        (onChange as any).missingFields = missingFields;
+      } else {
+        (onChange as any).missingFields = [];
+      }
     } else if (selectionType === "friend" && selectedFriendId) {
       const friend = friends.find(f => f.id === selectedFriendId);
       if (friend) {
@@ -299,6 +316,27 @@ export const PersonSelector = ({
               {personData.birthDate && <p>Doğum Tarihi: {new Date(personData.birthDate).toLocaleDateString("tr-TR")}</p>}
               {personData.birthTime && <p>Doğum Saati: {personData.birthTime}</p>}
               {personData.birthPlace && <p>Doğum Yeri: {personData.birthPlace}</p>}
+              
+              {selectionType === "myself" && (
+                <>
+                  {(!personData.fullName || !personData.birthDate || 
+                    (requiredFields.birthTime && !personData.birthTime) || 
+                    (requiredFields.birthPlace && !personData.birthPlace)) && (
+                    <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                      <p className="text-sm font-medium text-destructive">⚠️ Eksik Profil Bilgileri</p>
+                      <p className="text-xs text-destructive/80 mt-1">
+                        Analiz yapabilmek için lütfen profil bilgilerinizi eksiksiz doldurun.
+                      </p>
+                      <a 
+                        href="/settings" 
+                        className="text-xs text-primary hover:underline inline-block mt-2"
+                      >
+                        Ayarlar → Profil Düzenle
+                      </a>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         )}
