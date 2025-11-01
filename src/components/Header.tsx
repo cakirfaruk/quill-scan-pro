@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { FileText, Coins, LogOut, User, Heart, CreditCard, ChevronDown, Sparkles, Calendar, Menu, MessageCircle, Settings } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { NotificationBell } from "@/components/NotificationBell";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -231,6 +232,8 @@ export const Header = () => {
 
             {isLoggedIn ? (
               <>
+            <NotificationBell />
+            
             <button 
               onClick={() => navigate("/credits")}
               className="flex items-center gap-2 px-3 xl:px-4 py-2 bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors cursor-pointer"
