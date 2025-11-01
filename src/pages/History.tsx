@@ -137,7 +137,11 @@ const History = () => {
 
       // Combine all analyses into a single array
       const allAnalyses: AnalysisRecord[] = [
-        ...(handwritingData || []),
+        ...(handwritingData || []).map(item => ({
+          ...item,
+          // Ensure analysis_type is "handwriting" for all handwriting analyses
+          analysis_type: item.analysis_type === "full" || item.analysis_type === "selective" ? "handwriting" : item.analysis_type
+        })),
         ...(numerologyData || []).map(item => ({
           ...item,
           analysis_type: "numerology"

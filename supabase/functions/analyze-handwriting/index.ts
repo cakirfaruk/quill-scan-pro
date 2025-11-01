@@ -273,7 +273,7 @@ Yanıtını JSON formatında ver:
     // Save analysis to history
     await supabase.from("analysis_history").insert({
       user_id: user.id,
-      analysis_type: isFullAnalysis ? "full" : "selective",
+      analysis_type: "handwriting",
       selected_topics: topicsToAnalyze,
       credits_used: creditsNeeded,
       result: analysisResult,
@@ -285,7 +285,7 @@ Yanıtını JSON formatında ver:
       user_id: user.id,
       amount: -creditsNeeded,
       transaction_type: "analysis",
-      description: `${isFullAnalysis ? 'Tam' : 'Seçmeli'} analiz (${creditsNeeded} kredi)`,
+      description: `El yazısı analizi (${creditsNeeded} kredi)`,
     });
 
     return new Response(JSON.stringify(analysisResult), {
