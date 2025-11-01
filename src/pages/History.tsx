@@ -6,13 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Calendar, Sparkles, Heart, Loader2, Moon, Hand, Coffee, Star, Share2 } from "lucide-react";
+import { FileText, Calendar, Sparkles, Heart, Loader2, Moon, Hand, Coffee, Star, Share2, Settings, Send } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 
 interface AnalysisRecord {
   id: string;
@@ -37,11 +38,15 @@ const History = () => {
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [summaryResult, setSummaryResult] = useState<string | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [visibilityDialogOpen, setVisibilityDialogOpen] = useState(false);
   const [analysisToShare, setAnalysisToShare] = useState<AnalysisRecord | null>(null);
   const [visibilityType, setVisibilityType] = useState<"public" | "friends" | "specific_friends" | "friends_except">("friends");
   const [isVisible, setIsVisible] = useState(true);
   const [friends, setFriends] = useState<any[]>([]);
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
+  const [selectedFriendForShare, setSelectedFriendForShare] = useState<string>("");
+  const [shareNote, setShareNote] = useState("");
+  const [shareType, setShareType] = useState<"message" | "feed">("message");
   const [currentUserId, setCurrentUserId] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -394,6 +399,14 @@ const History = () => {
   const openShareDialog = async (analysis: AnalysisRecord) => {
     setAnalysisToShare(analysis);
     setShareDialogOpen(true);
+    setShareNote("");
+    setSelectedFriendForShare("");
+    setShareType("message");
+  };
+
+  const openVisibilityDialog = async (analysis: AnalysisRecord) => {
+    setAnalysisToShare(analysis);
+    setVisibilityDialogOpen(true);
     
     // Load existing sharing settings
     const { data: existingShare } = await supabase
@@ -424,6 +437,56 @@ const History = () => {
   };
 
   const handleShareAnalysis = async () => {
+    if (!analysisToShare) return;
+
+    try {
+      if (shareType === "message") {
+        // Share as message to friend
+        if (!selectedFriendForShare) {
+          toast({
+            title: "Hata",
+            description: "Lütfen bir arkadaş seçin.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const messageContent = `📊 ${getAnalysisTypeLabel(analysisToShare.analysis_type)} sonucumu paylaştım!\n\n${shareNote || "Analiz sonucumu görmek için tıkla."}\n\n[Analiz ID: ${analysisToShare.id}]`;
+
+        const { error } = await supabase
+          .from("messages")
+          .insert({
+            sender_id: currentUserId,
+            receiver_id: selectedFriendForShare,
+            content: messageContent,
+          });
+
+        if (error) throw error;
+
+        toast({
+          title: "Başarılı",
+          description: "Analiz arkadaşınıza gönderildi.",
+        });
+      } else {
+        // Share to feed (will be implemented with feed feature)
+        toast({
+          title: "Bilgi",
+          description: "Profil akışı özelliği yakında eklenecek.",
+        });
+      }
+
+      setShareDialogOpen(false);
+    } catch (error: any) {
+      console.error("Share error:", error);
+      toast({
+        title: "Hata",
+        description: "Paylaşım yapılamadı.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleVisibilitySettings = async () => {
     if (!analysisToShare) return;
 
     try {
@@ -462,15 +525,15 @@ const History = () => {
 
       toast({
         title: "Başarılı",
-        description: "Paylaşım ayarları güncellendi.",
+        description: "Görünürlük ayarları güncellendi.",
       });
 
-      setShareDialogOpen(false);
+      setVisibilityDialogOpen(false);
     } catch (error: any) {
-      console.error("Share error:", error);
+      console.error("Visibility error:", error);
       toast({
         title: "Hata",
-        description: "Paylaşım ayarları güncellenemedi.",
+        description: "Görünürlük ayarları güncellenemedi.",
         variant: "destructive",
       });
     }
@@ -589,18 +652,30 @@ const History = () => {
                     </div>
                   </div>
                   
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full mt-3"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openShareDialog(analysis);
-                    }}
-                  >
-                    <Share2 className="w-4 h-4 mr-2" />
-                    Paylaş
-                  </Button>
+                  <div className="flex gap-2 mt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openShareDialog(analysis);
+                      }}
+                    >
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Paylaş
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openVisibilityDialog(analysis);
+                      }}
+                    >
+                      <Settings className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </Card>
               );
             })}
@@ -609,11 +684,88 @@ const History = () => {
 
         {/* Share Dialog */}
         <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
-          <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Analizi Paylaş</DialogTitle>
               <DialogDescription>
-                Bu analizi kimlerle paylaşmak istediğinizi seçin
+                {analysisToShare && getAnalysisTypeLabel(analysisToShare.analysis_type)} sonucunuzu paylaşın
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div>
+                <Label>Paylaşım Türü</Label>
+                <Select value={shareType} onValueChange={(value: any) => setShareType(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="message">Arkadaşa Mesaj Gönder</SelectItem>
+                    <SelectItem value="feed">Profil Akışına Paylaş</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {shareType === "message" && (
+                <div>
+                  <Label>Arkadaş Seç</Label>
+                  <Select value={selectedFriendForShare} onValueChange={setSelectedFriendForShare}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Arkadaş seçin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {friends.length === 0 ? (
+                        <SelectItem value="none" disabled>Henüz arkadaşınız yok</SelectItem>
+                      ) : (
+                        friends.map((friend) => {
+                          const friendProfile = friend.user_id === currentUserId 
+                            ? friend.friend_profile 
+                            : friend.user_profile;
+                          const friendId = friendProfile?.user_id;
+                          
+                          if (!friendId) return null;
+                          
+                          return (
+                            <SelectItem key={friend.id} value={friendId}>
+                              {friendProfile?.full_name || friendProfile?.username || "Arkadaş"}
+                            </SelectItem>
+                          );
+                        })
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div>
+                <Label>Not Ekle (İsteğe Bağlı)</Label>
+                <Textarea
+                  value={shareNote}
+                  onChange={(e) => setShareNote(e.target.value)}
+                  placeholder="Paylaşırken bir not ekleyebilirsiniz..."
+                  rows={3}
+                />
+              </div>
+
+              <Button
+                onClick={handleShareAnalysis}
+                className="w-full"
+                disabled={shareType === "message" && !selectedFriendForShare}
+              >
+                <Send className="w-4 h-4 mr-2" />
+                Paylaş
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Visibility Settings Dialog */}
+        <Dialog open={visibilityDialogOpen} onOpenChange={setVisibilityDialogOpen}>
+          <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Görünürlük Ayarları</DialogTitle>
+              <DialogDescription>
+                Bu analizin kimler tarafından görülebileceğini ayarlayın
               </DialogDescription>
             </DialogHeader>
 
@@ -683,11 +835,11 @@ const History = () => {
               )}
 
               <Button
-                onClick={handleShareAnalysis}
+                onClick={handleVisibilitySettings}
                 className="w-full"
                 disabled={(visibilityType === "specific_friends" || visibilityType === "friends_except") && selectedFriendIds.length === 0}
               >
-                <Share2 className="w-4 h-4 mr-2" />
+                <Settings className="w-4 h-4 mr-2" />
                 Ayarları Kaydet
               </Button>
             </div>
