@@ -453,6 +453,33 @@ const History = () => {
 
         const messageContent = `📊 ${getAnalysisTypeLabel(analysisToShare.analysis_type)} sonucumu paylaştım!\n\n${shareNote || "Analiz sonucumu görmek için tıkla."}\n\n[Analiz ID: ${analysisToShare.id}]\n[Analiz Türü: ${analysisToShare.analysis_type}]`;
 
+        // First create a shared_analyses entry
+        const { error: shareError } = await supabase
+          .from("shared_analyses")
+          .insert({
+            user_id: currentUserId,
+            analysis_id: analysisToShare.id,
+            analysis_type: analysisToShare.analysis_type,
+            shared_with_user_id: selectedFriendForShare,
+            visibility_type: "specific_friends",
+            is_visible: true,
+            is_public: false,
+          });
+
+        if (shareError) {
+          // If entry already exists, update it
+          await supabase
+            .from("shared_analyses")
+            .update({
+              shared_with_user_id: selectedFriendForShare,
+              visibility_type: "specific_friends",
+              is_visible: true,
+            })
+            .eq("analysis_id", analysisToShare.id)
+            .eq("user_id", currentUserId);
+        }
+
+        // Then send the message
         const { error } = await supabase
           .from("messages")
           .insert({

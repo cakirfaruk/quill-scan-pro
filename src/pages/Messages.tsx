@@ -243,6 +243,13 @@ const Messages = () => {
     try {
       let analysisData = null;
 
+      // First check if the analysis is shared with the current user
+      const { data: sharedData } = await supabase
+        .from("shared_analyses")
+        .select("user_id")
+        .eq("analysis_id", analysisId)
+        .maybeSingle();
+
       // Check different tables based on analysis type
       if (analysisType === "numerology") {
         const { data } = await supabase
@@ -275,6 +282,13 @@ const Messages = () => {
       }
 
       if (analysisData) {
+        // Check if user has permission to view
+        const canView = analysisData.user_id === currentUserId || sharedData;
+        
+        if (!canView) {
+          throw new Error("Bu analizi görüntüleme izniniz yok");
+        }
+
         setSelectedAnalysis({
           ...analysisData,
           analysis_type: analysisType,
@@ -287,7 +301,7 @@ const Messages = () => {
       console.error("Error loading analysis:", error);
       toast({
         title: "Hata",
-        description: "Analiz yüklenemedi.",
+        description: error.message || "Analiz yüklenemedi.",
         variant: "destructive",
       });
     }

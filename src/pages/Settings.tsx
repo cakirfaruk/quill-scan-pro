@@ -93,7 +93,14 @@ const Settings = () => {
     setIsSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        toast({
+          title: "Hata",
+          description: "Oturum açmanız gerekiyor.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       const { error } = await supabase
         .from("profiles")
@@ -107,16 +114,20 @@ const Settings = () => {
         })
         .eq("user_id", user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Profile update error:", error);
+        throw error;
+      }
 
       toast({
         title: "Başarılı",
         description: "Bilgileriniz güncellendi.",
       });
     } catch (error: any) {
+      console.error("Profile save error:", error);
       toast({
         title: "Hata",
-        description: "Bilgiler güncellenemedi.",
+        description: error.message || "Bilgiler güncellenemedi.",
         variant: "destructive",
       });
     } finally {
