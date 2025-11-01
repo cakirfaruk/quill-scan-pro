@@ -201,17 +201,39 @@ ZORUNLU: Yanıtını aşağıdaki JSON formatında döndür:
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Lovable AI error:", response.status, errorText);
-      throw new Error(`AI analysis failed: ${response.status}`);
+      
+      if (response.status === 429) {
+        throw new Error("Rate limit exceeded. Please try again later.");
+      }
+      if (response.status === 402) {
+        throw new Error("Payment required. Please add credits to your Lovable workspace.");
+      }
+      
+      throw new Error(`AI analysis failed: ${response.status} - ${errorText}`);
     }
 
-    const data = await response.json();
+    // Get response text first to debug
+    const responseText = await response.text();
+    console.log("Raw AI response text:", responseText.substring(0, 500));
+
+    // Try to parse the response
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error("Failed to parse AI response:", parseError);
+      console.error("Response was:", responseText);
+      throw new Error("Failed to parse AI response as JSON");
+    }
+
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
+      console.error("No content in AI response. Full response:", JSON.stringify(data));
       throw new Error("No content in AI response");
     }
 
-    console.log("Raw AI response:", content);
+    console.log("Raw AI response content:", content.substring(0, 500));
 
     // Parse JSON from response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
