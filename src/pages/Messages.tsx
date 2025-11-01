@@ -6,9 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Search } from "lucide-react";
+import { Loader2, Send, Search, ArrowLeft, FileText } from "lucide-react";
+import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Friend {
   user_id: string;
@@ -24,6 +27,8 @@ interface Message {
   content: string;
   read: boolean;
   created_at: string;
+  analysis_id?: string;
+  analysis_type?: string;
 }
 
 interface Conversation {
@@ -41,9 +46,12 @@ const Messages = () => {
   const [isSending, setIsSending] = useState(false);
   const [currentUserId, setCurrentUserId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedAnalysis, setSelectedAnalysis] = useState<any>(null);
+  const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     loadConversations();
@@ -198,7 +206,19 @@ const Messages = () => {
 
       if (error) throw error;
 
-      setMessages(data || []);
+      // Parse messages to detect analysis shares
+      const parsedMessages = data?.map(msg => {
+        const analysisMatch = msg.content.match(/\[Analiz ID: ([^\]]+)\]/);
+        if (analysisMatch) {
+          return {
+            ...msg,
+            analysis_id: analysisMatch[1],
+          };
+        }
+        return msg;
+      }) || [];
+
+      setMessages(parsedMessages);
 
       // Mark messages as read
       await supabase
@@ -212,6 +232,31 @@ const Messages = () => {
       toast({
         title: "Hata",
         description: "Mesajlar yüklenemedi.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAnalysisClick = async (analysisId: string) => {
+    try {
+      // Fetch analysis from analysis_history
+      const { data: analysisData, error } = await supabase
+        .from("analysis_history")
+        .select("*")
+        .eq("id", analysisId)
+        .single();
+
+      if (error) throw error;
+
+      if (analysisData) {
+        setSelectedAnalysis(analysisData);
+        setAnalysisDialogOpen(true);
+      }
+    } catch (error: any) {
+      console.error("Error loading analysis:", error);
+      toast({
+        title: "Hata",
+        description: "Analiz yüklenemedi.",
         variant: "destructive",
       });
     }
@@ -272,7 +317,7 @@ const Messages = () => {
 
         <div className="grid md:grid-cols-3 gap-4 h-[calc(100vh-220px)]">
           {/* Conversations List */}
-          <Card className="md:col-span-1 p-4">
+          <Card className={`md:col-span-1 p-4 ${isMobile && selectedFriend ? 'hidden' : ''}`}>
             <div className="mb-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -336,11 +381,20 @@ const Messages = () => {
           </Card>
 
           {/* Messages Panel */}
-          <Card className="md:col-span-2 flex flex-col">
+          <Card className={`md:col-span-2 flex flex-col ${isMobile && !selectedFriend ? 'hidden' : ''}`}>
             {selectedFriend ? (
               <>
                 {/* Chat Header */}
                 <div className="p-4 border-b flex items-center gap-3">
+                  {isMobile && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setSelectedFriend(null)}
+                    >
+                      <ArrowLeft className="w-5 h-5" />
+                    </Button>
+                  )}
                   <Avatar className="w-10 h-10">
                     <AvatarImage src={selectedFriend.profile_photo} />
                     <AvatarFallback className="bg-gradient-primary text-primary-foreground">
@@ -358,30 +412,66 @@ const Messages = () => {
                 {/* Messages */}
                 <ScrollArea className="flex-1 p-4">
                   <div className="space-y-4">
-                    {messages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`flex ${
-                          msg.sender_id === currentUserId ? "justify-end" : "justify-start"
-                        }`}
-                      >
+                    {messages.map((msg) => {
+                      const isAnalysisShare = msg.analysis_id;
+                      
+                      return (
                         <div
-                          className={`max-w-[70%] rounded-lg px-4 py-2 ${
-                            msg.sender_id === currentUserId
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted"
+                          key={msg.id}
+                          className={`flex ${
+                            msg.sender_id === currentUserId ? "justify-end" : "justify-start"
                           }`}
                         >
-                          <p className="text-sm">{msg.content}</p>
-                          <p className="text-xs opacity-70 mt-1">
-                            {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
+                          {isAnalysisShare ? (
+                            <Card
+                              className={`max-w-[85%] cursor-pointer hover:shadow-lg transition-all ${
+                                msg.sender_id === currentUserId
+                                  ? "bg-primary/10 border-primary/20"
+                                  : "bg-muted"
+                              }`}
+                              onClick={() => handleAnalysisClick(msg.analysis_id!)}
+                            >
+                              <div className="p-4">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <div className="p-2 bg-primary/10 rounded-lg">
+                                    <FileText className="w-5 h-5 text-primary" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="font-medium text-sm">Analiz Sonucu Paylaşıldı</p>
+                                    <p className="text-xs text-muted-foreground">Görmek için tıklayın</p>
+                                  </div>
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                  {msg.content.split('[Analiz ID:')[0].trim()}
+                                </p>
+                                <p className="text-xs opacity-70 mt-2">
+                                  {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </p>
+                              </div>
+                            </Card>
+                          ) : (
+                            <div
+                              className={`max-w-[70%] rounded-lg px-4 py-2 ${
+                                msg.sender_id === currentUserId
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted"
+                              }`}
+                            >
+                              <p className="text-sm">{msg.content}</p>
+                              <p className="text-xs opacity-70 mt-1">
+                                {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </ScrollArea>
 
@@ -420,6 +510,21 @@ const Messages = () => {
             )}
           </Card>
         </div>
+
+        {/* Analysis Detail Dialog */}
+        <Dialog open={analysisDialogOpen} onOpenChange={setAnalysisDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Analiz Detayları</DialogTitle>
+            </DialogHeader>
+            {selectedAnalysis && (
+              <AnalysisDetailView
+                result={selectedAnalysis.result}
+                analysisType={selectedAnalysis.analysis_type}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
