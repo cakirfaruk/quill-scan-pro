@@ -107,7 +107,11 @@ const Profile = () => {
       // Load friends count
       const { data: friendsData } = await supabase
         .from("friends")
-        .select("*")
+        .select(`
+          *,
+          friend_profile:profiles!friends_friend_id_fkey(user_id, username, full_name, profile_photo),
+          user_profile:profiles!friends_user_id_fkey(user_id, username, full_name, profile_photo)
+        `)
         .or(`user_id.eq.${profileData.user_id},friend_id.eq.${profileData.user_id}`)
         .eq("status", "accepted");
 
@@ -515,9 +519,10 @@ const Profile = () => {
         </Card>
 
         <Tabs defaultValue="photos" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="photos">Fotoğraflar</TabsTrigger>
             <TabsTrigger value="analyses">Analizler</TabsTrigger>
+            <TabsTrigger value="friends">Arkadaşlar</TabsTrigger>
           </TabsList>
 
           <TabsContent value="photos">
@@ -724,6 +729,60 @@ const Profile = () => {
                   </div>
                 </DialogContent>
               </Dialog>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="friends">
+            <Card className="p-6">
+              {friends.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  {isOwnProfile ? "Henüz arkadaşınız yok" : "Arkadaş bilgisi görüntülenemiyor"}
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {friends.map((friend) => {
+                    // Determine which profile to show (not the current user)
+                    const friendProfile = friend.user_id === currentUserId 
+                      ? friend.friend_profile 
+                      : friend.user_profile;
+                    
+                    if (!friendProfile) return null;
+                    
+                    return (
+                      <div
+                        key={friend.id}
+                        className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/profile/${friendProfile.username}`)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-12 h-12">
+                            <AvatarImage src={friendProfile.profile_photo} alt={friendProfile.username} />
+                            <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                              {friendProfile.username.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold">{friendProfile.full_name || friendProfile.username}</p>
+                            <p className="text-sm text-muted-foreground">@{friendProfile.username}</p>
+                          </div>
+                        </div>
+                        {isOwnProfile && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/messages?userId=${friendProfile.user_id}`);
+                            }}
+                          >
+                            Mesaj
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </Card>
           </TabsContent>
         </Tabs>

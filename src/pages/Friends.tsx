@@ -35,6 +35,7 @@ const Friends = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -49,6 +50,8 @@ const Friends = () => {
         navigate("/auth");
         return;
       }
+      
+      setCurrentUserId(user.id);
 
       // Load accepted friends
       const { data: friendsData, error: friendsError } = await supabase
@@ -300,21 +303,40 @@ const Friends = () => {
               ) : (
                 <div className="space-y-3">
                   {friends.map((friend) => {
-                    const profile = friend.friend_profile || friend.user_profile;
+                    // Determine which profile to show (not the current user)
+                    const profile = friend.user_id === currentUserId 
+                      ? friend.friend_profile 
+                      : friend.user_profile;
                     
                     return (
                       <div
                         key={friend.id}
-                        className="flex items-center justify-between p-4 rounded-lg border bg-card"
+                        className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/profile/${profile?.username}`)}
                       >
                         <ProfileAvatar profile={profile as Profile} />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeFriend(friend.id)}
-                        >
-                          Sil
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/messages?userId=${profile?.user_id}`);
+                            }}
+                          >
+                            Mesaj
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFriend(friend.id);
+                            }}
+                          >
+                            Sil
+                          </Button>
+                        </div>
                       </div>
                     );
                   })}
