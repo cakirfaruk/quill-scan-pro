@@ -453,34 +453,49 @@ const Messages = () => {
                             msg.sender_id === currentUserId ? "justify-end" : "justify-start"
                           }`}
                         >
-                          {isAnalysisShare ? (
+                           {isAnalysisShare ? (
                             <Card
-                              className={`max-w-[85%] cursor-pointer hover:shadow-lg transition-all ${
+                              className={`max-w-[85%] cursor-pointer hover:shadow-lg transition-all border-2 ${
                                 msg.sender_id === currentUserId
-                                  ? "bg-primary/10 border-primary/20"
-                                  : "bg-muted"
+                                  ? "bg-primary/5 border-primary/30 hover:border-primary/50"
+                                  : "bg-accent/5 border-accent/30 hover:border-accent/50"
                               }`}
-                              onClick={() => handleAnalysisClick(msg.analysis_id!, msg.analysis_type!)}
+                              onClick={() => {
+                                if (msg.analysis_type) {
+                                  handleAnalysisClick(msg.analysis_id!, msg.analysis_type);
+                                } else {
+                                  toast({
+                                    title: "Hata",
+                                    description: "Analiz türü bilgisi bulunamadı.",
+                                    variant: "destructive",
+                                  });
+                                }
+                              }}
                             >
                               <div className="p-4">
-                                <div className="flex items-center gap-3 mb-2">
-                                  <div className="p-2 bg-primary/10 rounded-lg">
-                                    <FileText className="w-5 h-5 text-primary" />
+                                <div className="flex items-start gap-3 mb-3">
+                                  <div className="p-2.5 bg-gradient-primary rounded-lg">
+                                    <FileText className="w-6 h-6 text-primary-foreground" />
                                   </div>
                                   <div className="flex-1">
-                                    <p className="font-medium text-sm">Analiz Sonucu Paylaşıldı</p>
-                                    <p className="text-xs text-muted-foreground">Görmek için tıklayın</p>
+                                    <p className="font-semibold text-sm mb-1">📊 Analiz Sonucu Paylaşıldı</p>
+                                    <p className="text-xs text-muted-foreground">Detayları görmek için tıklayın</p>
                                   </div>
                                 </div>
-                                <p className="text-sm text-muted-foreground">
-                                  {msg.content.split('[Analiz ID:')[0].trim()}
-                                </p>
-                                <p className="text-xs opacity-70 mt-2">
-                                  {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </p>
+                                {msg.content.split('[Analiz ID:')[0].trim() && (
+                                  <p className="text-sm mb-3 px-1">
+                                    {msg.content.split('[Analiz ID:')[0].trim()}
+                                  </p>
+                                )}
+                                <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                                  <p className="text-xs text-muted-foreground">
+                                    {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </p>
+                                  <p className="text-xs font-medium text-primary">Görüntüle →</p>
+                                </div>
                               </div>
                             </Card>
                           ) : (
