@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FileText, Coins, LogOut, User, Heart, CreditCard, ChevronDown, Sparkles, Calendar, Menu, MessageCircle, Settings } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -135,7 +137,7 @@ export const Header = () => {
                     <DropdownMenuLabel>Analiz Türleri</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link to="/" className="flex items-center gap-2 cursor-pointer">
+                      <Link to="/handwriting" className="flex items-center gap-2 cursor-pointer">
                         <FileText className="w-4 h-4" />
                         El Yazısı Analizi
                       </Link>
@@ -330,162 +332,189 @@ export const Header = () => {
                 <SheetHeader>
                   <SheetTitle>Menü</SheetTitle>
                 </SheetHeader>
-                <div className="flex flex-col gap-4 mt-6">
-                  {isLoggedIn ? (
-                    <>
-                      <div className="p-4 bg-secondary rounded-lg">
-                        <p className="text-sm font-medium">{username}</p>
-                        <p className="text-xs text-muted-foreground">{credits} kredi</p>
-                      </div>
+                <ScrollArea className="h-[calc(100vh-80px)] mt-6">
+                  <div className="flex flex-col gap-4 pr-4">
+                    {isLoggedIn ? (
+                      <>
+                        <div className="p-4 bg-secondary rounded-lg">
+                          <p className="text-sm font-medium">{username}</p>
+                          <p className="text-xs text-muted-foreground">{credits} kredi</p>
+                        </div>
 
-                      {isAdmin && (
-                        <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
-                          <Button variant="default" className="w-full justify-start gap-2">
-                            Admin Panel
-                          </Button>
-                        </Link>
-                      )}
+                        {isAdmin && (
+                          <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
+                            <Button variant="default" className="w-full justify-start gap-2">
+                              Admin Panel
+                            </Button>
+                          </Link>
+                        )}
 
-                      <div className="space-y-2">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase px-2">Analiz Türleri</p>
-                        <Link to="/" onClick={() => setMobileMenuOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start gap-2">
-                            <FileText className="w-4 h-4" />
-                            El Yazısı Analizi
-                          </Button>
-                        </Link>
-                        <Link to="/numerology" onClick={() => setMobileMenuOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start gap-2">
-                            <Sparkles className="w-4 h-4" />
-                            Numeroloji Analizi
-                          </Button>
-                        </Link>
-                        <Link to="/birth-chart" onClick={() => setMobileMenuOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start gap-2">
-                            <Calendar className="w-4 h-4" />
-                            Doğum Haritası
-                          </Button>
-                        </Link>
-                        <Link to="/compatibility" onClick={() => setMobileMenuOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start gap-2">
-                            <Heart className="w-4 h-4" />
-                            Uyum Analizi
-                          </Button>
-                        </Link>
-                      </div>
+                        <Accordion type="single" collapsible className="w-full">
+                          <AccordionItem value="analyses">
+                            <AccordionTrigger className="text-sm font-semibold">
+                              Analiz Türleri
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <div className="space-y-1">
+                                <Link to="/handwriting" onClick={() => setMobileMenuOpen(false)}>
+                                  <Button variant="ghost" className="w-full justify-start gap-2">
+                                    <FileText className="w-4 h-4" />
+                                    El Yazısı Analizi
+                                  </Button>
+                                </Link>
+                                <Link to="/numerology" onClick={() => setMobileMenuOpen(false)}>
+                                  <Button variant="ghost" className="w-full justify-start gap-2">
+                                    <Sparkles className="w-4 h-4" />
+                                    Numeroloji Analizi
+                                  </Button>
+                                </Link>
+                                <Link to="/birth-chart" onClick={() => setMobileMenuOpen(false)}>
+                                  <Button variant="ghost" className="w-full justify-start gap-2">
+                                    <Calendar className="w-4 h-4" />
+                                    Doğum Haritası
+                                  </Button>
+                                </Link>
+                                <Link to="/compatibility" onClick={() => setMobileMenuOpen(false)}>
+                                  <Button variant="ghost" className="w-full justify-start gap-2">
+                                    <Heart className="w-4 h-4" />
+                                    Uyum Analizi
+                                  </Button>
+                                </Link>
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
 
-                      <div className="space-y-2 border-t pt-4">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase px-2">Fallar & Kehanetler</p>
-                        <Link to="/tarot" onClick={() => setMobileMenuOpen(false)}>
+                          <AccordionItem value="fortune">
+                            <AccordionTrigger className="text-sm font-semibold">
+                              Fallar & Kehanetler
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <div className="space-y-1">
+                                <Link to="/tarot" onClick={() => setMobileMenuOpen(false)}>
+                                  <Button variant="ghost" className="w-full justify-start">
+                                    🔮 Tarot Falı
+                                  </Button>
+                                </Link>
+                                <Link to="/coffee-fortune" onClick={() => setMobileMenuOpen(false)}>
+                                  <Button variant="ghost" className="w-full justify-start">
+                                    ☕ Kahve Falı
+                                  </Button>
+                                </Link>
+                                <Link to="/dream" onClick={() => setMobileMenuOpen(false)}>
+                                  <Button variant="ghost" className="w-full justify-start">
+                                    🌙 Rüya Tabiri
+                                  </Button>
+                                </Link>
+                                <Link to="/daily-horoscope" onClick={() => setMobileMenuOpen(false)}>
+                                  <Button variant="ghost" className="w-full justify-start">
+                                    🌟 Günlük Kehanet
+                                  </Button>
+                                </Link>
+                                <Link to="/palmistry" onClick={() => setMobileMenuOpen(false)}>
+                                  <Button variant="ghost" className="w-full justify-start">
+                                    🤲 El Okuma
+                                  </Button>
+                                </Link>
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+
+                          <AccordionItem value="social">
+                            <AccordionTrigger className="text-sm font-semibold">
+                              Sosyal
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <div className="space-y-1">
+                                <Link to="/match" onClick={() => setMobileMenuOpen(false)}>
+                                  <Button variant="ghost" className="w-full justify-start">
+                                    Eşleşme
+                                  </Button>
+                                </Link>
+                                <Link to="/friends" onClick={() => setMobileMenuOpen(false)}>
+                                  <Button variant="ghost" className="w-full justify-start gap-2">
+                                    <Heart className="w-4 h-4" />
+                                    Arkadaşlarım
+                                  </Button>
+                                </Link>
+                                <Link to="/messages" onClick={() => setMobileMenuOpen(false)}>
+                                  <Button variant="ghost" className="w-full justify-start gap-2">
+                                    <MessageCircle className="w-4 h-4" />
+                                    Mesajlar
+                                  </Button>
+                                </Link>
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+
+                        <Link to="/history" onClick={() => setMobileMenuOpen(false)}>
                           <Button variant="ghost" className="w-full justify-start">
-                            🔮 Tarot Falı
+                            Analizlerim
                           </Button>
                         </Link>
-                        <Link to="/coffee-fortune" onClick={() => setMobileMenuOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start">
-                            ☕ Kahve Falı
-                          </Button>
-                        </Link>
-                        <Link to="/dream" onClick={() => setMobileMenuOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start">
-                            🌙 Rüya Tabiri
-                          </Button>
-                        </Link>
-                        <Link to="/daily-horoscope" onClick={() => setMobileMenuOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start">
-                            🌟 Günlük Kehanet
-                          </Button>
-                        </Link>
-                        <Link to="/palmistry" onClick={() => setMobileMenuOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start">
-                            🤲 El Okuma
-                          </Button>
-                        </Link>
-                      </div>
 
-                      <div className="space-y-2 border-t pt-4">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase px-2">Sosyal</p>
-                        <Link to="/friends" onClick={() => setMobileMenuOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start gap-2">
-                            <Heart className="w-4 h-4" />
-                            Arkadaşlarım
+                        <div className="border-t pt-4 space-y-2">
+                          <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
+                            <Button variant="ghost" className="w-full justify-start gap-2">
+                              <User className="w-4 h-4" />
+                              Profilim
+                            </Button>
+                          </Link>
+                          <Link to="/settings" onClick={() => setMobileMenuOpen(false)}>
+                            <Button variant="ghost" className="w-full justify-start gap-2">
+                              <Settings className="w-4 h-4" />
+                              Ayarlar
+                            </Button>
+                          </Link>
+                          <Button 
+                            onClick={() => {
+                              navigate("/credits");
+                              setMobileMenuOpen(false);
+                            }} 
+                            variant="outline" 
+                            className="w-full justify-start gap-2"
+                          >
+                            <CreditCard className="w-4 h-4" />
+                            Kredi Satın Al
+                          </Button>
+                          <Button 
+                            onClick={() => {
+                              handleLogout();
+                              setMobileMenuOpen(false);
+                            }} 
+                            variant="ghost" 
+                            className="w-full justify-start gap-2 text-destructive"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            Çıkış Yap
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <Link to="/about" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start">
+                            Hakkımızda
                           </Button>
                         </Link>
-                        <Link to="/messages" onClick={() => setMobileMenuOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start gap-2">
-                            <MessageCircle className="w-4 h-4" />
-                            Mesajlar
-                          </Button>
-                        </Link>
-                      </div>
-
-                      <Link to="/history" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant="ghost" className="w-full justify-start">
-                          Analizlerim
-                        </Button>
-                      </Link>
-
-                      <div className="border-t pt-4 space-y-2">
-                        <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start gap-2">
-                            <User className="w-4 h-4" />
-                            Profilim
-                          </Button>
-                        </Link>
-                        <Link to="/settings" onClick={() => setMobileMenuOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start gap-2">
-                            <Settings className="w-4 h-4" />
-                            Ayarlar
+                        <Link to="/faq" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start">
+                            SSS
                           </Button>
                         </Link>
                         <Button 
                           onClick={() => {
-                            navigate("/credits");
+                            navigate("/auth");
                             setMobileMenuOpen(false);
                           }} 
-                          variant="outline" 
-                          className="w-full justify-start gap-2"
+                          className="bg-gradient-primary hover:opacity-90 w-full"
                         >
-                          <CreditCard className="w-4 h-4" />
-                          Kredi Satın Al
+                          Giriş Yap / Üye Ol
                         </Button>
-                        <Button 
-                          onClick={() => {
-                            handleLogout();
-                            setMobileMenuOpen(false);
-                          }} 
-                          variant="ghost" 
-                          className="w-full justify-start gap-2 text-destructive"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Çıkış Yap
-                        </Button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <Link to="/about" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant="ghost" className="w-full justify-start">
-                          Hakkımızda
-                        </Button>
-                      </Link>
-                      <Link to="/faq" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant="ghost" className="w-full justify-start">
-                          SSS
-                        </Button>
-                      </Link>
-                      <Button 
-                        onClick={() => {
-                          navigate("/auth");
-                          setMobileMenuOpen(false);
-                        }} 
-                        className="bg-gradient-primary hover:opacity-90 w-full"
-                      >
-                        Giriş Yap / Üye Ol
-                      </Button>
-                    </>
-                  )}
-                </div>
+                      </>
+                    )}
+                  </div>
+                </ScrollArea>
               </SheetContent>
             </Sheet>
           </div>

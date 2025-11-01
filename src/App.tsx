@@ -23,6 +23,7 @@ import CoffeeFortune from "./pages/CoffeeFortune";
 import DreamInterpretation from "./pages/DreamInterpretation";
 import DailyHoroscope from "./pages/DailyHoroscope";
 import Palmistry from "./pages/Palmistry";
+import Handwriting from "./pages/Handwriting";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/handwriting" element={<Handwriting />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/credits" element={<Credits />} />
           <Route path="/compatibility" element={<Compatibility />} />
