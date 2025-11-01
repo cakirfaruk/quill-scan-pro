@@ -73,14 +73,29 @@ const Profile = () => {
 
       setCurrentUserId(user.id);
 
-      // If no username in URL, show current user's profile
-      const targetUsername = username || user.email?.split('@')[0];
+      // If no username in URL, show current user's profile by user_id
+      let profileData;
+      let profileError;
       
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("username", targetUsername)
-        .single();
+      if (username) {
+        // Looking at another user's profile - search by username
+        const result = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("username", username)
+          .single();
+        profileData = result.data;
+        profileError = result.error;
+      } else {
+        // Looking at own profile - search by user_id
+        const result = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .single();
+        profileData = result.data;
+        profileError = result.error;
+      }
 
       if (profileError) {
         console.error("Profile load error:", profileError);
