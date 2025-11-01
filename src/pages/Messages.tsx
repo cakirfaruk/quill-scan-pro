@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,9 +43,14 @@ const Messages = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     loadConversations();
+  }, []); // Only load once on mount
+
+  useEffect(() => {
+    if (!currentUserId) return;
     
     // Subscribe to new messages
     const channel = supabase
@@ -69,7 +74,7 @@ const Messages = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedFriend]);
+  }, [selectedFriend, currentUserId]);
 
   const loadConversations = async () => {
     try {
@@ -87,8 +92,8 @@ const Messages = () => {
         .select(`
           user_id,
           friend_id,
-          profiles!friends_user_id_fkey(user_id, username, full_name, profile_photo),
-          profiles!friends_friend_id_fkey(user_id, username, full_name, profile_photo)
+          user_profile:profiles!friends_user_id_fkey(user_id, username, full_name, profile_photo),
+          friend_profile:profiles!friends_friend_id_fkey(user_id, username, full_name, profile_photo)
         `)
         .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
         .eq("status", "accepted");
@@ -96,8 +101,9 @@ const Messages = () => {
       if (!friendsData) return;
 
       const friends: Friend[] = friendsData.map((f: any) => {
+        // Determine which profile is the friend (not the current user)
         const isSender = f.user_id === user.id;
-        const profile = isSender ? f.profiles : f.profiles;
+        const profile = isSender ? f.friend_profile : f.user_profile;
         return {
           user_id: profile.user_id,
           username: profile.username,
@@ -112,11 +118,10 @@ const Messages = () => {
           const { data: lastMsg } = await supabase
             .from("messages")
             .select("*")
-            .or(`sender_id.eq.${friend.user_id},receiver_id.eq.${friend.user_id}`)
-            .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+            .or(`and(sender_id.eq.${friend.user_id},receiver_id.eq.${user.id}),and(sender_id.eq.${user.id},receiver_id.eq.${friend.user_id})`)
             .order("created_at", { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
           const { count } = await supabase
             .from("messages")
@@ -127,23 +132,57 @@ const Messages = () => {
 
           return {
             friend,
-            lastMessage: lastMsg,
+            lastMessage: lastMsg || undefined,
             unreadCount: count || 0,
           };
         })
       );
 
-      setConversations(conversationsWithMessages.sort((a, b) => {
+      const sortedConversations = conversationsWithMessages.sort((a, b) => {
         const aTime = a.lastMessage?.created_at || "";
         const bTime = b.lastMessage?.created_at || "";
         return bTime.localeCompare(aTime);
-      }));
+      });
+
+      setConversations(sortedConversations);
+
+      // If userId param exists and no friend selected yet, auto-select that friend
+      const userIdParam = searchParams.get("userId");
+      if (userIdParam && !selectedFriend) {
+        const friendToSelect = friends.find(f => f.user_id === userIdParam);
+        if (friendToSelect) {
+          setSelectedFriend(friendToSelect);
+          
+          // Load messages for the selected friend
+          const { data: messagesData, error: messagesError } = await supabase
+            .from("messages")
+            .select("*")
+            .or(`and(sender_id.eq.${friendToSelect.user_id},receiver_id.eq.${user.id}),and(sender_id.eq.${user.id},receiver_id.eq.${friendToSelect.user_id})`)
+            .order("created_at", { ascending: true });
+
+          if (!messagesError && messagesData) {
+            setMessages(messagesData);
+            
+            // Mark messages as read
+            await supabase
+              .from("messages")
+              .update({ read: true })
+              .eq("sender_id", friendToSelect.user_id)
+              .eq("receiver_id", user.id)
+              .eq("read", false);
+          }
+        }
+      }
+      
+      return { userId: user.id, friends };
     } catch (error: any) {
+      console.error("Error loading conversations:", error);
       toast({
         title: "Hata",
         description: "Konuşmalar yüklenemedi.",
         variant: "destructive",
       });
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -154,8 +193,7 @@ const Messages = () => {
       const { data, error } = await supabase
         .from("messages")
         .select("*")
-        .or(`sender_id.eq.${friendId},receiver_id.eq.${friendId}`)
-        .or(`sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`)
+        .or(`and(sender_id.eq.${friendId},receiver_id.eq.${currentUserId}),and(sender_id.eq.${currentUserId},receiver_id.eq.${friendId})`)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
@@ -170,6 +208,7 @@ const Messages = () => {
         .eq("receiver_id", currentUserId)
         .eq("read", false);
     } catch (error: any) {
+      console.error("Error loading messages:", error);
       toast({
         title: "Hata",
         description: "Mesajlar yüklenemedi.",
