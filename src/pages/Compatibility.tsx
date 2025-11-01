@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { UploadZone } from "@/components/UploadZone";
+import { PersonSelector } from "@/components/PersonSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Heart, Loader2, User, FileText } from "lucide-react";
@@ -30,19 +31,23 @@ interface CompatibilityResult {
 const Compatibility = () => {
   const [file1, setFile1] = useState<File | null>(null);
   const [preview1, setPreview1] = useState<string | null>(null);
-  const [gender1, setGender1] = useState<"male" | "female">("male");
-  const [name1, setName1] = useState("");
-  const [birthDate1, setBirthDate1] = useState("");
-  const [birthTime1, setBirthTime1] = useState("");
-  const [birthPlace1, setBirthPlace1] = useState("");
+  const [person1Data, setPerson1Data] = useState<{
+    fullName?: string;
+    birthDate?: string;
+    birthTime?: string;
+    birthPlace?: string;
+    gender?: string;
+  }>({ gender: "male" });
   
   const [file2, setFile2] = useState<File | null>(null);
   const [preview2, setPreview2] = useState<string | null>(null);
-  const [gender2, setGender2] = useState<"male" | "female">("female");
-  const [name2, setName2] = useState("");
-  const [birthDate2, setBirthDate2] = useState("");
-  const [birthTime2, setBirthTime2] = useState("");
-  const [birthPlace2, setBirthPlace2] = useState("");
+  const [person2Data, setPerson2Data] = useState<{
+    fullName?: string;
+    birthDate?: string;
+    birthTime?: string;
+    birthPlace?: string;
+    gender?: string;
+  }>({ gender: "female" });
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<CompatibilityResult | null>(null);
@@ -110,16 +115,16 @@ const Compatibility = () => {
 
     // Numeroloji seçiliyse isim ve doğum tarihi zorunlu
     if (needsNumerology) {
-      if (!name1 || !birthDate1) return "Numeroloji analizi için birinci kişinin adı ve doğum tarihi gerekli.";
-      if (!name2 || !birthDate2) return "Numeroloji analizi için ikinci kişinin adı ve doğum tarihi gerekli.";
+      if (!person1Data.fullName || !person1Data.birthDate) return "Numeroloji analizi için birinci kişinin adı ve doğum tarihi gerekli.";
+      if (!person2Data.fullName || !person2Data.birthDate) return "Numeroloji analizi için ikinci kişinin adı ve doğum tarihi gerekli.";
     }
 
     // Doğum haritası seçiliyse tüm bilgiler zorunlu
     if (needsBirthChart) {
-      if (!name1 || !birthDate1 || !birthTime1 || !birthPlace1) {
+      if (!person1Data.fullName || !person1Data.birthDate || !person1Data.birthTime || !person1Data.birthPlace) {
         return "Doğum haritası analizi için birinci kişinin tüm bilgileri gerekli.";
       }
-      if (!name2 || !birthDate2 || !birthTime2 || !birthPlace2) {
+      if (!person2Data.fullName || !person2Data.birthDate || !person2Data.birthTime || !person2Data.birthPlace) {
         return "Doğum haritası analizi için ikinci kişinin tüm bilgileri gerekli.";
       }
     }
@@ -178,16 +183,16 @@ const Compatibility = () => {
         body: { 
           image1, 
           image2, 
-          gender1, 
-          gender2,
-          name1,
-          birthDate1,
-          birthTime1,
-          birthPlace1,
-          name2,
-          birthDate2,
-          birthTime2,
-          birthPlace2,
+          gender1: person1Data.gender || "male", 
+          gender2: person2Data.gender || "female",
+          name1: person1Data.fullName,
+          birthDate1: person1Data.birthDate,
+          birthTime1: person1Data.birthTime,
+          birthPlace1: person1Data.birthPlace,
+          name2: person2Data.fullName,
+          birthDate2: person2Data.birthDate,
+          birthTime2: person2Data.birthTime,
+          birthPlace2: person2Data.birthPlace,
           analysisTypes: selectedAnalysisTypes,
         },
       });
@@ -218,14 +223,8 @@ const Compatibility = () => {
     setPreview1(null);
     setFile2(null);
     setPreview2(null);
-    setName1("");
-    setBirthDate1("");
-    setBirthTime1("");
-    setBirthPlace1("");
-    setName2("");
-    setBirthDate2("");
-    setBirthTime2("");
-    setBirthPlace2("");
+    setPerson1Data({ gender: "male" });
+    setPerson2Data({ gender: "female" });
     setResult(null);
   };
 
@@ -265,7 +264,7 @@ const Compatibility = () => {
             <Card className="p-6">
               <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
                 <User className="w-5 h-5 text-primary" />
-                {gender1 === "male" ? "Erkek" : "Kadın"} - Kişilik Analizi
+                {person1Data.gender === "male" ? "Erkek" : "Kadın"} - Kişilik Analizi
               </h4>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {result.person1Analysis}
@@ -275,7 +274,7 @@ const Compatibility = () => {
             <Card className="p-6">
               <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
                 <User className="w-5 h-5 text-accent" />
-                {gender2 === "male" ? "Erkek" : "Kadın"} - Kişilik Analizi
+                {person2Data.gender === "male" ? "Erkek" : "Kadın"} - Kişilik Analizi
               </h4>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {result.person2Analysis}
@@ -298,13 +297,13 @@ const Compatibility = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">
-                      {gender1 === "male" ? "Erkek" : "Kadın"}
+                      {person1Data.gender === "male" ? "Erkek" : "Kadın"}
                     </p>
                     <p className="text-sm text-foreground/80">{area.person1Finding}</p>
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">
-                      {gender2 === "male" ? "Erkek" : "Kadın"}
+                      {person2Data.gender === "male" ? "Erkek" : "Kadın"}
                     </p>
                     <p className="text-sm text-foreground/80">{area.person2Finding}</p>
                   </div>
@@ -394,77 +393,24 @@ const Compatibility = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Person 1 */}
-          <Card className="p-6 space-y-6">
-            <div>
-              <h3 className="text-xl font-bold text-foreground mb-4">Birinci Kişi</h3>
-              
-              <div className="mb-4">
-                <Label className="mb-3 block">Cinsiyet</Label>
-                <RadioGroup value={gender1} onValueChange={(v) => setGender1(v as "male" | "female")}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="male" id="gender1-male" />
-                    <Label htmlFor="gender1-male">Erkek</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="female" id="gender1-female" />
-                    <Label htmlFor="gender1-female">Kadın</Label>
-                  </div>
-                </RadioGroup>
-              </div>
+          <div className="space-y-6">
+            <PersonSelector
+              label="Birinci Kişi"
+              personData={person1Data}
+              onChange={setPerson1Data}
+              requiredFields={{
+                fullName: selectedAnalysisTypes.includes("numerology") || selectedAnalysisTypes.includes("birth_chart"),
+                birthDate: selectedAnalysisTypes.includes("numerology") || selectedAnalysisTypes.includes("birth_chart"),
+                birthTime: selectedAnalysisTypes.includes("birth_chart"),
+                birthPlace: selectedAnalysisTypes.includes("birth_chart"),
+                gender: true,
+              }}
+            />
 
-              {(selectedAnalysisTypes.includes("numerology") || selectedAnalysisTypes.includes("birth_chart")) && (
-                <div className="space-y-4 mb-4">
-                  <div>
-                    <Label htmlFor="name1">Ad Soyad *</Label>
-                    <input
-                      id="name1"
-                      type="text"
-                      value={name1}
-                      onChange={(e) => setName1(e.target.value)}
-                      className="w-full mt-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                      placeholder="Tam adınızı girin"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="birthDate1">Doğum Tarihi *</Label>
-                    <input
-                      id="birthDate1"
-                      type="date"
-                      value={birthDate1}
-                      onChange={(e) => setBirthDate1(e.target.value)}
-                      className="w-full mt-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                    />
-                  </div>
-                  {selectedAnalysisTypes.includes("birth_chart") && (
-                    <>
-                      <div>
-                        <Label htmlFor="birthTime1">Doğum Saati *</Label>
-                        <input
-                          id="birthTime1"
-                          type="time"
-                          value={birthTime1}
-                          onChange={(e) => setBirthTime1(e.target.value)}
-                          className="w-full mt-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="birthPlace1">Doğum Yeri *</Label>
-                        <input
-                          id="birthPlace1"
-                          type="text"
-                          value={birthPlace1}
-                          onChange={(e) => setBirthPlace1(e.target.value)}
-                          className="w-full mt-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                          placeholder="Şehir, Ülke"
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {selectedAnalysisTypes.includes("handwriting") && (
-                !file1 ? (
+            {selectedAnalysisTypes.includes("handwriting") && (
+              <Card className="p-6">
+                <Label className="mb-3 block">El Yazısı Örneği</Label>
+                {!file1 ? (
                   <UploadZone onFileSelect={(file, preview) => { setFile1(file); setPreview1(preview); }} />
                 ) : (
                   <div className="space-y-4">
@@ -485,83 +431,30 @@ const Compatibility = () => {
                       Değiştir
                     </Button>
                   </div>
-                )
-              )}
-            </div>
-          </Card>
+                )}
+              </Card>
+            )}
+          </div>
 
           {/* Person 2 */}
-          <Card className="p-6 space-y-6">
-            <div>
-              <h3 className="text-xl font-bold text-foreground mb-4">İkinci Kişi</h3>
-              
-              <div className="mb-4">
-                <Label className="mb-3 block">Cinsiyet</Label>
-                <RadioGroup value={gender2} onValueChange={(v) => setGender2(v as "male" | "female")}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="male" id="gender2-male" />
-                    <Label htmlFor="gender2-male">Erkek</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="female" id="gender2-female" />
-                    <Label htmlFor="gender2-female">Kadın</Label>
-                  </div>
-                </RadioGroup>
-              </div>
+          <div className="space-y-6">
+            <PersonSelector
+              label="İkinci Kişi"
+              personData={person2Data}
+              onChange={setPerson2Data}
+              requiredFields={{
+                fullName: selectedAnalysisTypes.includes("numerology") || selectedAnalysisTypes.includes("birth_chart"),
+                birthDate: selectedAnalysisTypes.includes("numerology") || selectedAnalysisTypes.includes("birth_chart"),
+                birthTime: selectedAnalysisTypes.includes("birth_chart"),
+                birthPlace: selectedAnalysisTypes.includes("birth_chart"),
+                gender: true,
+              }}
+            />
 
-              {(selectedAnalysisTypes.includes("numerology") || selectedAnalysisTypes.includes("birth_chart")) && (
-                <div className="space-y-4 mb-4">
-                  <div>
-                    <Label htmlFor="name2">Ad Soyad *</Label>
-                    <input
-                      id="name2"
-                      type="text"
-                      value={name2}
-                      onChange={(e) => setName2(e.target.value)}
-                      className="w-full mt-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                      placeholder="Tam adınızı girin"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="birthDate2">Doğum Tarihi *</Label>
-                    <input
-                      id="birthDate2"
-                      type="date"
-                      value={birthDate2}
-                      onChange={(e) => setBirthDate2(e.target.value)}
-                      className="w-full mt-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                    />
-                  </div>
-                  {selectedAnalysisTypes.includes("birth_chart") && (
-                    <>
-                      <div>
-                        <Label htmlFor="birthTime2">Doğum Saati *</Label>
-                        <input
-                          id="birthTime2"
-                          type="time"
-                          value={birthTime2}
-                          onChange={(e) => setBirthTime2(e.target.value)}
-                          className="w-full mt-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="birthPlace2">Doğum Yeri *</Label>
-                        <input
-                          id="birthPlace2"
-                          type="text"
-                          value={birthPlace2}
-                          onChange={(e) => setBirthPlace2(e.target.value)}
-                          className="w-full mt-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                          placeholder="Şehir, Ülke"
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {selectedAnalysisTypes.includes("handwriting") && (
-                !file2 ? (
+            {selectedAnalysisTypes.includes("handwriting") && (
+              <Card className="p-6">
+                <Label className="mb-3 block">El Yazısı Örneği</Label>
+                {!file2 ? (
                   <UploadZone onFileSelect={(file, preview) => { setFile2(file); setPreview2(preview); }} />
                 ) : (
                   <div className="space-y-4">
@@ -582,10 +475,10 @@ const Compatibility = () => {
                       Değiştir
                     </Button>
                   </div>
-                )
-              )}
-            </div>
-          </Card>
+                )}
+              </Card>
+            )}
+          </div>
         </div>
 
         <div className="mt-8 text-center">
