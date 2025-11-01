@@ -82,7 +82,22 @@ const Profile = () => {
         .eq("username", targetUsername)
         .single();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error("Profile load error:", profileError);
+        
+        // If it's the user's own profile and it doesn't exist, redirect to settings
+        if (!username && profileError.code === 'PGRST116') {
+          toast({
+            title: "Profil Bulunamadı",
+            description: "Lütfen önce profil bilgilerinizi tamamlayın.",
+            variant: "destructive",
+          });
+          navigate("/settings");
+          return;
+        }
+        
+        throw profileError;
+      }
 
       setProfile(profileData);
       setIsOwnProfile(profileData.user_id === user.id);
@@ -117,11 +132,19 @@ const Profile = () => {
 
       setFriends(friendsData || []);
     } catch (error: any) {
+      console.error("Profile error details:", error);
       toast({
         title: "Hata",
-        description: "Profil yüklenemedi.",
+        description: error.code === 'PGRST116' 
+          ? "Profil bulunamadı. Lütfen profil bilgilerinizi tamamlayın." 
+          : `Profil yüklenemedi: ${error.message || "Bilinmeyen hata"}`,
         variant: "destructive",
       });
+      
+      // If user's own profile doesn't exist, redirect to settings after a delay
+      if (!username && error.code === 'PGRST116') {
+        setTimeout(() => navigate("/settings"), 2000);
+      }
     } finally {
       setIsLoading(false);
     }
