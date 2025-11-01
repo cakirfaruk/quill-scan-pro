@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Coins, Sparkles } from "lucide-react";
 import { Header } from "@/components/Header";
+import { PersonSelector } from "@/components/PersonSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -30,8 +31,7 @@ const allTopics = [
 export default function Numerology() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [fullName, setFullName] = useState("");
-  const [birthDate, setBirthDate] = useState("");
+  const [personData, setPersonData] = useState<{ fullName?: string; birthDate?: string; }>({ fullName: "", birthDate: "" });
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
@@ -74,7 +74,7 @@ export default function Numerology() {
   };
 
   const handleAnalyze = async () => {
-    if (!fullName.trim() || !birthDate) {
+    if (!personData.fullName?.trim() || !personData.birthDate) {
       toast({
         title: "Eksik Bilgi",
         description: "Lütfen ad soyad ve doğum tarihinizi girin.",
@@ -105,7 +105,7 @@ export default function Numerology() {
     setIsAnalyzing(true);
     try {
       const { data, error } = await supabase.functions.invoke("analyze-numerology", {
-        body: { fullName, birthDate, selectedTopics },
+        body: { fullName: personData.fullName, birthDate: personData.birthDate, selectedTopics },
       });
 
       if (error) throw error;
@@ -130,8 +130,7 @@ export default function Numerology() {
 
   const handleReset = () => {
     setAnalysisResult(null);
-    setFullName("");
-    setBirthDate("");
+    setPersonData({ fullName: "", birthDate: "" });
     setSelectedTopics([]);
     setSelectAll(false);
   };
@@ -184,7 +183,7 @@ export default function Numerology() {
             <CardHeader>
               <CardTitle className="text-3xl">Numeroloji Analiz Sonuçları</CardTitle>
               <CardDescription>
-                {analysisData.isim || fullName} - {analysisData.dogum_tarihi ? new Date(analysisData.dogum_tarihi).toLocaleDateString("tr-TR") : new Date(birthDate).toLocaleDateString("tr-TR")}
+                {analysisData.isim || personData.fullName} - {analysisData.dogum_tarihi ? new Date(analysisData.dogum_tarihi).toLocaleDateString("tr-TR") : new Date(personData.birthDate).toLocaleDateString("tr-TR")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -218,32 +217,18 @@ export default function Numerology() {
             <p className="text-muted-foreground">Adınız, doğum tarihiniz ve seçtiğiniz konularla detaylı numeroloji analizi</p>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Kişisel Bilgiler</CardTitle>
-              <CardDescription>Ad soyad ve doğum tarihinizi girin</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="fullName">Ad Soyad</Label>
-                <Input
-                  id="fullName"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Örn: Ahmet Yılmaz"
-                />
-              </div>
-              <div>
-                <Label htmlFor="birthDate">Doğum Tarihi</Label>
-                <Input
-                  id="birthDate"
-                  type="date"
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <PersonSelector
+            label="Kimin İçin Analiz Yapılacak?"
+            personData={personData}
+            onChange={setPersonData}
+            requiredFields={{
+              fullName: true,
+              birthDate: true,
+              birthTime: false,
+              birthPlace: false,
+              gender: false,
+            }}
+          />
 
           <Card>
             <CardHeader>
@@ -294,7 +279,7 @@ export default function Numerology() {
               )}
               <Button
                 onClick={handleAnalyze}
-                disabled={isAnalyzing || selectedTopics.length === 0 || availableCredits < selectedTopics.length}
+                disabled={isAnalyzing || selectedTopics.length === 0 || availableCredits < selectedTopics.length || !personData.fullName || !personData.birthDate}
                 className="w-full"
               >
                 <Sparkles className="w-4 h-4 mr-2" />

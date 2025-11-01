@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun } from "lucide-react";
+import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell } from "lucide-react";
+import { requestNotificationPermission } from "@/utils/notifications";
 
 const Settings = () => {
   const [profile, setProfile] = useState({
@@ -32,6 +33,7 @@ const Settings = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -41,6 +43,11 @@ const Settings = () => {
     // Check for dark mode preference
     const isDark = document.documentElement.classList.contains('dark');
     setDarkMode(isDark);
+    
+    // Check notification permission status
+    if ('Notification' in window) {
+      setNotificationsEnabled(Notification.permission === 'granted');
+    }
   }, []);
 
   const loadSettings = async () => {
@@ -199,6 +206,30 @@ const Settings = () => {
     } else {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
+    }
+  };
+
+  const toggleNotifications = async () => {
+    if (!notificationsEnabled) {
+      const granted = await requestNotificationPermission();
+      if (granted) {
+        setNotificationsEnabled(true);
+        toast({
+          title: "Bildirimler Aktif",
+          description: "Artık önemli güncellemelerden haberdar olacaksınız.",
+        });
+      } else {
+        toast({
+          title: "Bildirim İzni Verilmedi",
+          description: "Bildirimleri aktif etmek için tarayıcı ayarlarından izin vermeniz gerekiyor.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      toast({
+        title: "Bildirimler",
+        description: "Bildirimleri kapatmak için tarayıcı ayarlarından izni kaldırabilirsiniz.",
+      });
     }
   };
 
@@ -449,9 +480,9 @@ const Settings = () => {
           <TabsContent value="appearance">
             <Card>
               <CardHeader>
-                <CardTitle>Görünüm</CardTitle>
+                <CardTitle>Görünüm ve Bildirimler</CardTitle>
                 <CardDescription>
-                  Uygulamanın görünümünü özelleştirin
+                  Uygulamanın görünümünü ve bildirim tercihlerinizi özelleştirin
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -468,6 +499,22 @@ const Settings = () => {
                   <Switch
                     checked={darkMode}
                     onCheckedChange={toggleDarkMode}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <div className="space-y-0.5">
+                    <Label className="text-base flex items-center gap-2">
+                      <Bell className="w-4 h-4" />
+                      Bildirimler
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Mesajlar ve arkadaşlık istekleri için bildirim alın
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notificationsEnabled}
+                    onCheckedChange={toggleNotifications}
                   />
                 </div>
               </CardContent>

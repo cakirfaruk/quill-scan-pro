@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Calendar, Clock, MapPin, User } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Header } from "@/components/Header";
-import { TopicSelector } from "@/components/TopicSelector";
+import { PersonSelector } from "@/components/PersonSelector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,10 +25,12 @@ const birthChartTopics = [
 ];
 
 const BirthChart = () => {
-  const [fullName, setFullName] = useState("");
-  const [birthDate, setBirthDate] = useState("");
-  const [birthTime, setBirthTime] = useState("");
-  const [birthPlace, setBirthPlace] = useState("");
+  const [personData, setPersonData] = useState<{
+    fullName?: string;
+    birthDate?: string;
+    birthTime?: string;
+    birthPlace?: string;
+  }>({});
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
@@ -88,7 +89,7 @@ const BirthChart = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!fullName || !birthDate || !birthTime || !birthPlace || selectedTopics.length === 0) {
+    if (!personData.fullName || !personData.birthDate || !personData.birthTime || !personData.birthPlace || selectedTopics.length === 0) {
       toast({
         title: "Eksik Bilgi",
         description: "Lütfen tüm alanları doldurun ve en az bir konu seçin.",
@@ -112,10 +113,10 @@ const BirthChart = () => {
     try {
       const { data, error } = await supabase.functions.invoke("analyze-birth-chart", {
         body: {
-          fullName,
-          birthDate,
-          birthTime,
-          birthPlace,
+          fullName: personData.fullName,
+          birthDate: personData.birthDate,
+          birthTime: personData.birthTime,
+          birthPlace: personData.birthPlace,
           selectedTopics,
         },
       });
@@ -146,10 +147,7 @@ const BirthChart = () => {
   };
 
   const handleReset = () => {
-    setFullName("");
-    setBirthDate("");
-    setBirthTime("");
-    setBirthPlace("");
+    setPersonData({});
     setSelectedTopics([]);
     setAnalysisResult(null);
     setSelectAll(false);
@@ -203,7 +201,7 @@ const BirthChart = () => {
             <CardHeader>
               <CardTitle className="text-3xl">Doğum Haritası Analiz Sonuçları</CardTitle>
               <CardDescription>
-                {analysisData.isim || fullName} - {analysisData.dogum_tarihi || birthDate} {analysisData.dogum_saati || birthTime} - {analysisData.dogum_yeri || birthPlace}
+                {analysisData.isim || personData.fullName} - {analysisData.dogum_tarihi || personData.birthDate} {analysisData.dogum_saati || personData.birthTime} - {analysisData.dogum_yeri || personData.birthPlace}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -239,59 +237,18 @@ const BirthChart = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="fullName" className="flex items-center gap-2">
-                  <User className="w-4 h-4" />
-                  Ad Soyad
-                </Label>
-                <Input
-                  id="fullName"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Örn: Ahmet Yılmaz"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="birthDate" className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Doğum Tarihi
-                </Label>
-                <Input
-                  id="birthDate"
-                  type="date"
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="birthTime" className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  Doğum Saati
-                </Label>
-                <Input
-                  id="birthTime"
-                  type="time"
-                  value={birthTime}
-                  onChange={(e) => setBirthTime(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="birthPlace" className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  Doğum Yeri
-                </Label>
-                <Input
-                  id="birthPlace"
-                  value={birthPlace}
-                  onChange={(e) => setBirthPlace(e.target.value)}
-                  placeholder="Örn: İstanbul, Türkiye"
-                />
-              </div>
-            </div>
+            <PersonSelector
+              label="Kimin İçin Analiz Yapılacak?"
+              personData={personData}
+              onChange={setPersonData}
+              requiredFields={{
+                fullName: true,
+                birthDate: true,
+                birthTime: true,
+                birthPlace: true,
+                gender: false,
+              }}
+            />
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -350,7 +307,15 @@ const BirthChart = () => {
 
             <Button
               onClick={handleAnalyze}
-              disabled={isAnalyzing || selectedTopics.length === 0 || selectedTopics.length > credits}
+              disabled={
+                isAnalyzing || 
+                selectedTopics.length === 0 || 
+                selectedTopics.length > credits ||
+                !personData.fullName ||
+                !personData.birthDate ||
+                !personData.birthTime ||
+                !personData.birthPlace
+              }
               className="w-full"
               size="lg"
             >
