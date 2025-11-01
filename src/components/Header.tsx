@@ -350,68 +350,68 @@ export const Header = () => {
                         )}
 
                         <Accordion type="single" collapsible className="w-full">
-                          <AccordionItem value="analyses">
-                            <AccordionTrigger className="text-sm font-semibold">
+                          <AccordionItem value="analyses" className="border-none">
+                            <AccordionTrigger className="text-sm font-semibold px-0 py-2 hover:no-underline">
                               Analiz Türleri
                             </AccordionTrigger>
-                            <AccordionContent>
+                            <AccordionContent className="pb-2">
                               <div className="space-y-1">
                                 <Link to="/handwriting" onClick={() => setMobileMenuOpen(false)}>
-                                  <Button variant="ghost" className="w-full justify-start gap-2">
+                                  <Button variant="ghost" className="w-full justify-start gap-2 h-9">
                                     <FileText className="w-4 h-4" />
-                                    El Yazısı Analizi
+                                    El Yazısı
                                   </Button>
                                 </Link>
                                 <Link to="/numerology" onClick={() => setMobileMenuOpen(false)}>
-                                  <Button variant="ghost" className="w-full justify-start gap-2">
+                                  <Button variant="ghost" className="w-full justify-start gap-2 h-9">
                                     <Sparkles className="w-4 h-4" />
-                                    Numeroloji Analizi
+                                    Numeroloji
                                   </Button>
                                 </Link>
                                 <Link to="/birth-chart" onClick={() => setMobileMenuOpen(false)}>
-                                  <Button variant="ghost" className="w-full justify-start gap-2">
+                                  <Button variant="ghost" className="w-full justify-start gap-2 h-9">
                                     <Calendar className="w-4 h-4" />
                                     Doğum Haritası
                                   </Button>
                                 </Link>
                                 <Link to="/compatibility" onClick={() => setMobileMenuOpen(false)}>
-                                  <Button variant="ghost" className="w-full justify-start gap-2">
+                                  <Button variant="ghost" className="w-full justify-start gap-2 h-9">
                                     <Heart className="w-4 h-4" />
-                                    Uyum Analizi
+                                    Uyumluluk
                                   </Button>
                                 </Link>
                               </div>
                             </AccordionContent>
                           </AccordionItem>
 
-                          <AccordionItem value="fortune">
-                            <AccordionTrigger className="text-sm font-semibold">
+                          <AccordionItem value="fortune" className="border-none">
+                            <AccordionTrigger className="text-sm font-semibold px-0 py-2 hover:no-underline">
                               Fallar & Kehanetler
                             </AccordionTrigger>
-                            <AccordionContent>
+                            <AccordionContent className="pb-2">
                               <div className="space-y-1">
                                 <Link to="/tarot" onClick={() => setMobileMenuOpen(false)}>
-                                  <Button variant="ghost" className="w-full justify-start">
-                                    🔮 Tarot Falı
+                                  <Button variant="ghost" className="w-full justify-start h-9">
+                                    🔮 Tarot
                                   </Button>
                                 </Link>
                                 <Link to="/coffee-fortune" onClick={() => setMobileMenuOpen(false)}>
-                                  <Button variant="ghost" className="w-full justify-start">
+                                  <Button variant="ghost" className="w-full justify-start h-9">
                                     ☕ Kahve Falı
                                   </Button>
                                 </Link>
                                 <Link to="/dream" onClick={() => setMobileMenuOpen(false)}>
-                                  <Button variant="ghost" className="w-full justify-start">
-                                    🌙 Rüya Tabiri
+                                  <Button variant="ghost" className="w-full justify-start h-9">
+                                    🌙 Rüya
                                   </Button>
                                 </Link>
                                 <Link to="/daily-horoscope" onClick={() => setMobileMenuOpen(false)}>
-                                  <Button variant="ghost" className="w-full justify-start">
-                                    🌟 Günlük Kehanet
+                                  <Button variant="ghost" className="w-full justify-start h-9">
+                                    🌟 Kehanet
                                   </Button>
                                 </Link>
                                 <Link to="/palmistry" onClick={() => setMobileMenuOpen(false)}>
-                                  <Button variant="ghost" className="w-full justify-start">
+                                  <Button variant="ghost" className="w-full justify-start h-9">
                                     🤲 El Okuma
                                   </Button>
                                 </Link>
@@ -419,25 +419,25 @@ export const Header = () => {
                             </AccordionContent>
                           </AccordionItem>
 
-                          <AccordionItem value="social">
-                            <AccordionTrigger className="text-sm font-semibold">
+                          <AccordionItem value="social" className="border-none">
+                            <AccordionTrigger className="text-sm font-semibold px-0 py-2 hover:no-underline">
                               Sosyal
                             </AccordionTrigger>
-                            <AccordionContent>
+                            <AccordionContent className="pb-2">
                               <div className="space-y-1">
                                 <Link to="/match" onClick={() => setMobileMenuOpen(false)}>
-                                  <Button variant="ghost" className="w-full justify-start">
-                                    Eşleşme
+                                  <Button variant="ghost" className="w-full justify-start h-9">
+                                    💕 Eşleşme
                                   </Button>
                                 </Link>
                                 <Link to="/friends" onClick={() => setMobileMenuOpen(false)}>
-                                  <Button variant="ghost" className="w-full justify-start gap-2">
+                                  <Button variant="ghost" className="w-full justify-start gap-2 h-9">
                                     <Heart className="w-4 h-4" />
-                                    Arkadaşlarım
+                                    Arkadaşlar
                                   </Button>
                                 </Link>
                                 <Link to="/messages" onClick={() => setMobileMenuOpen(false)}>
-                                  <Button variant="ghost" className="w-full justify-start gap-2">
+                                  <Button variant="ghost" className="w-full justify-start gap-2 h-9">
                                     <MessageCircle className="w-4 h-4" />
                                     Mesajlar
                                   </Button>
@@ -448,20 +448,20 @@ export const Header = () => {
                         </Accordion>
 
                         <Link to="/history" onClick={() => setMobileMenuOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start">
-                            Analizlerim
+                          <Button variant="ghost" className="w-full justify-start h-9">
+                            📋 Analizlerim
                           </Button>
                         </Link>
 
-                        <div className="border-t pt-4 space-y-2">
+                        <div className="border-t pt-3 space-y-1">
                           <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
-                            <Button variant="ghost" className="w-full justify-start gap-2">
+                            <Button variant="ghost" className="w-full justify-start gap-2 h-9">
                               <User className="w-4 h-4" />
-                              Profilim
+                              Profil
                             </Button>
                           </Link>
                           <Link to="/settings" onClick={() => setMobileMenuOpen(false)}>
-                            <Button variant="ghost" className="w-full justify-start gap-2">
+                            <Button variant="ghost" className="w-full justify-start gap-2 h-9">
                               <Settings className="w-4 h-4" />
                               Ayarlar
                             </Button>
@@ -472,10 +472,10 @@ export const Header = () => {
                               setMobileMenuOpen(false);
                             }} 
                             variant="outline" 
-                            className="w-full justify-start gap-2"
+                            className="w-full justify-start gap-2 h-9"
                           >
                             <CreditCard className="w-4 h-4" />
-                            Kredi Satın Al
+                            Kredi Al
                           </Button>
                           <Button 
                             onClick={() => {
@@ -483,10 +483,10 @@ export const Header = () => {
                               setMobileMenuOpen(false);
                             }} 
                             variant="ghost" 
-                            className="w-full justify-start gap-2 text-destructive"
+                            className="w-full justify-start gap-2 text-destructive h-9"
                           >
                             <LogOut className="w-4 h-4" />
-                            Çıkış Yap
+                            Çıkış
                           </Button>
                         </div>
                       </>
