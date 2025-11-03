@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+import { getAllPlanets } from "ephemeris";
 
 const birthChartTopics = [
   "Güneş Burcu (Kişilik)",
@@ -89,6 +90,73 @@ const BirthChart = () => {
     setSelectAll(!selectAll);
   };
 
+  const calculateBirthChart = async (birthDate: string, birthTime: string, birthPlace: string) => {
+    try {
+      // Get coordinates from Google Maps API
+      const geocodeResponse = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(birthPlace)}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyDummy'}`
+      );
+      const geocodeData = await geocodeResponse.json();
+      
+      let latitude = 40.1917; // Default: Bursa
+      let longitude = 29.0610;
+      
+      if (geocodeData.results && geocodeData.results.length > 0) {
+        latitude = geocodeData.results[0].geometry.location.lat;
+        longitude = geocodeData.results[0].geometry.location.lng;
+      }
+
+      // Combine date and time
+      const dateTimeString = `${birthDate}T${birthTime}:00`;
+      const birthDateTime = new Date(dateTimeString);
+
+      // Calculate planets using ephemeris
+      const planets = getAllPlanets(birthDateTime, longitude, latitude);
+
+      // Convert to zodiac signs
+      const getZodiacSign = (longitude: number) => {
+        const signs = [
+          "Koç", "Boğa", "İkizler", "Yengeç", "Aslan", "Başak",
+          "Terazi", "Akrep", "Yay", "Oğlak", "Kova", "Balık"
+        ];
+        const signIndex = Math.floor(longitude / 30);
+        return signs[signIndex];
+      };
+
+      const formatDegrees = (longitude: number) => {
+        const sign = Math.floor(longitude / 30);
+        const degrees = longitude - (sign * 30);
+        const deg = Math.floor(degrees);
+        const minDecimal = (degrees - deg) * 60;
+        const min = Math.floor(minDecimal);
+        const sec = Math.floor((minDecimal - min) * 60);
+        return `${deg}° ${min}' ${sec}"`;
+      };
+
+      const gezegen_burclari = {
+        gunes: { burc: getZodiacSign(planets.sun.apparentLongitudeDd), derece: formatDegrees(planets.sun.apparentLongitudeDd) },
+        ay: { burc: getZodiacSign(planets.moon.apparentLongitudeDd), derece: formatDegrees(planets.moon.apparentLongitudeDd) },
+        merkur: { burc: getZodiacSign(planets.mercury.apparentLongitudeDd), derece: formatDegrees(planets.mercury.apparentLongitudeDd) },
+        venus: { burc: getZodiacSign(planets.venus.apparentLongitudeDd), derece: formatDegrees(planets.venus.apparentLongitudeDd) },
+        mars: { burc: getZodiacSign(planets.mars.apparentLongitudeDd), derece: formatDegrees(planets.mars.apparentLongitudeDd) },
+        jupiter: { burc: getZodiacSign(planets.jupiter.apparentLongitudeDd), derece: formatDegrees(planets.jupiter.apparentLongitudeDd) },
+        saturn: { burc: getZodiacSign(planets.saturn.apparentLongitudeDd), derece: formatDegrees(planets.saturn.apparentLongitudeDd) },
+        uranus: { burc: getZodiacSign(planets.uranus.apparentLongitudeDd), derece: formatDegrees(planets.uranus.apparentLongitudeDd) },
+        neptun: { burc: getZodiacSign(planets.neptune.apparentLongitudeDd), derece: formatDegrees(planets.neptune.apparentLongitudeDd) },
+        pluton: { burc: getZodiacSign(planets.pluto.apparentLongitudeDd), derece: formatDegrees(planets.pluto.apparentLongitudeDd) },
+      };
+
+      return {
+        latitude,
+        longitude,
+        gezegen_burclari
+      };
+    } catch (error) {
+      console.error("Birth chart calculation error:", error);
+      throw error;
+    }
+  };
+
   const handleAnalyze = async () => {
     // Check if profile is complete
     const missingFields: string[] = [];
@@ -128,6 +196,13 @@ const BirthChart = () => {
     setIsAnalyzing(true);
 
     try {
+      // Calculate birth chart on client-side
+      const chartData = await calculateBirthChart(
+        personData.birthDate!,
+        personData.birthTime!,
+        personData.birthPlace!
+      );
+
       const { data, error } = await supabase.functions.invoke("analyze-birth-chart", {
         body: {
           fullName: personData.fullName,
@@ -135,6 +210,7 @@ const BirthChart = () => {
           birthTime: personData.birthTime,
           birthPlace: personData.birthPlace,
           selectedTopics,
+          chartData, // Send calculated chart data
         },
       });
 

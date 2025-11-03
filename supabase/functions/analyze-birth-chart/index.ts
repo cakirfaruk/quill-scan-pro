@@ -28,7 +28,7 @@ serve(async (req) => {
   }
 
   try {
-    const { fullName, birthDate, birthTime, birthPlace, selectedTopics } = await req.json();
+    const { fullName, birthDate, birthTime, birthPlace, selectedTopics, chartData } = await req.json();
     
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
@@ -81,143 +81,23 @@ serve(async (req) => {
 
     console.log("Starting birth chart analysis...");
     
-    // Step 1: Get real astronomical calculations from Free Astrology API
-    console.log("Fetching real planetary positions from Free Astrology API...");
+    // Use chart data calculated on client-side
+    const latitude = chartData?.latitude || 40.1917;
+    const longitude = chartData?.longitude || 29.0610;
+    const planetarySigns = chartData?.gezegen_burclari || {};
     
-    // Parse date and time
-    const [year, month, day] = birthDate.split('-').map(Number);
-    const [hours, minutes] = birthTime.split(':').map(Number);
-    
-    // Geocode birthPlace using Google Maps API for accurate coordinates
-    let latitude = 41.0082; // Default: Istanbul
-    let longitude = 28.9784; // Default: Istanbul
-    let timezone = 3; // Turkey UTC+3
-    
-    const GOOGLE_MAPS_API_KEY = Deno.env.get("GOOGLE_MAPS_API_KEY");
-    
-    if (GOOGLE_MAPS_API_KEY) {
-      try {
-        console.log(`Geocoding location: ${birthPlace}`);
-        const geocodeResponse = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(birthPlace + ', Turkey')}&key=${GOOGLE_MAPS_API_KEY}`
-        );
-        
-        if (geocodeResponse.ok) {
-          const geocodeData = await geocodeResponse.json();
-          if (geocodeData.results && geocodeData.results.length > 0) {
-            const location = geocodeData.results[0].geometry.location;
-            latitude = location.lat;
-            longitude = location.lng;
-            console.log(`Geocoded coordinates: ${latitude}, ${longitude}`);
-          } else {
-            console.warn("No geocoding results found, using default Istanbul coordinates");
-          }
-        } else {
-          console.error("Geocoding API error:", await geocodeResponse.text());
-        }
-      } catch (error) {
-        console.error("Error calling Google Maps Geocoding API:", error);
-      }
-    } else {
-      console.warn("GOOGLE_MAPS_API_KEY not set, using default Istanbul coordinates");
-    }
+    console.log("Using client-calculated chart data:", { latitude, longitude, planetarySigns });
 
-    let realPlanetData = null;
-    let planetarySigns: Record<string, string> = {};
-    
-    try {
-      const astrologyApiResponse = await fetch("https://json.freeastrologyapi.com/planets", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          year,
-          month,
-          day,
-          hours,
-          minutes,
-          seconds: 0,
-          latitude,
-          longitude,
-          timezone,
-          config: {
-            observation_point: "topocentric",
-            ayanamsha: "lahiri"
-          }
-        }),
-      });
-
-      if (astrologyApiResponse.ok) {
-        realPlanetData = await astrologyApiResponse.json();
-        console.log("Real planetary positions received successfully");
-        
-        // Extract zodiac signs for each planet
-        if (realPlanetData && realPlanetData.output) {
-          const planets = realPlanetData.output;
-          
-          // Map Turkish planet names
-          const planetMap: Record<string, string> = {
-            "sun": "Güneş",
-            "moon": "Ay",
-            "mercury": "Merkür",
-            "venus": "Venüs",
-            "mars": "Mars",
-            "jupiter": "Jüpiter",
-            "saturn": "Satürn",
-            "uranus": "Uranüs",
-            "neptune": "Neptün",
-            "pluto": "Plüton",
-            "ascendant": "Yükselen"
-          };
-          
-          // Turkish zodiac signs
-          const signMap: Record<string, string> = {
-            "aries": "Koç",
-            "taurus": "Boğa",
-            "gemini": "İkizler",
-            "cancer": "Yengeç",
-            "leo": "Aslan",
-            "virgo": "Başak",
-            "libra": "Terazi",
-            "scorpio": "Akrep",
-            "sagittarius": "Yay",
-            "capricorn": "Oğlak",
-            "aquarius": "Kova",
-            "pisces": "Balık"
-          };
-          
-          for (const [planetKey, planetData] of Object.entries(planets)) {
-            const planetName = planetMap[planetKey.toLowerCase()];
-            const signName = signMap[(planetData as any)?.sign?.toLowerCase()];
-            
-            if (planetName && signName) {
-              planetarySigns[planetName] = signName;
-            }
-          }
-          
-          console.log("Extracted planetary signs:", planetarySigns);
-        }
-      } else {
-        console.error("Failed to fetch real planetary data:", await astrologyApiResponse.text());
-      }
-    } catch (error) {
-      console.error("Error calling Free Astrology API:", error);
-    }
-
-    // Step 2: Create comprehensive prompt with real data
-    const planetaryDataText = realPlanetData ? `
-✅ GERÇEK ASTRONOMİK HESAPLAMALAR (Swiss Ephemeris):
+    // Create comprehensive prompt with real data
+    const planetaryDataText = `
+✅ GERÇEK ASTRONOMİK HESAPLAMALAR (Moshier Ephemeris):
 
 Koordinatlar: ${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E
-Saat Dilimi: UTC+${timezone}
 
-Planetler ve Konumları:
-${JSON.stringify(realPlanetData.output || realPlanetData, null, 2)}
+Gezegen Konumları:
+${JSON.stringify(planetarySigns, null, 2)}
 
-ÖNEMLİ: Bu gerçek astronomik verilere dayanarak profesyonel analiz yap. Gezegenlerin burçlarını, evlerini, açılarını dikkate al.
-` : `
-⚠️ NOT: Gerçek astronomik hesaplamalar şu anda alınamadı. Verilen doğum bilgilerine göre genel astrolojik prensiplere dayalı yorum yap.
+ÖNEMLİ: Bu gerçek astronomik verilere dayanarak profesyonel analiz yap. Gezegenlerin burçlarını ve derecelerini dikkate al.
 `;
 
     const systemPrompt = `Sen profesyonel bir astrolog ve doğum haritası uzmanısın. "Doğum Haritası Yorumlama Sanatı" kitabındaki yöntemleri kullanarak detaylı analiz yapıyorsun.
@@ -233,7 +113,7 @@ Doğum Bilgileri:
 Seçilen Konular: ${selectedTopics.join(", ")}
 
 ANALIZ YÖNTEMİ:
-${realPlanetData ? "Verilen gerçek gezegen pozisyonlarını kullanarak" : "Genel astrolojik prensiplere göre"} her konu için detaylı analiz yap:
+Verilen gerçek gezegen pozisyonlarını kullanarak her konu için detaylı analiz yap:
 
 1. **Element Analizi**: Ateş, Toprak, Hava, Su elementlerinin dağılımı
 2. **Nitelik Analizi**: Öncü, Sabit, Değişken burçların dağılımı  
