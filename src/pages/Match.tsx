@@ -1148,7 +1148,7 @@ const Match = () => {
       </Dialog>
 
       <Dialog open={showTarotDialog} onOpenChange={setShowTarotDialog}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] sm:max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Tarot Falı</DialogTitle>
             <DialogDescription>
@@ -1157,22 +1157,23 @@ const Match = () => {
           </DialogHeader>
 
           {!showCardSelection ? (
-            <div className="space-y-4">
+            <div className="space-y-4 pb-4">
               <div className="space-y-2">
                 <Label>Soru</Label>
                 <Textarea
                   placeholder="İlişki hakkında sormak istediğiniz soruyu yazın..."
                   value={tarotQuestion}
                   onChange={(e) => setTarotQuestion(e.target.value)}
-                  rows={4}
+                  rows={3}
+                  className="resize-none"
                 />
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap sm:flex-nowrap">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={getRandomQuestion}
-                    className="flex-1"
+                    className="flex-1 min-w-[120px]"
                   >
                     <Sparkles className="w-3 h-3 mr-1" />
                     Rastgele Seç
@@ -1182,7 +1183,7 @@ const Match = () => {
                     variant="outline"
                     size="sm"
                     onClick={getRandomQuestion}
-                    className="flex-1"
+                    className="flex-1 min-w-[120px]"
                     disabled={!tarotQuestion}
                   >
                     Değiştir
