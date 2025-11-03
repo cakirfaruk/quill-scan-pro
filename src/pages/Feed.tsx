@@ -14,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Reply, Loader2, RefreshCw } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Reply, Loader2, RefreshCw, Bookmark } from "lucide-react";
 import { useImpersonate } from "@/hooks/use-impersonate";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { soundEffects } from "@/utils/soundEffects";
@@ -36,6 +36,7 @@ interface Post {
   likes: number;
   comments: number;
   hasLiked: boolean;
+  hasSaved: boolean;
 }
 
 interface Comment {
@@ -181,12 +182,20 @@ const Feed = () => {
             .eq("user_id", currentUserId)
             .maybeSingle();
 
+          const { data: saveCheck } = await supabase
+            .from("saved_posts")
+            .select("id")
+            .eq("post_id", post.id)
+            .eq("user_id", currentUserId)
+            .maybeSingle();
+
           return {
             ...post,
             profile: post.profiles,
             likes: likesCount || 0,
             comments: commentsCount || 0,
             hasLiked: !!likeCheck,
+            hasSaved: !!saveCheck,
             shares_count: post.shares_count || 0,
           };
         })
@@ -230,6 +239,23 @@ const Feed = () => {
       } else {
         soundEffects.playLike();
         await supabase.from("post_likes").insert({ post_id: postId, user_id: userId });
+      }
+      await loadPosts(userId);
+    } catch (error: any) {
+      soundEffects.playError();
+      toast({ title: "Hata", description: "İşlem gerçekleştirilemedi", variant: "destructive" });
+    }
+  };
+
+  const handleSave = async (postId: string, hasSaved: boolean) => {
+    try {
+      if (hasSaved) {
+        await supabase.from("saved_posts").delete().eq("post_id", postId).eq("user_id", userId);
+        toast({ title: "Kaydedildi", description: "Gönderi kaydedilenlerden kaldırıldı" });
+      } else {
+        soundEffects.playClick();
+        await supabase.from("saved_posts").insert({ post_id: postId, user_id: userId });
+        toast({ title: "Kaydedildi", description: "Gönderi başarıyla kaydedildi" });
       }
       await loadPosts(userId);
     } catch (error: any) {
@@ -540,6 +566,16 @@ const Feed = () => {
           >
             <Share2 className="w-5 h-5" />
             Paylaş
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex-1 gap-2 hover:bg-yellow-50 hover:text-yellow-600 transition-colors"
+            onClick={() => handleSave(post.id, post.hasSaved)}
+          >
+            <Bookmark className={`w-5 h-5 transition-transform hover:scale-110 ${post.hasSaved ? "fill-yellow-600 text-yellow-600" : ""}`} />
+            Kaydet
           </Button>
         </div>
       </div>
