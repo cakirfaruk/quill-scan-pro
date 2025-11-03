@@ -3,17 +3,18 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
-import { Heart, MessageCircle, Send, Loader2 } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Reply } from "lucide-react";
 import { useImpersonate } from "@/hooks/use-impersonate";
 
 interface Post {
@@ -23,6 +24,7 @@ interface Post {
   media_url: string | null;
   media_type: string | null;
   created_at: string;
+  shares_count: number;
   profile: {
     username: string;
     full_name: string | null;
@@ -37,11 +39,16 @@ interface Comment {
   id: string;
   content: string;
   created_at: string;
+  parent_comment_id: string | null;
+  user_id: string;
   user: {
     username: string;
     full_name: string | null;
     profile_photo: string | null;
   };
+  likes: number;
+  hasLiked: boolean;
+  replies: Comment[];
 }
 
 const Feed = () => {
@@ -53,6 +60,7 @@ const Feed = () => {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
   const [userId, setUserId] = useState<string>("");
   const { getEffectiveUserId } = useImpersonate();
@@ -80,7 +88,6 @@ const Feed = () => {
 
   const loadPosts = async (currentUserId: string) => {
     try {
-      // Load all posts with profile data
       const { data: postsData, error: postsError } = await supabase
         .from("posts")
         .select(`
@@ -96,7 +103,6 @@ const Feed = () => {
 
       if (postsError) throw postsError;
 
-      // Get likes and comments count for each post
       const postsWithData = await Promise.all(
         (postsData || []).map(async (post: any) => {
           const { count: likesCount } = await supabase
@@ -122,14 +128,12 @@ const Feed = () => {
             likes: likesCount || 0,
             comments: commentsCount || 0,
             hasLiked: !!likeCheck,
+            shares_count: post.shares_count || 0,
           };
         })
       );
 
-      // Filter friends posts (user's own posts + friends' posts)
-      const friendsPosts = postsWithData.filter(post => {
-        return post.user_id === currentUserId; // Will be extended with friends check via RLS
-      });
+      const friendsPosts = postsWithData.filter(post => post.user_id === currentUserId);
 
       setFriendsPosts(friendsPosts);
       setAllPosts(postsWithData);
@@ -148,39 +152,30 @@ const Feed = () => {
   const handleLike = async (postId: string, hasLiked: boolean) => {
     try {
       if (hasLiked) {
-        const { error } = await supabase
-          .from("post_likes")
-          .delete()
-          .eq("post_id", postId)
-          .eq("user_id", userId);
-
-        if (error) throw error;
+        await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", userId);
       } else {
-        const { error } = await supabase
-          .from("post_likes")
-          .insert({
-            post_id: postId,
-            user_id: userId,
-          });
-
-        if (error) throw error;
+        await supabase.from("post_likes").insert({ post_id: postId, user_id: userId });
       }
-
       await loadPosts(userId);
     } catch (error: any) {
-      toast({
-        title: "Hata",
-        description: "İşlem gerçekleştirilemedi",
-        variant: "destructive",
-      });
+      toast({ title: "Hata", description: "İşlem gerçekleştirilemedi", variant: "destructive" });
     }
   };
 
-  const handleOpenComments = async (post: Post) => {
-    setSelectedPost(post);
-    setCommentsDialogOpen(true);
+  const handleCommentLike = async (commentId: string, hasLiked: boolean) => {
+    try {
+      if (hasLiked) {
+        await supabase.from("comment_likes").delete().eq("comment_id", commentId).eq("user_id", userId);
+      } else {
+        await supabase.from("comment_likes").insert({ comment_id: commentId, user_id: userId });
+      }
+      if (selectedPost) await loadComments(selectedPost.id);
+    } catch (error: any) {
+      toast({ title: "Hata", description: "İşlem gerçekleştirilemedi", variant: "destructive" });
+    }
+  };
 
-    // Load comments
+  const loadComments = async (postId: string) => {
     try {
       const { data, error } = await supabase
         .from("post_comments")
@@ -192,159 +187,255 @@ const Feed = () => {
             profile_photo
           )
         `)
-        .eq("post_id", post.id)
+        .eq("post_id", postId)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
 
-      setComments((data || []).map((c: any) => ({
-        id: c.id,
-        content: c.content,
-        created_at: c.created_at,
-        user: c.profiles,
-      })));
+      const commentsWithLikes = await Promise.all(
+        (data || []).map(async (c: any) => {
+          const { count: likesCount } = await supabase
+            .from("comment_likes")
+            .select("*", { count: "exact", head: true })
+            .eq("comment_id", c.id);
+
+          const { data: likeCheck } = await supabase
+            .from("comment_likes")
+            .select("id")
+            .eq("comment_id", c.id)
+            .eq("user_id", userId)
+            .maybeSingle();
+
+          return {
+            id: c.id,
+            content: c.content,
+            created_at: c.created_at,
+            parent_comment_id: c.parent_comment_id,
+            user_id: c.user_id,
+            user: c.profiles,
+            likes: likesCount || 0,
+            hasLiked: !!likeCheck,
+            replies: [],
+          };
+        })
+      );
+
+      // Organize comments into parent-child structure
+      const parentComments = commentsWithLikes.filter(c => !c.parent_comment_id);
+      const childComments = commentsWithLikes.filter(c => c.parent_comment_id);
+
+      parentComments.forEach(parent => {
+        parent.replies = childComments.filter(child => child.parent_comment_id === parent.id);
+      });
+
+      setComments(parentComments);
     } catch (error) {
       console.error("Error loading comments:", error);
     }
+  };
+
+  const handleOpenComments = async (post: Post) => {
+    setSelectedPost(post);
+    setCommentsDialogOpen(true);
+    await loadComments(post.id);
   };
 
   const handleAddComment = async () => {
     if (!selectedPost || !newComment.trim()) return;
 
     try {
-      const { error } = await supabase
-        .from("post_comments")
-        .insert({
-          post_id: selectedPost.id,
-          user_id: userId,
-          content: newComment.trim(),
-        });
-
-      if (error) throw error;
+      await supabase.from("post_comments").insert({
+        post_id: selectedPost.id,
+        user_id: userId,
+        content: newComment.trim(),
+        parent_comment_id: replyingTo,
+      });
 
       setNewComment("");
-      handleOpenComments(selectedPost);
+      setReplyingTo(null);
+      await loadComments(selectedPost.id);
       await loadPosts(userId);
     } catch (error: any) {
-      toast({
-        title: "Hata",
-        description: "Yorum eklenemedi",
-        variant: "destructive",
-      });
+      toast({ title: "Hata", description: "Yorum eklenemedi", variant: "destructive" });
     }
   };
 
-  const handleSendAsMessage = async (post: Post) => {
+  const handleShare = async (post: Post) => {
     try {
-      const { error } = await supabase
-        .from("messages")
+      // Create a new post that references the original
+      const { data: newPost, error: postError } = await supabase
+        .from("posts")
         .insert({
-          sender_id: userId,
-          receiver_id: post.user_id,
-          content: `📸 Paylaşım: ${post.content || ""}`,
-        });
+          user_id: userId,
+          content: `🔄 Paylaşıldı`,
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (postError) throw postError;
 
-      toast({
-        title: "Başarılı",
-        description: "Mesaj gönderildi",
+      // Create share record
+      await supabase.from("post_shares").insert({
+        post_id: post.id,
+        user_id: userId,
+        shared_post_id: newPost.id,
       });
 
-      navigate(`/messages?userId=${post.user_id}`);
+      // Update shares count
+      await supabase
+        .from("posts")
+        .update({ shares_count: (post.shares_count || 0) + 1 })
+        .eq("id", post.id);
+
+      toast({ title: "Başarılı", description: "Gönderi paylaşıldı" });
+      await loadPosts(userId);
     } catch (error: any) {
-      toast({
-        title: "Hata",
-        description: "Mesaj gönderilemedi",
-        variant: "destructive",
-      });
+      toast({ title: "Hata", description: "Gönderi paylaşılamadı", variant: "destructive" });
     }
   };
 
-  const renderPost = (post: Post) => {
-    return (
-      <Card key={post.id} className="mb-4 hover:shadow-lg transition-shadow">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div
-              className="flex items-center gap-3 cursor-pointer hover:opacity-80"
-              onClick={() => navigate(`/profile/${post.profile.username}`)}
+  const renderComment = (comment: Comment, isReply: boolean = false) => (
+    <div key={comment.id} className={`${isReply ? 'ml-8 mt-2' : 'mt-4'} animate-fade-in`}>
+      <div className="flex gap-3">
+        <Avatar 
+          className="w-8 h-8 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+          onClick={() => navigate(`/profile/${comment.user.username}`)}
+        >
+          <AvatarImage src={comment.user.profile_photo || undefined} />
+          <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs">
+            {comment.user.username.substring(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1">
+          <div className="bg-muted rounded-2xl px-4 py-2">
+            <p 
+              className="font-semibold text-sm cursor-pointer hover:underline"
+              onClick={() => navigate(`/profile/${comment.user.username}`)}
             >
-              <Avatar>
-                <AvatarImage src={post.profile.profile_photo || undefined} />
-                <AvatarFallback className="bg-gradient-primary text-primary-foreground">
-                  {post.profile.full_name?.[0] || post.profile.username[0].toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-semibold">{post.profile.full_name || post.profile.username}</p>
-                <p className="text-sm text-muted-foreground">
-                  {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: tr })}
-                </p>
-              </div>
-            </div>
+              {comment.user.full_name || comment.user.username}
+            </p>
+            <p className="text-sm mt-0.5">{comment.content}</p>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {post.content && (
-            <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
-          )}
-          
-          {post.media_url && (
-            <div className="rounded-lg overflow-hidden">
-              {post.media_type === "photo" ? (
-                <img 
-                  src={post.media_url} 
-                  alt="Post media" 
-                  className="w-full max-h-96 object-cover"
-                />
-              ) : (
-                <video 
-                  src={post.media_url} 
-                  controls 
-                  className="w-full max-h-96"
-                />
-              )}
-            </div>
-          )}
-
-          <div className="flex items-center gap-4 pt-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-2"
-              onClick={() => handleLike(post.id, post.hasLiked)}
+          <div className="flex items-center gap-4 mt-1 px-2 text-xs text-muted-foreground">
+            <span>{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: tr })}</span>
+            <button
+              className="hover:text-primary font-medium transition-colors"
+              onClick={() => handleCommentLike(comment.id, comment.hasLiked)}
             >
-              <Heart className={`w-4 h-4 ${post.hasLiked ? "fill-red-500 text-red-500" : ""}`} />
-              {post.likes}
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-2"
-              onClick={() => handleOpenComments(post)}
-            >
-              <MessageCircle className="w-4 h-4" />
-              {post.comments}
-            </Button>
-
-            {post.user_id !== userId && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2 ml-auto"
-                onClick={() => handleSendAsMessage(post)}
+              <Heart className={`w-3 h-3 inline mr-1 ${comment.hasLiked ? "fill-red-500 text-red-500" : ""}`} />
+              {comment.likes > 0 && comment.likes}
+            </button>
+            {!isReply && (
+              <button
+                className="hover:text-primary font-medium transition-colors"
+                onClick={() => setReplyingTo(comment.id)}
               >
-                <Send className="w-4 h-4" />
-                Mesaj Gönder
-              </Button>
+                <Reply className="w-3 h-3 inline mr-1" />
+                Yanıtla
+              </button>
             )}
           </div>
-        </CardContent>
-      </Card>
-    );
-  };
+          {comment.replies.length > 0 && (
+            <div className="mt-2 space-y-2">
+              {comment.replies.map(reply => renderComment(reply, true))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderPost = (post: Post) => (
+    <Card key={post.id} className="mb-6 overflow-hidden hover:shadow-xl transition-all duration-300 border-border/50">
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div
+            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => navigate(`/profile/${post.profile.username}`)}
+          >
+            <Avatar className="ring-2 ring-border">
+              <AvatarImage src={post.profile.profile_photo || undefined} />
+              <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                {post.profile.full_name?.[0] || post.profile.username[0].toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-semibold text-sm">{post.profile.full_name || post.profile.username}</p>
+              <p className="text-xs text-muted-foreground">
+                {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: tr })}
+              </p>
+            </div>
+          </div>
+          <Button variant="ghost" size="icon" className="rounded-full">
+            <MoreHorizontal className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {post.content && (
+          <p className="text-foreground whitespace-pre-wrap mb-3 text-sm leading-relaxed">{post.content}</p>
+        )}
+      </div>
+
+      {post.media_url && (
+        <div className="w-full">
+          {post.media_type === "photo" ? (
+            <img 
+              src={post.media_url} 
+              alt="Post media" 
+              className="w-full max-h-[500px] object-cover"
+            />
+          ) : (
+            <video 
+              src={post.media_url} 
+              controls 
+              className="w-full max-h-[500px]"
+            />
+          )}
+        </div>
+      )}
+
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-3 text-sm text-muted-foreground">
+          <span>{post.likes} beğeni</span>
+          <span>{post.comments} yorum • {post.shares_count} paylaşım</span>
+        </div>
+
+        <Separator className="mb-3" />
+
+        <div className="flex items-center justify-around">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex-1 gap-2 hover:bg-red-50 hover:text-red-500 transition-colors"
+            onClick={() => handleLike(post.id, post.hasLiked)}
+          >
+            <Heart className={`w-5 h-5 transition-transform hover:scale-110 ${post.hasLiked ? "fill-red-500 text-red-500" : ""}`} />
+            Beğen
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex-1 gap-2 hover:bg-blue-50 hover:text-blue-500 transition-colors"
+            onClick={() => handleOpenComments(post)}
+          >
+            <MessageCircle className="w-5 h-5" />
+            Yorum
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex-1 gap-2 hover:bg-green-50 hover:text-green-500 transition-colors"
+            onClick={() => handleShare(post)}
+          >
+            <Share2 className="w-5 h-5" />
+            Paylaş
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
 
   if (loading) {
     return (
@@ -352,19 +443,17 @@ const Feed = () => {
         <Header />
         <div className="container mx-auto px-4 py-8 max-w-2xl">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="mb-4">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <Skeleton className="h-10 w-10 rounded-full" />
+            <Card key={i} className="mb-6">
+              <div className="p-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <Skeleton className="h-12 w-12 rounded-full" />
                   <div className="space-y-2">
                     <Skeleton className="h-4 w-32" />
                     <Skeleton className="h-3 w-24" />
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-20 w-full" />
-              </CardContent>
+                <Skeleton className="h-32 w-full rounded-lg" />
+              </div>
             </Card>
           ))}
         </div>
@@ -386,11 +475,15 @@ const Feed = () => {
             <TabsTrigger value="discover">Keşfet</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="friends">
+          <TabsContent value="friends" className="mt-0">
             {friendsPosts.length === 0 ? (
-              <Card className="p-8 text-center">
-                <p className="text-muted-foreground">
+              <Card className="p-12 text-center">
+                <MessageCircle className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <p className="text-muted-foreground text-lg">
                   Henüz arkadaşlarınızdan paylaşım yok
+                </p>
+                <p className="text-muted-foreground text-sm mt-2">
+                  Keşfet sekmesinden yeni arkadaşlar bulun
                 </p>
               </Card>
             ) : (
@@ -398,9 +491,9 @@ const Feed = () => {
             )}
           </TabsContent>
           
-          <TabsContent value="discover">
+          <TabsContent value="discover" className="mt-0">
             {allPosts.length === 0 ? (
-              <Card className="p-8 text-center">
+              <Card className="p-12 text-center">
                 <p className="text-muted-foreground">
                   Henüz paylaşım yok
                 </p>
@@ -414,57 +507,65 @@ const Feed = () => {
 
       {/* Comments Dialog */}
       <Dialog open={commentsDialogOpen} onOpenChange={setCommentsDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>Yorumlar</DialogTitle>
+        <DialogContent className="max-w-2xl max-h-[85vh] p-0">
+          <DialogHeader className="p-6 pb-4">
+            <DialogTitle className="text-xl">Yorumlar</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div className="max-h-[400px] overflow-y-auto space-y-3">
-              {comments.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
+          <ScrollArea className="max-h-[calc(85vh-180px)] px-6">
+            {comments.length === 0 ? (
+              <div className="text-center py-12">
+                <MessageCircle className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                <p className="text-muted-foreground">
                   Henüz yorum yok
                 </p>
-              ) : (
-                comments.map((comment) => (
-                  <div key={comment.id} className="flex gap-3">
-                    <Avatar 
-                      className="w-8 h-8 cursor-pointer"
-                      onClick={() => navigate(`/profile/${comment.user.username}`)}
-                    >
-                      <AvatarImage src={comment.user.profile_photo || undefined} />
-                      <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs">
-                        {comment.user.username.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p 
-                          className="font-semibold text-sm cursor-pointer hover:underline"
-                          onClick={() => navigate(`/profile/${comment.user.username}`)}
-                        >
-                          {comment.user.full_name || comment.user.username}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: tr })}
-                        </p>
-                      </div>
-                      <p className="text-sm mt-1">{comment.content}</p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  İlk yorumu siz yapın!
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {comments.map(comment => renderComment(comment))}
+              </div>
+            )}
+          </ScrollArea>
 
-            <div className="flex gap-2 pt-4 border-t">
+          <div className="p-4 border-t bg-background">
+            {replyingTo && (
+              <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
+                <Reply className="w-3 h-3" />
+                <span>Yanıtlanıyor</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 ml-auto"
+                  onClick={() => setReplyingTo(null)}
+                >
+                  İptal
+                </Button>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Avatar className="w-9 h-9 flex-shrink-0">
+                <AvatarImage src={""} />
+                <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs">
+                  ME
+                </AvatarFallback>
+              </Avatar>
               <Input
-                placeholder="Yorum yaz..."
+                placeholder={replyingTo ? "Yanıtınızı yazın..." : "Yorum yazın..."}
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
+                onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleAddComment()}
+                className="flex-1"
               />
-              <Button onClick={handleAddComment} size="icon">
-                <Send className="w-4 h-4" />
+              <Button 
+                onClick={handleAddComment}
+                disabled={!newComment.trim()}
+                size="icon"
+                className="flex-shrink-0"
+              >
+                <Reply className="w-4 h-4" />
               </Button>
             </div>
           </div>

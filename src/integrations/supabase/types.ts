@@ -119,6 +119,35 @@ export type Database = {
         }
         Relationships: []
       }
+      comment_likes: {
+        Row: {
+          comment_id: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "post_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compatibility_analyses: {
         Row: {
           created_at: string
@@ -484,6 +513,7 @@ export type Database = {
           content: string
           created_at: string | null
           id: string
+          parent_comment_id: string | null
           post_id: string
           updated_at: string | null
           user_id: string
@@ -492,6 +522,7 @@ export type Database = {
           content: string
           created_at?: string | null
           id?: string
+          parent_comment_id?: string | null
           post_id: string
           updated_at?: string | null
           user_id: string
@@ -500,11 +531,19 @@ export type Database = {
           content?: string
           created_at?: string | null
           id?: string
+          parent_comment_id?: string | null
           post_id?: string
           updated_at?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "post_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "post_comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "post_comments_post_id_fkey"
             columns: ["post_id"]
@@ -543,6 +582,45 @@ export type Database = {
           },
         ]
       }
+      post_shares: {
+        Row: {
+          created_at: string | null
+          id: string
+          post_id: string
+          shared_post_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          post_id: string
+          shared_post_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          post_id?: string
+          shared_post_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_shares_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_shares_shared_post_id_fkey"
+            columns: ["shared_post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           content: string | null
@@ -550,6 +628,7 @@ export type Database = {
           id: string
           media_type: string | null
           media_url: string | null
+          shares_count: number | null
           updated_at: string | null
           user_id: string
         }
@@ -559,6 +638,7 @@ export type Database = {
           id?: string
           media_type?: string | null
           media_url?: string | null
+          shares_count?: number | null
           updated_at?: string | null
           user_id: string
         }
@@ -568,6 +648,7 @@ export type Database = {
           id?: string
           media_type?: string | null
           media_url?: string | null
+          shares_count?: number | null
           updated_at?: string | null
           user_id?: string
         }
