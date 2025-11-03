@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
-  Menu, Sparkles, Shield, Coins, MessageCircle
+  Home, Search, Plus, Video, Sparkles, Shield, Coins, MessageCircle, Menu
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +30,7 @@ export const CompactHeader = () => {
   const [profilePhoto, setProfilePhoto] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { isImpersonating, stopImpersonation, getEffectiveUserId } = useImpersonate();
 
@@ -105,6 +106,62 @@ export const CompactHeader = () => {
             KAM
           </span>
         </Link>
+
+        {/* Desktop Navigation - Hidden on mobile */}
+        {isLoggedIn && (
+          <nav className="hidden lg:flex items-center gap-1">
+            <Link to="/">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`gap-2 ${location.pathname === "/" ? "text-primary" : ""}`}
+              >
+                <Home className="w-4 h-4" />
+                Ana Sayfa
+              </Button>
+            </Link>
+            <Link to="/explore">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`gap-2 ${location.pathname === "/explore" ? "text-primary" : ""}`}
+              >
+                <Search className="w-4 h-4" />
+                Keşfet
+              </Button>
+            </Link>
+            <Link to="/feed">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`gap-2 ${location.pathname === "/feed" ? "text-primary" : ""}`}
+              >
+                <Plus className="w-4 h-4" />
+                Oluştur
+              </Button>
+            </Link>
+            <Link to="/reels">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`gap-2 ${location.pathname === "/reels" ? "text-primary" : ""}`}
+              >
+                <Video className="w-4 h-4" />
+                Reels
+              </Button>
+            </Link>
+            <Link to="/discovery">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`gap-2 ${location.pathname === "/discovery" ? "text-primary" : ""}`}
+              >
+                <Sparkles className="w-4 h-4" />
+                Analizler
+              </Button>
+            </Link>
+          </nav>
+        )}
 
         {/* Right Section */}
         <div className="flex items-center gap-1 sm:gap-2">
