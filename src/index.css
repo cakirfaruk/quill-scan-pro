@@ -136,3 +136,80 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Hover Scale Animation */
+  .hover-scale {
+    @apply transition-transform duration-200 hover:scale-105;
+  }
+
+  .hover-scale-sm {
+    @apply transition-transform duration-200 hover:scale-102;
+  }
+
+  .hover-scale-lg {
+    @apply transition-transform duration-200 hover:scale-110;
+  }
+
+  /* Hover Lift Animation */
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
+  }
+
+  /* Smooth Transitions */
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+
+  /* Interactive Elements */
+  .interactive {
+    @apply transition-all duration-200 hover:scale-105 active:scale-95;
+  }
+
+  /* Shimmer Effect for Skeleton */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted-foreground) / 0.1) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+
+  /* Glass Effect */
+  .glass {
+    @apply bg-background/80 backdrop-blur-md border border-border/50;
+  }
+
+  /* Gradient Text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+  }
+
+  /* Card Hover Effect */
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-primary/30;
+  }
+
+  /* Button Press Effect */
+  .press-effect {
+    @apply transition-transform duration-100 active:scale-95;
+  }
+
+  /* Smooth Glow */
+  .glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  /* Elegant Shadow */
+  .shadow-elegant {
+    box-shadow: var(--shadow-elegant);
+  }
+
+  /* Card Shadow */
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+}

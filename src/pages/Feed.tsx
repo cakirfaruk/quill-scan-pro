@@ -20,6 +20,7 @@ import { useImpersonate } from "@/hooks/use-impersonate";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { soundEffects } from "@/utils/soundEffects";
 import { StoriesBar } from "@/components/StoriesBar";
+import { SkeletonPost } from "@/components/ui/enhanced-skeleton";
 
 interface Post {
   id: string;
@@ -521,14 +522,14 @@ const Feed = () => {
   );
 
   const renderPost = (post: Post) => (
-    <Card key={post.id} className="mb-6 overflow-hidden hover:shadow-xl transition-all duration-300 border-border/50">
+    <Card key={post.id} className="mb-6 overflow-hidden card-hover animate-fade-in-up border-border/50">
       <div className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div
             className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate(`/profile/${post.profile.username}`)}
           >
-            <Avatar className="ring-2 ring-border">
+            <Avatar className="ring-2 ring-border hover-scale">
               <AvatarImage src={post.profile.profile_photo || undefined} />
               <AvatarFallback className="bg-gradient-primary text-primary-foreground">
                 {post.profile.full_name?.[0] || post.profile.username[0].toUpperCase()}
@@ -541,7 +542,7 @@ const Feed = () => {
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="rounded-full">
+          <Button variant="ghost" size="icon" className="rounded-full interactive">
             <MoreHorizontal className="w-4 h-4" />
           </Button>
         </div>
@@ -581,17 +582,17 @@ const Feed = () => {
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 gap-2 hover:bg-red-50 hover:text-red-500 transition-colors"
+            className="flex-1 gap-2 hover:bg-red-50 hover:text-red-500 transition-colors press-effect"
             onClick={() => handleLike(post.id, post.hasLiked)}
           >
-            <Heart className={`w-5 h-5 transition-transform hover:scale-110 ${post.hasLiked ? "fill-red-500 text-red-500" : ""}`} />
+            <Heart className={`w-5 h-5 transition-transform hover:scale-110 ${post.hasLiked ? "fill-red-500 text-red-500 animate-bounce-in" : ""}`} />
             Beğen
           </Button>
           
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 gap-2 hover:bg-blue-50 hover:text-blue-500 transition-colors"
+            className="flex-1 gap-2 hover:bg-blue-50 hover:text-blue-500 transition-colors press-effect"
             onClick={() => handleOpenComments(post)}
           >
             <MessageCircle className="w-5 h-5" />
@@ -601,7 +602,7 @@ const Feed = () => {
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 gap-2 hover:bg-green-50 hover:text-green-500 transition-colors"
+            className="flex-1 gap-2 hover:bg-green-50 hover:text-green-500 transition-colors press-effect"
             onClick={() => handleOpenShareDialog(post)}
           >
             <Share2 className="w-5 h-5" />
@@ -611,10 +612,10 @@ const Feed = () => {
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 gap-2 hover:bg-yellow-50 hover:text-yellow-600 transition-colors"
+            className="flex-1 gap-2 hover:bg-yellow-50 hover:text-yellow-600 transition-colors press-effect"
             onClick={() => handleSave(post.id, post.hasSaved)}
           >
-            <Bookmark className={`w-5 h-5 transition-transform hover:scale-110 ${post.hasSaved ? "fill-yellow-600 text-yellow-600" : ""}`} />
+            <Bookmark className={`w-5 h-5 transition-transform hover:scale-110 ${post.hasSaved ? "fill-yellow-600 text-yellow-600 animate-bounce-in" : ""}`} />
             Kaydet
           </Button>
         </div>
@@ -628,18 +629,7 @@ const Feed = () => {
         <Header />
         <div className="container mx-auto px-4 py-8 max-w-2xl">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="mb-6">
-              <div className="p-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <Skeleton className="h-12 w-12 rounded-full" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-3 w-24" />
-                  </div>
-                </div>
-                <Skeleton className="h-32 w-full rounded-lg" />
-              </div>
-            </Card>
+            <SkeletonPost key={i} />
           ))}
         </div>
       </div>

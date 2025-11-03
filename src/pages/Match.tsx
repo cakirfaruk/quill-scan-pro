@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { SkeletonCard } from "@/components/ui/enhanced-skeleton";
 
 // Import tarot card images
 import cardBackImg from "@/assets/tarot/card-back.png";
@@ -874,7 +875,9 @@ const Match = () => {
       <div className="min-h-screen bg-background">
         <Header />
         <div className="container mx-auto px-4 py-8 max-w-md">
-          <Skeleton className="h-[600px] w-full rounded-xl" />
+          <div className="space-y-4 animate-fade-in">
+            <SkeletonCard />
+          </div>
         </div>
       </div>
     );
@@ -885,10 +888,10 @@ const Match = () => {
       <div className="min-h-screen bg-background">
         <Header />
         <div className="container mx-auto px-4 py-8 max-w-md">
-          <Card className="p-8 text-center">
-            <Sparkles className="w-16 h-16 mx-auto mb-4 text-primary" />
-            <h2 className="text-2xl font-bold mb-2">Profil Kalmadı</h2>
-            <p className="text-muted-foreground">
+          <Card className="p-8 text-center card-hover animate-scale-in">
+            <Sparkles className="w-16 h-16 mx-auto mb-4 text-primary animate-pulse-glow" />
+            <h2 className="text-2xl font-bold mb-2 gradient-text">Profil Kalmadı</h2>
+            <p className="text-muted-foreground animate-fade-in">
               Şu an gösterilecek yeni profil bulunmuyor. Daha sonra tekrar kontrol edin!
             </p>
           </Card>
@@ -908,12 +911,12 @@ const Match = () => {
           </Badge>
         </div>
 
-        <Card className="overflow-hidden mb-6">
+        <Card className="overflow-hidden mb-6 card-hover animate-scale-in shadow-elegant">
           <div className="relative h-96">
             <img
               src={currentProfile.profile_photo || currentProfile.photos[0]?.photo_url || "/placeholder.svg"}
               alt={currentProfile.username}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
             />
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white">
               <h2 className="text-2xl font-bold">
@@ -1033,22 +1036,22 @@ const Match = () => {
           </CardContent>
         </Card>
 
-        <div className="flex gap-4 justify-center">
+        <div className="flex gap-4 justify-center animate-fade-in-up">
           <Button
             size="lg"
             variant="outline"
-            className="rounded-full w-16 h-16"
+            className="rounded-full w-16 h-16 hover-scale press-effect border-destructive/50 hover:border-destructive hover:bg-destructive/10"
             onClick={() => handleSwipe("pass")}
           >
-            <X className="w-8 h-8 text-destructive" />
+            <X className="w-8 h-8 text-destructive transition-transform hover:rotate-90" />
           </Button>
           <Button
             size="lg"
             variant="default"
-            className="rounded-full w-16 h-16"
+            className="rounded-full w-16 h-16 hover-scale press-effect glow"
             onClick={() => handleSwipe("like")}
           >
-            <Heart className="w-8 h-8" />
+            <Heart className="w-8 h-8 transition-transform hover:scale-125" />
           </Button>
         </div>
 
