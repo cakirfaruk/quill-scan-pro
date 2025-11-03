@@ -149,20 +149,21 @@ export const VoiceRecorder = ({ onSend, onCancel }: VoiceRecorderProps) => {
 
       {!isRecording && audioBlob && audioUrl && (
         <>
-          <audio controls className="flex-1" src={audioUrl} />
+          <audio controls className="flex-1 h-10 md:h-8" src={audioUrl} />
           <Button
             size="icon"
             variant="ghost"
             onClick={deleteRecording}
+            className="h-10 w-10 md:h-9 md:w-9"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-5 w-5 md:h-4 md:w-4" />
           </Button>
           <Button
             size="icon"
             onClick={handleSend}
-            className="rounded-full"
+            className="rounded-full h-10 w-10 md:h-9 md:w-9"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-5 w-5 md:h-4 md:w-4" />
           </Button>
         </>
       )}

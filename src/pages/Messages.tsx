@@ -335,7 +335,7 @@ const Messages = () => {
       // First check if the analysis is shared with the current user
       const { data: sharedData } = await supabase
         .from("shared_analyses")
-        .select("user_id")
+        .select("*")
         .eq("analysis_id", analysisId)
         .maybeSingle();
 
@@ -431,7 +431,13 @@ const Messages = () => {
 
       if (analysisData) {
         // Check if user has permission to view
-        const canView = analysisData.user_id === currentUserId || sharedData;
+        const canView = 
+          analysisData.user_id === currentUserId || 
+          (sharedData && (
+            sharedData.is_public === true ||
+            sharedData.shared_with_user_id === currentUserId ||
+            sharedData.allowed_user_ids?.includes(currentUserId)
+          ));
         
         if (!canView) {
           throw new Error("Bu analizi görüntüleme izniniz yok");
@@ -1017,27 +1023,29 @@ const Messages = () => {
                               </div>
                             </Card>
                             ) : isGif && gifUrl ? (
-                              <div className="rounded-lg overflow-hidden max-w-xs">
-                                <img
-                                  src={gifUrl}
-                                  alt="GIF"
-                                  className="w-full h-auto"
-                                />
-                                <div className={`px-2 py-1 text-xs opacity-70 ${
-                                  msg.sender_id === currentUserId ? "bg-primary text-primary-foreground" : "bg-muted"
-                                }`}>
-                                  {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
+                              <>
+                                <div className="rounded-lg overflow-hidden max-w-xs">
+                                  <img
+                                    src={gifUrl}
+                                    alt="GIF"
+                                    className="w-full h-auto"
+                                  />
+                                  <div className={`px-2 py-1 text-xs opacity-70 ${
+                                    msg.sender_id === currentUserId ? "bg-primary text-primary-foreground" : "bg-muted"
+                                  }`}>
+                                    {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </div>
                                 </div>
-                              </div>
+                                <MessageReactions
+                                  messageId={msg.id}
+                                  currentUserId={currentUserId}
+                                />
+                              </>
                             ) : isVoiceMessage && voiceMessageUrl ? (
-                            <div
-                              className={`flex items-center gap-2 ${
-                                msg.sender_id === currentUserId ? "justify-end" : "justify-start"
-                              }`}
-                            >
+                            <>
                               <div className={`rounded-lg overflow-hidden ${
                                 msg.sender_id === currentUserId
                                   ? "bg-primary/10"
@@ -1053,7 +1061,11 @@ const Messages = () => {
                                   </p>
                                 </div>
                               </div>
-                            </div>
+                              <MessageReactions
+                                messageId={msg.id}
+                                currentUserId={currentUserId}
+                              />
+                            </>
                           ) : (
                             <div
                               className={`max-w-[70%] rounded-lg overflow-hidden ${
@@ -1115,9 +1127,9 @@ const Messages = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                                className="md:opacity-0 md:group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
                               >
-                                <MoreVertical className="h-3 w-3" />
+                                <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
