@@ -903,7 +903,7 @@ const Match = () => {
           }}
         >
           <Card className="overflow-hidden h-full flex flex-col">
-            <div className="relative h-[55vh] md:flex-1">
+            <div className="relative h-[45vh] md:flex-1">
               <img
                 src={currentProfile.profile_photo || currentProfile.photos[0]?.photo_url || "/placeholder.svg"}
                 alt={currentProfile.username}
