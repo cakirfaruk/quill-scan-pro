@@ -59,22 +59,22 @@ export const ProfilePosts = ({ posts, loading, isOwnProfile }: ProfilePostsProps
   }
 
   return (
-    <Card className="p-6">
-      <div className="space-y-6">
+    <Card className="p-3 sm:p-6">
+      <div className="space-y-4 sm:space-y-6">
         {posts.map((post) => (
           <Card key={post.id} className="overflow-hidden hover:shadow-xl transition-all duration-300">
-            <div className="p-4">
+            <div className="p-3 sm:p-4">
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <Avatar className="ring-2 ring-border">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <Avatar className="w-9 h-9 sm:w-10 sm:h-10 ring-2 ring-border">
                     <AvatarImage src={post.profile.profile_photo || undefined} />
-                    <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                    <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs sm:text-sm">
                       {post.profile.full_name?.[0] || post.profile.username[0].toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-semibold text-sm">{post.profile.full_name || post.profile.username}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="font-semibold text-xs sm:text-sm">{post.profile.full_name || post.profile.username}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">
                       {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: tr })}
                     </p>
                   </div>
@@ -82,7 +82,7 @@ export const ProfilePosts = ({ posts, loading, isOwnProfile }: ProfilePostsProps
               </div>
 
               {post.content && (
-                <p className="text-foreground whitespace-pre-wrap mb-3 text-sm leading-relaxed">{post.content}</p>
+                <p className="text-foreground whitespace-pre-wrap mb-3 text-xs sm:text-sm leading-relaxed">{post.content}</p>
               )}
             </div>
 
@@ -92,52 +92,52 @@ export const ProfilePosts = ({ posts, loading, isOwnProfile }: ProfilePostsProps
                   <img 
                     src={post.media_url} 
                     alt="Post media" 
-                    className="w-full max-h-[500px] object-cover"
+                    className="w-full max-h-[400px] sm:max-h-[500px] object-cover"
                   />
                 ) : (
                   <video 
                     src={post.media_url} 
                     controls 
-                    className="w-full max-h-[500px]"
+                    className="w-full max-h-[400px] sm:max-h-[500px]"
                   />
                 )}
               </div>
             )}
 
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-3 text-sm text-muted-foreground">
+            <div className="p-3 sm:p-4">
+              <div className="flex items-center justify-between mb-2 sm:mb-3 text-xs sm:text-sm text-muted-foreground">
                 <span>{post.likes} beğeni</span>
                 <span>{post.comments} yorum</span>
               </div>
 
-              <Separator className="mb-3" />
+              <Separator className="mb-2 sm:mb-3" />
 
-              <div className="flex items-center justify-around">
+              <div className="flex items-center justify-around gap-1">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="flex-1 gap-2"
+                  className="flex-1 gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4"
                 >
-                  <Heart className={`w-5 h-5 ${post.hasLiked ? "fill-red-500 text-red-500" : ""}`} />
-                  Beğen
+                  <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${post.hasLiked ? "fill-red-500 text-red-500" : ""}`} />
+                  <span className="hidden sm:inline">Beğen</span>
                 </Button>
                 
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="flex-1 gap-2"
+                  className="flex-1 gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4"
                 >
-                  <MessageCircle className="w-5 h-5" />
-                  Yorum
+                  <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="hidden sm:inline">Yorum</span>
                 </Button>
 
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="flex-1 gap-2"
+                  className="flex-1 gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4"
                 >
-                  <Share2 className="w-5 h-5" />
-                  Paylaş
+                  <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="hidden sm:inline">Paylaş</span>
                 </Button>
               </div>
             </div>

@@ -211,44 +211,44 @@ export const CreatePostDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] p-0">
-        <DialogHeader className="px-6 pt-6 pb-4">
-          <DialogTitle className="text-2xl">Yeni Gönderi Oluştur</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="max-w-2xl max-h-[95vh] sm:max-h-[90vh] p-0 gap-0">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
+          <DialogTitle className="text-xl sm:text-2xl">Yeni Gönderi Oluştur</DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">
             Fotoğraf, video veya reels paylaşın ve arkadaşlarınızı etiketleyin
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={postType} onValueChange={(v: any) => setPostType(v)} className="px-6">
+        <Tabs value={postType} onValueChange={(v: any) => setPostType(v)} className="px-4 sm:px-6">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="photo" className="gap-2">
-              <Image className="w-4 h-4" />
-              Fotoğraf
+            <TabsTrigger value="photo" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Image className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Fotoğraf</span>
             </TabsTrigger>
-            <TabsTrigger value="video" className="gap-2">
-              <Video className="w-4 h-4" />
-              Video
+            <TabsTrigger value="video" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Video className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Video</span>
             </TabsTrigger>
-            <TabsTrigger value="reels" className="gap-2">
-              <Sparkles className="w-4 h-4" />
-              Reels
+            <TabsTrigger value="reels" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Reels</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
 
-        <ScrollArea className="max-h-[calc(90vh-220px)] px-6">
+        <ScrollArea className="max-h-[calc(95vh-200px)] sm:max-h-[calc(90vh-220px)] px-4 sm:px-6">
           <div className="space-y-4 pb-4">
             {/* User Info */}
-            <div className="flex items-center gap-3">
-              <Avatar className="w-10 h-10">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Avatar className="w-9 h-9 sm:w-10 sm:h-10">
                 <AvatarImage src={profilePhoto || undefined} />
-                <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs sm:text-sm">
                   {username.substring(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-semibold">{username}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="font-semibold text-sm sm:text-base">{username}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
                   {postType === "reels" ? "Reels" : postType === "video" ? "Video" : "Fotoğraf"} paylaşımı
                 </p>
               </div>
@@ -259,19 +259,19 @@ export const CreatePostDialog = ({
               {!mediaPreview ? (
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-border rounded-lg p-12 text-center cursor-pointer hover:border-primary transition-colors"
+                  className="border-2 border-dashed border-border rounded-lg p-8 sm:p-12 text-center cursor-pointer hover:border-primary transition-colors"
                 >
                   {postType === "photo" ? (
-                    <Image className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+                    <Image className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 text-muted-foreground" />
                   ) : (
-                    <Video className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+                    <Video className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 text-muted-foreground" />
                   )}
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     {postType === "photo"
                       ? "Fotoğraf yüklemek için tıklayın"
                       : "Video yüklemek için tıklayın"}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
                     Maksimum 50MB
                   </p>
                 </div>
@@ -409,21 +409,21 @@ export const CreatePostDialog = ({
           </div>
         </ScrollArea>
 
-        <div className="px-6 pb-6 pt-4 border-t flex gap-3">
+        <div className="px-4 sm:px-6 pb-4 sm:pb-6 pt-3 sm:pt-4 border-t flex gap-2 sm:gap-3">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="flex-1"
+            className="flex-1 text-xs sm:text-sm"
             disabled={isLoading}
           >
             İptal
           </Button>
           <Button
             onClick={handleCreatePost}
-            className="flex-1 gap-2"
+            className="flex-1 gap-1 sm:gap-2 text-xs sm:text-sm"
             disabled={isLoading || (!content.trim() && !mediaPreview)}
           >
-            {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+            {isLoading && <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />}
             Paylaş
           </Button>
         </div>
