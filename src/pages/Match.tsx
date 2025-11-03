@@ -12,6 +12,7 @@ import { Heart, X, Sparkles, Send, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 interface MatchProfile {
   user_id: string;
@@ -50,11 +51,27 @@ const Match = () => {
   const [showTarotDialog, setShowTarotDialog] = useState(false);
   const [tarotQuestion, setTarotQuestion] = useState("");
   const [tarotLoading, setTarotLoading] = useState(false);
+  const [tarotResult, setTarotResult] = useState<any>(null);
+  const [showTarotResultDialog, setShowTarotResultDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [shareType, setShareType] = useState<"area" | "full" | "tarot">("area");
   const [selectedArea, setSelectedArea] = useState<any>(null);
   const [specificUserId, setSpecificUserId] = useState<string | null>(null);
   const { getEffectiveUserId } = useImpersonate();
+
+  // Tarot sample questions
+  const tarotQuestions = [
+    "Bu ilişkinin geleceği nasıl görünüyor?",
+    "Aramızdaki bağ ne kadar güçlü?",
+    "Bu kişiyle uzun vadeli bir ilişki kurabilir miyim?",
+    "İlişkimizde dikkat etmem gereken noktalar neler?",
+    "Bu kişi benim için doğru mu?",
+    "İlişkimizin güçlü yönleri neler?",
+    "Aramızdaki zorlukları nasıl aşabiliriz?",
+    "Bu ilişkide mutlu olabilir miyim?",
+    "Karşımdaki kişinin gerçek niyetleri neler?",
+    "İlişkimiz nasıl gelişecek?",
+  ];
 
   useEffect(() => {
     const userIdParam = searchParams.get("userId");
@@ -104,10 +121,19 @@ const Match = () => {
             ],
             numerologyAnalysis: numerologyData,
             birthChartAnalysis: birthChartData,
+            matchId: existingMatch.id,
+            overallSummary: numerologyData?.overallSummary || birthChartData?.overallSummary || ""
           },
         });
       } else {
         setCompatibilityData({});
+      }
+      
+      // Check if tarot reading exists
+      if (existingMatch?.tarot_reading) {
+        setTarotResult(existingMatch.tarot_reading);
+      } else {
+        setTarotResult(null);
       }
     };
 
@@ -569,7 +595,7 @@ const Match = () => {
   const handleTarotReading = async () => {
     if (!user || !currentProfile || !tarotQuestion.trim()) return;
 
-    const creditsNeeded = 30; // Tarot normal kredisi
+    const creditsNeeded = 30;
     
     if (credits < creditsNeeded) {
       toast({
@@ -588,12 +614,30 @@ const Match = () => {
         body: {
           spreadType: "relationship",
           question: `${currentProfile.full_name || currentProfile.username} ile ilişkim hakkında: ${tarotQuestion}`,
-          selectedCards: [], // Would be selected by user in a full implementation
+          selectedCards: [],
         },
       });
 
       if (error) throw error;
 
+      // Save tarot result to matches table
+      const [user1, user2] = [user.id, currentProfile.user_id].sort();
+      
+      const { error: updateError } = await supabase
+        .from("matches")
+        .upsert({
+          user1_id: user1,
+          user2_id: user2,
+          tarot_reading: data,
+        }, {
+          onConflict: "user1_id,user2_id"
+        });
+
+      if (updateError) throw updateError;
+
+      setTarotResult(data);
+      loadCredits(user.id);
+      
       toast({
         title: "Tarot Falı Tamamlandı",
         description: "Tarot sonuçlarınızı görüntüleyebilirsiniz",
@@ -611,6 +655,11 @@ const Match = () => {
     } finally {
       setTarotLoading(false);
     }
+  };
+
+  const getRandomQuestion = () => {
+    const randomIndex = Math.floor(Math.random() * tarotQuestions.length);
+    setTarotQuestion(tarotQuestions[randomIndex]);
   };
 
   const handleShare = async () => {
@@ -647,8 +696,11 @@ const Match = () => {
       analysisId = compatibilityId;
     } else if (shareType === "tarot") {
       creditsNeeded = 50;
-      shareContent = `🔮 Tarot Falı Sonucu\n\n[Analiz ID: temp]\n[Analiz Türü: tarot]`;
+      const tarotInterpretation = tarotResult?.interpretation || {};
+      const cardNames = tarotResult?.selectedCards?.map((c: any) => c.name).join(", ") || "";
+      shareContent = `🔮 Tarot Falı Sonucu\n\n🃏 Kartlar: ${cardNames}\n\n${tarotInterpretation.summary || "Tarot yorumu"}\n\n[Analiz ID: ${compatibilityData.details?.matchId || 'temp'}]\n[Analiz Türü: tarot]`;
       analysisType = "tarot";
+      analysisId = compatibilityData.details?.matchId || 'temp';
     }
 
     if (credits < creditsNeeded) {
@@ -868,9 +920,10 @@ const Match = () => {
                 variant="outline"
                 className="w-full"
                 onClick={() => setShowTarotDialog(true)}
+                disabled={!!tarotResult}
               >
                 <Sparkles className="w-4 h-4 mr-2" />
-                Tarot Baktır
+                {tarotResult ? "Tarot Bakıldı ✓" : "Tarot Baktır"}
               </Button>
             </div>
           </CardContent>
@@ -1001,35 +1054,84 @@ const Match = () => {
           </DialogHeader>
 
           <div className="space-y-4">
-            <Textarea
-              placeholder="İlişki hakkında sormak istediğiniz soruyu yazın..."
-              value={tarotQuestion}
-              onChange={(e) => setTarotQuestion(e.target.value)}
-              rows={4}
-            />
+            <div className="space-y-2">
+              <Label>Soru</Label>
+              <Textarea
+                placeholder="İlişki hakkında sormak istediğiniz soruyu yazın..."
+                value={tarotQuestion}
+                onChange={(e) => setTarotQuestion(e.target.value)}
+                rows={4}
+              />
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={getRandomQuestion}
+                  className="flex-1"
+                >
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  Rastgele Seç
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={getRandomQuestion}
+                  className="flex-1"
+                  disabled={!tarotQuestion}
+                >
+                  Değiştir
+                </Button>
+              </div>
+            </div>
 
             <div className="flex gap-2">
               <Button
                 className="flex-1"
                 onClick={handleTarotReading}
-                disabled={tarotLoading || !tarotQuestion.trim()}
+                disabled={tarotLoading || !tarotQuestion.trim() || !!tarotResult}
               >
                 {tarotLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Yorumlanıyor...
                   </>
+                ) : tarotResult ? (
+                  "Tarot Bakıldı ✓"
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Tarot Baktır (30 Kredi)
+                    Tarota Bak (30 Kredi)
                   </>
                 )}
               </Button>
             </div>
 
+            {tarotResult && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowTarotResultDialog(true)}
+                >
+                  Sonucu Gör
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={() => {
+                    setShareType("tarot");
+                    setShowShareDialog(true);
+                  }}
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Paylaş (50₺)
+                </Button>
+              </div>
+            )}
+
             <p className="text-xs text-muted-foreground text-center">
-              Tarot sonucunu karşı tarafa göndermek 50 kredi
+              {tarotResult ? "Tarot sonucunu görüntüleyebilir veya paylaşabilirsiniz" : "Her kullanıcı ile bir kez tarot bakılabilir"}
             </p>
           </div>
         </DialogContent>
@@ -1061,6 +1163,81 @@ const Match = () => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tarot Result Dialog */}
+      <Dialog open={showTarotResultDialog} onOpenChange={setShowTarotResultDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>🔮 Tarot Falı Sonucu</DialogTitle>
+            <DialogDescription>
+              {currentProfile?.full_name || currentProfile?.username} ile ilişkiniz hakkında tarot yorumu
+            </DialogDescription>
+          </DialogHeader>
+
+          {tarotResult && (
+            <div className="space-y-4">
+              {tarotResult.selectedCards && tarotResult.selectedCards.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-2">🃏 Seçilen Kartlar</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {tarotResult.selectedCards.map((card: any, index: number) => (
+                      <Badge key={index} variant="outline">
+                        {card.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {tarotResult.interpretation && (
+                <div className="space-y-3">
+                  <div>
+                    <h4 className="font-semibold mb-2">📖 Genel Yorum</h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {tarotResult.interpretation.summary || tarotResult.interpretation}
+                    </p>
+                  </div>
+
+                  {tarotResult.interpretation.cardInterpretations && (
+                    <div>
+                      <h4 className="font-semibold mb-2">🎴 Kart Yorumları</h4>
+                      <div className="space-y-2">
+                        {tarotResult.interpretation.cardInterpretations.map((interp: any, index: number) => (
+                          <div key={index} className="p-3 rounded-lg bg-muted/50">
+                            <p className="font-medium text-sm mb-1">{interp.card}</p>
+                            <p className="text-xs text-muted-foreground">{interp.interpretation}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowTarotResultDialog(false)}
+                >
+                  Kapat
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={() => {
+                    setShowTarotResultDialog(false);
+                    setShareType("tarot");
+                    setShowShareDialog(true);
+                  }}
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Paylaş (50₺)
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

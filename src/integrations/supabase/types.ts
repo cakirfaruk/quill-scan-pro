@@ -344,6 +344,7 @@ export type Database = {
           id: string
           matched_at: string | null
           overall_compatibility_score: number | null
+          tarot_reading: Json | null
           user1_id: string
           user2_id: string
         }
@@ -353,6 +354,7 @@ export type Database = {
           id?: string
           matched_at?: string | null
           overall_compatibility_score?: number | null
+          tarot_reading?: Json | null
           user1_id: string
           user2_id: string
         }
@@ -362,6 +364,7 @@ export type Database = {
           id?: string
           matched_at?: string | null
           overall_compatibility_score?: number | null
+          tarot_reading?: Json | null
           user1_id?: string
           user2_id?: string
         }

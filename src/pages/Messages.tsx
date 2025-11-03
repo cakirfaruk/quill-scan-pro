@@ -339,6 +339,23 @@ const Messages = () => {
             analysis_type: "compatibility",
           };
         }
+      } else if (analysisType === "tarot") {
+        // For tarot, check matches table
+        const { data } = await supabase
+          .from("matches")
+          .select("*")
+          .eq("id", analysisId)
+          .maybeSingle();
+        
+        if (data?.tarot_reading) {
+          analysisData = {
+            id: data.id,
+            user_id: data.user1_id,
+            created_at: data.matched_at,
+            result: data.tarot_reading,
+            analysis_type: "tarot",
+          };
+        }
       } else if (analysisType === "numerology") {
         const { data } = await supabase
           .from("numerology_analyses")
