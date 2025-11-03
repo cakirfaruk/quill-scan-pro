@@ -100,7 +100,7 @@ const Discovery = () => {
             <Brain className="w-6 h-6 text-primary" />
             <h2 className="text-2xl font-bold">Analizler</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
             {analyses.map((item) => (
               <Card 
                 key={item.path}
@@ -126,7 +126,7 @@ const Discovery = () => {
             <Moon className="w-6 h-6 text-primary" />
             <h2 className="text-2xl font-bold">Fallar</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {fortunes.map((item) => (
               <Card 
                 key={item.path}
@@ -146,24 +146,6 @@ const Discovery = () => {
           </div>
         </section>
 
-        {/* CTA Section */}
-        <Card className="mt-10 border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5">
-          <CardContent className="p-6 text-center">
-            <Sparkles className="w-12 h-12 mx-auto mb-4 text-primary" />
-            <h3 className="text-xl font-bold mb-2">İlk Analiziniz Ücretsiz!</h3>
-            <p className="text-muted-foreground mb-4">
-              Hesabınıza başlangıç kredisi tanımlandı. Hemen keşfetmeye başlayın.
-            </p>
-            <Button 
-              onClick={() => navigate("/credits")}
-              variant="outline"
-              className="gap-2"
-            >
-              <TrendingUp className="w-4 h-4" />
-              Kredi Durumunu Görüntüle
-            </Button>
-          </CardContent>
-        </Card>
       </main>
     </div>
   );
