@@ -684,6 +684,7 @@ export type Database = {
           gender: string | null
           id: string
           profile_photo: string | null
+          show_in_matches: boolean
           updated_at: string
           user_id: string
           username: string
@@ -699,6 +700,7 @@ export type Database = {
           gender?: string | null
           id?: string
           profile_photo?: string | null
+          show_in_matches?: boolean
           updated_at?: string
           user_id: string
           username: string
@@ -714,6 +716,7 @@ export type Database = {
           gender?: string | null
           id?: string
           profile_photo?: string | null
+          show_in_matches?: boolean
           updated_at?: string
           user_id?: string
           username?: string

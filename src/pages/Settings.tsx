@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell } from "lucide-react";
+import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart } from "lucide-react";
 import { requestNotificationPermission } from "@/utils/notifications";
 import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
 import { useImpersonate } from "@/hooks/use-impersonate";
@@ -26,6 +26,7 @@ const Settings = () => {
     bio: "",
     gender: "",
     email: "",
+    show_in_matches: true,
   });
   const [passwords, setPasswords] = useState({
     currentPassword: "",
@@ -114,6 +115,7 @@ const Settings = () => {
           bio: newData.bio || "",
           gender: newData.gender || "",
           email: user.email || "",
+          show_in_matches: newData.show_in_matches ?? true,
         });
       } else {
         setProfile({
@@ -125,6 +127,7 @@ const Settings = () => {
           bio: data.bio || "",
           gender: data.gender || "",
           email: user.email || "",
+          show_in_matches: data.show_in_matches ?? true,
         });
       }
     } catch (error: any) {
@@ -170,6 +173,7 @@ const Settings = () => {
           birth_place: profile.birth_place || null,
           bio: profile.bio || null,
           gender: profile.gender || null,
+          show_in_matches: profile.show_in_matches,
         })
         .eq("user_id", effectiveUserId);
 
@@ -586,6 +590,25 @@ const Settings = () => {
                   <Switch
                     checked={notificationsEnabled}
                     onCheckedChange={toggleNotifications}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <div className="space-y-0.5">
+                    <Label className="text-base flex items-center gap-2">
+                      <Heart className="w-4 h-4" />
+                      Eşleşme Ekranında Görün
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Profilinizin diğer kullanıcılara gösterilmesini kontrol edin
+                    </p>
+                  </div>
+                  <Switch
+                    checked={profile.show_in_matches}
+                    onCheckedChange={(checked) => {
+                      setProfile({ ...profile, show_in_matches: checked });
+                      handleSaveProfile();
+                    }}
                   />
                 </div>
               </CardContent>

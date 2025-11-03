@@ -307,7 +307,8 @@ const Match = () => {
       let query = supabase
         .from("profiles")
         .select("user_id, username, full_name, profile_photo, bio, birth_date, gender")
-        .neq("user_id", userId);
+        .neq("user_id", userId)
+        .eq("show_in_matches", true);
 
       // Filter by opposite gender if user has gender
       if (userProfile?.gender) {
