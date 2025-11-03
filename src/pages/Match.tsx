@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
 // Import tarot card images
+import cardBackImg from "@/assets/tarot/card-back.png";
 import deliImg from "@/assets/tarot/deli.png";
 import buyucuImg from "@/assets/tarot/buyucu.png";
 import basRahibeImg from "@/assets/tarot/bas-rahibe-azize.png";
@@ -1229,18 +1230,20 @@ const Match = () => {
                       }`}
                     >
                       <img
-                        src={card.image}
-                        alt={card.name}
+                        src={isSelected ? card.image : cardBackImg}
+                        alt={isSelected ? card.name : "Tarot Kartı"}
                         className="w-full h-auto rounded-lg shadow-md"
                       />
                       {isSelected && (
-                        <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                          {selectedTarotCards.findIndex(c => c.id === card.id) + 1}
-                        </div>
+                        <>
+                          <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                            {selectedTarotCards.findIndex(c => c.id === card.id) + 1}
+                          </div>
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-1 text-xs text-center rounded-b-lg">
+                            {card.name}
+                          </div>
+                        </>
                       )}
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-1 text-xs text-center rounded-b-lg">
-                        {card.name}
-                      </div>
                     </button>
                   );
                 })}
