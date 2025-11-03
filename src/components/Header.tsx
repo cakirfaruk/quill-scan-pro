@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FileText, Coins, LogOut, User, Heart, CreditCard, ChevronDown, Sparkles, Calendar, Menu, MessageCircle, Settings, Shield, Bookmark } from "lucide-react";
+import { FileText, Coins, LogOut, User, Heart, CreditCard, ChevronDown, Sparkles, Calendar, Menu, MessageCircle, Settings, Shield, Bookmark, Search } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -240,6 +240,13 @@ export const Header = () => {
               <Button variant="ghost" size="sm" className="gap-2">
                 <Sparkles className="w-4 h-4" />
                 Reels
+              </Button>
+            </Link>
+
+            <Link to="/explore">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <Search className="w-4 h-4" />
+                Keşfet
               </Button>
             </Link>
 
@@ -498,6 +505,12 @@ export const Header = () => {
                                   <Button variant="ghost" className="w-full justify-start gap-2 h-9">
                                     <Sparkles className="w-4 h-4" />
                                     Reels
+                                  </Button>
+                                </Link>
+                                <Link to="/explore" onClick={() => setMobileMenuOpen(false)}>
+                                  <Button variant="ghost" className="w-full justify-start gap-2 h-9">
+                                    <Search className="w-4 h-4" />
+                                    Keşfet
                                   </Button>
                                 </Link>
                                 <Link to="/friends" onClick={() => setMobileMenuOpen(false)}>

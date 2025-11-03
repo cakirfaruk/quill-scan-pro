@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { extractMentions, extractHashtags } from "@/utils/textParsing";
 import { 
   Image, 
   Video, 
@@ -171,14 +172,68 @@ export const CreatePostDialog = ({
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.from("posts").insert({
-        user_id: userId,
-        content: content.trim(),
-        media_url: mediaPreview,
-        media_type: mediaPreview ? (postType === "video" || postType === "reels" ? "video" : "photo") : null,
-      });
+      // Extract mentions and hashtags
+      const mentions = extractMentions(content);
+      const hashtags = extractHashtags(content);
 
-      if (error) throw error;
+      // Create post
+      const { data: postData, error: postError } = await supabase
+        .from("posts")
+        .insert({
+          user_id: userId,
+          content: content.trim(),
+          media_url: mediaPreview,
+          media_type: mediaPreview ? (postType === "video" || postType === "reels" ? "video" : "photo") : null,
+        })
+        .select()
+        .single();
+
+      if (postError) throw postError;
+
+      // Process hashtags
+      for (const tag of hashtags) {
+        try {
+          // Get or create hashtag
+          const { data: hashtagData } = await supabase
+            .rpc('increment_hashtag_usage', { tag_text: tag });
+
+          if (hashtagData) {
+            // Link hashtag to post
+            await supabase
+              .from("post_hashtags")
+              .insert({
+                post_id: postData.id,
+                hashtag_id: hashtagData,
+              });
+          }
+        } catch (error) {
+          console.error("Error processing hashtag:", tag, error);
+        }
+      }
+
+      // Process mentions
+      for (const username of mentions) {
+        try {
+          // Get user ID from username
+          const { data: userData } = await supabase
+            .from("profiles")
+            .select("user_id")
+            .eq("username", username)
+            .single();
+
+          if (userData) {
+            // Create mention
+            await supabase
+              .from("post_mentions")
+              .insert({
+                post_id: postData.id,
+                mentioned_user_id: userData.user_id,
+              });
+          }
+        } catch (error) {
+          console.error("Error processing mention:", username, error);
+        }
+      }
 
       toast({
         title: "Başarılı",

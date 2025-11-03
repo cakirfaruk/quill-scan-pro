@@ -27,6 +27,7 @@ import Handwriting from "./pages/Handwriting";
 import Feed from "./pages/Feed";
 import SavedPosts from "./pages/SavedPosts";
 import Reels from "./pages/Reels";
+import Explore from "./pages/Explore";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -63,6 +64,7 @@ const App = () => (
           <Route path="/feed" element={<Feed />} />
           <Route path="/saved" element={<SavedPosts />} />
           <Route path="/reels" element={<Reels />} />
+          <Route path="/explore" element={<Explore />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

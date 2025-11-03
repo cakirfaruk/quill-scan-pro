@@ -21,6 +21,7 @@ import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { soundEffects } from "@/utils/soundEffects";
 import { StoriesBar } from "@/components/StoriesBar";
 import { SkeletonPost } from "@/components/ui/enhanced-skeleton";
+import { ParsedText } from "@/components/ParsedText";
 
 interface Post {
   id: string;
@@ -490,7 +491,9 @@ const Feed = () => {
             >
               {comment.user.full_name || comment.user.username}
             </p>
-            <p className="text-sm mt-0.5">{comment.content}</p>
+            <p className="text-sm mt-0.5">
+              <ParsedText text={comment.content} />
+            </p>
           </div>
           <div className="flex items-center gap-4 mt-1 px-2 text-xs text-muted-foreground">
             <span>{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: tr })}</span>
@@ -548,7 +551,9 @@ const Feed = () => {
         </div>
 
         {post.content && (
-          <p className="text-foreground whitespace-pre-wrap mb-3 text-sm leading-relaxed">{post.content}</p>
+          <div className="text-foreground whitespace-pre-wrap mb-3 text-sm leading-relaxed">
+            <ParsedText text={post.content} />
+          </div>
         )}
       </div>
 
