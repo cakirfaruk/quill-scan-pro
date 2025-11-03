@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useImpersonate } from "@/hooks/use-impersonate";
+import { useCardGestures } from "@/hooks/use-gestures";
 import { Header } from "@/components/Header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,6 +87,13 @@ const Match = () => {
   const [selectedArea, setSelectedArea] = useState<any>(null);
   const [specificUserId, setSpecificUserId] = useState<string | null>(null);
   const { getEffectiveUserId } = useImpersonate();
+
+  // Card swipe gestures for mobile
+  const cardGestures = useCardGestures({
+    onSwipeLeft: () => handleSwipe("pass"),
+    onSwipeRight: () => handleSwipe("like"),
+    threshold: 100,
+  });
 
   // Tarot sample questions
   const tarotQuestions = [
@@ -911,24 +919,49 @@ const Match = () => {
           </Badge>
         </div>
 
-        <Card className="overflow-hidden mb-6 card-hover animate-scale-in shadow-elegant">
-          <div className="relative h-96">
-            <img
-              src={currentProfile.profile_photo || currentProfile.photos[0]?.photo_url || "/placeholder.svg"}
-              alt={currentProfile.username}
-              className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-            />
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white">
-              <h2 className="text-2xl font-bold">
-                {currentProfile.full_name || currentProfile.username}
-              </h2>
-              {currentProfile.birth_date && (
-                <p className="text-sm opacity-90">
-                  {new Date().getFullYear() - new Date(currentProfile.birth_date).getFullYear()} yaşında
-                </p>
+        <div 
+          className="overflow-hidden mb-6 card-hover animate-scale-in shadow-elegant relative select-none touch-none"
+          {...cardGestures}
+          style={{
+            transform: `translateX(${cardGestures.offset.x}px) translateY(${cardGestures.offset.y}px) rotate(${cardGestures.rotation}deg)`,
+            transition: cardGestures.isDragging ? 'none' : 'transform 0.3s ease-out',
+          }}
+        >
+          <Card className="overflow-hidden">
+            <div className="relative h-96">
+              <img
+                src={currentProfile.profile_photo || currentProfile.photos[0]?.photo_url || "/placeholder.svg"}
+                alt={currentProfile.username}
+                className="w-full h-full object-cover transition-transform duration-500 pointer-events-none"
+              />
+              
+              {/* Swipe indicators */}
+              {cardGestures.offset.x > 50 && (
+                <div className="absolute inset-0 bg-green-500/30 flex items-center justify-center animate-fade-in">
+                  <div className="bg-green-500 text-white px-8 py-4 rounded-full font-bold text-2xl rotate-12 shadow-glow">
+                    <Heart className="w-16 h-16" />
+                  </div>
+                </div>
               )}
+              {cardGestures.offset.x < -50 && (
+                <div className="absolute inset-0 bg-red-500/30 flex items-center justify-center animate-fade-in">
+                  <div className="bg-red-500 text-white px-8 py-4 rounded-full font-bold text-2xl -rotate-12 shadow-glow">
+                    <X className="w-16 h-16" />
+                  </div>
+                </div>
+              )}
+              
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white pointer-events-none">
+                <h2 className="text-2xl font-bold">
+                  {currentProfile.full_name || currentProfile.username}
+                </h2>
+                {currentProfile.birth_date && (
+                  <p className="text-sm opacity-90">
+                    {new Date().getFullYear() - new Date(currentProfile.birth_date).getFullYear()} yaşında
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
           
           <CardContent className="p-6">
             {currentProfile.bio && (
@@ -1035,6 +1068,7 @@ const Match = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
 
         <div className="flex gap-4 justify-center animate-fade-in-up">
           <Button

@@ -22,6 +22,8 @@ import { VoiceMessagePlayer } from "@/components/VoiceMessagePlayer";
 import { MessageReactions } from "@/components/MessageReactions";
 import { GifPicker } from "@/components/GifPicker";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { SwipeableMessage } from "@/components/SwipeableMessage";
+import { useLongPress } from "@/hooks/use-gestures";
 
 interface Friend {
   user_id: string;
@@ -548,14 +550,48 @@ const Messages = () => {
         };
       });
     } catch (error: any) {
+      soundEffects.playError();
       toast({
         title: "Hata",
-        description: "Sesli mesaj gönderilemedi.",
+        description: "Sesli mesaj gönderilemedi",
         variant: "destructive",
       });
     } finally {
       setIsSending(false);
     }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from("messages")
+        .delete()
+        .eq("id", messageId)
+        .eq("sender_id", currentUserId);
+
+      if (error) throw error;
+
+      soundEffects.playClick();
+      toast({
+        title: "Başarılı",
+        description: "Mesaj silindi",
+      });
+
+      if (selectedFriend) {
+        loadMessages(selectedFriend.user_id);
+      }
+    } catch (error: any) {
+      soundEffects.playError();
+      toast({
+        title: "Hata",
+        description: "Mesaj silinemedi",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleReplyToMessage = (messageContent: string) => {
+    setNewMessage(`Yanıt: "${messageContent.substring(0, 50)}..." \n\n`);
   };
 
   const handleSendGif = async (gifUrl: string) => {
@@ -990,12 +1026,16 @@ const Messages = () => {
                       }
                       
                       return (
-                        <div
+                        <SwipeableMessage
                           key={msg.id}
-                          className={`flex gap-2 group ${
-                            msg.sender_id === currentUserId ? "justify-end" : "justify-start"
-                          }`}
+                          onSwipeRight={() => handleReplyToMessage(displayContent)}
+                          onSwipeLeft={msg.sender_id === currentUserId ? () => handleDeleteMessage(msg.id) : undefined}
                         >
+                          <div
+                            className={`flex gap-2 group ${
+                              msg.sender_id === currentUserId ? "justify-end" : "justify-start"
+                            }`}
+                          >
                           <div className="flex flex-col max-w-[85%]">
                             {msg.pinned_at && (
                               <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
@@ -1192,7 +1232,8 @@ const Messages = () => {
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
-                        </div>
+                          </div>
+                        </SwipeableMessage>
                       );
                     })}
                   </div>
