@@ -80,10 +80,91 @@ serve(async (req) => {
     }
 
     console.log("Starting birth chart analysis...");
+    
+    // Step 1: Get real astronomical calculations from Free Astrology API
+    console.log("Fetching real planetary positions from Free Astrology API...");
+    
+    // Parse date and time
+    const [year, month, day] = birthDate.split('-').map(Number);
+    const [hours, minutes] = birthTime.split(':').map(Number);
+    
+    // Simple geocoding for Turkey - default to Istanbul coordinates
+    // In production, you'd use a geocoding service like OpenStreetMap Nominatim
+    let latitude = 41.0082; // Istanbul
+    let longitude = 28.9784; // Istanbul
+    let timezone = 3; // Turkey UTC+3
+    
+    // Try to get more accurate coordinates based on birthPlace
+    // This is a simplified approach - you'd ideally use a geocoding API
+    const placeMap: Record<string, {lat: number, lon: number}> = {
+      'istanbul': {lat: 41.0082, lon: 28.9784},
+      'ankara': {lat: 39.9334, lon: 32.8597},
+      'izmir': {lat: 38.4192, lon: 27.1287},
+      'antalya': {lat: 36.8969, lon: 30.7133},
+      'bursa': {lat: 40.1826, lon: 29.0665},
+    };
+    
+    const birthPlaceLower = birthPlace.toLowerCase().trim();
+    for (const [city, coords] of Object.entries(placeMap)) {
+      if (birthPlaceLower.includes(city)) {
+        latitude = coords.lat;
+        longitude = coords.lon;
+        break;
+      }
+    }
 
-    const systemPrompt = `Sen profesyonel bir astrolog ve doğum haritası uzmanısın. Verilen doğum bilgilerine göre detaylı astrolojik analiz yapıyorsun.
+    let realPlanetData = null;
+    try {
+      const astrologyApiResponse = await fetch("https://json.freeastrologyapi.com/planets", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          year,
+          month,
+          day,
+          hours,
+          minutes,
+          seconds: 0,
+          latitude,
+          longitude,
+          timezone,
+          config: {
+            observation_point: "topocentric",
+            ayanamsha: "lahiri"
+          }
+        }),
+      });
 
-ÖNEMLİ UYARI: Bu analiz, gerçek astronomik hesaplamalara dayanmayan, genel astrolojik yorumlar içerir. Doğum bilgilerine göre genel burç özelliklerini ve astrolojik prensipleri kullanarak kişiselleştirilmiş yorumlar sunarsın.
+      if (astrologyApiResponse.ok) {
+        realPlanetData = await astrologyApiResponse.json();
+        console.log("Real planetary positions received successfully");
+      } else {
+        console.error("Failed to fetch real planetary data:", await astrologyApiResponse.text());
+      }
+    } catch (error) {
+      console.error("Error calling Free Astrology API:", error);
+    }
+
+    // Step 2: Create comprehensive prompt with real data
+    const planetaryDataText = realPlanetData ? `
+✅ GERÇEK ASTRONOMİK HESAPLAMALAR (Swiss Ephemeris):
+
+Koordinatlar: ${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E
+Saat Dilimi: UTC+${timezone}
+
+Planetler ve Konumları:
+${JSON.stringify(realPlanetData.output || realPlanetData, null, 2)}
+
+ÖNEMLİ: Bu gerçek astronomik verilere dayanarak profesyonel analiz yap. Gezegenlerin burçlarını, evlerini, açılarını dikkate al.
+` : `
+⚠️ NOT: Gerçek astronomik hesaplamalar şu anda alınamadı. Verilen doğum bilgilerine göre genel astrolojik prensiplere dayalı yorum yap.
+`;
+
+    const systemPrompt = `Sen profesyonel bir astrolog ve doğum haritası uzmanısın. "Doğum Haritası Yorumlama Sanatı" kitabındaki yöntemleri kullanarak detaylı analiz yapıyorsun.
+
+${planetaryDataText}
 
 Doğum Bilgileri:
 - İsim: ${fullName}
@@ -93,7 +174,18 @@ Doğum Bilgileri:
 
 Seçilen Konular: ${selectedTopics.join(", ")}
 
-Her konu için detaylı ve kapsamlı genel astrolojik yorum yap (gerçek gezegen pozisyonları hesaplanmamıştır):
+ANALIZ YÖNTEMİ:
+${realPlanetData ? "Verilen gerçek gezegen pozisyonlarını kullanarak" : "Genel astrolojik prensiplere göre"} her konu için detaylı analiz yap:
+
+1. **Element Analizi**: Ateş, Toprak, Hava, Su elementlerinin dağılımı
+2. **Nitelik Analizi**: Öncü, Sabit, Değişken burçların dağılımı  
+3. **Güçlü Planetler**: Kendi burçlarında, yükselen, köşelerde olan planetler
+4. **Açılar**: Gezegenlerin birbirleriyle yaptığı açılar (kavuşum, trigon, kare, karşıt vb.)
+5. **Evler**: 12 astrolojik evin yaşam alanlarındaki etkileri
+6. **Yükselen**: Dış görünüm ve yaklaşım tarzı
+7. **Orta Göğe (MC)**: Kariyer ve sosyal statü
+
+Her konu için:
 
 1. **Güneş Burcu**: Temel kişilik özellikleri, hayat amacı, bilinç
 2. **Ay Burcu**: Duygusal dünya, iç güvenlik ihtiyaçları, sezgiler
@@ -114,6 +206,10 @@ Yanıtını Türkçe ve JSON formatında ver:
   "dogum_tarihi": "Doğum tarihi",
   "dogum_saati": "Doğum saati",
   "dogum_yeri": "Doğum yeri",
+  "astronomik_veriler": {
+    "gercek_hesaplama": true/false,
+    "planet_pozisyonlari": "Özet bilgi"
+  },
   "seçilen_konular": {
     "konu_adı": {
       "genel_bakis": "Konunun genel açıklaması",
