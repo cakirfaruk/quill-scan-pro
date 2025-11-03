@@ -355,9 +355,11 @@ const Match = () => {
           description: `Bu işlem için ${creditsNeeded} kredi gerekiyor`,
           variant: "destructive",
         });
-        setCompatibilityLoading(false);
+      setCompatibilityLoading(false);
         return;
       }
+
+      setShowCompatibility(true);
 
       // Call compatibility analysis edge function
       const { data, error } = await supabase.functions.invoke("analyze-compatibility", {
@@ -529,24 +531,7 @@ const Match = () => {
     }
 
     try {
-      // Check if they are friends first
-      const { data: friendCheck } = await supabase
-        .from("friends")
-        .select("id")
-        .or(`and(user_id.eq.${user.id},friend_id.eq.${currentProfile.user_id}),and(user_id.eq.${currentProfile.user_id},friend_id.eq.${user.id})`)
-        .eq("status", "accepted")
-        .maybeSingle();
-
-      if (!friendCheck) {
-        toast({
-          title: "Hata",
-          description: "Sadece arkadaşlarınızla paylaşım yapabilirsiniz",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Send message with shared content
+      // Send message with shared content (no friend check needed in match context)
       const { error: messageError } = await supabase
         .from("messages")
         .insert({
@@ -713,10 +698,19 @@ const Match = () => {
                     handleCompatibilityCheck();
                   }
                 }}
-                disabled={!currentProfile.has_numerology && !currentProfile.has_birth_chart}
+                disabled={compatibilityLoading || (!currentProfile.has_numerology && !currentProfile.has_birth_chart)}
               >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Uyum Detayını Gör (50 Kredi)
+                {compatibilityLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analiz Ediliyor...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Uyum Detayını Gör (50 Kredi)
+                  </>
+                )}
               </Button>
 
               <Button
@@ -765,10 +759,24 @@ const Match = () => {
           </DialogHeader>
           
           {compatibilityLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
+            <div className="flex flex-col items-center justify-center py-12 space-y-6">
+              <div className="relative">
+                <div className="absolute inset-0 animate-ping">
+                  <Heart className="w-16 h-16 text-primary/30" />
+                </div>
+                <Heart className="w-16 h-16 text-primary animate-pulse" />
+              </div>
+              <div className="text-center space-y-2">
+                <p className="text-xl font-semibold animate-pulse">Uyum Analizi Yapılıyor...</p>
+                <p className="text-sm text-muted-foreground">
+                  Yıldızlar hizalanıyor ve uyumunuz hesaplanıyor ✨
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
             </div>
           ) : compatibilityData.details ? (
             <div className="space-y-4">
