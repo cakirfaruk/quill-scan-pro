@@ -55,10 +55,10 @@ export const MobileNav = () => {
 
   const navItems = [
     { icon: Search, label: "Keşfet", path: "/explore" },
+    { icon: Heart, label: "Eşleşme", path: "/match" },
     { icon: Plus, label: "Oluştur", action: handleCreatePost },
     { icon: Video, label: "Reels", path: "/reels" },
     { icon: Sparkles, label: "Analizler", path: "/discovery" },
-    { icon: Heart, label: "Eşleşme", path: "/match" },
   ];
 
   return (

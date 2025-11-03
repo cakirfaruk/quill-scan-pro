@@ -122,6 +122,16 @@ export const CompactHeader = () => {
                 Keşfet
               </Button>
             </Link>
+            <Link to="/match">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`gap-2 ${location.pathname === "/match" ? "text-primary" : ""}`}
+              >
+                <Heart className="w-4 h-4" />
+                Eşleşme
+              </Button>
+            </Link>
             <Button
               variant="ghost"
               size="sm"
@@ -149,16 +159,6 @@ export const CompactHeader = () => {
               >
                 <Sparkles className="w-4 h-4" />
                 Analizler
-              </Button>
-            </Link>
-            <Link to="/match">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`gap-2 ${location.pathname === "/match" ? "text-primary" : ""}`}
-              >
-                <Heart className="w-4 h-4" />
-                Eşleşme
               </Button>
             </Link>
           </nav>
