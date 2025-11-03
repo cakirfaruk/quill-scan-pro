@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { formatDistanceToNow } from "date-fns";
@@ -583,6 +583,9 @@ const Feed = () => {
         <DialogContent className="max-w-2xl max-h-[85vh] p-0">
           <DialogHeader className="p-6 pb-4">
             <DialogTitle className="text-xl">Yorumlar</DialogTitle>
+            <DialogDescription>
+              Bu gönderiye yapılan yorumları görüntüleyin ve yeni yorum ekleyin
+            </DialogDescription>
           </DialogHeader>
           
           <ScrollArea className="max-h-[calc(85vh-180px)] px-6">
@@ -650,6 +653,9 @@ const Feed = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Arkadaşlarınla Paylaş</DialogTitle>
+            <DialogDescription>
+              Bu gönderiyi arkadaşlarınıza mesaj olarak gönderin
+            </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-3">
