@@ -29,6 +29,9 @@ import Feed from "./pages/Feed";
 import SavedPosts from "./pages/SavedPosts";
 import Reels from "./pages/Reels";
 import Explore from "./pages/Explore";
+import Groups from "./pages/Groups";
+import GroupChat from "./pages/GroupChat";
+import GroupSettings from "./pages/GroupSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -68,6 +71,9 @@ const App = () => {
           <Route path="/dream" element={<DreamInterpretation />} />
           <Route path="/reels" element={<Reels />} />
           <Route path="/explore" element={<Explore />} />
+          <Route path="/groups" element={<Groups />} />
+          <Route path="/groups/:groupId" element={<GroupChat />} />
+          <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
