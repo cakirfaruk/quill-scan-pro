@@ -236,6 +236,13 @@ export const Header = () => {
               </Button>
             </Link>
 
+            <Link to="/reels">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <Sparkles className="w-4 h-4" />
+                Reels
+              </Button>
+            </Link>
+
             <Link to="/match">
               <Button variant="ghost" size="sm">
                 Eşleşme
@@ -485,6 +492,12 @@ export const Header = () => {
                                 <Link to="/feed" onClick={() => setMobileMenuOpen(false)}>
                                   <Button variant="ghost" className="w-full justify-start h-9">
                                     📱 Akış
+                                  </Button>
+                                </Link>
+                                <Link to="/reels" onClick={() => setMobileMenuOpen(false)}>
+                                  <Button variant="ghost" className="w-full justify-start gap-2 h-9">
+                                    <Sparkles className="w-4 h-4" />
+                                    Reels
                                   </Button>
                                 </Link>
                                 <Link to="/friends" onClick={() => setMobileMenuOpen(false)}>

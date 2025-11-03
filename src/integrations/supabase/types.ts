@@ -1107,6 +1107,70 @@ export type Database = {
           },
         ]
       }
+      video_reactions: {
+        Row: {
+          created_at: string | null
+          emoji: string
+          id: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          emoji: string
+          id?: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string | null
+          emoji?: string
+          id?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_reactions_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "user_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_views: {
+        Row: {
+          id: string
+          video_id: string
+          viewed_at: string | null
+          viewer_id: string
+          watch_duration: number | null
+        }
+        Insert: {
+          id?: string
+          video_id: string
+          viewed_at?: string | null
+          viewer_id: string
+          watch_duration?: number | null
+        }
+        Update: {
+          id?: string
+          video_id?: string
+          viewed_at?: string | null
+          viewer_id?: string
+          watch_duration?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_views_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "user_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
