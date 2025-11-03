@@ -14,6 +14,30 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
+// Import tarot card images
+import deliImg from "@/assets/tarot/deli.png";
+import buyucuImg from "@/assets/tarot/buyucu.png";
+import basRahibeImg from "@/assets/tarot/bas-rahibe-azize.png";
+import imparatoriceImg from "@/assets/tarot/imparatorice.png";
+import imparatorImg from "@/assets/tarot/imparator.png";
+import basRahipImg from "@/assets/tarot/bas-rahip-aziz.png";
+import asiklarImg from "@/assets/tarot/asiklar.png";
+import savaşArabasiImg from "@/assets/tarot/savas-arabasi.png";
+import gucImg from "@/assets/tarot/guc.png";
+import ermisImg from "@/assets/tarot/ermis.png";
+import kaderCarkiImg from "@/assets/tarot/kader-carki.png";
+import adaletImg from "@/assets/tarot/adalet.png";
+import asilanAdamImg from "@/assets/tarot/asilan-adam.png";
+import olumImg from "@/assets/tarot/olum.png";
+import dengeImg from "@/assets/tarot/denge.png";
+import seytanImg from "@/assets/tarot/seytan.png";
+import yikilanKuleImg from "@/assets/tarot/yikilan-kule.png";
+import yildizImg from "@/assets/tarot/yildiz.png";
+import ayImg from "@/assets/tarot/ay.png";
+import gunesImg from "@/assets/tarot/gunes.png";
+import mahkemeImg from "@/assets/tarot/mahkeme.png";
+import dunyaImg from "@/assets/tarot/dunya.png";
+
 interface MatchProfile {
   user_id: string;
   username: string;
@@ -53,6 +77,8 @@ const Match = () => {
   const [tarotLoading, setTarotLoading] = useState(false);
   const [tarotResult, setTarotResult] = useState<any>(null);
   const [showTarotResultDialog, setShowTarotResultDialog] = useState(false);
+  const [selectedTarotCards, setSelectedTarotCards] = useState<any[]>([]);
+  const [showCardSelection, setShowCardSelection] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [shareType, setShareType] = useState<"area" | "full" | "tarot">("area");
   const [selectedArea, setSelectedArea] = useState<any>(null);
@@ -71,6 +97,32 @@ const Match = () => {
     "Bu ilişkide mutlu olabilir miyim?",
     "Karşımdaki kişinin gerçek niyetleri neler?",
     "İlişkimiz nasıl gelişecek?",
+  ];
+
+  // 22 Major Arcana cards with images
+  const majorArcana = [
+    { id: 0, name: "Deli", suit: "Major Arcana", image: deliImg },
+    { id: 1, name: "Büyücü", suit: "Major Arcana", image: buyucuImg },
+    { id: 2, name: "Baş Rahibe", suit: "Major Arcana", image: basRahibeImg },
+    { id: 3, name: "İmparatoriçe", suit: "Major Arcana", image: imparatoriceImg },
+    { id: 4, name: "İmparator", suit: "Major Arcana", image: imparatorImg },
+    { id: 5, name: "Baş Rahip", suit: "Major Arcana", image: basRahipImg },
+    { id: 6, name: "Aşıklar", suit: "Major Arcana", image: asiklarImg },
+    { id: 7, name: "Savaş Arabası", suit: "Major Arcana", image: savaşArabasiImg },
+    { id: 8, name: "Güç", suit: "Major Arcana", image: gucImg },
+    { id: 9, name: "Ermiş", suit: "Major Arcana", image: ermisImg },
+    { id: 10, name: "Kader Çarkı", suit: "Major Arcana", image: kaderCarkiImg },
+    { id: 11, name: "Adalet", suit: "Major Arcana", image: adaletImg },
+    { id: 12, name: "Asılan Adam", suit: "Major Arcana", image: asilanAdamImg },
+    { id: 13, name: "Ölüm", suit: "Major Arcana", image: olumImg },
+    { id: 14, name: "Denge", suit: "Major Arcana", image: dengeImg },
+    { id: 15, name: "Şeytan", suit: "Major Arcana", image: seytanImg },
+    { id: 16, name: "Yıkılan Kule", suit: "Major Arcana", image: yikilanKuleImg },
+    { id: 17, name: "Yıldız", suit: "Major Arcana", image: yildizImg },
+    { id: 18, name: "Ay", suit: "Major Arcana", image: ayImg },
+    { id: 19, name: "Güneş", suit: "Major Arcana", image: gunesImg },
+    { id: 20, name: "Mahkeme", suit: "Major Arcana", image: mahkemeImg },
+    { id: 21, name: "Dünya", suit: "Major Arcana", image: dunyaImg },
   ];
 
   useEffect(() => {
@@ -595,6 +647,15 @@ const Match = () => {
   const handleTarotReading = async () => {
     if (!user || !currentProfile || !tarotQuestion.trim()) return;
 
+    if (selectedTarotCards.length !== 3) {
+      toast({
+        title: "Kart Seçimi",
+        description: "Lütfen 3 kart seçin",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const creditsNeeded = 30;
     
     if (credits < creditsNeeded) {
@@ -614,7 +675,7 @@ const Match = () => {
         body: {
           spreadType: "relationship",
           question: `${currentProfile.full_name || currentProfile.username} ile ilişkim hakkında: ${tarotQuestion}`,
-          selectedCards: [],
+          selectedCards: selectedTarotCards,
         },
       });
 
@@ -628,14 +689,22 @@ const Match = () => {
         .upsert({
           user1_id: user1,
           user2_id: user2,
-          tarot_reading: data,
+          tarot_reading: {
+            ...data,
+            selectedCards: selectedTarotCards,
+            question: tarotQuestion
+          },
         }, {
           onConflict: "user1_id,user2_id"
         });
 
       if (updateError) throw updateError;
 
-      setTarotResult(data);
+      setTarotResult({
+        ...data,
+        selectedCards: selectedTarotCards,
+        question: tarotQuestion
+      });
       loadCredits(user.id);
       
       toast({
@@ -644,7 +713,8 @@ const Match = () => {
       });
 
       setShowTarotDialog(false);
-      setTarotQuestion("");
+      setShowCardSelection(false);
+      setSelectedTarotCards([]);
     } catch (error: any) {
       console.error("Error performing tarot reading:", error);
       toast({
@@ -660,6 +730,23 @@ const Match = () => {
   const getRandomQuestion = () => {
     const randomIndex = Math.floor(Math.random() * tarotQuestions.length);
     setTarotQuestion(tarotQuestions[randomIndex]);
+  };
+
+  const toggleCardSelection = (card: any) => {
+    setSelectedTarotCards(prev => {
+      const exists = prev.find(c => c.id === card.id);
+      if (exists) {
+        return prev.filter(c => c.id !== card.id);
+      }
+      if (prev.length >= 3) {
+        toast({
+          title: "Maksimum Seçim",
+          description: "En fazla 3 kart seçebilirsiniz",
+        });
+        return prev;
+      }
+      return [...prev, { ...card, isReversed: false }];
+    });
   };
 
   const handleShare = async () => {
@@ -919,11 +1006,26 @@ const Match = () => {
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={() => setShowTarotDialog(true)}
-                disabled={!!tarotResult}
+                onClick={() => {
+                  if (tarotResult) {
+                    setShowTarotResultDialog(true);
+                  } else {
+                    setShowTarotDialog(true);
+                  }
+                }}
+                disabled={tarotLoading}
               >
                 <Sparkles className="w-4 h-4 mr-2" />
-                {tarotResult ? "Tarot Bakıldı ✓" : "Tarot Baktır"}
+                {tarotLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Yorumlanıyor...
+                  </>
+                ) : tarotResult ? (
+                  "Tarot Sonucunu Gör"
+                ) : (
+                  "Tarot Baktır"
+                )}
               </Button>
             </div>
           </CardContent>
@@ -1045,7 +1147,7 @@ const Match = () => {
       </Dialog>
 
       <Dialog open={showTarotDialog} onOpenChange={setShowTarotDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Tarot Falı</DialogTitle>
             <DialogDescription>
@@ -1053,87 +1155,128 @@ const Match = () => {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Soru</Label>
-              <Textarea
-                placeholder="İlişki hakkında sormak istediğiniz soruyu yazın..."
-                value={tarotQuestion}
-                onChange={(e) => setTarotQuestion(e.target.value)}
-                rows={4}
-              />
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={getRandomQuestion}
-                  className="flex-1"
-                >
-                  <Sparkles className="w-3 h-3 mr-1" />
-                  Rastgele Seç
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={getRandomQuestion}
-                  className="flex-1"
-                  disabled={!tarotQuestion}
-                >
-                  Değiştir
-                </Button>
+          {!showCardSelection ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Soru</Label>
+                <Textarea
+                  placeholder="İlişki hakkında sormak istediğiniz soruyu yazın..."
+                  value={tarotQuestion}
+                  onChange={(e) => setTarotQuestion(e.target.value)}
+                  rows={4}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={getRandomQuestion}
+                    className="flex-1"
+                  >
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    Rastgele Seç
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={getRandomQuestion}
+                    className="flex-1"
+                    disabled={!tarotQuestion}
+                  >
+                    Değiştir
+                  </Button>
+                </div>
               </div>
-            </div>
 
-            <div className="flex gap-2">
               <Button
-                className="flex-1"
-                onClick={handleTarotReading}
-                disabled={tarotLoading || !tarotQuestion.trim() || !!tarotResult}
+                className="w-full"
+                onClick={() => setShowCardSelection(true)}
+                disabled={!tarotQuestion.trim()}
               >
-                {tarotLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Yorumlanıyor...
-                  </>
-                ) : tarotResult ? (
-                  "Tarot Bakıldı ✓"
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Tarota Bak (30 Kredi)
-                  </>
-                )}
+                <Sparkles className="w-4 h-4 mr-2" />
+                Kartları Seç
               </Button>
-            </div>
 
-            {tarotResult && (
+              <p className="text-xs text-muted-foreground text-center">
+                3 kart seçmeniz gerekiyor
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <Label>Seçilen Kartlar ({selectedTarotCards.length}/3)</Label>
+                {selectedTarotCards.length > 0 && (
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    {selectedTarotCards.map((card, index) => (
+                      <Badge key={index} variant="secondary">
+                        {card.name}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-4 gap-3 max-h-[450px] overflow-y-auto p-2">
+                {majorArcana.map((card) => {
+                  const isSelected = selectedTarotCards.find(c => c.id === card.id);
+                  return (
+                    <button
+                      key={card.id}
+                      onClick={() => toggleCardSelection(card)}
+                      className={`relative group transition-all ${
+                        isSelected ? 'ring-2 ring-primary scale-105' : 'hover:scale-105'
+                      }`}
+                    >
+                      <img
+                        src={card.image}
+                        alt={card.name}
+                        className="w-full h-auto rounded-lg shadow-md"
+                      />
+                      {isSelected && (
+                        <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                          {selectedTarotCards.findIndex(c => c.id === card.id) + 1}
+                        </div>
+                      )}
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-1 text-xs text-center rounded-b-lg">
+                        {card.name}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
               <div className="flex gap-2">
                 <Button
                   variant="outline"
+                  onClick={() => {
+                    setShowCardSelection(false);
+                    setSelectedTarotCards([]);
+                  }}
                   className="flex-1"
-                  onClick={() => setShowTarotResultDialog(true)}
                 >
-                  Sonucu Gör
+                  Geri
                 </Button>
                 <Button
+                  onClick={handleTarotReading}
+                  disabled={tarotLoading || selectedTarotCards.length !== 3}
                   className="flex-1"
-                  onClick={() => {
-                    setShareType("tarot");
-                    setShowShareDialog(true);
-                  }}
                 >
-                  <Send className="w-4 h-4 mr-2" />
-                  Paylaş (50₺)
+                  {tarotLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Yorumlanıyor...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Tarota Bak (30 Kredi)
+                    </>
+                  )}
                 </Button>
               </div>
-            )}
-
-            <p className="text-xs text-muted-foreground text-center">
-              {tarotResult ? "Tarot sonucunu görüntüleyebilir veya paylaşabilirsiniz" : "Her kullanıcı ile bir kez tarot bakılabilir"}
-            </p>
-          </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -1180,37 +1323,81 @@ const Match = () => {
             <div className="space-y-4">
               {tarotResult.selectedCards && tarotResult.selectedCards.length > 0 && (
                 <div>
-                  <h4 className="font-semibold mb-2">🃏 Seçilen Kartlar</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {tarotResult.selectedCards.map((card: any, index: number) => (
-                      <Badge key={index} variant="outline">
-                        {card.name}
-                      </Badge>
-                    ))}
+                  <h4 className="font-semibold mb-3">🃏 Seçilen Kartlar</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    {tarotResult.selectedCards.map((card: any, index: number) => {
+                      const cardImage = majorArcana.find(c => c.id === card.id)?.image;
+                      return (
+                        <div key={index} className="text-center">
+                          {cardImage && (
+                            <img
+                              src={cardImage}
+                              alt={card.name}
+                              className="w-full h-auto rounded-lg shadow-md mb-2"
+                            />
+                          )}
+                          <Badge variant="outline" className="text-xs">
+                            {card.name}
+                          </Badge>
+                        </div>
+                      );
+                    })}
                   </div>
+                </div>
+              )}
+
+              {tarotResult.question && (
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <h4 className="font-semibold mb-1 text-sm">❓ Soru</h4>
+                  <p className="text-sm text-muted-foreground">{tarotResult.question}</p>
                 </div>
               )}
 
               {tarotResult.interpretation && (
                 <div className="space-y-3">
-                  <div>
-                    <h4 className="font-semibold mb-2">📖 Genel Yorum</h4>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                      {tarotResult.interpretation.summary || tarotResult.interpretation}
-                    </p>
-                  </div>
+                  {tarotResult.interpretation.overall && (
+                    <div>
+                      <h4 className="font-semibold mb-2">📖 Genel Yorum</h4>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {tarotResult.interpretation.overall}
+                      </p>
+                    </div>
+                  )}
 
-                  {tarotResult.interpretation.cardInterpretations && (
+                  {tarotResult.interpretation.cards && tarotResult.interpretation.cards.length > 0 && (
                     <div>
                       <h4 className="font-semibold mb-2">🎴 Kart Yorumları</h4>
                       <div className="space-y-2">
-                        {tarotResult.interpretation.cardInterpretations.map((interp: any, index: number) => (
+                        {tarotResult.interpretation.cards.map((cardInterp: any, index: number) => (
                           <div key={index} className="p-3 rounded-lg bg-muted/50">
-                            <p className="font-medium text-sm mb-1">{interp.card}</p>
-                            <p className="text-xs text-muted-foreground">{interp.interpretation}</p>
+                            <p className="font-medium text-sm mb-1">{cardInterp.position}</p>
+                            <p className="text-xs text-muted-foreground mb-2">{cardInterp.interpretation}</p>
+                            {cardInterp.keywords && cardInterp.keywords.length > 0 && (
+                              <div className="flex gap-1 flex-wrap">
+                                {cardInterp.keywords.map((keyword: string, i: number) => (
+                                  <Badge key={i} variant="secondary" className="text-xs">
+                                    {keyword}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {tarotResult.interpretation.advice && (
+                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                      <h4 className="font-semibold mb-1 text-sm">💡 Tavsiyeler</h4>
+                      <p className="text-sm text-muted-foreground">{tarotResult.interpretation.advice}</p>
+                    </div>
+                  )}
+
+                  {tarotResult.interpretation.warnings && (
+                    <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
+                      <h4 className="font-semibold mb-1 text-sm">⚠️ Dikkat Edilmesi Gerekenler</h4>
+                      <p className="text-sm text-muted-foreground">{tarotResult.interpretation.warnings}</p>
                     </div>
                   )}
                 </div>
