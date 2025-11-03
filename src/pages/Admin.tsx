@@ -9,8 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Users, CreditCard, History, Loader2, Eye, UserCheck, Trash2 } from "lucide-react";
-import { useImpersonate } from "@/hooks/use-impersonate";
+import { Shield, Users, CreditCard, History, Loader2, Eye, Trash2 } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { z } from "zod";
 
@@ -49,7 +48,6 @@ const Admin = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { startImpersonation } = useImpersonate();
 
   useEffect(() => {
     checkAdminAndLoad();
@@ -324,18 +322,6 @@ const Admin = () => {
                         </div>
                       </div>
                       <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startImpersonation(profile.user_id);
-                          }}
-                          className="shrink-0"
-                          title="Bu kullanıcı olarak giriş yap"
-                        >
-                          <UserCheck className="w-4 h-4" />
-                        </Button>
                         <Button
                           size="sm"
                           variant="destructive"

@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,6 +9,43 @@ const corsHeaders = {
 };
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+
+// Rate limiting map
+const rateLimits = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const limit = rateLimits.get(userId);
+  
+  if (!limit || now > limit.resetAt) {
+    rateLimits.set(userId, { count: 1, resetAt: now + 60000 }); // 1 minute window
+    return true;
+  }
+  
+  if (limit.count >= 10) { // 10 requests per minute
+    return false;
+  }
+  
+  limit.count++;
+  return true;
+}
+
+// Input validation schema - max 10MB base64 images
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+
+const imageValidator = z.string()
+  .refine((val) => val.startsWith('data:image/'), { message: 'Geçersiz görsel formatı' })
+  .refine((val) => {
+    const base64Length = val.split(',')[1]?.length || 0;
+    const estimatedSize = (base64Length * 3) / 4;
+    return estimatedSize <= MAX_IMAGE_SIZE;
+  }, { message: 'Görsel boyutu çok büyük (maks 10MB)' });
+
+const coffeeFortuneSchema = z.object({
+  image1: imageValidator,
+  image2: imageValidator,
+  image3: imageValidator
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -40,7 +78,30 @@ serve(async (req) => {
       });
     }
 
-    const { image1, image2, image3 } = await req.json();
+    // Rate limiting
+    if (!checkRateLimit(user.id)) {
+      return new Response(JSON.stringify({ error: 'Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin.' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const body = await req.json();
+    
+    // Validate input
+    const validation = coffeeFortuneSchema.safeParse(body);
+    if (!validation.success) {
+      console.error('Validation error:', validation.error);
+      return new Response(JSON.stringify({ 
+        error: 'Geçersiz veri formatı',
+        details: validation.error.errors[0].message 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { image1, image2, image3 } = validation.data;
     console.log('Coffee fortune reading request received');
 
     // Check and deduct credits
@@ -118,7 +179,10 @@ JSON formatında şu yapıda cevap ver:
 
     if (!response.ok || !data.choices || !data.choices[0]) {
       console.error('AI API error:', data);
-      throw new Error(data.error?.message || 'AI API hatası');
+      return new Response(JSON.stringify({ error: 'AI servisi geçici olarak kullanılamıyor' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     let interpretation;
@@ -165,7 +229,10 @@ JSON formatında şu yapıda cevap ver:
 
     if (saveError) {
       console.error('Error saving reading:', saveError);
-      throw saveError;
+      return new Response(JSON.stringify({ error: 'Okuma kaydedilemedi' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Record transaction
@@ -187,7 +254,7 @@ JSON formatında şu yapıda cevap ver:
   } catch (error) {
     console.error('Error in analyze-coffee-fortune function:', error);
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Bilinmeyen hata' 
+      error: 'İşlem sırasında bir hata oluştu'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

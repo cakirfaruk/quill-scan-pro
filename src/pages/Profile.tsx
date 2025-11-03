@@ -18,7 +18,6 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { useImpersonate } from "@/hooks/use-impersonate";
 import { CreatePostDialog } from "@/components/CreatePostDialog";
 import { ProfilePosts } from "@/components/ProfilePosts";
 import { MutualFriends } from "@/components/MutualFriends";
@@ -86,7 +85,6 @@ const Profile = () => {
   const [latestNumerology, setLatestNumerology] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("posts");
   const [friendsDialogOpen, setFriendsDialogOpen] = useState(false);
-  const { getEffectiveUserId } = useImpersonate();
   const [createPostDialogOpen, setCreatePostDialogOpen] = useState(false);
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
@@ -382,13 +380,7 @@ const Profile = () => {
         return;
       }
 
-      const effectiveUserId = getEffectiveUserId(user.id);
-      if (!effectiveUserId) {
-        navigate("/auth");
-        return;
-      }
-
-      setCurrentUserId(effectiveUserId);
+      setCurrentUserId(user.id);
 
       // If no username in URL, show current user's profile by user_id
       let profileData;
@@ -408,7 +400,7 @@ const Profile = () => {
         const result = await supabase
           .from("profiles")
           .select("*")
-          .eq("user_id", effectiveUserId)
+          .eq("user_id", user.id)
           .maybeSingle();
         profileData = result.data;
         profileError = result.error;
@@ -436,7 +428,7 @@ const Profile = () => {
       }
 
       setProfile(profileData);
-      setIsOwnProfile(profileData.user_id === effectiveUserId);
+      setIsOwnProfile(profileData.user_id === user.id);
 
       // **PARALEL SORGULAR** - Tüm sorguları aynı anda başlat
       const [photosResult, friendsResult, friendshipResult, blockResult] = await Promise.all([
@@ -459,20 +451,20 @@ const Profile = () => {
           .eq("status", "accepted"),
         
         // Friendship status (only if not own profile)
-        profileData.user_id !== effectiveUserId
+        profileData.user_id !== user.id
           ? supabase
               .from("friends")
               .select("*")
-              .or(`and(user_id.eq.${effectiveUserId},friend_id.eq.${profileData.user_id}),and(user_id.eq.${profileData.user_id},friend_id.eq.${effectiveUserId})`)
+              .or(`and(user_id.eq.${user.id},friend_id.eq.${profileData.user_id}),and(user_id.eq.${profileData.user_id},friend_id.eq.${user.id})`)
               .maybeSingle()
           : Promise.resolve({ data: null }),
         
         // Block status (only if not own profile)
-        profileData.user_id !== effectiveUserId
+        profileData.user_id !== user.id
           ? supabase
               .from("blocked_users")
               .select("id")
-              .eq("user_id", effectiveUserId)
+              .eq("user_id", user.id)
               .eq("blocked_user_id", profileData.user_id)
               .maybeSingle()
           : Promise.resolve({ data: null }),
@@ -483,16 +475,16 @@ const Profile = () => {
       if (friendsResult.data) setFriends(friendsResult.data);
 
       // Set friendship status
-      if (profileData.user_id !== effectiveUserId && friendshipResult.data) {
+      if (profileData.user_id !== user.id && friendshipResult.data) {
         const friendshipData = friendshipResult.data;
         if (friendshipData.status === "accepted") {
           setFriendshipStatus("accepted");
-        } else if (friendshipData.user_id === effectiveUserId) {
+        } else if (friendshipData.user_id === user.id) {
           setFriendshipStatus("pending_sent");
         } else {
           setFriendshipStatus("pending_received");
         }
-      } else if (profileData.user_id !== effectiveUserId) {
+      } else if (profileData.user_id !== user.id) {
         setFriendshipStatus("none");
       }
 
@@ -506,7 +498,7 @@ const Profile = () => {
       }
 
       // Load analyses async (don't wait)
-      if (profileData.user_id === effectiveUserId) {
+      if (profileData.user_id === user.id) {
         Promise.all([
           loadAnalyses(profileData.user_id),
           loadLatestAnalyses(profileData.user_id)

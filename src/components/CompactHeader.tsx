@@ -19,7 +19,6 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationBell } from "@/components/NotificationBell";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useImpersonate } from "@/hooks/use-impersonate";
 import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
 import { CreatePostDialog } from "@/components/CreatePostDialog";
 
@@ -34,7 +33,6 @@ export const CompactHeader = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { isImpersonating, stopImpersonation, getEffectiveUserId } = useImpersonate();
 
   useUpdateOnlineStatus();
 
@@ -55,18 +53,12 @@ export const CompactHeader = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       setIsLoggedIn(true);
-      const effectiveUserId = getEffectiveUserId(user.id);
-      if (!effectiveUserId) {
-        setIsLoggedIn(false);
-        return;
-      }
-
-      setCurrentUserId(effectiveUserId);
+      setCurrentUserId(user.id);
 
       const { data: profile } = await supabase
         .from("profiles")
         .select("credits, username, profile_photo")
-        .eq("user_id", effectiveUserId)
+        .eq("user_id", user.id)
         .maybeSingle();
 
       if (profile) {
@@ -192,21 +184,8 @@ export const CompactHeader = () => {
               {/* Notifications */}
               <NotificationBell />
 
-              {/* Impersonation Warning */}
-              {isImpersonating && (
-                <Button
-                  onClick={stopImpersonation}
-                  variant="destructive"
-                  size="sm"
-                  className="gap-2 animate-pulse hidden lg:flex"
-                >
-                  <Shield className="w-4 h-4" />
-                  Admin Modu
-                </Button>
-              )}
-
               {/* Main Menu - Desktop only for admin */}
-              {isAdmin && !isImpersonating && (
+              {isAdmin && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 sm:h-9 w-8 sm:w-9 hidden lg:flex">

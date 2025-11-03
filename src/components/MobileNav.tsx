@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { CreatePostDialog } from "@/components/CreatePostDialog";
 import { supabase } from "@/integrations/supabase/client";
-import { useImpersonate } from "@/hooks/use-impersonate";
 import { useToast } from "@/hooks/use-toast";
 
 export const MobileNav = () => {
@@ -12,7 +11,6 @@ export const MobileNav = () => {
   const [createPostDialogOpen, setCreatePostDialogOpen] = useState(false);
   const [userId, setUserId] = useState("");
   const [currentProfile, setCurrentProfile] = useState<{ username: string; profile_photo: string | null }>({ username: "", profile_photo: null });
-  const { getEffectiveUserId } = useImpersonate();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -23,15 +21,12 @@ export const MobileNav = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     
-    const effectiveUserId = getEffectiveUserId(user.id);
-    if (!effectiveUserId) return;
-    
-    setUserId(effectiveUserId);
+    setUserId(user.id);
     
     const { data: profileData } = await supabase
       .from("profiles")
       .select("username, profile_photo")
-      .eq("user_id", effectiveUserId)
+      .eq("user_id", user.id)
       .maybeSingle();
     
     if (profileData) {

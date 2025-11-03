@@ -16,7 +16,6 @@ import { Separator } from "@/components/ui/separator";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Heart, MessageCircle, Share2, MoreHorizontal, Reply, Loader2, RefreshCw, Bookmark, Folder, FolderPlus } from "lucide-react";
-import { useImpersonate } from "@/hooks/use-impersonate";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { soundEffects } from "@/utils/soundEffects";
 import { StoriesBar } from "@/components/StoriesBar";
@@ -91,7 +90,6 @@ const Feed = () => {
   const [postToSave, setPostToSave] = useState<Post | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
-  const { getEffectiveUserId } = useImpersonate();
 
   const handleRefresh = async () => {
     soundEffects.playClick();
@@ -116,18 +114,12 @@ const Feed = () => {
       return;
     }
     
-    const effectiveUserId = getEffectiveUserId(user.id);
-    if (!effectiveUserId) {
-      navigate("/auth");
-      return;
-    }
-    
-    setUserId(effectiveUserId);
+    setUserId(user.id);
     
     // **PARALEL YÜKLEME** - Arkadaşlar ve postlar aynı anda
     await Promise.all([
-      loadFriends(effectiveUserId),
-      loadPosts(effectiveUserId)
+      loadFriends(user.id),
+      loadPosts(user.id)
     ]);
   };
 

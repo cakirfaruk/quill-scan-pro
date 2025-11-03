@@ -15,7 +15,6 @@ import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { useIsMobile } from "@/hooks/use-mobile";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useImpersonate } from "@/hooks/use-impersonate";
 import { soundEffects } from "@/utils/soundEffects";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { VoiceMessagePlayer } from "@/components/VoiceMessagePlayer";
@@ -79,7 +78,6 @@ const Messages = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
-  const { getEffectiveUserId } = useImpersonate();
 
   useEffect(() => {
     loadConversations();
@@ -120,19 +118,13 @@ const Messages = () => {
         return;
       }
 
-      const effectiveUserId = getEffectiveUserId(user.id);
-      if (!effectiveUserId) {
-        navigate("/auth");
-        return;
-      }
-
-      setCurrentUserId(effectiveUserId);
+      setCurrentUserId(user.id);
 
       // Get all people who have messaged or received messages from current user
       const { data: allMessages } = await supabase
         .from("messages")
         .select("sender_id, receiver_id, message_category")
-        .or(`sender_id.eq.${effectiveUserId},receiver_id.eq.${effectiveUserId}`);
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
 
       if (!allMessages) {
         setIsLoading(false);
@@ -142,8 +134,8 @@ const Messages = () => {
       // Get unique user IDs
       const userIds = new Set<string>();
       allMessages.forEach(msg => {
-        if (msg.sender_id !== effectiveUserId) userIds.add(msg.sender_id);
-        if (msg.receiver_id !== effectiveUserId) userIds.add(msg.receiver_id);
+        if (msg.sender_id !== user.id) userIds.add(msg.sender_id);
+        if (msg.receiver_id !== user.id) userIds.add(msg.receiver_id);
       });
 
       if (userIds.size === 0) {
@@ -166,12 +158,12 @@ const Messages = () => {
       const { data: friendsData } = await supabase
         .from("friends")
         .select("user_id, friend_id")
-        .or(`user_id.eq.${effectiveUserId},friend_id.eq.${effectiveUserId}`)
+        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
         .eq("status", "accepted");
 
       const friendIds = new Set<string>();
       friendsData?.forEach(f => {
-        if (f.user_id === effectiveUserId) friendIds.add(f.friend_id);
+        if (f.user_id === user.id) friendIds.add(f.friend_id);
         else friendIds.add(f.user_id);
       });
 
@@ -179,7 +171,7 @@ const Messages = () => {
       const { data: userSwipes } = await supabase
         .from("swipes")
         .select("target_user_id, action")
-        .eq("user_id", effectiveUserId)
+        .eq("user_id", user.id)
         .eq("action", "like");
 
       const matchIds = new Set<string>();
@@ -192,7 +184,7 @@ const Messages = () => {
           .from("swipes")
           .select("user_id")
           .in("user_id", likedUserIds)
-          .eq("target_user_id", effectiveUserId)
+          .eq("target_user_id", user.id)
           .eq("action", "like");
         
         mutualSwipes?.forEach(s => {
@@ -213,7 +205,7 @@ const Messages = () => {
           const { data: lastMsg } = await supabase
             .from("messages")
             .select("*")
-            .or(`and(sender_id.eq.${profile.user_id},receiver_id.eq.${effectiveUserId}),and(sender_id.eq.${effectiveUserId},receiver_id.eq.${profile.user_id})`)
+            .or(`and(sender_id.eq.${profile.user_id},receiver_id.eq.${user.id}),and(sender_id.eq.${user.id},receiver_id.eq.${profile.user_id})`)
             .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle();
@@ -222,7 +214,7 @@ const Messages = () => {
             .from("messages")
             .select("*", { count: "exact", head: true })
             .eq("sender_id", profile.user_id)
-            .eq("receiver_id", effectiveUserId)
+            .eq("receiver_id", user.id)
             .eq("read", false);
 
           return {
@@ -269,7 +261,7 @@ const Messages = () => {
         }
       }
       
-      return { userId: effectiveUserId };
+      return { userId: user.id };
     } catch (error: any) {
       console.error("Error loading conversations:", error);
       toast({

@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,6 +9,37 @@ const corsHeaders = {
 };
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+
+// Rate limiting map
+const rateLimits = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const limit = rateLimits.get(userId);
+  
+  if (!limit || now > limit.resetAt) {
+    rateLimits.set(userId, { count: 1, resetAt: now + 60000 }); // 1 minute window
+    return true;
+  }
+  
+  if (limit.count >= 10) { // 10 requests per minute
+    return false;
+  }
+  
+  limit.count++;
+  return true;
+}
+
+// Input validation schema
+const tarotSchema = z.object({
+  spreadType: z.enum(['past-present-future', 'love', 'career', 'celtic-cross']),
+  question: z.string().max(500).optional(),
+  selectedCards: z.array(z.object({
+    name: z.string(),
+    suit: z.string().optional(),
+    isReversed: z.boolean()
+  })).min(1).max(10)
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -40,7 +72,30 @@ serve(async (req) => {
       });
     }
 
-    const { spreadType, question, selectedCards } = await req.json();
+    // Rate limiting
+    if (!checkRateLimit(user.id)) {
+      return new Response(JSON.stringify({ error: 'Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin.' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const body = await req.json();
+    
+    // Validate input
+    const validation = tarotSchema.safeParse(body);
+    if (!validation.success) {
+      console.error('Validation error:', validation.error);
+      return new Response(JSON.stringify({ 
+        error: 'Geçersiz veri formatı',
+        details: validation.error.errors[0].message 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { spreadType, question, selectedCards } = validation.data;
     console.log('Tarot reading request:', { spreadType, question, cardsCount: selectedCards.length });
 
     // Check and deduct credits
@@ -124,7 +179,10 @@ Yorumun mistik, anlayışlı ve rehberlik edici olsun. JSON formatında şu yap�
 
     if (!response.ok || !data.choices || !data.choices[0]) {
       console.error('AI API error:', data);
-      throw new Error(data.error?.message || 'AI API hatası');
+      return new Response(JSON.stringify({ error: 'AI servisi geçici olarak kullanılamıyor' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     let interpretation;
@@ -171,7 +229,10 @@ Yorumun mistik, anlayışlı ve rehberlik edici olsun. JSON formatında şu yap�
 
     if (saveError) {
       console.error('Error saving reading:', saveError);
-      throw saveError;
+      return new Response(JSON.stringify({ error: 'Okuma kaydedilemedi' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Record transaction
@@ -193,7 +254,7 @@ Yorumun mistik, anlayışlı ve rehberlik edici olsun. JSON formatında şu yap�
   } catch (error) {
     console.error('Error in analyze-tarot function:', error);
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Bilinmeyen hata' 
+      error: 'İşlem sırasında bir hata oluştu'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

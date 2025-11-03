@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useImpersonate } from "@/hooks/use-impersonate";
 import { useCardGestures } from "@/hooks/use-gestures";
 import { Header } from "@/components/Header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -86,7 +85,6 @@ const Match = () => {
   const [shareType, setShareType] = useState<"area" | "full" | "tarot">("area");
   const [selectedArea, setSelectedArea] = useState<any>(null);
   const [specificUserId, setSpecificUserId] = useState<string | null>(null);
-  const { getEffectiveUserId } = useImpersonate();
 
   // Card swipe gestures for mobile
   const cardGestures = useCardGestures({
@@ -209,27 +207,21 @@ const Match = () => {
       return;
     }
     
-    const effectiveUserId = getEffectiveUserId(user.id);
-    if (!effectiveUserId) {
-      navigate("/auth");
-      return;
-    }
-    
-    setUser({ ...user, id: effectiveUserId });
+    setUser(user);
     
     // Get user gender
     const { data: profile } = await supabase
       .from("profiles")
       .select("gender")
-      .eq("user_id", effectiveUserId)
+      .eq("user_id", user.id)
       .maybeSingle();
     
     if (profile?.gender) {
       setUserGender(profile.gender);
     }
     
-    await loadCredits(effectiveUserId);
-    await loadProfiles(effectiveUserId);
+    await loadCredits(user.id);
+    await loadProfiles(user.id);
   };
 
   const loadCredits = async (userId: string) => {

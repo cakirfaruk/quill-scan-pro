@@ -15,7 +15,6 @@ import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, He
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { requestNotificationPermission } from "@/utils/notifications";
 import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
-import { useImpersonate } from "@/hooks/use-impersonate";
 
 const Settings = () => {
   const [profile, setProfile] = useState({
@@ -43,7 +42,6 @@ const Settings = () => {
   const [isLoadingBlocked, setIsLoadingBlocked] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { getEffectiveUserId } = useImpersonate();
 
   useEffect(() => {
     loadSettings();
@@ -67,16 +65,10 @@ const Settings = () => {
         return;
       }
 
-      const effectiveUserId = getEffectiveUserId(user.id);
-      if (!effectiveUserId) {
-        navigate("/auth");
-        return;
-      }
-
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("user_id", effectiveUserId)
+        .eq("user_id", user.id)
         .maybeSingle();
 
       if (error) {
@@ -161,16 +153,6 @@ const Settings = () => {
         return;
       }
 
-      const effectiveUserId = getEffectiveUserId(user.id);
-      if (!effectiveUserId) {
-        toast({
-          title: "Hata",
-          description: "Oturum açmanız gerekiyor.",
-          variant: "destructive",
-        });
-        return;
-      }
-
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -183,7 +165,7 @@ const Settings = () => {
           gender: profile.gender || null,
           show_in_matches: profile.show_in_matches,
         })
-        .eq("user_id", effectiveUserId);
+        .eq("user_id", user.id);
 
       if (error) {
         console.error("Profile update error:", error);
@@ -344,14 +326,11 @@ const Settings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const effectiveUserId = getEffectiveUserId(user.id);
-      if (!effectiveUserId) return;
-
       // Get blocked user IDs
       const { data: blockedData, error: blockedError } = await supabase
         .from("blocked_users")
         .select("id, blocked_user_id, created_at")
-        .eq("user_id", effectiveUserId)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (blockedError) throw blockedError;
