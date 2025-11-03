@@ -138,21 +138,37 @@ const Admin = () => {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm("Bu kullanıcıyı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!")) {
+    const username = profiles.find(p => p.user_id === userId)?.username;
+    if (!confirm(`${username} kullanıcısını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!`)) {
       return;
     }
 
     try {
       setIsUpdating(true);
 
-      // Delete user from auth.users (this will cascade delete all related data)
-      const { error } = await supabase.auth.admin.deleteUser(userId);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Oturum bulunamadı');
+      }
 
-      if (error) throw error;
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId }),
+      });
+
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Kullanıcı silinemedi');
+      }
 
       toast({
         title: "Başarılı",
-        description: "Kullanıcı başarıyla silindi.",
+        description: `${username} kullanıcısı silindi`,
       });
 
       if (selectedUser?.user_id === userId) {
@@ -165,7 +181,7 @@ const Admin = () => {
       console.error("Error deleting user:", error);
       toast({
         title: "Hata",
-        description: error.message || "Kullanıcı silinemedi.",
+        description: error.message || "Kullanıcı silinemedi",
         variant: "destructive",
       });
     } finally {

@@ -79,11 +79,21 @@ const App = () => {
           <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-        <MobileNav />
+        <MobileNavWrapper />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
   );
+};
+
+// Only show MobileNav on specific pages
+const MobileNavWrapper = () => {
+  const location = window.location.pathname;
+  const showNav = ['/', '/feed', '/explore', '/messages', '/profile', '/match', '/friends'].some(
+    path => location === path || location.startsWith('/profile/')
+  );
+  
+  return showNav ? <MobileNav /> : null;
 };
 
 export default App;

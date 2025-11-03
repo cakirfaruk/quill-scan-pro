@@ -51,6 +51,7 @@ const Groups = () => {
         navigate("/auth");
         return;
       }
+      
       setCurrentUserId(user.id);
 
       // Get groups user is a member of
