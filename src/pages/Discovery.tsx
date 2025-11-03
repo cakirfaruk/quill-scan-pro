@@ -114,9 +114,6 @@ const Discovery = () => {
                   <CardTitle className="text-lg group-hover:text-primary transition-colors">
                     {item.title}
                   </CardTitle>
-                  <CardDescription className="text-sm">
-                    {item.description}
-                  </CardDescription>
                 </CardHeader>
               </Card>
             ))}
@@ -143,9 +140,6 @@ const Discovery = () => {
                   <CardTitle className="text-lg group-hover:text-primary transition-colors">
                     {item.title}
                   </CardTitle>
-                  <CardDescription className="text-sm">
-                    {item.description}
-                  </CardDescription>
                 </CardHeader>
               </Card>
             ))}
