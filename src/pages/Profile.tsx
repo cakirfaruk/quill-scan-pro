@@ -153,6 +153,8 @@ const Profile = () => {
       setPostsLoading(false);
     }
   };
+
+  const loadProfile = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
