@@ -11,7 +11,7 @@ import { OnboardingDialog } from "@/components/OnboardingDialog";
 
 const Index = () => {
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
@@ -20,7 +20,6 @@ const Index = () => {
 
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    setIsLoggedIn(!!user);
     
     // Check if user has seen onboarding
     if (user) {
@@ -28,6 +27,7 @@ const Index = () => {
       if (!hasSeenOnboarding) {
         setShowOnboarding(true);
       }
+      setIsLoggedIn(true);
     }
   };
 
@@ -50,16 +50,7 @@ const Index = () => {
     );
   }
 
-  // Show loading while checking auth
-  if (isLoggedIn === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  // Show landing page for non-logged in users
+  // Show landing page immediately (no blocking while checking auth)
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background overflow-hidden">
       <Header />
