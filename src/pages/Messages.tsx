@@ -160,17 +160,30 @@ const Messages = () => {
         else friendIds.add(f.user_id);
       });
 
-      // Get matches
-      const { data: matchesData } = await supabase
-        .from("matches")
-        .select("user1_id, user2_id")
-        .or(`user1_id.eq.${effectiveUserId},user2_id.eq.${effectiveUserId}`);
+      // Get REAL matches - mutual likes via swipes, NOT just compatibility analyses
+      const { data: userSwipes } = await supabase
+        .from("swipes")
+        .select("target_user_id, action")
+        .eq("user_id", effectiveUserId)
+        .eq("action", "like");
 
       const matchIds = new Set<string>();
-      matchesData?.forEach(m => {
-        if (m.user1_id === effectiveUserId) matchIds.add(m.user2_id);
-        else matchIds.add(m.user1_id);
-      });
+      
+      if (userSwipes && userSwipes.length > 0) {
+        const likedUserIds = userSwipes.map(s => s.target_user_id);
+        
+        // Check which of these users also liked back
+        const { data: mutualSwipes } = await supabase
+          .from("swipes")
+          .select("user_id")
+          .in("user_id", likedUserIds)
+          .eq("target_user_id", effectiveUserId)
+          .eq("action", "like");
+        
+        mutualSwipes?.forEach(s => {
+          matchIds.add(s.user_id);
+        });
+      }
 
       // Build conversations with categories
       const conversationsWithMessages = await Promise.all(

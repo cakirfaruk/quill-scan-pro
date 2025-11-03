@@ -635,8 +635,9 @@ const Match = () => {
 
     if (shareType === "area") {
       creditsNeeded = 30;
-      // Don't send analysis ID for area sharing - just text
-      shareContent = `📊 Uyum Alanı Paylaşımı\n\n**${selectedArea?.name}**\n\n${selectedArea?.strengths}${selectedArea?.challenges ? '\n\n⚠️ ' + selectedArea.challenges : ''}`;
+      // Include compatibility score for the area
+      const areaScore = selectedArea?.compatibilityScore || 0;
+      shareContent = `📊 Uyum Alanı Paylaşımı\n\n**${selectedArea?.name}** (Uyum: %${areaScore})\n\n✨ ${selectedArea?.strengths}${selectedArea?.challenges ? '\n\n⚠️ ' + selectedArea.challenges : ''}`;
       analysisType = "";
       analysisId = "";
     } else if (shareType === "full") {
