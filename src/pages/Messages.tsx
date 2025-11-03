@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Send, Search, ArrowLeft, FileText, Smile, Paperclip, Image as ImageIcon, Video } from "lucide-react";
@@ -756,6 +756,9 @@ const Messages = () => {
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Analiz Detayları</DialogTitle>
+              <DialogDescription>
+                Paylaşılan analiz sonuçlarını inceleyebilirsiniz
+              </DialogDescription>
             </DialogHeader>
             {selectedAnalysis && (
               <AnalysisDetailView

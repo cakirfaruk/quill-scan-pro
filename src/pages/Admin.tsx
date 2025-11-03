@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Users, CreditCard, History, Loader2, Eye } from "lucide-react";
@@ -382,6 +382,9 @@ const Admin = () => {
             <DialogTitle>
               {selectedAnalysis && getAnalysisTypeLabel(selectedAnalysis.analysis_type)} - Analiz Detayları
             </DialogTitle>
+            <DialogDescription>
+              Analiz sonuçlarınızı inceleyebilirsiniz
+            </DialogDescription>
           </DialogHeader>
           {selectedAnalysis?.result && (
             <AnalysisDetailView 
