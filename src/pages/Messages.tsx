@@ -28,6 +28,8 @@ interface Friend {
   username: string;
   full_name: string;
   profile_photo: string;
+  is_online?: boolean;
+  last_seen?: string;
 }
 
 interface Message {
@@ -150,7 +152,7 @@ const Messages = () => {
       // Get profiles for all users
       const { data: profilesData } = await supabase
         .from("profiles")
-        .select("user_id, username, full_name, profile_photo")
+        .select("user_id, username, full_name, profile_photo, is_online, last_seen")
         .in("user_id", Array.from(userIds));
 
       if (!profilesData) {
@@ -227,6 +229,8 @@ const Messages = () => {
               username: profile.username,
               full_name: profile.full_name,
               profile_photo: profile.profile_photo,
+              is_online: profile.is_online,
+              last_seen: profile.last_seen,
             },
             lastMessage: lastMsg ? {
               ...lastMsg,
@@ -872,21 +876,26 @@ const Messages = () => {
                       <ArrowLeft className="w-5 h-5" />
                     </Button>
                   )}
-                  <Avatar 
-                    className="w-10 h-10 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
-                    onClick={() => {
-                      if (selectedCategory === "other") {
-                        navigate(`/match?userId=${selectedFriend.user_id}`);
-                      } else {
-                        navigate(`/profile/${selectedFriend.username}`);
-                      }
-                    }}
-                  >
-                    <AvatarImage src={selectedFriend.profile_photo} />
-                    <AvatarFallback className="bg-gradient-primary text-primary-foreground">
-                      {selectedFriend.username.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar 
+                      className="w-10 h-10 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+                      onClick={() => {
+                        if (selectedCategory === "other") {
+                          navigate(`/match?userId=${selectedFriend.user_id}`);
+                        } else {
+                          navigate(`/profile/${selectedFriend.username}`);
+                        }
+                      }}
+                    >
+                      <AvatarImage src={selectedFriend.profile_photo} />
+                      <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                        {selectedFriend.username.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    {selectedFriend.is_online && (
+                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-card"></span>
+                    )}
+                  </div>
                   <div 
                     className="cursor-pointer hover:opacity-80 transition-opacity flex-1"
                     onClick={() => {
@@ -900,7 +909,25 @@ const Messages = () => {
                     <p className="font-medium">
                       {selectedFriend.full_name || selectedFriend.username}
                     </p>
-                    <p className="text-xs text-muted-foreground">@{selectedFriend.username}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-muted-foreground">@{selectedFriend.username}</p>
+                      {selectedFriend.is_online ? (
+                        <span className="text-xs text-green-500">• Çevrimiçi</span>
+                      ) : selectedFriend.last_seen && (
+                        <span className="text-xs text-muted-foreground">
+                          • {(() => {
+                            const diff = Date.now() - new Date(selectedFriend.last_seen).getTime();
+                            const minutes = Math.floor(diff / 60000);
+                            const hours = Math.floor(minutes / 60);
+                            const days = Math.floor(hours / 24);
+                            if (days > 0) return `${days} gün önce`;
+                            if (hours > 0) return `${hours} saat önce`;
+                            if (minutes > 0) return `${minutes} dk önce`;
+                            return 'Az önce';
+                          })()}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {selectedCategory === "other" && (
                     <div className="text-xs text-muted-foreground flex items-center gap-1">
@@ -1334,12 +1361,17 @@ const ConversationItem = ({ conv, selected, onClick }: {
       selected ? "bg-primary/10" : "hover:bg-muted"
     }`}
   >
-    <Avatar className="w-12 h-12 flex-shrink-0">
-      <AvatarImage src={conv.friend.profile_photo} />
-      <AvatarFallback className="bg-gradient-primary text-primary-foreground">
-        {conv.friend.username.substring(0, 2).toUpperCase()}
-      </AvatarFallback>
-    </Avatar>
+    <div className="relative">
+      <Avatar className="w-12 h-12 flex-shrink-0">
+        <AvatarImage src={conv.friend.profile_photo} />
+        <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+          {conv.friend.username.substring(0, 2).toUpperCase()}
+        </AvatarFallback>
+      </Avatar>
+      {conv.friend.is_online && (
+        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-card"></span>
+      )}
+    </div>
     <div className="flex-1 text-left overflow-hidden">
       <div className="flex justify-between items-start">
         <p className="font-medium text-sm truncate">

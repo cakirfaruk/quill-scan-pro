@@ -728,6 +728,8 @@ export type Database = {
           full_name: string | null
           gender: string | null
           id: string
+          is_online: boolean | null
+          last_seen: string | null
           profile_photo: string | null
           show_in_matches: boolean
           updated_at: string
@@ -744,6 +746,8 @@ export type Database = {
           full_name?: string | null
           gender?: string | null
           id?: string
+          is_online?: boolean | null
+          last_seen?: string | null
           profile_photo?: string | null
           show_in_matches?: boolean
           updated_at?: string
@@ -760,6 +764,8 @@ export type Database = {
           full_name?: string | null
           gender?: string | null
           id?: string
+          is_online?: boolean | null
+          last_seen?: string | null
           profile_photo?: string | null
           show_in_matches?: boolean
           updated_at?: string

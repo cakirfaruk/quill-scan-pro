@@ -24,6 +24,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useImpersonate } from "@/hooks/use-impersonate";
+import { useOnlineStatus } from "@/hooks/use-online-status";
 
 export const Header = () => {
   const [credits, setCredits] = useState(0);
@@ -32,9 +33,13 @@ export const Header = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState("");
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isImpersonating, stopImpersonation, getEffectiveUserId } = useImpersonate();
+
+  // Use online status hook
+  useOnlineStatus(currentUserId);
 
   useEffect(() => {
     loadUserProfile();
@@ -70,6 +75,8 @@ export const Header = () => {
         return;
       }
       
+      setCurrentUserId(effectiveUserId);
+      
       const { data: profile } = await supabase
         .from("profiles")
         .select("credits, username, profile_photo")
@@ -94,6 +101,7 @@ export const Header = () => {
     } else {
       setIsLoggedIn(false);
       setIsAdmin(false);
+      setCurrentUserId(undefined);
     }
   };
 
