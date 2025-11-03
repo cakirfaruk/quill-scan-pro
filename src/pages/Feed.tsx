@@ -18,6 +18,7 @@ import { Heart, MessageCircle, Share2, MoreHorizontal, Reply, Loader2, RefreshCw
 import { useImpersonate } from "@/hooks/use-impersonate";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { soundEffects } from "@/utils/soundEffects";
+import { StoriesBar } from "@/components/StoriesBar";
 
 interface Post {
   id: string;
@@ -591,6 +592,13 @@ const Feed = () => {
         <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent animate-fade-in">
           Akış
         </h1>
+
+        {/* Stories Bar */}
+        {userId && (
+          <Card className="mb-6 overflow-hidden">
+            <StoriesBar currentUserId={userId} />
+          </Card>
+        )}
         
         <Tabs defaultValue="friends" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
