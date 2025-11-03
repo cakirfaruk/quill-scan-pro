@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Users, CreditCard, History, Loader2, Eye, UserCheck } from "lucide-react";
+import { Shield, Users, CreditCard, History, Loader2, Eye, UserCheck, Trash2 } from "lucide-react";
 import { useImpersonate } from "@/hooks/use-impersonate";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 
@@ -137,6 +137,42 @@ const Admin = () => {
     loadUserAnalyses(profile.user_id);
   };
 
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm("Bu kullanıcıyı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!")) {
+      return;
+    }
+
+    try {
+      setIsUpdating(true);
+
+      // Delete user from auth.users (this will cascade delete all related data)
+      const { error } = await supabase.auth.admin.deleteUser(userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Başarılı",
+        description: "Kullanıcı başarıyla silindi.",
+      });
+
+      if (selectedUser?.user_id === userId) {
+        setSelectedUser(null);
+        setUserAnalyses([]);
+      }
+
+      loadProfiles();
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      toast({
+        title: "Hata",
+        description: error.message || "Kullanıcı silinemedi.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleAddCredits = async () => {
     if (!selectedUser || !creditAmount) return;
 
@@ -260,18 +296,32 @@ const Admin = () => {
                           <Badge variant="outline">{profile.credits} kredi</Badge>
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          startImpersonation(profile.user_id);
-                        }}
-                        className="shrink-0"
-                        title="Bu kullanıcı olarak giriş yap"
-                      >
-                        <UserCheck className="w-4 h-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startImpersonation(profile.user_id);
+                          }}
+                          className="shrink-0"
+                          title="Bu kullanıcı olarak giriş yap"
+                        >
+                          <UserCheck className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteUser(profile.user_id);
+                          }}
+                          className="shrink-0"
+                          title="Kullanıcıyı sil"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}

@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Search, TrendingUp, Hash, Loader2 } from "lucide-react";
+import { Search, TrendingUp, Hash, Loader2, Users } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ParsedText } from "@/components/ParsedText";
 
@@ -16,6 +16,14 @@ interface Hashtag {
   id: string;
   tag: string;
   usage_count: number;
+}
+
+interface UserProfile {
+  user_id: string;
+  username: string;
+  full_name: string | null;
+  profile_photo: string | null;
+  bio: string | null;
 }
 
 interface Post {
@@ -36,7 +44,9 @@ const Explore = () => {
   const [searchQuery, setSearchQuery] = useState(searchParams.get("hashtag") || "");
   const [trendingHashtags, setTrendingHashtags] = useState<Hashtag[]>([]);
   const [searchResults, setSearchResults] = useState<Post[]>([]);
+  const [userSearchResults, setUserSearchResults] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchType, setSearchType] = useState<"hashtags" | "users">("hashtags");
   const [activeTab, setActiveTab] = useState<"trending" | "search">(
     searchParams.get("hashtag") ? "search" : "trending"
   );
@@ -69,6 +79,33 @@ const Explore = () => {
         description: "Trend hashtagler yüklenemedi.",
         variant: "destructive",
       });
+    }
+  };
+
+  const searchUsers = async (query: string) => {
+    if (!query.trim()) return;
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, username, full_name, profile_photo, bio")
+        .or(`username.ilike.%${query}%,full_name.ilike.%${query}%`)
+        .limit(20);
+
+      if (error) throw error;
+
+      setUserSearchResults(data || []);
+      setActiveTab("search");
+    } catch (error: any) {
+      console.error("User search error:", error);
+      toast({
+        title: "Hata",
+        description: "Kullanıcı araması yapılamadı.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -145,7 +182,11 @@ const Explore = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    searchHashtag(searchQuery);
+    if (searchType === "hashtags") {
+      searchHashtag(searchQuery);
+    } else {
+      searchUsers(searchQuery);
+    }
   };
 
   const handleHashtagClick = (tag: string) => {
@@ -164,11 +205,19 @@ const Explore = () => {
 
         {/* Search Bar */}
         <Card className="p-4 mb-6">
+          <Tabs value={searchType} onValueChange={(v: any) => setSearchType(v)} className="mb-3">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="hashtags">Hashtagler</TabsTrigger>
+              <TabsTrigger value="users">Kullanıcılar</TabsTrigger>
+            </TabsList>
+          </Tabs>
           <form onSubmit={handleSearch} className="flex gap-2">
             <div className="relative flex-1">
               <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Hashtag ara..."
+                placeholder={
+                  searchType === "hashtags" ? "Hashtag ara..." : "Kullanıcı ara..."
+                }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -243,13 +292,62 @@ const Explore = () => {
 
           <TabsContent value="search">
             <div className="space-y-4">
-              {searchResults.length > 0 && (
-                <p className="text-sm text-muted-foreground">
-                  <strong>#{searchQuery}</strong> için {searchResults.length} sonuç bulundu
-                </p>
-              )}
+              {searchType === "users" ? (
+                <>
+                  {userSearchResults.length > 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      {userSearchResults.length} kullanıcı bulundu
+                    </p>
+                  )}
+                  
+                  {userSearchResults.map((user) => (
+                    <Card
+                      key={user.user_id}
+                      className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => navigate(`/profile/${user.username}`)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-12 h-12">
+                          <AvatarImage src={user.profile_photo || undefined} />
+                          <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                            {user.username.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <p className="font-semibold">@{user.username}</p>
+                          {user.full_name && (
+                            <p className="text-sm text-muted-foreground">
+                              {user.full_name}
+                            </p>
+                          )}
+                          {user.bio && (
+                            <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
+                              {user.bio}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
 
-              {searchResults.map((post) => (
+                  {userSearchResults.length === 0 && !isLoading && searchQuery && (
+                    <Card className="p-12 text-center">
+                      <Users className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                      <p className="text-muted-foreground">
+                        <strong>{searchQuery}</strong> için kullanıcı bulunamadı
+                      </p>
+                    </Card>
+                  )}
+                </>
+              ) : (
+                <>
+                  {searchResults.length > 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      <strong>#{searchQuery}</strong> için {searchResults.length} sonuç bulundu
+                    </p>
+                  )}
+
+                  {searchResults.map((post) => (
                 <Card key={post.id} className="p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-start gap-3">
                     <Avatar
@@ -297,22 +395,24 @@ const Explore = () => {
                     </div>
                   </div>
                 </Card>
-              ))}
+                  ))}
 
-              {searchResults.length === 0 && !isLoading && searchQuery && (
-                <Card className="p-12 text-center">
-                  <Hash className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-                  <p className="text-muted-foreground">
-                    <strong>#{searchQuery}</strong> için sonuç bulunamadı
-                  </p>
-                </Card>
+                  {searchResults.length === 0 && !isLoading && searchQuery && (
+                    <Card className="p-12 text-center">
+                      <Hash className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                      <p className="text-muted-foreground">
+                        <strong>#{searchQuery}</strong> için sonuç bulunamadı
+                      </p>
+                    </Card>
+                  )}
+                </>
               )}
 
               {!searchQuery && (
                 <Card className="p-12 text-center">
                   <Search className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
                   <p className="text-muted-foreground">
-                    Hashtag arayarak gönderileri keşfedin
+                    Hashtag veya kullanıcı arayarak keşfedin
                   </p>
                 </Card>
               )}
