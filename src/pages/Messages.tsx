@@ -1398,12 +1398,12 @@ const ConversationItem = ({ conv, selected, onClick }: {
 }) => (
   <button
     onClick={onClick}
-    className={`w-full p-3 rounded-lg flex items-center gap-3 transition-colors ${
+    className={`w-full p-3 rounded-lg flex items-center gap-3 transition-colors overflow-hidden ${
       selected ? "bg-primary/10" : "hover:bg-muted"
     }`}
   >
-    <div className="relative">
-      <Avatar className="w-12 h-12 flex-shrink-0">
+    <div className="relative flex-shrink-0">
+      <Avatar className="w-12 h-12">
         <AvatarImage src={conv.friend.profile_photo} />
         <AvatarFallback className="bg-gradient-primary text-primary-foreground">
           {conv.friend.username.substring(0, 2).toUpperCase()}
@@ -1413,19 +1413,19 @@ const ConversationItem = ({ conv, selected, onClick }: {
         <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-card"></span>
       )}
     </div>
-    <div className="flex-1 text-left overflow-hidden">
-      <div className="flex justify-between items-start">
-        <p className="font-medium text-sm truncate">
+    <div className="flex-1 min-w-0 text-left">
+      <div className="flex justify-between items-start gap-2">
+        <p className="font-medium text-sm truncate flex-1 min-w-0">
           {conv.friend.full_name || conv.friend.username}
         </p>
         {conv.unreadCount > 0 && (
-          <span className="bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5 ml-2">
+          <span className="bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5 flex-shrink-0">
             {conv.unreadCount}
           </span>
         )}
       </div>
       {conv.lastMessage && (
-        <p className="text-xs text-muted-foreground truncate">
+        <p className="text-xs text-muted-foreground truncate break-all">
           {conv.lastMessage.content.split('[Analiz ID:')[0]}
         </p>
       )}
