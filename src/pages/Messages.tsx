@@ -14,6 +14,7 @@ import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { useIsMobile } from "@/hooks/use-mobile";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useImpersonate } from "@/hooks/use-impersonate";
 
 interface Friend {
   user_id: string;
@@ -58,6 +59,7 @@ const Messages = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
+  const { getEffectiveUserId } = useImpersonate();
 
   useEffect(() => {
     loadConversations();
@@ -98,7 +100,13 @@ const Messages = () => {
         return;
       }
 
-      setCurrentUserId(user.id);
+      const effectiveUserId = getEffectiveUserId(user.id);
+      if (!effectiveUserId) {
+        navigate("/auth");
+        return;
+      }
+
+      setCurrentUserId(effectiveUserId);
 
       // Get all accepted friends
       const { data: friendsData } = await supabase
@@ -109,14 +117,14 @@ const Messages = () => {
           user_profile:profiles!friends_user_id_fkey(user_id, username, full_name, profile_photo),
           friend_profile:profiles!friends_friend_id_fkey(user_id, username, full_name, profile_photo)
         `)
-        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
+        .or(`user_id.eq.${effectiveUserId},friend_id.eq.${effectiveUserId}`)
         .eq("status", "accepted");
 
       if (!friendsData) return;
 
       const friends: Friend[] = friendsData.map((f: any) => {
         // Determine which profile is the friend (not the current user)
-        const isSender = f.user_id === user.id;
+        const isSender = f.user_id === effectiveUserId;
         const profile = isSender ? f.friend_profile : f.user_profile;
         return {
           user_id: profile.user_id,
@@ -132,7 +140,7 @@ const Messages = () => {
           const { data: lastMsg } = await supabase
             .from("messages")
             .select("*")
-            .or(`and(sender_id.eq.${friend.user_id},receiver_id.eq.${user.id}),and(sender_id.eq.${user.id},receiver_id.eq.${friend.user_id})`)
+            .or(`and(sender_id.eq.${friend.user_id},receiver_id.eq.${effectiveUserId}),and(sender_id.eq.${effectiveUserId},receiver_id.eq.${friend.user_id})`)
             .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle();
@@ -141,7 +149,7 @@ const Messages = () => {
             .from("messages")
             .select("*", { count: "exact", head: true })
             .eq("sender_id", friend.user_id)
-            .eq("receiver_id", user.id)
+            .eq("receiver_id", effectiveUserId)
             .eq("read", false);
 
           return {
@@ -171,7 +179,7 @@ const Messages = () => {
           const { data: messagesData, error: messagesError } = await supabase
             .from("messages")
             .select("*")
-            .or(`and(sender_id.eq.${friendToSelect.user_id},receiver_id.eq.${user.id}),and(sender_id.eq.${user.id},receiver_id.eq.${friendToSelect.user_id})`)
+            .or(`and(sender_id.eq.${friendToSelect.user_id},receiver_id.eq.${effectiveUserId}),and(sender_id.eq.${effectiveUserId},receiver_id.eq.${friendToSelect.user_id})`)
             .order("created_at", { ascending: true });
 
           if (!messagesError && messagesData) {
@@ -182,13 +190,13 @@ const Messages = () => {
               .from("messages")
               .update({ read: true })
               .eq("sender_id", friendToSelect.user_id)
-              .eq("receiver_id", user.id)
+              .eq("receiver_id", effectiveUserId)
               .eq("read", false);
           }
         }
       }
       
-      return { userId: user.id, friends };
+      return { userId: effectiveUserId, friends };
     } catch (error: any) {
       console.error("Error loading conversations:", error);
       toast({

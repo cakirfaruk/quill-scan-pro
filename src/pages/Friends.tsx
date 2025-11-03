@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useImpersonate } from "@/hooks/use-impersonate";
 import { Users, UserPlus, Loader2, Search, Check, X, User } from "lucide-react";
 
 interface Profile {
@@ -38,6 +39,7 @@ const Friends = () => {
   const [currentUserId, setCurrentUserId] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { getEffectiveUserId } = useImpersonate();
 
   useEffect(() => {
     loadData();
@@ -51,7 +53,13 @@ const Friends = () => {
         return;
       }
       
-      setCurrentUserId(user.id);
+      const effectiveUserId = getEffectiveUserId(user.id);
+      if (!effectiveUserId) {
+        navigate("/auth");
+        return;
+      }
+      
+      setCurrentUserId(effectiveUserId);
 
       // Load accepted friends
       const { data: friendsData, error: friendsError } = await supabase
@@ -61,7 +69,7 @@ const Friends = () => {
           friend_profile:profiles!friends_friend_id_fkey(user_id, username, full_name, profile_photo),
           user_profile:profiles!friends_user_id_fkey(user_id, username, full_name, profile_photo)
         `)
-        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
+        .or(`user_id.eq.${effectiveUserId},friend_id.eq.${effectiveUserId}`)
         .eq("status", "accepted");
 
       if (friendsError) throw friendsError;
@@ -74,7 +82,7 @@ const Friends = () => {
           *,
           user_profile:profiles!friends_user_id_fkey(user_id, username, full_name, profile_photo)
         `)
-        .eq("friend_id", user.id)
+        .eq("friend_id", effectiveUserId)
         .eq("status", "pending");
 
       if (pendingError) throw pendingError;
@@ -87,7 +95,7 @@ const Friends = () => {
           *,
           friend_profile:profiles!friends_friend_id_fkey(user_id, username, full_name, profile_photo)
         `)
-        .eq("user_id", user.id)
+        .eq("user_id", effectiveUserId)
         .eq("status", "pending");
 
       if (sentError) throw sentError;
@@ -111,11 +119,14 @@ const Friends = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      const effectiveUserId = getEffectiveUserId(user.id);
+      if (!effectiveUserId) return;
+
       const { data, error } = await supabase
         .from("profiles")
         .select("user_id, username, full_name, profile_photo")
         .or(`username.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`)
-        .neq("user_id", user.id)
+        .neq("user_id", effectiveUserId)
         .limit(10);
 
       if (error) throw error;
@@ -136,8 +147,11 @@ const Friends = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      const effectiveUserId = getEffectiveUserId(user.id);
+      if (!effectiveUserId) return;
+
       const { error } = await supabase.from("friends").insert({
-        user_id: user.id,
+        user_id: effectiveUserId,
         friend_id: friendId,
         status: "pending",
       });

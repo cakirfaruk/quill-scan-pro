@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FileText, Coins, LogOut, User, Heart, CreditCard, ChevronDown, Sparkles, Calendar, Menu, MessageCircle, Settings } from "lucide-react";
+import { FileText, Coins, LogOut, User, Heart, CreditCard, ChevronDown, Sparkles, Calendar, Menu, MessageCircle, Settings, Shield } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useImpersonate } from "@/hooks/use-impersonate";
 
 export const Header = () => {
   const [credits, setCredits] = useState(0);
@@ -33,6 +34,7 @@ export const Header = () => {
   const [profilePhoto, setProfilePhoto] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isImpersonating, stopImpersonation, getEffectiveUserId } = useImpersonate();
 
   useEffect(() => {
     loadUserProfile();
@@ -61,10 +63,17 @@ export const Header = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       setIsLoggedIn(true);
+      
+      const effectiveUserId = getEffectiveUserId(user.id);
+      if (!effectiveUserId) {
+        setIsLoggedIn(false);
+        return;
+      }
+      
       const { data: profile } = await supabase
         .from("profiles")
         .select("credits, username, profile_photo")
-        .eq("user_id", user.id)
+        .eq("user_id", effectiveUserId)
         .maybeSingle();
 
       if (profile) {
@@ -77,7 +86,7 @@ export const Header = () => {
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", user.id)
+        .eq("user_id", user.id)  // Always use real user ID for admin check
         .eq("role", "admin")
         .maybeSingle();
 
@@ -119,7 +128,19 @@ export const Header = () => {
           <div className="hidden lg:flex items-center gap-3 xl:gap-4">
             {isLoggedIn && (
               <>
-                {isAdmin && (
+                {isImpersonating && (
+                  <Button 
+                    onClick={stopImpersonation}
+                    variant="destructive" 
+                    size="sm" 
+                    className="gap-2 animate-pulse"
+                  >
+                    <Shield className="w-4 h-4" />
+                    Admin Moduna Dön
+                  </Button>
+                )}
+                
+                {isAdmin && !isImpersonating && (
                   <Link to="/admin">
                     <Button variant="default" size="sm" className="gap-2">
                       Admin Panel
@@ -330,21 +351,35 @@ export const Header = () => {
                   <SheetTitle>Menü</SheetTitle>
                 </SheetHeader>
                 <ScrollArea className="h-[calc(100vh-80px)] mt-6">
-                  <div className="flex flex-col gap-4 pr-4">
-                    {isLoggedIn ? (
-                      <>
-                        <div className="p-4 bg-secondary rounded-lg">
-                          <p className="text-sm font-medium">{username}</p>
-                          <p className="text-xs text-muted-foreground">{credits} kredi</p>
-                        </div>
+                     <div className="flex flex-col gap-4 pr-4">
+                      {isLoggedIn ? (
+                        <>
+                          <div className="p-4 bg-secondary rounded-lg">
+                            <p className="text-sm font-medium">{username}</p>
+                            <p className="text-xs text-muted-foreground">{credits} kredi</p>
+                          </div>
 
-                        {isAdmin && (
-                          <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
-                            <Button variant="default" className="w-full justify-start gap-2">
-                              Admin Panel
+                          {isImpersonating && (
+                            <Button 
+                              onClick={() => {
+                                setMobileMenuOpen(false);
+                                stopImpersonation();
+                              }}
+                              variant="destructive" 
+                              className="w-full justify-start gap-2 animate-pulse"
+                            >
+                              <Shield className="w-4 h-4" />
+                              Admin Moduna Dön
                             </Button>
-                          </Link>
-                        )}
+                          )}
+
+                          {isAdmin && !isImpersonating && (
+                            <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
+                              <Button variant="default" className="w-full justify-start gap-2">
+                                Admin Panel
+                              </Button>
+                            </Link>
+                          )}
 
                         <Accordion type="single" collapsible className="w-full">
                           <AccordionItem value="analyses" className="border-none">

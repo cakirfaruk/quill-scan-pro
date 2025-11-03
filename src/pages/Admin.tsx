@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Users, CreditCard, History, Loader2, Eye } from "lucide-react";
+import { Shield, Users, CreditCard, History, Loader2, Eye, UserCheck } from "lucide-react";
+import { useImpersonate } from "@/hooks/use-impersonate";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 
 interface Profile {
@@ -40,6 +41,7 @@ const Admin = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { startImpersonation } = useImpersonate();
 
   useEffect(() => {
     checkAdminAndLoad();
@@ -248,12 +250,28 @@ const Admin = () => {
                     }`}
                     onClick={() => handleSelectUser(profile)}
                   >
-                    <p className="font-semibold text-foreground">{profile.username}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(profile.created_at).toLocaleDateString("tr-TR")}
-                      </span>
-                      <Badge variant="outline">{profile.credits} kredi</Badge>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <p className="font-semibold text-foreground">{profile.username}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(profile.created_at).toLocaleDateString("tr-TR")}
+                          </span>
+                          <Badge variant="outline">{profile.credits} kredi</Badge>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startImpersonation(profile.user_id);
+                        }}
+                        className="shrink-0"
+                        title="Bu kullanıcı olarak giriş yap"
+                      >
+                        <UserCheck className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                 ))}

@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell } from "lucide-react";
 import { requestNotificationPermission } from "@/utils/notifications";
 import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
+import { useImpersonate } from "@/hooks/use-impersonate";
 
 const Settings = () => {
   const [profile, setProfile] = useState({
@@ -37,6 +38,7 @@ const Settings = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { getEffectiveUserId } = useImpersonate();
 
   useEffect(() => {
     loadSettings();
@@ -59,10 +61,16 @@ const Settings = () => {
         return;
       }
 
+      const effectiveUserId = getEffectiveUserId(user.id);
+      if (!effectiveUserId) {
+        navigate("/auth");
+        return;
+      }
+
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", effectiveUserId)
         .maybeSingle();
 
       if (error) {
@@ -143,6 +151,16 @@ const Settings = () => {
         return;
       }
 
+      const effectiveUserId = getEffectiveUserId(user.id);
+      if (!effectiveUserId) {
+        toast({
+          title: "Hata",
+          description: "Oturum açmanız gerekiyor.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -153,7 +171,7 @@ const Settings = () => {
           bio: profile.bio || null,
           gender: profile.gender || null,
         })
-        .eq("user_id", user.id);
+        .eq("user_id", effectiveUserId);
 
       if (error) {
         console.error("Profile update error:", error);

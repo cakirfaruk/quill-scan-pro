@@ -17,6 +17,7 @@ import { Link } from "react-router-dom";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { useImpersonate } from "@/hooks/use-impersonate";
 
 interface UserPhoto {
   id: string;
@@ -77,6 +78,7 @@ const Profile = () => {
   const [latestNumerology, setLatestNumerology] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("photos");
   const [friendsDialogOpen, setFriendsDialogOpen] = useState(false);
+  const { getEffectiveUserId } = useImpersonate();
 
   useEffect(() => {
     loadProfile();
@@ -90,7 +92,13 @@ const Profile = () => {
         return;
       }
 
-      setCurrentUserId(user.id);
+      const effectiveUserId = getEffectiveUserId(user.id);
+      if (!effectiveUserId) {
+        navigate("/auth");
+        return;
+      }
+
+      setCurrentUserId(effectiveUserId);
 
       // If no username in URL, show current user's profile by user_id
       let profileData;
@@ -110,7 +118,7 @@ const Profile = () => {
         const result = await supabase
           .from("profiles")
           .select("*")
-          .eq("user_id", user.id)
+          .eq("user_id", effectiveUserId)
           .maybeSingle();
         profileData = result.data;
         profileError = result.error;
@@ -138,7 +146,7 @@ const Profile = () => {
       }
 
       setProfile(profileData);
-      setIsOwnProfile(profileData.user_id === user.id);
+      setIsOwnProfile(profileData.user_id === effectiveUserId);
 
       // Load photos
       const { data: photosData } = await supabase
@@ -150,7 +158,7 @@ const Profile = () => {
       if (photosData) setPhotos(photosData);
 
       // Load analyses (only if own profile or shared)
-      if (profileData.user_id === user.id) {
+      if (profileData.user_id === effectiveUserId) {
         await loadAnalyses(profileData.user_id);
         await loadLatestAnalyses(profileData.user_id);
       } else {
