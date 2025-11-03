@@ -75,6 +75,8 @@ const Profile = () => {
   const [currentUserId, setCurrentUserId] = useState("");
   const [latestBirthChart, setLatestBirthChart] = useState<any>(null);
   const [latestNumerology, setLatestNumerology] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("photos");
+  const [friendsDialogOpen, setFriendsDialogOpen] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -827,15 +829,24 @@ const Profile = () => {
               </div>
 
               <div className="flex gap-6 mb-4 text-sm flex-wrap">
-                <div>
+                <button 
+                  onClick={() => setActiveTab("photos")}
+                  className="hover:opacity-70 transition-opacity"
+                >
                   <span className="font-bold">{photos.length}</span> fotoğraf
-                </div>
-                <div>
+                </button>
+                <button 
+                  onClick={() => setActiveTab("analyses")}
+                  className="hover:opacity-70 transition-opacity"
+                >
                   <span className="font-bold">{analyses.length}</span> analiz
-                </div>
-                <div>
+                </button>
+                <button 
+                  onClick={() => setFriendsDialogOpen(true)}
+                  className="hover:opacity-70 transition-opacity"
+                >
                   <span className="font-bold">{friends.length}</span> arkadaş
-                </div>
+                </button>
               </div>
 
               <p className="text-sm text-muted-foreground mb-2">@{profile.username}</p>
@@ -877,7 +888,7 @@ const Profile = () => {
           </div>
         </Card>
 
-        <Tabs defaultValue="photos" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="photos">Fotoğraflar</TabsTrigger>
             <TabsTrigger value="analyses">Analizler</TabsTrigger>
@@ -1313,6 +1324,70 @@ const Profile = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Friends Dialog */}
+        <Dialog open={friendsDialogOpen} onOpenChange={setFriendsDialogOpen}>
+          <DialogContent className="max-w-md max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle>Arkadaşlar</DialogTitle>
+              <DialogDescription>
+                {friends.length} arkadaş
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 overflow-y-auto max-h-[60vh]">
+              {friends.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {isOwnProfile ? "Henüz arkadaşınız yok" : "Arkadaş bilgisi görüntülenemiyor"}
+                </div>
+              ) : (
+                friends.map((friend) => {
+                  const friendProfile = friend.user_id === currentUserId 
+                    ? friend.friend_profile 
+                    : friend.user_profile;
+                  
+                  if (!friendProfile) return null;
+                  
+                  return (
+                    <div
+                      key={friend.id}
+                      className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+                      onClick={() => {
+                        setFriendsDialogOpen(false);
+                        navigate(`/profile/${friendProfile.username}`);
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={friendProfile.profile_photo} alt={friendProfile.username} />
+                          <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                            {friendProfile.username.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-semibold text-sm">{friendProfile.full_name || friendProfile.username}</p>
+                          <p className="text-xs text-muted-foreground">@{friendProfile.username}</p>
+                        </div>
+                      </div>
+                      {isOwnProfile && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFriendsDialogOpen(false);
+                            navigate(`/messages?userId=${friendProfile.user_id}`);
+                          }}
+                        >
+                          Mesaj
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
