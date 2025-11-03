@@ -96,11 +96,16 @@ const Admin = () => {
   const loadUserAnalyses = async (userId: string) => {
     try {
       // Load all analysis types for the user
-      const [handwriting, numerology, birthChart, compatibility] = await Promise.all([
+      const [handwriting, numerology, birthChart, compatibility, tarot, coffee, dream, palmistry, horoscope] = await Promise.all([
         supabase.from("analysis_history").select("*").eq("user_id", userId),
         supabase.from("numerology_analyses").select("*").eq("user_id", userId),
         supabase.from("birth_chart_analyses").select("*").eq("user_id", userId),
         supabase.from("compatibility_analyses").select("*").eq("user_id", userId),
+        supabase.from("tarot_readings").select("*").eq("user_id", userId),
+        supabase.from("coffee_fortune_readings").select("*").eq("user_id", userId),
+        supabase.from("dream_interpretations").select("*").eq("user_id", userId),
+        supabase.from("palmistry_readings").select("*").eq("user_id", userId),
+        supabase.from("daily_horoscopes").select("*").eq("user_id", userId),
       ]);
 
       const allAnalyses: AnalysisRecord[] = [
@@ -108,6 +113,11 @@ const Admin = () => {
         ...(numerology.data || []).map(item => ({ ...item, analysis_type: "numerology" })),
         ...(birthChart.data || []).map(item => ({ ...item, analysis_type: "birth_chart" })),
         ...(compatibility.data || []).map(item => ({ ...item, analysis_type: "compatibility" })),
+        ...(tarot.data || []).map(item => ({ ...item, analysis_type: "tarot", result: item.interpretation })),
+        ...(coffee.data || []).map(item => ({ ...item, analysis_type: "coffee_fortune", result: item.interpretation })),
+        ...(dream.data || []).map(item => ({ ...item, analysis_type: "dream", result: item.interpretation })),
+        ...(palmistry.data || []).map(item => ({ ...item, analysis_type: "palmistry", result: item.interpretation })),
+        ...(horoscope.data || []).map(item => ({ ...item, analysis_type: "daily_horoscope", result: item.horoscope_text })),
       ];
 
       allAnalyses.sort((a, b) => 
@@ -181,6 +191,11 @@ const Admin = () => {
     if (type === "compatibility") return "Uyum";
     if (type === "numerology") return "Numeroloji";
     if (type === "birth_chart") return "Doğum Haritası";
+    if (type === "tarot") return "Tarot";
+    if (type === "coffee_fortune") return "Kahve Falı";
+    if (type === "dream") return "Rüya Tabiri";
+    if (type === "palmistry") return "El Okuma";
+    if (type === "daily_horoscope") return "Günlük Kehanet";
     return type;
   };
 

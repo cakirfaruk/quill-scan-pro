@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
@@ -9,9 +9,11 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Search, ArrowLeft, FileText } from "lucide-react";
+import { Loader2, Send, Search, ArrowLeft, FileText, Smile, Paperclip, Image as ImageIcon, Video } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { useIsMobile } from "@/hooks/use-mobile";
+import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface Friend {
   user_id: string;
@@ -48,6 +50,10 @@ const Messages = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAnalysis, setSelectedAnalysis] = useState<any>(null);
   const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [attachedFilePreview, setAttachedFilePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -272,6 +278,41 @@ const Messages = () => {
           .eq("id", analysisId)
           .maybeSingle();
         analysisData = data;
+      } else if (analysisType === "tarot") {
+        const { data } = await supabase
+          .from("tarot_readings")
+          .select("*")
+          .eq("id", analysisId)
+          .maybeSingle();
+        analysisData = data ? { ...data, result: data.interpretation } : null;
+      } else if (analysisType === "coffee_fortune") {
+        const { data } = await supabase
+          .from("coffee_fortune_readings")
+          .select("*")
+          .eq("id", analysisId)
+          .maybeSingle();
+        analysisData = data ? { ...data, result: data.interpretation } : null;
+      } else if (analysisType === "dream") {
+        const { data } = await supabase
+          .from("dream_interpretations")
+          .select("*")
+          .eq("id", analysisId)
+          .maybeSingle();
+        analysisData = data ? { ...data, result: data.interpretation } : null;
+      } else if (analysisType === "palmistry") {
+        const { data } = await supabase
+          .from("palmistry_readings")
+          .select("*")
+          .eq("id", analysisId)
+          .maybeSingle();
+        analysisData = data ? { ...data, result: data.interpretation } : null;
+      } else if (analysisType === "daily_horoscope") {
+        const { data } = await supabase
+          .from("daily_horoscopes")
+          .select("*")
+          .eq("id", analysisId)
+          .maybeSingle();
+        analysisData = data ? { ...data, result: data.horoscope_text } : null;
       } else {
         const { data } = await supabase
           .from("analysis_history")
@@ -307,22 +348,79 @@ const Messages = () => {
     }
   };
 
+  const onEmojiClick = (emojiData: EmojiClickData) => {
+    setNewMessage((prev) => prev + emojiData.emoji);
+    setShowEmojiPicker(false);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "Dosya çok büyük",
+        description: "Maksimum dosya boyutu 10MB olabilir.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAttachedFile(file);
+
+    // Create preview for images and videos
+    if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setAttachedFilePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeAttachment = () => {
+    setAttachedFile(null);
+    setAttachedFilePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedFriend) return;
+    if ((!newMessage.trim() && !attachedFile) || !selectedFriend) return;
 
     setIsSending(true);
     try {
+      let messageContent = newMessage.trim();
+
+      // If there's an attached file, add it to the message
+      if (attachedFile) {
+        const fileType = attachedFile.type.startsWith("image/") 
+          ? "🖼️ Resim" 
+          : attachedFile.type.startsWith("video/") 
+          ? "🎥 Video" 
+          : "📎 Dosya";
+        
+        messageContent = `${fileType}: ${attachedFile.name}\n${messageContent}`;
+        
+        if (attachedFilePreview) {
+          messageContent += `\n[FILE_PREVIEW:${attachedFilePreview}]`;
+        }
+      }
+
       const { error } = await supabase
         .from("messages")
         .insert({
           sender_id: currentUserId,
           receiver_id: selectedFriend.user_id,
-          content: newMessage.trim(),
+          content: messageContent,
         });
 
       if (error) throw error;
 
       setNewMessage("");
+      removeAttachment();
       loadMessages(selectedFriend.user_id);
     } catch (error: any) {
       toast({
@@ -459,6 +557,17 @@ const Messages = () => {
                   <div className="space-y-4">
                     {messages.map((msg) => {
                       const isAnalysisShare = msg.analysis_id;
+                      const hasFilePreview = msg.content.includes("[FILE_PREVIEW:");
+                      let displayContent = msg.content;
+                      let filePreview = null;
+
+                      if (hasFilePreview) {
+                        const previewMatch = msg.content.match(/\[FILE_PREVIEW:([^\]]+)\]/);
+                        if (previewMatch) {
+                          filePreview = previewMatch[1];
+                          displayContent = msg.content.replace(/\[FILE_PREVIEW:[^\]]+\]/, "").trim();
+                        }
+                      }
                       
                       return (
                         <div
@@ -514,19 +623,38 @@ const Messages = () => {
                             </Card>
                           ) : (
                             <div
-                              className={`max-w-[70%] rounded-lg px-4 py-2 ${
+                              className={`max-w-[70%] rounded-lg overflow-hidden ${
                                 msg.sender_id === currentUserId
                                   ? "bg-primary text-primary-foreground"
                                   : "bg-muted"
                               }`}
                             >
-                              <p className="text-sm">{msg.content}</p>
-                              <p className="text-xs opacity-70 mt-1">
-                                {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </p>
+                              {filePreview && (
+                                <div className="relative">
+                                  {displayContent.startsWith("🖼️ Resim") ? (
+                                    <img 
+                                      src={filePreview} 
+                                      alt="Shared" 
+                                      className="w-full max-h-64 object-cover"
+                                    />
+                                  ) : displayContent.startsWith("🎥 Video") ? (
+                                    <video 
+                                      src={filePreview} 
+                                      controls 
+                                      className="w-full max-h-64"
+                                    />
+                                  ) : null}
+                                </div>
+                              )}
+                              <div className="px-4 py-2">
+                                <p className="text-sm whitespace-pre-wrap">{displayContent}</p>
+                                <p className="text-xs opacity-70 mt-1">
+                                  {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </p>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -536,8 +664,57 @@ const Messages = () => {
                 </ScrollArea>
 
                 {/* Message Input */}
-                <div className="p-4 border-t">
+                <div className="p-4 border-t space-y-3">
+                  {/* File Preview */}
+                  {attachedFile && (
+                    <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium truncate">{attachedFile.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(attachedFile.size / 1024).toFixed(2)} KB
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={removeAttachment}
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  )}
+                  
                   <div className="flex gap-2">
+                    {/* Emoji Picker */}
+                    <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon" type="button">
+                          <Smile className="w-5 h-5" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0 border-0" align="start">
+                        <EmojiPicker onEmojiClick={onEmojiClick} />
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* File Attachment */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*,video/*,.pdf,.doc,.docx"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Paperclip className="w-5 h-5" />
+                    </Button>
+
+                    {/* Message Input */}
                     <Input
                       placeholder="Mesajınızı yazın..."
                       value={newMessage}
@@ -548,10 +725,13 @@ const Messages = () => {
                           handleSendMessage();
                         }
                       }}
+                      className="flex-1"
                     />
+                    
+                    {/* Send Button */}
                     <Button
                       onClick={handleSendMessage}
-                      disabled={!newMessage.trim() || isSending}
+                      disabled={(!newMessage.trim() && !attachedFile) || isSending}
                       size="icon"
                     >
                       {isSending ? (
