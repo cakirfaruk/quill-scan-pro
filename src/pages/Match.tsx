@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useImpersonate } from "@/hooks/use-impersonate";
@@ -36,6 +36,7 @@ interface CompatibilityData {
 
 const Match = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [user, setUser] = useState<any>(null);
   const [userGender, setUserGender] = useState<string | null>(null);
@@ -52,11 +53,16 @@ const Match = () => {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [shareType, setShareType] = useState<"area" | "full" | "tarot">("area");
   const [selectedArea, setSelectedArea] = useState<any>(null);
+  const [specificUserId, setSpecificUserId] = useState<string | null>(null);
   const { getEffectiveUserId } = useImpersonate();
 
   useEffect(() => {
+    const userIdParam = searchParams.get("userId");
+    if (userIdParam) {
+      setSpecificUserId(userIdParam);
+    }
     checkUser();
-  }, []);
+  }, [searchParams]);
 
   // Load compatibility data when profile changes
   useEffect(() => {
@@ -150,6 +156,59 @@ const Match = () => {
 
   const loadProfiles = async (userId: string) => {
     try {
+      // If specificUserId is set, load only that profile
+      if (specificUserId) {
+        const { data: specificProfile } = await supabase
+          .from("profiles")
+          .select("user_id, username, full_name, profile_photo, bio, birth_date, gender")
+          .eq("user_id", specificUserId)
+          .maybeSingle();
+
+        if (!specificProfile) {
+          toast({
+            title: "Hata",
+            description: "Kullanıcı bulunamadı",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+
+        const { data: photos } = await supabase
+          .from("user_photos")
+          .select("photo_url")
+          .eq("user_id", specificProfile.user_id)
+          .order("display_order");
+
+        const { data: numData } = await supabase
+          .from("numerology_analyses")
+          .select("user_id, result")
+          .eq("user_id", specificProfile.user_id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const { data: birthData } = await supabase
+          .from("birth_chart_analyses")
+          .select("user_id, result")
+          .eq("user_id", specificProfile.user_id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        setProfiles([{
+          ...specificProfile,
+          photos: photos || [],
+          numerology_summary: numData?.result || null,
+          birth_chart_summary: birthData?.result || null,
+          has_numerology: !!numData,
+          has_birth_chart: !!birthData,
+        }]);
+        
+        setLoading(false);
+        return;
+      }
+
       // Get user's gender first
       const { data: userProfile } = await supabase
         .from("profiles")
@@ -558,17 +617,22 @@ const Match = () => {
     if (!user || !currentProfile) return;
 
     let creditsNeeded = 0;
-    let description = "";
+    let shareContent = "";
+    let analysisId = "";
+    let analysisType = "";
 
     if (shareType === "area") {
       creditsNeeded = 30;
-      description = "Uyum alanı paylaşımı";
+      shareContent = `📊 Uyum Alanı Paylaşımı\n\n${selectedArea?.name}\n${selectedArea?.strengths}\n\n[Analiz ID: ${compatibilityData.details?.matchId || 'temp'}]\n[Analiz Türü: compatibility]`;
+      analysisType = "compatibility";
     } else if (shareType === "full") {
       creditsNeeded = 80;
-      description = "Tam uyum raporu paylaşımı";
+      shareContent = `📊 Tam Uyum Raporu\n\nGenel Uyum: %${compatibilityData.details?.overallScore}\n\n${compatibilityData.details?.overallSummary}\n\n[Analiz ID: ${compatibilityData.details?.matchId || 'temp'}]\n[Analiz Türü: compatibility]`;
+      analysisType = "compatibility";
     } else if (shareType === "tarot") {
       creditsNeeded = 50;
-      description = "Tarot sonucu paylaşımı";
+      shareContent = `🔮 Tarot Falı Sonucu\n\n[Analiz ID: temp]\n[Analiz Türü: tarot]`;
+      analysisType = "tarot";
     }
 
     if (credits < creditsNeeded) {
@@ -581,18 +645,17 @@ const Match = () => {
     }
 
     try {
-      // Create notification for the shared content (bypasses friend requirement)
-      const { error: notificationError } = await supabase
-        .from("notifications")
+      // Send message directly (with 'other' category)
+      const { error: messageError } = await supabase
+        .from("messages")
         .insert({
-          user_id: currentProfile.user_id,
-          type: "analysis_shared",
-          title: "Yeni Paylaşım",
-          message: `${description} sizinle paylaşıldı`,
-          link: `/messages`,
+          sender_id: user.id,
+          receiver_id: currentProfile.user_id,
+          content: shareContent,
+          message_category: "other",
         });
 
-      if (notificationError) throw notificationError;
+      if (messageError) throw messageError;
 
       // Deduct credits
       const { error: creditError } = await supabase
@@ -606,7 +669,7 @@ const Match = () => {
         user_id: user.id,
         amount: -creditsNeeded,
         transaction_type: "share_analysis",
-        description,
+        description: shareType === "area" ? "Uyum alanı paylaşımı" : shareType === "full" ? "Tam uyum raporu paylaşımı" : "Tarot sonucu paylaşımı",
       });
 
       setCredits(credits - creditsNeeded);

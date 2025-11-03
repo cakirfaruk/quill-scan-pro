@@ -343,6 +343,7 @@ export type Database = {
           content: string
           created_at: string | null
           id: string
+          message_category: string | null
           read: boolean | null
           receiver_id: string
           sender_id: string
@@ -351,6 +352,7 @@ export type Database = {
           content: string
           created_at?: string | null
           id?: string
+          message_category?: string | null
           read?: boolean | null
           receiver_id: string
           sender_id: string
@@ -359,6 +361,7 @@ export type Database = {
           content?: string
           created_at?: string | null
           id?: string
+          message_category?: string | null
           read?: boolean | null
           receiver_id?: string
           sender_id?: string

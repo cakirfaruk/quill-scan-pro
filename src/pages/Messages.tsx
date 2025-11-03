@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Search, ArrowLeft, FileText, Smile, Paperclip, Image as ImageIcon, Video } from "lucide-react";
+import { Loader2, Send, Search, ArrowLeft, FileText, Smile, Paperclip, Ban } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { useIsMobile } from "@/hooks/use-mobile";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
@@ -30,6 +31,7 @@ interface Message {
   content: string;
   read: boolean;
   created_at: string;
+  message_category: "friend" | "match" | "other";
   analysis_id?: string;
   analysis_type?: string;
 }
@@ -38,11 +40,13 @@ interface Conversation {
   friend: Friend;
   lastMessage?: Message;
   unreadCount: number;
+  category: "friend" | "match" | "other";
 }
 
 const Messages = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<"friend" | "match" | "other" | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -54,6 +58,7 @@ const Messages = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [attachedFilePreview, setAttachedFilePreview] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"friends" | "matches" | "other">("friends");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -108,39 +113,79 @@ const Messages = () => {
 
       setCurrentUserId(effectiveUserId);
 
-      // Get all accepted friends
+      // Get all people who have messaged or received messages from current user
+      const { data: allMessages } = await supabase
+        .from("messages")
+        .select("sender_id, receiver_id, message_category")
+        .or(`sender_id.eq.${effectiveUserId},receiver_id.eq.${effectiveUserId}`);
+
+      if (!allMessages) {
+        setIsLoading(false);
+        return;
+      }
+
+      // Get unique user IDs
+      const userIds = new Set<string>();
+      allMessages.forEach(msg => {
+        if (msg.sender_id !== effectiveUserId) userIds.add(msg.sender_id);
+        if (msg.receiver_id !== effectiveUserId) userIds.add(msg.receiver_id);
+      });
+
+      if (userIds.size === 0) {
+        setIsLoading(false);
+        return;
+      }
+
+      // Get profiles for all users
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("user_id, username, full_name, profile_photo")
+        .in("user_id", Array.from(userIds));
+
+      if (!profilesData) {
+        setIsLoading(false);
+        return;
+      }
+
+      // Get friends
       const { data: friendsData } = await supabase
         .from("friends")
-        .select(`
-          user_id,
-          friend_id,
-          user_profile:profiles!friends_user_id_fkey(user_id, username, full_name, profile_photo),
-          friend_profile:profiles!friends_friend_id_fkey(user_id, username, full_name, profile_photo)
-        `)
+        .select("user_id, friend_id")
         .or(`user_id.eq.${effectiveUserId},friend_id.eq.${effectiveUserId}`)
         .eq("status", "accepted");
 
-      if (!friendsData) return;
-
-      const friends: Friend[] = friendsData.map((f: any) => {
-        // Determine which profile is the friend (not the current user)
-        const isSender = f.user_id === effectiveUserId;
-        const profile = isSender ? f.friend_profile : f.user_profile;
-        return {
-          user_id: profile.user_id,
-          username: profile.username,
-          full_name: profile.full_name,
-          profile_photo: profile.profile_photo,
-        };
+      const friendIds = new Set<string>();
+      friendsData?.forEach(f => {
+        if (f.user_id === effectiveUserId) friendIds.add(f.friend_id);
+        else friendIds.add(f.user_id);
       });
 
-      // Get last messages and unread counts for each friend
+      // Get matches
+      const { data: matchesData } = await supabase
+        .from("matches")
+        .select("user1_id, user2_id")
+        .or(`user1_id.eq.${effectiveUserId},user2_id.eq.${effectiveUserId}`);
+
+      const matchIds = new Set<string>();
+      matchesData?.forEach(m => {
+        if (m.user1_id === effectiveUserId) matchIds.add(m.user2_id);
+        else matchIds.add(m.user1_id);
+      });
+
+      // Build conversations with categories
       const conversationsWithMessages = await Promise.all(
-        friends.map(async (friend) => {
+        profilesData.map(async (profile) => {
+          let category: "friend" | "match" | "other" = "other";
+          if (friendIds.has(profile.user_id)) {
+            category = "friend";
+          } else if (matchIds.has(profile.user_id)) {
+            category = "match";
+          }
+
           const { data: lastMsg } = await supabase
             .from("messages")
             .select("*")
-            .or(`and(sender_id.eq.${friend.user_id},receiver_id.eq.${effectiveUserId}),and(sender_id.eq.${effectiveUserId},receiver_id.eq.${friend.user_id})`)
+            .or(`and(sender_id.eq.${profile.user_id},receiver_id.eq.${effectiveUserId}),and(sender_id.eq.${effectiveUserId},receiver_id.eq.${profile.user_id})`)
             .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle();
@@ -148,14 +193,23 @@ const Messages = () => {
           const { count } = await supabase
             .from("messages")
             .select("*", { count: "exact", head: true })
-            .eq("sender_id", friend.user_id)
+            .eq("sender_id", profile.user_id)
             .eq("receiver_id", effectiveUserId)
             .eq("read", false);
 
           return {
-            friend,
-            lastMessage: lastMsg || undefined,
+            friend: {
+              user_id: profile.user_id,
+              username: profile.username,
+              full_name: profile.full_name,
+              profile_photo: profile.profile_photo,
+            },
+            lastMessage: lastMsg ? {
+              ...lastMsg,
+              message_category: (lastMsg.message_category || "other") as "friend" | "match" | "other"
+            } : undefined,
             unreadCount: count || 0,
+            category,
           };
         })
       );
@@ -168,35 +222,24 @@ const Messages = () => {
 
       setConversations(sortedConversations);
 
-      // If userId param exists and no friend selected yet, auto-select that friend
+      // If userId param exists and no friend selected yet, auto-select that user
       const userIdParam = searchParams.get("userId");
       if (userIdParam && !selectedFriend) {
-        const friendToSelect = friends.find(f => f.user_id === userIdParam);
-        if (friendToSelect) {
-          setSelectedFriend(friendToSelect);
+        const conv = sortedConversations.find(c => c.friend.user_id === userIdParam);
+        if (conv) {
+          setSelectedFriend(conv.friend);
+          setSelectedCategory(conv.category);
           
-          // Load messages for the selected friend
-          const { data: messagesData, error: messagesError } = await supabase
-            .from("messages")
-            .select("*")
-            .or(`and(sender_id.eq.${friendToSelect.user_id},receiver_id.eq.${effectiveUserId}),and(sender_id.eq.${effectiveUserId},receiver_id.eq.${friendToSelect.user_id})`)
-            .order("created_at", { ascending: true });
+          // Set active tab based on category
+          if (conv.category === "friend") setActiveTab("friends");
+          else if (conv.category === "match") setActiveTab("matches");
+          else setActiveTab("other");
 
-          if (!messagesError && messagesData) {
-            setMessages(messagesData);
-            
-            // Mark messages as read
-            await supabase
-              .from("messages")
-              .update({ read: true })
-              .eq("sender_id", friendToSelect.user_id)
-              .eq("receiver_id", effectiveUserId)
-              .eq("read", false);
-          }
+          loadMessages(conv.friend.user_id);
         }
       }
       
-      return { userId: effectiveUserId, friends };
+      return { userId: effectiveUserId };
     } catch (error: any) {
       console.error("Error loading conversations:", error);
       toast({
@@ -227,11 +270,15 @@ const Messages = () => {
         if (analysisIdMatch && analysisTypeMatch) {
           return {
             ...msg,
+            message_category: (msg.message_category || "other") as "friend" | "match" | "other",
             analysis_id: analysisIdMatch[1],
             analysis_type: analysisTypeMatch[1],
           };
         }
-        return msg;
+        return {
+          ...msg,
+          message_category: (msg.message_category || "other") as "friend" | "match" | "other",
+        };
       }) || [];
 
       setMessages(parsedMessages);
@@ -398,6 +445,16 @@ const Messages = () => {
   const handleSendMessage = async () => {
     if ((!newMessage.trim() && !attachedFile) || !selectedFriend) return;
 
+    // Check if this is an "other" category conversation - they can't reply
+    if (selectedCategory === "other") {
+      toast({
+        title: "Mesaj Gönderilemez",
+        description: "Bu kişiyle eşleşmeniz veya arkadaş olmanız gerekiyor.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSending(true);
     try {
       let messageContent = newMessage.trim();
@@ -417,12 +474,16 @@ const Messages = () => {
         }
       }
 
+      // Determine message category
+      let message_category: "friend" | "match" | "other" = selectedCategory || "other";
+
       const { error } = await supabase
         .from("messages")
         .insert({
           sender_id: currentUserId,
           receiver_id: selectedFriend.user_id,
           content: messageContent,
+          message_category,
         });
 
       if (error) throw error;
@@ -445,6 +506,10 @@ const Messages = () => {
     conv.friend.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
     conv.friend.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const friendConversations = filteredConversations.filter(c => c.category === "friend");
+  const matchConversations = filteredConversations.filter(c => c.category === "match");
+  const otherConversations = filteredConversations.filter(c => c.category === "other");
 
   if (isLoading) {
     return (
@@ -473,7 +538,7 @@ const Messages = () => {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Arkadaş ara..."
+                  placeholder="Ara..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
@@ -481,54 +546,109 @@ const Messages = () => {
               </div>
             </div>
 
-            <ScrollArea className="h-[calc(100vh-320px)]">
-              <div className="space-y-2">
-                {filteredConversations.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    Henüz mesajınız yok
-                  </p>
-                ) : (
-                  filteredConversations.map((conv) => (
-                    <button
-                      key={conv.friend.user_id}
-                      onClick={() => {
-                        setSelectedFriend(conv.friend);
-                        loadMessages(conv.friend.user_id);
-                      }}
-                      className={`w-full p-3 rounded-lg flex items-center gap-3 transition-colors ${
-                        selectedFriend?.user_id === conv.friend.user_id
-                          ? "bg-primary/10"
-                          : "hover:bg-muted"
-                      }`}
-                    >
-                      <Avatar className="w-12 h-12 flex-shrink-0">
-                        <AvatarImage src={conv.friend.profile_photo} />
-                        <AvatarFallback className="bg-gradient-primary text-primary-foreground">
-                          {conv.friend.username.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 text-left overflow-hidden">
-                        <div className="flex justify-between items-start">
-                          <p className="font-medium text-sm truncate">
-                            {conv.friend.full_name || conv.friend.username}
-                          </p>
-                          {conv.unreadCount > 0 && (
-                            <span className="bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5 ml-2">
-                              {conv.unreadCount}
-                            </span>
-                          )}
-                        </div>
-                        {conv.lastMessage && (
-                          <p className="text-xs text-muted-foreground truncate">
-                            {conv.lastMessage.content}
-                          </p>
-                        )}
-                      </div>
-                    </button>
-                  ))
-                )}
-              </div>
-            </ScrollArea>
+            <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-4">
+                <TabsTrigger value="friends" className="text-xs">
+                  Arkadaşlar
+                  {friendConversations.length > 0 && (
+                    <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px]">
+                      {friendConversations.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="matches" className="text-xs">
+                  Eşleşmeler
+                  {matchConversations.length > 0 && (
+                    <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px]">
+                      {matchConversations.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="other" className="text-xs">
+                  Diğer
+                  {otherConversations.length > 0 && (
+                    <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px]">
+                      {otherConversations.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="friends" className="mt-0">
+                <ScrollArea className="h-[calc(100vh-380px)]">
+                  <div className="space-y-2">
+                    {friendConversations.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8 text-sm">
+                        Henüz arkadaş mesajınız yok
+                      </p>
+                    ) : (
+                      friendConversations.map((conv) => (
+                        <ConversationItem
+                          key={conv.friend.user_id}
+                          conv={conv}
+                          selected={selectedFriend?.user_id === conv.friend.user_id}
+                          onClick={() => {
+                            setSelectedFriend(conv.friend);
+                            setSelectedCategory(conv.category);
+                            loadMessages(conv.friend.user_id);
+                          }}
+                        />
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="matches" className="mt-0">
+                <ScrollArea className="h-[calc(100vh-380px)]">
+                  <div className="space-y-2">
+                    {matchConversations.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8 text-sm">
+                        Henüz eşleşme mesajınız yok
+                      </p>
+                    ) : (
+                      matchConversations.map((conv) => (
+                        <ConversationItem
+                          key={conv.friend.user_id}
+                          conv={conv}
+                          selected={selectedFriend?.user_id === conv.friend.user_id}
+                          onClick={() => {
+                            setSelectedFriend(conv.friend);
+                            setSelectedCategory(conv.category);
+                            loadMessages(conv.friend.user_id);
+                          }}
+                        />
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="other" className="mt-0">
+                <ScrollArea className="h-[calc(100vh-380px)]">
+                  <div className="space-y-2">
+                    {otherConversations.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8 text-sm">
+                        Henüz başka mesajınız yok
+                      </p>
+                    ) : (
+                      otherConversations.map((conv) => (
+                        <ConversationItem
+                          key={conv.friend.user_id}
+                          conv={conv}
+                          selected={selectedFriend?.user_id === conv.friend.user_id}
+                          onClick={() => {
+                            setSelectedFriend(conv.friend);
+                            setSelectedCategory(conv.category);
+                            loadMessages(conv.friend.user_id);
+                          }}
+                        />
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+            </Tabs>
           </Card>
 
           {/* Messages Panel */}
@@ -548,7 +668,13 @@ const Messages = () => {
                   )}
                   <Avatar 
                     className="w-10 h-10 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
-                    onClick={() => navigate(`/profile/${selectedFriend.username}`)}
+                    onClick={() => {
+                      if (selectedCategory === "other") {
+                        navigate(`/match?userId=${selectedFriend.user_id}`);
+                      } else {
+                        navigate(`/profile/${selectedFriend.username}`);
+                      }
+                    }}
                   >
                     <AvatarImage src={selectedFriend.profile_photo} />
                     <AvatarFallback className="bg-gradient-primary text-primary-foreground">
@@ -556,14 +682,26 @@ const Messages = () => {
                     </AvatarFallback>
                   </Avatar>
                   <div 
-                    className="cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => navigate(`/profile/${selectedFriend.username}`)}
+                    className="cursor-pointer hover:opacity-80 transition-opacity flex-1"
+                    onClick={() => {
+                      if (selectedCategory === "other") {
+                        navigate(`/match?userId=${selectedFriend.user_id}`);
+                      } else {
+                        navigate(`/profile/${selectedFriend.username}`);
+                      }
+                    }}
                   >
                     <p className="font-medium">
                       {selectedFriend.full_name || selectedFriend.username}
                     </p>
                     <p className="text-xs text-muted-foreground">@{selectedFriend.username}</p>
                   </div>
+                  {selectedCategory === "other" && (
+                    <div className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Ban className="w-3 h-3" />
+                      <span>Cevap verilemez</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Messages */}
@@ -678,84 +816,93 @@ const Messages = () => {
                 </ScrollArea>
 
                 {/* Message Input */}
-                <div className="p-4 border-t space-y-3">
-                  {/* File Preview */}
-                  {attachedFile && (
-                    <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium truncate">{attachedFile.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {(attachedFile.size / 1024).toFixed(2)} KB
-                        </p>
+                {selectedCategory === "other" ? (
+                  <div className="p-4 border-t bg-muted/50">
+                    <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm py-2">
+                      <Ban className="w-4 h-4" />
+                      <p>Bu kişiyle mesajlaşmak için eşleşmeniz veya arkadaş olmanız gerekiyor</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 border-t space-y-3">
+                    {/* File Preview */}
+                    {attachedFile && (
+                      <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium truncate">{attachedFile.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(attachedFile.size / 1024).toFixed(2)} KB
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={removeAttachment}
+                        >
+                          ✕
+                        </Button>
                       </div>
+                    )}
+                    
+                    <div className="flex gap-2">
+                      {/* Emoji Picker */}
+                      <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="icon" type="button">
+                            <Smile className="w-5 h-5" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0 border-0" align="start">
+                          <EmojiPicker onEmojiClick={onEmojiClick} />
+                        </PopoverContent>
+                      </Popover>
+
+                      {/* File Attachment */}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*,video/*,.pdf,.doc,.docx"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
                       <Button
                         variant="ghost"
-                        size="sm"
-                        onClick={removeAttachment}
+                        size="icon"
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
                       >
-                        ✕
+                        <Paperclip className="w-5 h-5" />
+                      </Button>
+
+                      {/* Message Input */}
+                      <Input
+                        placeholder="Mesajınızı yazın..."
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage();
+                          }
+                        }}
+                        className="flex-1"
+                      />
+                      
+                      {/* Send Button */}
+                      <Button
+                        onClick={handleSendMessage}
+                        disabled={(!newMessage.trim() && !attachedFile) || isSending}
+                        size="icon"
+                      >
+                        {isSending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Send className="w-4 h-4" />
+                        )}
                       </Button>
                     </div>
-                  )}
-                  
-                  <div className="flex gap-2">
-                    {/* Emoji Picker */}
-                    <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
-                      <PopoverTrigger asChild>
-                        <Button variant="ghost" size="icon" type="button">
-                          <Smile className="w-5 h-5" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full p-0 border-0" align="start">
-                        <EmojiPicker onEmojiClick={onEmojiClick} />
-                      </PopoverContent>
-                    </Popover>
-
-                    {/* File Attachment */}
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*,video/*,.pdf,.doc,.docx"
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <Paperclip className="w-5 h-5" />
-                    </Button>
-
-                    {/* Message Input */}
-                    <Input
-                      placeholder="Mesajınızı yazın..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                      className="flex-1"
-                    />
-                    
-                    {/* Send Button */}
-                    <Button
-                      onClick={handleSendMessage}
-                      disabled={(!newMessage.trim() && !attachedFile) || isSending}
-                      size="icon"
-                    >
-                      {isSending ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Send className="w-4 h-4" />
-                      )}
-                    </Button>
                   </div>
-                </div>
+                )}
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center text-muted-foreground">
@@ -786,5 +933,43 @@ const Messages = () => {
     </div>
   );
 };
+
+// Conversation Item Component
+const ConversationItem = ({ conv, selected, onClick }: {
+  conv: Conversation;
+  selected: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    className={`w-full p-3 rounded-lg flex items-center gap-3 transition-colors ${
+      selected ? "bg-primary/10" : "hover:bg-muted"
+    }`}
+  >
+    <Avatar className="w-12 h-12 flex-shrink-0">
+      <AvatarImage src={conv.friend.profile_photo} />
+      <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+        {conv.friend.username.substring(0, 2).toUpperCase()}
+      </AvatarFallback>
+    </Avatar>
+    <div className="flex-1 text-left overflow-hidden">
+      <div className="flex justify-between items-start">
+        <p className="font-medium text-sm truncate">
+          {conv.friend.full_name || conv.friend.username}
+        </p>
+        {conv.unreadCount > 0 && (
+          <span className="bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5 ml-2">
+            {conv.unreadCount}
+          </span>
+        )}
+      </div>
+      {conv.lastMessage && (
+        <p className="text-xs text-muted-foreground truncate">
+          {conv.lastMessage.content.split('[Analiz ID:')[0]}
+        </p>
+      )}
+    </div>
+  </button>
+);
 
 export default Messages;
