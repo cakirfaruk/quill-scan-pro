@@ -122,9 +122,6 @@ const Index = () => {
             <h2 className="text-3xl md:text-5xl font-bold mb-4">
               9 Farklı Analiz Yöntemi
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Yapay zeka destekli gelişmiş algoritmalarla kişiliğini keşfet, geleceğini öğren
-            </p>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
