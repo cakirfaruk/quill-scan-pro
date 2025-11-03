@@ -703,6 +703,30 @@ const Feed = () => {
           </Card>
         )}
         
+        {/* Create Post Card */}
+        <Card 
+          className="mb-4 sm:mb-6 p-4 cursor-pointer hover:shadow-lg transition-all hover-scale border-dashed"
+          onClick={() => setCreatePostDialogOpen(true)}
+        >
+          <div className="flex items-center gap-3">
+            <Avatar className="ring-2 ring-primary/20">
+              <AvatarImage src={currentProfile.profile_photo || undefined} />
+              <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                {currentProfile.username?.substring(0, 2).toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 bg-muted rounded-full px-4 py-3 text-muted-foreground">
+              Ne düşünüyorsun?
+            </div>
+            <Button
+              size="icon"
+              className="rounded-full bg-gradient-to-r from-primary to-accent"
+            >
+              <Plus className="w-5 h-5" />
+            </Button>
+          </div>
+        </Card>
+        
         <Tabs defaultValue="friends" className="w-full space-y-4 sm:space-y-6">
           <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6">
             <TabsTrigger value="friends" className="text-sm sm:text-base">Arkadaşlarım</TabsTrigger>
@@ -965,7 +989,7 @@ const Feed = () => {
         }}
       />
 
-      {/* Floating Action Button */}
+      {/* Floating Action Button - Mobile Only */}
       <Button
         size="icon"
         className="fixed bottom-24 right-6 w-14 h-14 rounded-full shadow-2xl bg-gradient-to-r from-primary to-accent hover:scale-110 transition-transform z-50 lg:hidden"
