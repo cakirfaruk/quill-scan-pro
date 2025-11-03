@@ -51,6 +51,13 @@ interface Comment {
   replies: Comment[];
 }
 
+interface Friend {
+  user_id: string;
+  username: string;
+  full_name: string | null;
+  profile_photo: string | null;
+}
+
 const Feed = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -62,6 +69,10 @@ const Feed = () => {
   const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [postToShare, setPostToShare] = useState<Post | null>(null);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
   const [userId, setUserId] = useState<string>("");
   const { getEffectiveUserId } = useImpersonate();
 
@@ -83,7 +94,40 @@ const Feed = () => {
     }
     
     setUserId(effectiveUserId);
+    await loadFriends(effectiveUserId);
     await loadPosts(effectiveUserId);
+  };
+
+  const loadFriends = async (currentUserId: string) => {
+    try {
+      const { data: friendsData } = await supabase
+        .from("friends")
+        .select(`
+          user_id,
+          friend_id,
+          user_profile:profiles!friends_user_id_fkey(user_id, username, full_name, profile_photo),
+          friend_profile:profiles!friends_friend_id_fkey(user_id, username, full_name, profile_photo)
+        `)
+        .or(`user_id.eq.${currentUserId},friend_id.eq.${currentUserId}`)
+        .eq("status", "accepted");
+
+      if (!friendsData) return;
+
+      const friendsList: Friend[] = friendsData.map((f: any) => {
+        const isSender = f.user_id === currentUserId;
+        const profile = isSender ? f.friend_profile : f.user_profile;
+        return {
+          user_id: profile.user_id,
+          username: profile.username,
+          full_name: profile.full_name,
+          profile_photo: profile.profile_photo,
+        };
+      });
+
+      setFriends(friendsList);
+    } catch (error) {
+      console.error("Error loading friends:", error);
+    }
   };
 
   const loadPosts = async (currentUserId: string) => {
@@ -237,6 +281,7 @@ const Feed = () => {
   const handleOpenComments = async (post: Post) => {
     setSelectedPost(post);
     setCommentsDialogOpen(true);
+    setComments([]); // Reset comments
     await loadComments(post.id);
   };
 
@@ -260,38 +305,66 @@ const Feed = () => {
     }
   };
 
-  const handleShare = async (post: Post) => {
+  const handleOpenShareDialog = (post: Post) => {
+    setPostToShare(post);
+    setSelectedFriends(new Set());
+    setShareDialogOpen(true);
+  };
+
+  const handleShareToFriends = async () => {
+    if (!postToShare || selectedFriends.size === 0) {
+      toast({ title: "Uyarı", description: "Lütfen en az bir arkadaş seçin", variant: "destructive" });
+      return;
+    }
+
     try {
-      // Create a new post that references the original
-      const { data: newPost, error: postError } = await supabase
-        .from("posts")
-        .insert({
-          user_id: userId,
-          content: `🔄 Paylaşıldı`,
-        })
-        .select()
-        .single();
+      // Create message content with post info
+      let messageContent = `📸 ${postToShare.profile.full_name || postToShare.profile.username} adlı kişinin paylaşımı:\n\n`;
+      if (postToShare.content) {
+        messageContent += postToShare.content.substring(0, 100);
+        if (postToShare.content.length > 100) messageContent += "...";
+      }
 
-      if (postError) throw postError;
+      // Send messages to selected friends
+      const messagesToInsert = Array.from(selectedFriends).map(friendId => ({
+        sender_id: userId,
+        receiver_id: friendId,
+        content: messageContent,
+        message_category: "friend" as const,
+      }));
 
-      // Create share record
-      await supabase.from("post_shares").insert({
-        post_id: post.id,
-        user_id: userId,
-        shared_post_id: newPost.id,
-      });
+      const { error: messageError } = await supabase
+        .from("messages")
+        .insert(messagesToInsert);
+
+      if (messageError) throw messageError;
 
       // Update shares count
       await supabase
         .from("posts")
-        .update({ shares_count: (post.shares_count || 0) + 1 })
-        .eq("id", post.id);
+        .update({ shares_count: (postToShare.shares_count || 0) + selectedFriends.size })
+        .eq("id", postToShare.id);
 
-      toast({ title: "Başarılı", description: "Gönderi paylaşıldı" });
+      toast({ 
+        title: "Başarılı", 
+        description: `Gönderi ${selectedFriends.size} arkadaşınıza gönderildi` 
+      });
+
+      setShareDialogOpen(false);
       await loadPosts(userId);
     } catch (error: any) {
       toast({ title: "Hata", description: "Gönderi paylaşılamadı", variant: "destructive" });
     }
+  };
+
+  const toggleFriendSelection = (friendId: string) => {
+    const newSelection = new Set(selectedFriends);
+    if (newSelection.has(friendId)) {
+      newSelection.delete(friendId);
+    } else {
+      newSelection.add(friendId);
+    }
+    setSelectedFriends(newSelection);
   };
 
   const renderComment = (comment: Comment, isReply: boolean = false) => (
@@ -427,7 +500,7 @@ const Feed = () => {
             variant="ghost"
             size="sm"
             className="flex-1 gap-2 hover:bg-green-50 hover:text-green-500 transition-colors"
-            onClick={() => handleShare(post)}
+            onClick={() => handleOpenShareDialog(post)}
           >
             <Share2 className="w-5 h-5" />
             Paylaş
@@ -566,6 +639,86 @@ const Feed = () => {
                 className="flex-shrink-0"
               >
                 <Reply className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Dialog */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Arkadaşlarınla Paylaş</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-3">
+            {friends.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Henüz arkadaşınız yok</p>
+              </div>
+            ) : (
+              <ScrollArea className="max-h-[400px]">
+                <div className="space-y-2">
+                  {friends.map((friend) => (
+                    <div
+                      key={friend.user_id}
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                        selectedFriends.has(friend.user_id)
+                          ? "bg-primary/10 border-2 border-primary"
+                          : "hover:bg-muted border-2 border-transparent"
+                      }`}
+                      onClick={() => toggleFriendSelection(friend.user_id)}
+                    >
+                      <Avatar>
+                        <AvatarImage src={friend.profile_photo || undefined} />
+                        <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                          {friend.username.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">
+                          {friend.full_name || friend.username}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          @{friend.username}
+                        </p>
+                      </div>
+                      {selectedFriends.has(friend.user_id) && (
+                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                          <svg
+                            className="w-4 h-4 text-primary-foreground"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path d="M5 13l4 4L19 7"></path>
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+
+            <div className="flex gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShareDialogOpen(false)}
+                className="flex-1"
+              >
+                İptal
+              </Button>
+              <Button
+                onClick={handleShareToFriends}
+                disabled={selectedFriends.size === 0}
+                className="flex-1"
+              >
+                Gönder ({selectedFriends.size})
               </Button>
             </div>
           </div>
