@@ -83,7 +83,7 @@ const Compatibility = () => {
         .from("profiles")
         .select("credits")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (profile) {
         setCredits(profile.credits);

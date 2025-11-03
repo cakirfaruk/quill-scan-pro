@@ -83,7 +83,7 @@ const Profile = () => {
           .from("profiles")
           .select("*")
           .eq("username", username)
-          .single();
+          .maybeSingle();
         profileData = result.data;
         profileError = result.error;
       } else {
@@ -92,18 +92,30 @@ const Profile = () => {
           .from("profiles")
           .select("*")
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
         profileData = result.data;
         profileError = result.error;
       }
 
       if (profileError) {
         console.error("Profile load error:", profileError);
-        throw profileError;
+        toast({
+          title: "Hata",
+          description: "Profil yüklenirken bir hata oluştu.",
+          variant: "destructive",
+        });
+        return;
       }
 
       if (!profileData) {
-        throw new Error("Profil verisi alınamadı");
+        console.error("Profile not found for:", username || user.id);
+        toast({
+          title: "Profil Bulunamadı",
+          description: "Aradığınız profil bulunamadı. Lütfen ayarlardan profil bilgilerinizi tamamlayın.",
+          variant: "destructive",
+        });
+        navigate("/settings");
+        return;
       }
 
       setProfile(profileData);
@@ -182,7 +194,7 @@ const Profile = () => {
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (birthChart) setLatestBirthChart(birthChart);
 
@@ -193,7 +205,7 @@ const Profile = () => {
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (numerology) setLatestNumerology(numerology);
   };
@@ -214,7 +226,7 @@ const Profile = () => {
             .from(tableName as any)
             .select("*")
             .eq("id", share.analysis_id)
-            .single();
+            .maybeSingle();
 
           return analysis ? {
             id: (analysis as any).id,

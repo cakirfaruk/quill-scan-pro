@@ -113,7 +113,7 @@ export const PersonSelector = ({
         .from("profiles")
         .select("full_name, birth_date, birth_time, birth_place, gender, user_id")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (profile) {
         setCurrentUser({

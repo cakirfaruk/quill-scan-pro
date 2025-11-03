@@ -65,7 +65,7 @@ export const Header = () => {
         .from("profiles")
         .select("credits, username, profile_photo")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (profile) {
         setCredits(profile.credits);

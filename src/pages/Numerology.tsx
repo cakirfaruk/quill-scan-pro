@@ -49,11 +49,11 @@ export default function Numerology() {
       return;
     }
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("profiles")
       .select("credits")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     if (data) setAvailableCredits(data.credits);
   };

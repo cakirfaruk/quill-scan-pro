@@ -34,7 +34,7 @@ const DreamInterpretation = () => {
         .from("profiles")
         .select("credits")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
       
       if (profile) {
         setUserCredits(profile.credits);

@@ -62,11 +62,51 @@ const Settings = () => {
         .from("profiles")
         .select("*")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Profile load error:", error);
+        throw error;
+      }
 
-      if (data) {
+      if (!data) {
+        // Profile doesn't exist, create one
+        console.log("Profile not found, creating new profile");
+        const { error: insertError } = await supabase
+          .from("profiles")
+          .insert({
+            user_id: user.id,
+            username: user.email?.split('@')[0] || 'user',
+            credits: 10,
+          });
+
+        if (insertError) {
+          console.error("Profile creation error:", insertError);
+          throw insertError;
+        }
+
+        // Load the newly created profile
+        const { data: newData, error: newError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (newError || !newData) {
+          throw new Error("Profil oluşturulamadı");
+        }
+
+        setProfile({
+          username: newData.username || "",
+          full_name: newData.full_name || "",
+          birth_date: newData.birth_date || "",
+          birth_time: newData.birth_time || "",
+          birth_place: newData.birth_place || "",
+          bio: newData.bio || "",
+          gender: newData.gender || "",
+          email: user.email || "",
+        });
+      } else {
         setProfile({
           username: data.username || "",
           full_name: data.full_name || "",

@@ -147,7 +147,7 @@ const Feed = () => {
         .from(tableName as any)
         .select("*")
         .eq("id", analysisId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return (data as any)?.result;

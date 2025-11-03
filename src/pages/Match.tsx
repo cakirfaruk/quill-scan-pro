@@ -55,7 +55,7 @@ const Match = () => {
       .from("profiles")
       .select("credits")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
     
     if (data) setCredits(data.credits);
   };
@@ -122,7 +122,7 @@ const Match = () => {
             .eq("user_id", profile.user_id)
             .order("created_at", { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
           const { data: birthAnalysis } = await supabase
             .from("birth_chart_analyses")
@@ -130,7 +130,7 @@ const Match = () => {
             .eq("user_id", profile.user_id)
             .order("created_at", { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
           return {
             ...profile,
@@ -208,7 +208,7 @@ const Match = () => {
           .eq("user_id", targetProfile.user_id)
           .eq("target_user_id", user.id)
           .eq("action", "like")
-          .single();
+          .maybeSingle();
 
         if (mutualSwipe) {
           // Create match
