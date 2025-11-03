@@ -118,7 +118,7 @@ export const Header = () => {
     <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 md:py-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 md:gap-3">
+          <Link to="/" className="flex items-center gap-2 md:gap-3 header-logo">
             <div className="p-1.5 md:p-2 bg-gradient-primary rounded-lg">
               <FileText className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" />
             </div>
@@ -282,9 +282,11 @@ export const Header = () => {
 
             {isLoggedIn ? (
               <>
-            <NotificationBell />
+            <div className="notification-bell">
+              <NotificationBell />
+            </div>
             
-            <button 
+            <button
               onClick={() => navigate("/credits")}
               className="flex items-center gap-2 px-3 xl:px-4 py-2 bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors cursor-pointer"
             >
@@ -294,7 +296,7 @@ export const Header = () => {
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="relative">
+                    <button className="relative user-avatar">
                       <Avatar className="w-9 h-9 border-2 border-primary/20 hover:border-primary transition-colors cursor-pointer">
                         <AvatarImage src={profilePhoto} alt={username} />
                         <AvatarFallback className="bg-gradient-primary text-primary-foreground">

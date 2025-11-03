@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { X, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { X, ChevronLeft, ChevronRight, Eye, Send } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 
@@ -42,7 +44,10 @@ export const StoryViewer = ({
   const [currentStoryIndex, setCurrentStoryIndex] = useState(initialIndex);
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [isSendingReply, setIsSendingReply] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const currentStory = stories[currentStoryIndex];
   const STORY_DURATION = 5000; // 5 seconds per story
@@ -128,6 +133,37 @@ export const StoryViewer = ({
         description: "Hikaye silinemedi",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleSendReply = async () => {
+    if (!replyText.trim() || currentStory.user_id === currentUserId) return;
+
+    setIsSendingReply(true);
+    try {
+      const { error } = await supabase.from("messages").insert({
+        sender_id: currentUserId,
+        receiver_id: currentStory.user_id,
+        content: `📖 Hikayen hakkında: ${replyText}`,
+        message_category: "other",
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Başarılı",
+        description: "Yanıtınız gönderildi",
+      });
+
+      setReplyText("");
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: "Yanıt gönderilemedi",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingReply(false);
     }
   };
 
@@ -266,8 +302,8 @@ export const StoryViewer = ({
           </div>
         </div>
 
-        {/* Footer with delete button */}
-        {currentStory.user_id === currentUserId && (
+        {/* Footer with reply input or delete button */}
+        {currentStory.user_id === currentUserId ? (
           <div className="absolute bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-t from-black/70 to-transparent">
             <Button
               variant="destructive"
@@ -277,6 +313,35 @@ export const StoryViewer = ({
             >
               Hikayeyi Sil
             </Button>
+          </div>
+        ) : (
+          <div className="absolute bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-t from-black/70 to-transparent">
+            <div className="flex gap-2">
+              <Input
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder={`${currentStory.profile.username}'e yanıtla...`}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendReply();
+                  }
+                }}
+              />
+              <Button
+                size="icon"
+                onClick={handleSendReply}
+                disabled={!replyText.trim() || isSendingReply}
+                className="bg-primary hover:bg-primary/90"
+              >
+                {isSendingReply ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>
