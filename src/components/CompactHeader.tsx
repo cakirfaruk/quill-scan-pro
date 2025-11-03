@@ -232,9 +232,7 @@ export const CompactHeader = () => {
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate("/profile")}
-                onDoubleClick={() => navigate("/match")}
                 className="h-8 sm:h-9 w-8 sm:w-9 rounded-full p-0 hover:scale-105 transition-transform"
-                title="Çift tıkla: Eşleşme ekranı"
               >
                 <Avatar className="w-8 sm:w-9 h-8 sm:h-9 border-2 border-primary/20">
                   <AvatarImage src={profilePhoto} alt={username} />

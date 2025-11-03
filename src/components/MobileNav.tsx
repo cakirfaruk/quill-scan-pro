@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Search, Plus, Video, Sparkles } from "lucide-react";
+import { Home, Search, Plus, Video, Sparkles, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { CreatePostDialog } from "@/components/CreatePostDialog";
@@ -54,11 +54,11 @@ export const MobileNav = () => {
   const isActive = (path: string) => location.pathname === path;
 
   const navItems = [
-    { icon: Home, label: "Ana Sayfa", path: "/" },
     { icon: Search, label: "Keşfet", path: "/explore" },
     { icon: Plus, label: "Oluştur", action: handleCreatePost },
     { icon: Video, label: "Reels", path: "/reels" },
     { icon: Sparkles, label: "Analizler", path: "/discovery" },
+    { icon: Heart, label: "Eşleşme", path: "/match" },
   ];
 
   return (
