@@ -1030,13 +1030,24 @@ const Messages = () => {
                                     alt="GIF"
                                     className="w-full h-auto"
                                   />
-                                  <div className={`px-2 py-1 text-xs opacity-70 ${
+                                  <div className={`px-2 py-1 text-xs opacity-70 flex items-center gap-2 ${
                                     msg.sender_id === currentUserId ? "bg-primary text-primary-foreground" : "bg-muted"
                                   }`}>
-                                    {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
+                                    <span>
+                                      {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                    </span>
+                                    {msg.sender_id === currentUserId && (
+                                      <span title={msg.read ? "Okundu" : "İletildi"}>
+                                        {msg.read ? (
+                                          <CheckCheck className="w-3 h-3 text-blue-400 inline" />
+                                        ) : (
+                                          <Check className="w-3 h-3 inline" />
+                                        )}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                                 <MessageReactions
@@ -1053,12 +1064,23 @@ const Messages = () => {
                               }`}>
                                 <div className="p-2">
                                   <VoiceMessagePlayer audioUrl={voiceMessageUrl} />
-                                  <p className="text-xs opacity-70 mt-1 text-right">
-                                    {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
-                                  </p>
+                                  <div className="flex items-center gap-2 justify-end mt-1">
+                                    <p className="text-xs opacity-70">
+                                      {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                    </p>
+                                    {msg.sender_id === currentUserId && (
+                                      <span className="text-xs opacity-70" title={msg.read ? "Okundu" : "İletildi"}>
+                                        {msg.read ? (
+                                          <CheckCheck className="w-3 h-3 text-blue-400 inline" />
+                                        ) : (
+                                          <Check className="w-3 h-3 inline" />
+                                        )}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                               <MessageReactions
