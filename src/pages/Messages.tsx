@@ -19,6 +19,7 @@ import { useImpersonate } from "@/hooks/use-impersonate";
 import { soundEffects } from "@/utils/soundEffects";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { VoiceMessagePlayer } from "@/components/VoiceMessagePlayer";
+import { MessageReactions } from "@/components/MessageReactions";
 
 interface Friend {
   user_id: string;
@@ -951,6 +952,12 @@ const Messages = () => {
                                 </div>
                               </div>
                             </div>
+                          )}
+                          {!isAnalysisShare && (
+                            <MessageReactions
+                              messageId={msg.id}
+                              currentUserId={currentUserId}
+                            />
                           )}
                         </div>
                       );
