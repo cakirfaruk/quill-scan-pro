@@ -92,41 +92,66 @@ const BirthChart = () => {
 
   const calculateBirthChart = async (birthDate: string, birthTime: string, birthPlace: string) => {
     try {
+      console.log("Starting birth chart calculation...");
+      console.log("Birth place:", birthPlace);
+      
       // Get coordinates from Google Maps API
       const geocodeResponse = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(birthPlace)}&key=AIzaSyCONL709dmB9jCd3Pd2li5xACFF7qltmSI`
       );
       const geocodeData = await geocodeResponse.json();
       
+      console.log("Geocode response:", geocodeData);
+      
       // Check if we got valid coordinates
       if (!geocodeData.results || geocodeData.results.length === 0) {
         throw new Error("Doğum yeri geçersiz veya haritadan seçilmedi. Lütfen doğum yerini yazarken açılan listeden seçim yapın. Profil ayarlarından da güncelleyebilirsiniz.");
       }
       
-      const latitude = geocodeData.results[0].geometry.location.lat;
-      const longitude = geocodeData.results[0].geometry.location.lng;
+      const latitude = parseFloat(geocodeData.results[0].geometry.location.lat);
+      const longitude = parseFloat(geocodeData.results[0].geometry.location.lng);
+      
+      console.log("Coordinates:", { latitude, longitude });
+      
+      // Validate coordinates
+      if (isNaN(latitude) || isNaN(longitude)) {
+        throw new Error("Koordinatlar alınamadı. Lütfen doğum yerini haritadan seçin.");
+      }
 
       // Combine date and time
       const dateTimeString = `${birthDate}T${birthTime}:00`;
       const birthDateTime = new Date(dateTimeString);
+      
+      console.log("Birth date time:", birthDateTime);
+      console.log("Calling getAllPlanets with:", { birthDateTime, longitude, latitude });
 
       // Calculate planets using ephemeris
+      // Parameters: getAllPlanets(dateObj, longitude, latitude, height)
       const result = getAllPlanets(birthDateTime, longitude, latitude, 0);
+      
+      console.log("Ephemeris result:", result);
+      
+      if (!result || !result.observed) {
+        throw new Error("Gezegen konumları hesaplanamadı.");
+      }
+      
       const planets = result.observed;
+      
+      console.log("Planets:", planets);
 
       // Convert to zodiac signs
-      const getZodiacSign = (longitude: number) => {
+      const getZodiacSign = (eclipticLongitude: number) => {
         const signs = [
           "Koç", "Boğa", "İkizler", "Yengeç", "Aslan", "Başak",
           "Terazi", "Akrep", "Yay", "Oğlak", "Kova", "Balık"
         ];
-        const signIndex = Math.floor(longitude / 30);
+        const signIndex = Math.floor(eclipticLongitude / 30);
         return signs[signIndex];
       };
 
-      const formatDegrees = (longitude: number) => {
-        const sign = Math.floor(longitude / 30);
-        const degrees = longitude - (sign * 30);
+      const formatDegrees = (eclipticLongitude: number) => {
+        const sign = Math.floor(eclipticLongitude / 30);
+        const degrees = eclipticLongitude - (sign * 30);
         const deg = Math.floor(degrees);
         const minDecimal = (degrees - deg) * 60;
         const min = Math.floor(minDecimal);
