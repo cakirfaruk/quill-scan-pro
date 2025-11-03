@@ -134,9 +134,6 @@ const Index = () => {
                   <Sparkles className="w-7 h-7 text-primary" />
                 </div>
                 <CardTitle>Tarot Okuma</CardTitle>
-                <CardDescription>
-                  Geçmiş, şimdi ve gelecek hakkında derinlemesine yorumlar
-                </CardDescription>
               </CardHeader>
             </Card>
 
@@ -146,9 +143,6 @@ const Index = () => {
                   <Coffee className="w-7 h-7 text-amber-600" />
                 </div>
                 <CardTitle>Kahve Falı</CardTitle>
-                <CardDescription>
-                  Geleneksel yöntemle fincan yorumlama ve analiz
-                </CardDescription>
               </CardHeader>
             </Card>
 
@@ -158,9 +152,6 @@ const Index = () => {
                   <Moon className="w-7 h-7 text-indigo-600" />
                 </div>
                 <CardTitle>Rüya Tabiri</CardTitle>
-                <CardDescription>
-                  Rüyalarınızın sembolik anlamlarını keşfedin
-                </CardDescription>
               </CardHeader>
             </Card>
 
@@ -170,9 +161,6 @@ const Index = () => {
                   <Hand className="w-7 h-7 text-pink-600" />
                 </div>
                 <CardTitle>El Okuma</CardTitle>
-                <CardDescription>
-                  Avuç içi çizgilerinizle karakter analizi
-                </CardDescription>
               </CardHeader>
             </Card>
 
@@ -182,9 +170,6 @@ const Index = () => {
                   <Star className="w-7 h-7 text-yellow-600" />
                 </div>
                 <CardTitle>Günlük Kehanet</CardTitle>
-                <CardDescription>
-                  Her gün size özel hazırlanan kehanetler
-                </CardDescription>
               </CardHeader>
             </Card>
 
@@ -194,9 +179,6 @@ const Index = () => {
                   <Target className="w-7 h-7 text-emerald-600" />
                 </div>
                 <CardTitle>Numeroloji</CardTitle>
-                <CardDescription>
-                  Sayıların gücüyle yaşam yolu ve kader analizi
-                </CardDescription>
               </CardHeader>
             </Card>
 
@@ -206,9 +188,6 @@ const Index = () => {
                   <Calendar className="w-7 h-7 text-violet-600" />
                 </div>
                 <CardTitle>Doğum Haritası</CardTitle>
-                <CardDescription>
-                  Astrolojik konum analizleri ve burç yorumları
-                </CardDescription>
               </CardHeader>
             </Card>
 
@@ -218,9 +197,6 @@ const Index = () => {
                   <FileText className="w-7 h-7 text-blue-600" />
                 </div>
                 <CardTitle>El Yazısı Analizi</CardTitle>
-                <CardDescription>
-                  Grafologi ile kişilik özelliklerinizi keşfedin
-                </CardDescription>
               </CardHeader>
             </Card>
 
@@ -230,9 +206,6 @@ const Index = () => {
                   <Heart className="w-7 h-7 text-red-600" />
                 </div>
                 <CardTitle>Uyum Analizi</CardTitle>
-                <CardDescription>
-                  İki kişi arasındaki uyum oranlarını detaylı inceleyin
-                </CardDescription>
               </CardHeader>
             </Card>
           </div>
