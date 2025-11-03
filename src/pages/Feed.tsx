@@ -14,8 +14,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Reply } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Reply, Loader2, RefreshCw } from "lucide-react";
 import { useImpersonate } from "@/hooks/use-impersonate";
+import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
+import { soundEffects } from "@/utils/soundEffects";
 
 interface Post {
   id: string;
@@ -75,6 +77,18 @@ const Feed = () => {
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
   const [userId, setUserId] = useState<string>("");
   const { getEffectiveUserId } = useImpersonate();
+
+  const handleRefresh = async () => {
+    soundEffects.playClick();
+    if (userId) {
+      await loadPosts(userId);
+    }
+  };
+
+  const { containerRef, isPulling, pullDistance, isRefreshing, shouldTrigger } = usePullToRefresh({
+    onRefresh: handleRefresh,
+    threshold: 80,
+  });
 
   useEffect(() => {
     checkUserAndLoad();
@@ -213,10 +227,12 @@ const Feed = () => {
       if (hasLiked) {
         await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", userId);
       } else {
+        soundEffects.playLike();
         await supabase.from("post_likes").insert({ post_id: postId, user_id: userId });
       }
       await loadPosts(userId);
     } catch (error: any) {
+      soundEffects.playError();
       toast({ title: "Hata", description: "İşlem gerçekleştirilemedi", variant: "destructive" });
     }
   };
@@ -226,10 +242,12 @@ const Feed = () => {
       if (hasLiked) {
         await supabase.from("comment_likes").delete().eq("comment_id", commentId).eq("user_id", userId);
       } else {
+        soundEffects.playLike();
         await supabase.from("comment_likes").insert({ comment_id: commentId, user_id: userId });
       }
       if (selectedPost) await loadComments(selectedPost.id);
     } catch (error: any) {
+      soundEffects.playError();
       toast({ title: "Hata", description: "İşlem gerçekleştirilemedi", variant: "destructive" });
     }
   };
@@ -304,6 +322,7 @@ const Feed = () => {
     if (!selectedPost || !newComment.trim()) return;
 
     try {
+      soundEffects.playMessageSent();
       await supabase.from("post_comments").insert({
         post_id: selectedPost.id,
         user_id: userId,
@@ -316,6 +335,7 @@ const Feed = () => {
       await loadComments(selectedPost.id);
       await loadPosts(userId);
     } catch (error: any) {
+      soundEffects.playError();
       toast({ title: "Hata", description: "Yorum eklenemedi", variant: "destructive" });
     }
   };
@@ -552,8 +572,23 @@ const Feed = () => {
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Header />
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+      <div ref={containerRef} className="container mx-auto px-4 py-8 max-w-2xl relative">
+        {/* Pull to Refresh Indicator */}
+        {(isPulling || isRefreshing) && (
+          <div 
+            className="absolute top-0 left-1/2 -translate-x-1/2 transition-all duration-200 z-50"
+            style={{ 
+              transform: `translateX(-50%) translateY(${Math.min(pullDistance, 80)}px)`,
+              opacity: Math.min(pullDistance / 80, 1)
+            }}
+          >
+            <div className={`bg-primary text-primary-foreground rounded-full p-3 shadow-lg ${isRefreshing ? 'animate-spin' : shouldTrigger ? 'scale-110' : ''}`}>
+              <RefreshCw className="w-5 h-5" />
+            </div>
+          </div>
+        )}
+
+        <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent animate-fade-in">
           Akış
         </h1>
         

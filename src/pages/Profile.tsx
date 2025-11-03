@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, Plus, X, Settings, Calendar, MapPin, Share2, Eye, EyeOff, FileText, Sparkles, Heart, Moon, Hand, Coffee, Star, Send, MessageCircle } from "lucide-react";
+import { Loader2, Camera, Plus, X, Settings, Calendar, MapPin, Share2, Eye, EyeOff, FileText, Sparkles, Heart, Moon, Hand, Coffee, Star, Send, MessageCircle, RefreshCw } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
@@ -21,6 +21,9 @@ import { Separator } from "@/components/ui/separator";
 import { useImpersonate } from "@/hooks/use-impersonate";
 import { CreatePostDialog } from "@/components/CreatePostDialog";
 import { ProfilePosts } from "@/components/ProfilePosts";
+import { MutualFriends } from "@/components/MutualFriends";
+import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
+import { soundEffects } from "@/utils/soundEffects";
 
 interface UserPhoto {
   id: string;
@@ -88,6 +91,19 @@ const Profile = () => {
   const [shareAnalysisToPost, setShareAnalysisToPost] = useState<Analysis | null>(null);
   const [friendshipStatus, setFriendshipStatus] = useState<"none" | "pending_sent" | "pending_received" | "accepted">("none");
   const [selectedProfileImage, setSelectedProfileImage] = useState<string | null>(null);
+
+  const handleRefresh = async () => {
+    soundEffects.playClick();
+    await loadProfile();
+    if (profile.user_id && activeTab === "posts") {
+      await loadUserPosts();
+    }
+  };
+
+  const { containerRef, isPulling, pullDistance, isRefreshing, shouldTrigger } = usePullToRefresh({
+    onRefresh: handleRefresh,
+    threshold: 80,
+  });
 
   useEffect(() => {
     loadProfile();
@@ -1011,9 +1027,24 @@ const Profile = () => {
     <div className="min-h-screen bg-gradient-subtle">
       <Header />
 
-      <main className="container mx-auto px-4 py-8 max-w-6xl">
+      <main ref={containerRef} className="container mx-auto px-4 py-8 max-w-6xl relative">
+        {/* Pull to Refresh Indicator */}
+        {(isPulling || isRefreshing) && (
+          <div 
+            className="absolute top-0 left-1/2 -translate-x-1/2 transition-all duration-200 z-50"
+            style={{ 
+              transform: `translateX(-50%) translateY(${Math.min(pullDistance, 80)}px)`,
+              opacity: Math.min(pullDistance / 80, 1)
+            }}
+          >
+            <div className={`bg-primary text-primary-foreground rounded-full p-3 shadow-lg ${isRefreshing ? 'animate-spin' : shouldTrigger ? 'scale-110' : ''}`}>
+              <RefreshCw className="w-5 h-5" />
+            </div>
+          </div>
+        )}
+
         {/* Profile Header */}
-        <Card className="p-6 mb-6">
+        <Card className="p-6 mb-6 animate-fade-in">
           <div className="flex flex-col md:flex-row gap-6 items-start">
             <div className="relative flex-shrink-0">
               <Avatar 
@@ -1139,6 +1170,11 @@ const Profile = () => {
                 )}
               </div>
             </div>
+
+            {/* Mutual Friends - Show only if viewing another user's profile */}
+            {!isOwnProfile && currentUserId && profile.user_id && (
+              <MutualFriends userId={currentUserId} profileUserId={profile.user_id} />
+            )}
           </div>
         </Card>
 

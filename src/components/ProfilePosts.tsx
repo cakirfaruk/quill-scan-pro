@@ -7,6 +7,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Loader2, MessageCircle, Heart, Share2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
+import { soundEffects } from "@/utils/soundEffects";
 
 interface Post {
   id: string;
@@ -29,10 +30,20 @@ interface ProfilePostsProps {
   posts: Post[];
   loading: boolean;
   isOwnProfile: boolean;
+  onLike?: (postId: string, hasLiked: boolean) => Promise<void>;
 }
 
-export const ProfilePosts = ({ posts, loading, isOwnProfile }: ProfilePostsProps) => {
+export const ProfilePosts = ({ posts, loading, isOwnProfile, onLike }: ProfilePostsProps) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const handleLike = async (postId: string, hasLiked: boolean) => {
+    if (!hasLiked) {
+      soundEffects.playLike();
+    }
+    if (onLike) {
+      await onLike(postId, hasLiked);
+    }
+  };
 
   if (loading) {
     return (
@@ -123,9 +134,10 @@ export const ProfilePosts = ({ posts, loading, isOwnProfile }: ProfilePostsProps
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="flex-1 gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4"
+                  className="flex-1 gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4 hover:bg-red-50 hover:text-red-500 transition-colors"
+                  onClick={() => handleLike(post.id, post.hasLiked)}
                 >
-                  <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${post.hasLiked ? "fill-red-500 text-red-500" : ""}`} />
+                  <Heart className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform hover:scale-110 ${post.hasLiked ? "fill-red-500 text-red-500" : ""}`} />
                   <span className="hidden sm:inline">Beğen</span>
                 </Button>
                 
