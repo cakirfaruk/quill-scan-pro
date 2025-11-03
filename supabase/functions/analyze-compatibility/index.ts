@@ -233,15 +233,46 @@ ZORUNLU: Yanıtını aşağıdaki JSON formatında döndür:
       throw new Error("No content in AI response");
     }
 
-    console.log("Raw AI response content:", content.substring(0, 500));
-
-    // Parse JSON from response
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error("Could not parse JSON from AI response");
+    // Remove any whitespace and check if content is empty
+    const trimmedContent = content.trim();
+    if (!trimmedContent) {
+      console.error("Content is empty after trimming");
+      throw new Error("AI returned empty response");
     }
 
-    const result = JSON.parse(jsonMatch[0]);
+    console.log("AI response content (first 500 chars):", trimmedContent.substring(0, 500));
+
+    // Try to extract JSON from response (handle markdown code blocks)
+    let jsonStr = trimmedContent;
+    
+    // Remove markdown code blocks if present
+    if (jsonStr.includes("```json")) {
+      const match = jsonStr.match(/```json\s*([\s\S]*?)\s*```/);
+      if (match) {
+        jsonStr = match[1];
+      }
+    } else if (jsonStr.includes("```")) {
+      const match = jsonStr.match(/```\s*([\s\S]*?)\s*```/);
+      if (match) {
+        jsonStr = match[1];
+      }
+    }
+    
+    // Try to find JSON object in the text
+    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error("Could not find JSON object in response:", trimmedContent);
+      throw new Error("Could not parse JSON from AI response - no JSON object found");
+    }
+
+    let result;
+    try {
+      result = JSON.parse(jsonMatch[0]);
+    } catch (jsonError) {
+      console.error("Failed to parse extracted JSON:", jsonError);
+      console.error("Extracted JSON string:", jsonMatch[0]);
+      throw new Error("Failed to parse JSON from AI response");
+    }
     console.log("Compatibility analysis completed successfully");
 
     // Deduct credits and save analysis

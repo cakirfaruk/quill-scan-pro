@@ -303,20 +303,62 @@ const Match = () => {
   const handleCompatibilityCheck = async () => {
     if (!user || !currentProfile) return;
 
-    const creditsNeeded = 50;
-    
-    if (credits < creditsNeeded) {
-      toast({
-        title: "Yetersiz Kredi",
-        description: `Bu işlem için ${creditsNeeded} kredi gerekiyor`,
-        variant: "destructive",
-      });
-      return;
-    }
-
     setCompatibilityLoading(true);
 
     try {
+      // First check if we already have a match with compatibility data
+      const [user1, user2] = [user.id, currentProfile.user_id].sort();
+      const { data: existingMatch } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("user1_id", user1)
+        .eq("user2_id", user2)
+        .maybeSingle();
+
+      // If we have existing compatibility data, use it
+      if (existingMatch && (existingMatch.compatibility_numerology || existingMatch.compatibility_birth_chart)) {
+        const numerologyData = existingMatch.compatibility_numerology as any;
+        const birthChartData = existingMatch.compatibility_birth_chart as any;
+        
+        const numerologyScore = numerologyData?.overallScore || 0;
+        const birthChartScore = birthChartData?.overallScore || 0;
+        
+        setCompatibilityData({
+          numerologyScore,
+          birthChartScore,
+          details: {
+            overallScore: Math.round((numerologyScore + birthChartScore) / 2),
+            compatibilityAreas: [
+              ...(numerologyData?.compatibilityAreas || []),
+              ...(birthChartData?.compatibilityAreas || [])
+            ],
+            numerologyAnalysis: numerologyData,
+            birthChartAnalysis: birthChartData,
+          },
+        });
+
+        toast({
+          title: "Uyum Analizi",
+          description: "Daha önce yapılmış uyum analizi gösteriliyor",
+        });
+
+        setCompatibilityLoading(false);
+        return;
+      }
+
+      // If no existing data, check credits and create new analysis
+      const creditsNeeded = 50;
+      
+      if (credits < creditsNeeded) {
+        toast({
+          title: "Yetersiz Kredi",
+          description: `Bu işlem için ${creditsNeeded} kredi gerekiyor`,
+          variant: "destructive",
+        });
+        setCompatibilityLoading(false);
+        return;
+      }
+
       // Call compatibility analysis edge function
       const { data, error } = await supabase.functions.invoke("analyze-compatibility", {
         body: {
@@ -337,26 +379,48 @@ const Match = () => {
       if (error) throw error;
 
       // Calculate scores from compatibility data
-      const numerologyScore = Math.round(
-        data?.compatibilityAreas?.find((a: any) => 
-          a.name && (a.name.toLowerCase().includes("numeroloji") || a.name.toLowerCase().includes("sayı"))
-        )?.compatibilityScore || 0
-      );
-      
-      const birthChartScore = Math.round(
-        data?.compatibilityAreas?.find((a: any) => 
-          a.name && (a.name.toLowerCase().includes("astroloji") || a.name.toLowerCase().includes("doğum") || a.name.toLowerCase().includes("burç"))
-        )?.compatibilityScore || 0
-      );
-
-      // If both scores are 0, try to extract from overall score
-      const overallScore = Math.round(data?.overallScore || 0);
+      const numerologyScore = Math.round(data?.overallScore || 0);
+      const birthChartScore = Math.round(data?.overallScore || 0);
       
       setCompatibilityData({
-        numerologyScore: numerologyScore || overallScore,
-        birthChartScore: birthChartScore || overallScore,
+        numerologyScore,
+        birthChartScore,
         details: data,
       });
+
+      // Save compatibility data to matches table for future use
+      const [matchUser1, matchUser2] = [user.id, currentProfile.user_id].sort();
+      
+      // Check if match exists
+      const { data: matchCheck } = await supabase
+        .from("matches")
+        .select("id")
+        .eq("user1_id", matchUser1)
+        .eq("user2_id", matchUser2)
+        .maybeSingle();
+
+      if (matchCheck) {
+        // Update existing match
+        await supabase
+          .from("matches")
+          .update({
+            compatibility_numerology: data,
+            compatibility_birth_chart: data,
+            overall_compatibility_score: Math.round(data?.overallScore || 0),
+          })
+          .eq("id", matchCheck.id);
+      } else {
+        // Create new match
+        await supabase
+          .from("matches")
+          .insert({
+            user1_id: matchUser1,
+            user2_id: matchUser2,
+            compatibility_numerology: data,
+            compatibility_birth_chart: data,
+            overall_compatibility_score: Math.round(data?.overallScore || 0),
+          });
+      }
 
       // Deduct credits
       const { error: creditError } = await supabase
