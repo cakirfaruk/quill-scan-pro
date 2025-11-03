@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart } from "lucide-react";
+import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { requestNotificationPermission } from "@/utils/notifications";
 import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
 import { useImpersonate } from "@/hooks/use-impersonate";
@@ -37,12 +38,15 @@ const Settings = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
+  const [isLoadingBlocked, setIsLoadingBlocked] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { getEffectiveUserId } = useImpersonate();
 
   useEffect(() => {
     loadSettings();
+    loadBlockedUsers();
     
     // Check for dark mode preference
     const isDark = document.documentElement.classList.contains('dark');
@@ -307,6 +311,69 @@ const Settings = () => {
     }
   };
 
+  const loadBlockedUsers = async () => {
+    setIsLoadingBlocked(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const effectiveUserId = getEffectiveUserId(user.id);
+      if (!effectiveUserId) return;
+
+      const { data: blockedData, error } = await supabase
+        .from("blocked_users")
+        .select(`
+          id,
+          blocked_user_id,
+          created_at,
+          profiles!blocked_users_blocked_user_id_fkey(
+            username,
+            full_name,
+            profile_photo
+          )
+        `)
+        .eq("user_id", effectiveUserId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setBlockedUsers(blockedData || []);
+    } catch (error: any) {
+      console.error("Error loading blocked users:", error);
+      toast({
+        title: "Hata",
+        description: "Engellenen kullanıcılar yüklenemedi.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingBlocked(false);
+    }
+  };
+
+  const handleUnblockUser = async (blockId: string) => {
+    try {
+      const { error } = await supabase
+        .from("blocked_users")
+        .delete()
+        .eq("id", blockId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Başarılı",
+        description: "Kullanıcının engeli kaldırıldı.",
+      });
+
+      await loadBlockedUsers();
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: "Engel kaldırılamadı.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-subtle">
@@ -328,10 +395,11 @@ const Settings = () => {
         </h1>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="profile">Profil</TabsTrigger>
             <TabsTrigger value="account">Hesap</TabsTrigger>
             <TabsTrigger value="security">Güvenlik</TabsTrigger>
+            <TabsTrigger value="blocked">Engellenenler</TabsTrigger>
             <TabsTrigger value="appearance">Görünüm</TabsTrigger>
           </TabsList>
 
@@ -548,6 +616,64 @@ const Settings = () => {
                     "Şifreyi Değiştir"
                   )}
                 </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="blocked">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserX className="w-5 h-5" />
+                  Engellenen Kullanıcılar
+                </CardTitle>
+                <CardDescription>
+                  Engellediğiniz kullanıcıları görün ve engellerini kaldırın
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingBlocked ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                ) : blockedUsers.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <UserX className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Henüz hiç kullanıcı engellemediniz.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {blockedUsers.map((blocked) => {
+                      const profile = blocked.profiles;
+                      return (
+                        <div
+                          key={blocked.id}
+                          className="flex items-center justify-between p-4 rounded-lg border bg-card"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={profile?.profile_photo} />
+                              <AvatarFallback>
+                                {profile?.username?.charAt(0).toUpperCase() || "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{profile?.full_name || profile?.username}</p>
+                              <p className="text-sm text-muted-foreground">@{profile?.username}</p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleUnblockUser(blocked.id)}
+                          >
+                            Engeli Kaldır
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

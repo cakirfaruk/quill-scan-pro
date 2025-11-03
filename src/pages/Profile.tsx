@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, Plus, X, Settings, Calendar, MapPin, Share2, Eye, EyeOff, FileText, Sparkles, Heart, Moon, Hand, Coffee, Star, Send, MessageCircle, RefreshCw } from "lucide-react";
+import { Loader2, Camera, Plus, X, Settings, Calendar, MapPin, Share2, Eye, EyeOff, FileText, Sparkles, Heart, Moon, Hand, Coffee, Star, Send, MessageCircle, RefreshCw, UserX, ShieldOff } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
@@ -95,6 +95,8 @@ const Profile = () => {
   const [profileAnalysisLoading, setProfileAnalysisLoading] = useState(false);
   const [profileAnalysisResult, setProfileAnalysisResult] = useState<string | null>(null);
   const [profileAnalysisDialogOpen, setProfileAnalysisDialogOpen] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockId, setBlockId] = useState<string | null>(null);
 
   const handleRefresh = async () => {
     soundEffects.playClick();
@@ -288,6 +290,22 @@ const Profile = () => {
           }
         } else {
           setFriendshipStatus("none");
+        }
+
+        // Check if user is blocked
+        const { data: blockData } = await supabase
+          .from("blocked_users")
+          .select("id")
+          .eq("user_id", effectiveUserId)
+          .eq("blocked_user_id", profileData.user_id)
+          .maybeSingle();
+
+        if (blockData) {
+          setIsBlocked(true);
+          setBlockId(blockData.id);
+        } else {
+          setIsBlocked(false);
+          setBlockId(null);
         }
       }
     } catch (error: any) {
@@ -1016,6 +1034,58 @@ const Profile = () => {
     }
   };
 
+  const handleBlockUser = async () => {
+    try {
+      const { error } = await supabase
+        .from("blocked_users")
+        .insert({
+          user_id: currentUserId,
+          blocked_user_id: profile.user_id,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Başarılı",
+        description: "Kullanıcı engellendi.",
+      });
+
+      await loadProfile();
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Kullanıcı engellenemedi.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUnblockUser = async () => {
+    if (!blockId) return;
+
+    try {
+      const { error } = await supabase
+        .from("blocked_users")
+        .delete()
+        .eq("id", blockId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Başarılı",
+        description: "Kullanıcının engeli kaldırıldı.",
+      });
+
+      await loadProfile();
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Engel kaldırılamadı.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleProfileAnalysis = async () => {
     setProfileAnalysisLoading(true);
     setProfileAnalysisResult(null);
@@ -1169,6 +1239,27 @@ const Profile = () => {
                     {friendshipStatus === "accepted" && (
                       <Button size="sm" variant="outline" onClick={handleRemoveFriend}>
                         Arkadaş
+                      </Button>
+                    )}
+                    
+                    {!isBlocked ? (
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={handleBlockUser}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <UserX className="w-4 h-4 mr-2" />
+                        Engelle
+                      </Button>
+                    ) : (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={handleUnblockUser}
+                      >
+                        <ShieldOff className="w-4 h-4 mr-2" />
+                        Engeli Kaldır
                       </Button>
                     )}
                   </>
