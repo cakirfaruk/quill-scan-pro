@@ -581,16 +581,18 @@ const Match = () => {
     }
 
     try {
-      // Send message with shared content (no friend check needed in match context)
-      const { error: messageError } = await supabase
-        .from("messages")
+      // Create notification for the shared content (bypasses friend requirement)
+      const { error: notificationError } = await supabase
+        .from("notifications")
         .insert({
-          sender_id: user.id,
-          receiver_id: currentProfile.user_id,
-          content: `Paylaşılan ${description}`,
+          user_id: currentProfile.user_id,
+          type: "analysis_shared",
+          title: "Yeni Paylaşım",
+          message: `${description} sizinle paylaşıldı`,
+          link: `/messages`,
         });
 
-      if (messageError) throw messageError;
+      if (notificationError) throw notificationError;
 
       // Deduct credits
       const { error: creditError } = await supabase

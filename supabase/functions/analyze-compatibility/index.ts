@@ -86,43 +86,104 @@ serve(async (req) => {
 
     console.log(`Analyzing compatibility with types: ${analysisTypes.join(", ")}...`);
 
-    // Build a simpler, more focused system prompt
-    let systemPrompt = `Sen profesyonel bir ilişki danışmanısın. İki kişi arasındaki uyumu değerlendiriyorsun.
+    // Build a comprehensive, detailed system prompt for in-depth analysis
+    let systemPrompt = `Sen profesyonel bir ilişki danışmanı ve uyum analistisin. İki kişi arasındaki uyumu çok detaylı bir şekilde değerlendiriyorsun.
 
+📋 KİŞİ BİLGİLERİ:
 Kişi 1: ${name1 || gender1} (${gender1 === "male" ? "Erkek" : "Kadın"})
 Kişi 2: ${name2 || gender2} (${gender2 === "male" ? "Erkek" : "Kadın"})
 
 `;
 
     if (analysisTypes.includes("numerology") && birthDate1 && birthDate2) {
-      systemPrompt += `Doğum Tarihleri: ${birthDate1} ve ${birthDate2}\n`;
+      systemPrompt += `📅 NUMEROLOJI ANALİZİ:
+Doğum Tarihleri: ${birthDate1} ve ${birthDate2}
+Bu tarihlerden yaşam yolu sayılarını, kader sayılarını ve kişilik sayılarını hesapla. Her kişinin numerolojik profilini çıkar ve aralarındaki uyumu değerlendir.\n\n`;
     }
     
     if (analysisTypes.includes("birth_chart") && birthTime1 && birthPlace1) {
-      systemPrompt += `Doğum Bilgileri: ${birthDate1} ${birthTime1} ${birthPlace1} ve ${birthDate2} ${birthTime2} ${birthPlace2}\n`;
+      systemPrompt += `🌟 ASTROLOJİK ANALİZ:
+Kişi 1: ${birthDate1} ${birthTime1} ${birthPlace1}
+Kişi 2: ${birthDate2} ${birthTime2} ${birthPlace2}
+Doğum haritalarını hesapla. Güneş, Ay, Yükselen burçları, Venüs ve Mars konumlarını değerlendir. Evler arası ilişkileri ve aspektleri incele.\n\n`;
+    }
+
+    if (analysisTypes.includes("handwriting")) {
+      systemPrompt += `✍️ EL YAZISI ANALİZİ:
+Sağlanan el yazısı görsellerinden her iki kişinin karakteristik özelliklerini çıkar. Yazı eğimi, baskı gücü, harflerin yapısı, kelimelerin dizilişi gibi detayları incele.\n\n`;
     }
 
     systemPrompt += `
-5 temel alanda uyum analizi yap:
-1. Kişilik Uyumu
-2. İletişim Uyumu
-3. Duygusal Bağ
-4. Değerler ve Hedefler
-5. Sosyal Uyum
+🎯 DETAYLI UYUM ANALİZİ YAPILACAK ALANLAR:
 
-SADECE JSON formatında yanıt ver:
+1. 💫 KİŞİLİK UYUMU
+   - Her iki kişinin temel kişilik özellikleri
+   - Karakter yapıları arasındaki uyum
+   - Güçlü ve zayıf yönler
+   - Tamamlayıcı özellikler
+
+2. 💬 İLETİŞİM UYUMU
+   - İletişim tarzları
+   - Çatışma çözüm yaklaşımları
+   - Empati ve anlayış seviyeleri
+   - Dinleme ve ifade etme becerileri
+
+3. 💓 DUYGUSAL BAĞ
+   - Duygusal ifade tarzları
+   - Sevgi dilleri
+   - Bağlanma stilleri
+   - Duygusal ihtiyaçlar ve karşılanma düzeyi
+
+4. 🎯 DEĞERLER VE HEDEFLER
+   - Hayat felsefesi ve değerler
+   - Uzun vadeli hedefler
+   - Öncelikler ve yaşam görüşü
+   - Gelecek planları uyumu
+
+5. 🌍 SOSYAL UYUM
+   - Sosyal çevre ve arkadaş ilişkileri
+   - Aile değerleri
+   - Yaşam tarzı tercihleri
+   - Hobi ve ilgi alanları
+
+📊 HER ALAN İÇİN ŞUNLARI BELİRT:
+- Her iki kişinin o alandaki özellikleri (person1Finding ve person2Finding)
+- Uyum skoru (0-100)
+- Detaylı güçlü yanlar (minimum 3 cümle)
+- Karşılaşılabilecek zorluklar (minimum 2 cümle)
+- Somut ve uygulanabilir öneriler (minimum 3 madde)
+
+🎨 GENEL DEĞERLENDİRME:
+- Tüm alanların ortalaması
+- İlişkinin genel karakteri
+- En güçlü ve en zayıf yönler
+- Uzun vadeli başarı potansiyeli
+- 5-6 cümlelik kapsamlı özet
+
+⚠️ ÖNEMLİ:
+- Her alan için EN AZ 150-200 kelime yaz
+- Somut, spesifik ve kişiselleştirilmiş bilgiler ver
+- Genel klişelerden kaçın
+- Profesyonel ama samimi bir dil kullan
+
+SADECE AŞAĞIDAKİ JSON FORMATINDA YANITLA:
 {
   "overallScore": 75,
+  "overallSummary": "5-6 cümlelik detaylı genel değerlendirme",
+  "person1Analysis": "Kişi 1'in genel profili - 4-5 cümle",
+  "person2Analysis": "Kişi 2'nin genel profili - 4-5 cümle",
   "compatibilityAreas": [
     {
-      "name": "Alan adı",
+      "name": "Kişilik Uyumu",
+      "person1Finding": "Kişi 1'in kişilik özellikleri - detaylı analiz 3-4 cümle",
+      "person2Finding": "Kişi 2'nin kişilik özellikleri - detaylı analiz 3-4 cümle",
       "compatibilityScore": 80,
-      "strengths": "Güçlü yanlar",
-      "challenges": "Zorluklar",
-      "recommendations": "Öneriler"
+      "strengths": "Güçlü yanlar - minimum 3 cümle, spesifik örneklerle",
+      "challenges": "Zorluklar - minimum 2 cümle, somut senaryolarla",
+      "recommendations": "Öneriler - minimum 3 madde, uygulanabilir tavsiyeleriyle"
     }
-  ],
-  "overallSummary": "Genel değerlendirme"
+    // ... diğer 4 alan için de aynı detayda
+  ]
 }`;
 
     console.log("Calling Lovable AI for compatibility analysis...");
@@ -153,7 +214,7 @@ SADECE JSON formatında yanıt ver:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini",
+        model: "google/gemini-2.5-flash",
         messages: [
           {
             role: "system",
