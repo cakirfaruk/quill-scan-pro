@@ -38,7 +38,10 @@ serve(async (req) => {
     // Get authorization token
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
-      throw new Error("Authorization header missing");
+      return new Response(JSON.stringify({ error: 'Yetkisiz erişim' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Create Supabase client for user verification
@@ -53,7 +56,42 @@ serve(async (req) => {
     // Verify user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      throw new Error("Unauthorized");
+      return new Response(JSON.stringify({ error: 'Yetkisiz erişim' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Rate limiting
+    const rateLimitWindow = 60000
+    const rateLimitMax = 5
+    const now = new Date()
+    const windowStart = new Date(now.getTime() - rateLimitWindow)
+
+    const { data: rateLimit } = await supabase
+      .from('rate_limits')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('endpoint', 'analyze-compatibility')
+      .gte('window_start', windowStart.toISOString())
+      .single()
+
+    if (rateLimit && rateLimit.request_count >= rateLimitMax) {
+      return new Response(JSON.stringify({ error: 'Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin.' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (rateLimit) {
+      await supabase
+        .from('rate_limits')
+        .update({ request_count: rateLimit.request_count + 1 })
+        .eq('id', rateLimit.id)
+    } else {
+      await supabase
+        .from('rate_limits')
+        .insert({ user_id: user.id, endpoint: 'analyze-compatibility', request_count: 1, window_start: now.toISOString() })
     }
 
     // Check if user has enough credits - 50 per analysis type
@@ -67,13 +105,16 @@ serve(async (req) => {
       .single();
 
     if (profileError || !profile) {
-      throw new Error("Profile not found");
+      return new Response(JSON.stringify({ error: 'Profil bulunamadı' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     if (profile.credits < requiredCredits) {
       return new Response(
         JSON.stringify({ 
-          error: "Insufficient credits", 
+          error: "Yetersiz kredi", 
           required: requiredCredits, 
           available: profile.credits 
         }),
@@ -86,7 +127,6 @@ serve(async (req) => {
 
     console.log(`Analyzing compatibility with types: ${analysisTypes.join(", ")}...`);
 
-    // Build a comprehensive, detailed system prompt for in-depth analysis
     let systemPrompt = `Sen profesyonel bir ilişki danışmanı ve uyum analistisin. İki kişi arasındaki uyumu çok detaylı bir şekilde değerlendiriyorsun.
 
 📋 KİŞİ BİLGİLERİ:
@@ -98,73 +138,35 @@ Kişi 2: ${name2 || gender2} (${gender2 === "male" ? "Erkek" : "Kadın"})
     if (analysisTypes.includes("numerology") && birthDate1 && birthDate2) {
       systemPrompt += `📅 NUMEROLOJI ANALİZİ:
 Doğum Tarihleri: ${birthDate1} ve ${birthDate2}
-Bu tarihlerden yaşam yolu sayılarını, kader sayılarını ve kişilik sayılarını hesapla. Her kişinin numerolojik profilini çıkar ve aralarındaki uyumu değerlendir.\n\n`;
+Bu tarihlerden yaşam yolu sayılarını, kader sayılarını ve kişilik sayılarını hesapla. Her kişinin numerolojik profilini çıkar ve aralarındaki uyumu değerlendir.
+
+`;
     }
     
     if (analysisTypes.includes("birth_chart") && birthTime1 && birthPlace1) {
       systemPrompt += `🌟 ASTROLOJİK ANALİZ:
 Kişi 1: ${birthDate1} ${birthTime1} ${birthPlace1}
 Kişi 2: ${birthDate2} ${birthTime2} ${birthPlace2}
-Doğum haritalarını hesapla. Güneş, Ay, Yükselen burçları, Venüs ve Mars konumlarını değerlendir. Evler arası ilişkileri ve aspektleri incele.\n\n`;
+Doğum haritalarını hesapla. Güneş, Ay, Yükselen burçları, Venüs ve Mars konumlarını değerlendir. Evler arası ilişkileri ve aspektleri incele.
+
+`;
     }
 
     if (analysisTypes.includes("handwriting")) {
       systemPrompt += `✍️ EL YAZISI ANALİZİ:
-Sağlanan el yazısı görsellerinden her iki kişinin karakteristik özelliklerini çıkar. Yazı eğimi, baskı gücü, harflerin yapısı, kelimelerin dizilişi gibi detayları incele.\n\n`;
+Sağlanan el yazısı görsellerinden her iki kişinin karakteristik özelliklerini çıkar. Yazı eğimi, baskı gücü, harflerin yapısı, kelimelerin dizilişi gibi detayları incele.
+
+`;
     }
 
     systemPrompt += `
 🎯 DETAYLI UYUM ANALİZİ YAPILACAK ALANLAR:
 
 1. 💫 KİŞİLİK UYUMU
-   - Her iki kişinin temel kişilik özellikleri
-   - Karakter yapıları arasındaki uyum
-   - Güçlü ve zayıf yönler
-   - Tamamlayıcı özellikler
-
 2. 💬 İLETİŞİM UYUMU
-   - İletişim tarzları
-   - Çatışma çözüm yaklaşımları
-   - Empati ve anlayış seviyeleri
-   - Dinleme ve ifade etme becerileri
-
 3. 💓 DUYGUSAL BAĞ
-   - Duygusal ifade tarzları
-   - Sevgi dilleri
-   - Bağlanma stilleri
-   - Duygusal ihtiyaçlar ve karşılanma düzeyi
-
 4. 🎯 DEĞERLER VE HEDEFLER
-   - Hayat felsefesi ve değerler
-   - Uzun vadeli hedefler
-   - Öncelikler ve yaşam görüşü
-   - Gelecek planları uyumu
-
 5. 🌍 SOSYAL UYUM
-   - Sosyal çevre ve arkadaş ilişkileri
-   - Aile değerleri
-   - Yaşam tarzı tercihleri
-   - Hobi ve ilgi alanları
-
-📊 HER ALAN İÇİN ŞUNLARI BELİRT:
-- Her iki kişinin o alandaki özellikleri (person1Finding ve person2Finding)
-- Uyum skoru (0-100)
-- Detaylı güçlü yanlar (minimum 3 cümle)
-- Karşılaşılabilecek zorluklar (minimum 2 cümle)
-- Somut ve uygulanabilir öneriler (minimum 3 madde)
-
-🎨 GENEL DEĞERLENDİRME:
-- Tüm alanların ortalaması
-- İlişkinin genel karakteri
-- En güçlü ve en zayıf yönler
-- Uzun vadeli başarı potansiyeli
-- 5-6 cümlelik kapsamlı özet
-
-⚠️ ÖNEMLİ:
-- Her alan için EN AZ 150-200 kelime yaz
-- Somut, spesifik ve kişiselleştirilmiş bilgiler ver
-- Genel klişelerden kaçın
-- Profesyonel ama samimi bir dil kullan
 
 SADECE AŞAĞIDAKİ JSON FORMATINDA YANITLA:
 {
@@ -178,22 +180,19 @@ SADECE AŞAĞIDAKİ JSON FORMATINDA YANITLA:
       "person1Finding": "Kişi 1'in kişilik özellikleri - detaylı analiz 3-4 cümle",
       "person2Finding": "Kişi 2'nin kişilik özellikleri - detaylı analiz 3-4 cümle",
       "compatibilityScore": 80,
-      "strengths": "Güçlü yanlar - minimum 3 cümle, spesifik örneklerle",
-      "challenges": "Zorluklar - minimum 2 cümle, somut senaryolarla",
-      "recommendations": "Öneriler - minimum 3 madde, uygulanabilir tavsiyeleriyle"
+      "strengths": "Güçlü yanlar - minimum 3 cümle",
+      "challenges": "Zorluklar - minimum 2 cümle",
+      "recommendations": "Öneriler - minimum 3 madde"
     }
-    // ... diğer 4 alan için de aynı detayda
   ]
 }`;
 
     console.log("Calling Lovable AI for compatibility analysis...");
 
-    // Build messages content array
     const messageContent: any[] = [
       { type: "text", text: systemPrompt }
     ];
 
-    // Add images only if handwriting analysis is selected
     if (analysisTypes.includes("handwriting") && image1 && image2) {
       messageContent.push(
         {
@@ -234,46 +233,60 @@ SADECE AŞAĞIDAKİ JSON FORMATINDA YANITLA:
       console.error("Lovable AI error:", response.status, errorText);
       
       if (response.status === 429) {
-        throw new Error("Rate limit exceeded. Please try again later.");
+        return new Response(JSON.stringify({ error: "Çok fazla istek. Lütfen daha sonra tekrar deneyin." }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
       if (response.status === 402) {
-        throw new Error("Payment required. Please add credits to your Lovable workspace.");
+        return new Response(JSON.stringify({ error: "Ödeme gerekli. Lütfen kredi ekleyin." }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
       
-      throw new Error(`AI analysis failed: ${response.status} - ${errorText}`);
+      return new Response(JSON.stringify({ error: "AI analizi başarısız oldu" }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    // Get response text first to debug
     const responseText = await response.text();
     console.log("Raw AI response text:", responseText.substring(0, 500));
 
-    // Try to parse the response
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (parseError) {
       console.error("Failed to parse AI response:", parseError);
       console.error("Response was:", responseText);
-      throw new Error("Failed to parse AI response as JSON");
+      return new Response(JSON.stringify({ error: 'İşlem başarısız oldu. Lütfen tekrar deneyin.' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
       console.error("No content in AI response. Full response:", JSON.stringify(data));
-      throw new Error("No content in AI response");
+      return new Response(JSON.stringify({ error: 'İşlem başarısız oldu. Lütfen tekrar deneyin.' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    // Remove any whitespace and check if content is empty
     const trimmedContent = content.trim();
     if (!trimmedContent) {
       console.error("Content is empty after trimming");
-      throw new Error("AI returned empty response");
+      return new Response(JSON.stringify({ error: 'İşlem başarısız oldu. Lütfen tekrar deneyin.' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     console.log("AI response content (first 500 chars):", trimmedContent.substring(0, 500));
 
-    // With json_object format, content should be pure JSON
     let result;
     try {
       result = JSON.parse(trimmedContent);
@@ -281,7 +294,6 @@ SADECE AŞAĞIDAKİ JSON FORMATINDA YANITLA:
     } catch (parseError) {
       console.error("Failed to parse JSON directly:", parseError);
       
-      // Fallback: try to extract JSON from markdown blocks
       let jsonStr = trimmedContent;
       if (jsonStr.includes("```json")) {
         const match = jsonStr.match(/```json\s*([\s\S]*?)\s*```/);
@@ -294,14 +306,20 @@ SADECE AŞAĞIDAKİ JSON FORMATINDA YANITLA:
       const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         console.error("Could not find JSON in response:", trimmedContent);
-        throw new Error("No valid JSON found in AI response");
+        return new Response(JSON.stringify({ error: 'İşlem başarısız oldu. Lütfen tekrar deneyin.' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
       
       try {
         result = JSON.parse(jsonMatch[0]);
       } catch (finalError) {
         console.error("Final JSON parse failed:", finalError);
-        throw new Error("Failed to parse AI response as JSON");
+        return new Response(JSON.stringify({ error: 'İşlem başarısız oldu. Lütfen tekrar deneyin.' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
     }
     console.log("Compatibility analysis completed successfully");
@@ -321,7 +339,7 @@ SADECE AŞAĞIDAKİ JSON FORMATINDA YANITLA:
       .from("compatibility_analyses")
       .insert({
         user_id: user.id,
-        image1_data: image1 ? image1.substring(0, 100) : "", // Save truncated for reference
+        image1_data: image1 ? image1.substring(0, 100) : "",
         image2_data: image2 ? image2.substring(0, 100) : "",
         gender1,
         gender2,
@@ -350,7 +368,7 @@ SADECE AŞAĞIDAKİ JSON FORMATINDA YANITLA:
   } catch (error: any) {
     console.error("Error in analyze-compatibility function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'İşlem başarısız oldu. Lütfen tekrar deneyin.' }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -1127,6 +1127,7 @@ export type Database = {
           updated_at: string
           user_id: string
           username: string
+          visibility: string | null
         }
         Insert: {
           bio?: string | null
@@ -1146,6 +1147,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           username: string
+          visibility?: string | null
         }
         Update: {
           bio?: string | null
@@ -1165,6 +1167,34 @@ export type Database = {
           updated_at?: string
           user_id?: string
           username?: string
+          visibility?: string | null
+        }
+        Relationships: []
+      }
+      rate_limits: {
+        Row: {
+          created_at: string | null
+          endpoint: string
+          id: string
+          request_count: number
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          request_count?: number
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          request_count?: number
+          user_id?: string
+          window_start?: string
         }
         Relationships: []
       }

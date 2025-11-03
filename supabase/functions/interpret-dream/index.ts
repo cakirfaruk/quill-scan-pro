@@ -41,6 +41,15 @@ serve(async (req) => {
     }
 
     const { dreamDescription } = await req.json();
+
+    // Input validation
+    if (!dreamDescription || typeof dreamDescription !== 'string' || dreamDescription.length < 10 || dreamDescription.length > 5000) {
+      return new Response(JSON.stringify({ error: 'Rüya açıklaması 10-5000 karakter arasında olmalıdır' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     console.log('Dream interpretation request');
 
     // Check and deduct credits
@@ -55,6 +64,38 @@ serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // Rate limiting
+    const rateLimitWindow = 60000
+    const rateLimitMax = 10
+    const now = new Date()
+    const windowStart = new Date(now.getTime() - rateLimitWindow)
+
+    const { data: rateLimit } = await supabaseClient
+      .from('rate_limits')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('endpoint', 'interpret-dream')
+      .gte('window_start', windowStart.toISOString())
+      .single()
+
+    if (rateLimit && rateLimit.request_count >= rateLimitMax) {
+      return new Response(JSON.stringify({ error: 'Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin.' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (rateLimit) {
+      await supabaseClient
+        .from('rate_limits')
+        .update({ request_count: rateLimit.request_count + 1 })
+        .eq('id', rateLimit.id)
+    } else {
+      await supabaseClient
+        .from('rate_limits')
+        .insert({ user_id: user.id, endpoint: 'interpret-dream', request_count: 1, window_start: now.toISOString() })
     }
 
     const prompt = `Sen uzman bir rüya yorumcususun. Aşağıdaki rüyayı Türkçe olarak detaylıca yorumla:
@@ -164,9 +205,7 @@ JSON formatında şu yapıda cevap ver:
     });
   } catch (error) {
     console.error('Error in interpret-dream function:', error);
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Bilinmeyen hata' 
-    }), {
+    return new Response(JSON.stringify({ error: 'İşlem başarısız oldu. Lütfen tekrar deneyin.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

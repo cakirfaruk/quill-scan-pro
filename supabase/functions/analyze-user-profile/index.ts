@@ -219,7 +219,7 @@ Her bölümü detaylı ve samimi bir dille yaz. Pozitif ve yapıcı ol.`;
   } catch (error) {
     console.error("Error in analyze-user-profile:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: 'İşlem başarısız oldu. Lütfen tekrar deneyin.' }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

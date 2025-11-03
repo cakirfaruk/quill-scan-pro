@@ -231,7 +231,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in summarize-analyses:', error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
+    return new Response(JSON.stringify({ error: 'İşlem başarısız oldu. Lütfen tekrar deneyin.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
