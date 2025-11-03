@@ -630,9 +630,9 @@ const Feed = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-subtle">
+      <div className="min-h-screen bg-gradient-subtle pb-20 lg:pb-0">
         <Header />
-        <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-2xl space-y-4 sm:space-y-6">
           {[1, 2, 3].map((i) => (
             <SkeletonPost key={i} />
           ))}
@@ -642,9 +642,9 @@ const Feed = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-gradient-subtle pb-20 lg:pb-0">
       <Header />
-      <div ref={containerRef} className="container mx-auto px-4 py-8 max-w-2xl relative">
+      <div ref={containerRef} className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 lg:py-8 max-w-2xl relative">
         {/* Pull to Refresh Indicator */}
         {(isPulling || isRefreshing) && (
           <div 
@@ -660,21 +660,21 @@ const Feed = () => {
           </div>
         )}
 
-        <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent animate-fade-in">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent animate-fade-in">
           Akış
         </h1>
 
         {/* Stories Bar */}
         {userId && (
-          <Card className="mb-6 overflow-hidden">
+          <Card className="mb-4 sm:mb-6 overflow-hidden">
             <StoriesBar currentUserId={userId} />
           </Card>
         )}
         
-        <Tabs defaultValue="friends" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="friends">Arkadaşlarım</TabsTrigger>
-            <TabsTrigger value="discover">Keşfet</TabsTrigger>
+        <Tabs defaultValue="friends" className="w-full space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6">
+            <TabsTrigger value="friends" className="text-sm sm:text-base">Arkadaşlarım</TabsTrigger>
+            <TabsTrigger value="discover" className="text-sm sm:text-base">Keşfet</TabsTrigger>
           </TabsList>
           
           <TabsContent value="friends" className="mt-0">

@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useImpersonate } from "@/hooks/use-impersonate";
-import { Users, UserPlus, Loader2, Search, Check, X, User } from "lucide-react";
+import { Users, UserPlus, Loader2, Search, Check, X, User, Send } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { OnlineStatusBadge } from "@/components/OnlineStatusBadge";
 
@@ -261,20 +261,24 @@ const Friends = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-subtle">
+      <div className="min-h-screen bg-gradient-subtle pb-20 lg:pb-0">
         <Header />
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-12 h-12 animate-spin text-primary" />
+        <div className="flex flex-col items-center justify-center py-20 px-4">
+          <div className="relative">
+            <Loader2 className="w-12 h-12 animate-spin text-primary" />
+            <div className="absolute inset-0 blur-xl bg-primary/20 animate-pulse" />
+          </div>
+          <p className="mt-4 text-sm text-muted-foreground animate-pulse">Yükleniyor...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-gradient-subtle pb-20 lg:pb-0">
       <Header />
 
-      <main className="container mx-auto px-4 py-8 sm:py-12 max-w-5xl">
+      <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 lg:py-12 max-w-5xl">
         <div className="mb-6 sm:mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Arkadaşlarım
@@ -307,12 +311,19 @@ const Friends = () => {
           <TabsContent value="friends">
             <Card className="p-4 sm:p-6">
               {friends.length === 0 ? (
-                <div className="text-center py-12">
-                  <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-xl font-semibold mb-2">Henüz arkadaşınız yok</h3>
-                  <p className="text-muted-foreground">
+                <div className="text-center py-12 sm:py-16 px-4">
+                  <div className="relative inline-block mb-4">
+                    <Users className="w-16 h-16 sm:w-20 sm:h-20 text-muted-foreground/50" />
+                    <div className="absolute inset-0 blur-2xl bg-muted-foreground/10" />
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-semibold mb-2">Henüz arkadaşınız yok</h3>
+                  <p className="text-sm sm:text-base text-muted-foreground mb-4 max-w-sm mx-auto">
                     Yeni arkadaşlar eklemek için "Ekle" sekmesini kullanın
                   </p>
+                  <Button onClick={() => (document.querySelector('[value="search"]') as HTMLElement)?.click()} variant="outline" size="sm">
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Arkadaş Ekle
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -366,9 +377,10 @@ const Friends = () => {
                 <div>
                   <h3 className="text-lg font-semibold mb-3">Gelen İstekler</h3>
                   {pendingRequests.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">
-                      Gelen arkadaşlık isteği yok
-                    </p>
+                    <div className="text-center py-8 px-4">
+                      <Check className="w-12 h-12 mx-auto mb-3 text-muted-foreground/30" />
+                      <p className="text-sm text-muted-foreground">Gelen arkadaşlık isteği yok</p>
+                    </div>
                   ) : (
                     <div className="space-y-3">
                       {pendingRequests.map((request) => (
@@ -403,9 +415,10 @@ const Friends = () => {
                 <div>
                   <h3 className="text-lg font-semibold mb-3">Gönderilen İstekler</h3>
                   {sentRequests.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">
-                      Gönderilen arkadaşlık isteği yok
-                    </p>
+                    <div className="text-center py-8 px-4">
+                      <Send className="w-12 h-12 mx-auto mb-3 text-muted-foreground/30 rotate-45" />
+                      <p className="text-sm text-muted-foreground">Gönderilen arkadaşlık isteği yok</p>
+                    </div>
                   ) : (
                     <div className="space-y-3">
                       {sentRequests.map((request) => (
