@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Search, Plus, MessageCircle, User } from "lucide-react";
+import { Home, Search, Plus, Video, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const MobileNav = () => {
@@ -11,8 +11,8 @@ export const MobileNav = () => {
     { icon: Home, label: "Ana Sayfa", path: "/" },
     { icon: Search, label: "Keşfet", path: "/explore" },
     { icon: Plus, label: "Oluştur", path: "/feed" },
-    { icon: MessageCircle, label: "Mesajlar", path: "/messages" },
-    { icon: User, label: "Profil", path: "/profile" },
+    { icon: Video, label: "Reels", path: "/reels" },
+    { icon: Sparkles, label: "Analizler", path: "/discovery" },
   ];
 
   return (

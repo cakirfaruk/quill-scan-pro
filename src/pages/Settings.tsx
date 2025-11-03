@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX } from "lucide-react";
+import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { requestNotificationPermission } from "@/utils/notifications";
 import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
@@ -329,6 +329,15 @@ const Settings = () => {
     }
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast({ 
+      title: "Çıkış yapıldı", 
+      description: "Başarıyla çıkış yaptınız." 
+    });
+    navigate("/auth");
+  };
+
   const loadBlockedUsers = async () => {
     setIsLoadingBlocked(true);
     try {
@@ -425,12 +434,12 @@ const Settings = () => {
         </h1>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="profile">Profil</TabsTrigger>
-            <TabsTrigger value="account">Hesap</TabsTrigger>
-            <TabsTrigger value="security">Güvenlik</TabsTrigger>
-            <TabsTrigger value="blocked">Engellenenler</TabsTrigger>
-            <TabsTrigger value="appearance">Görünüm</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5 gap-1">
+            <TabsTrigger value="profile" className="text-xs sm:text-sm">Profil</TabsTrigger>
+            <TabsTrigger value="account" className="text-xs sm:text-sm">Hesap</TabsTrigger>
+            <TabsTrigger value="security" className="text-xs sm:text-sm">Güvenlik</TabsTrigger>
+            <TabsTrigger value="blocked" className="text-xs sm:text-sm">Engelli</TabsTrigger>
+            <TabsTrigger value="appearance" className="text-xs sm:text-sm">Görünüm</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile">
@@ -779,12 +788,23 @@ const Settings = () => {
                     onCheckedChange={(checked) => {
                       setProfile({ ...profile, show_in_matches: checked });
                       handleSaveProfile();
-                    }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                     }}
+                   />
+                 </div>
+
+                 <div className="pt-6 border-t">
+                   <Button
+                     variant="destructive"
+                     onClick={handleLogout}
+                     className="w-full gap-2"
+                   >
+                     <LogOut className="w-4 h-4" />
+                     Çıkış Yap
+                   </Button>
+                 </div>
+               </CardContent>
+             </Card>
+           </TabsContent>
         </Tabs>
       </main>
     </div>

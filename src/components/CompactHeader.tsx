@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { 
-  Menu, Sparkles, Heart, Video, BarChart3, Users, 
-  Shield, LogOut, Settings, CreditCard, Bookmark, Coins
+  Menu, Sparkles, Shield, Coins, MessageCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -122,6 +121,16 @@ export const CompactHeader = () => {
                 <span className="font-semibold text-primary text-sm">{credits}</span>
               </Button>
 
+              {/* Messages - Desktop only */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/messages")}
+                className="h-8 sm:h-9 w-8 sm:w-9 hidden lg:flex"
+              >
+                <MessageCircle className="w-5 h-5" />
+              </Button>
+
               {/* Notifications */}
               <NotificationBell />
 
@@ -138,119 +147,31 @@ export const CompactHeader = () => {
                 </Button>
               )}
 
-              {/* Main Menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 sm:h-9 w-8 sm:w-9">
-                    <Menu className="w-5 h-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 max-h-[80vh] overflow-y-auto">
-                  {isAdmin && !isImpersonating && (
-                    <>
-                      <DropdownMenuItem onClick={() => navigate("/admin")}>
-                        <Shield className="w-4 h-4 mr-2" />
-                        Admin Panel
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
+              {/* Main Menu - Desktop only for admin */}
+              {isAdmin && !isImpersonating && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 sm:h-9 w-8 sm:w-9 hidden lg:flex">
+                      <Menu className="w-5 h-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem onClick={() => navigate("/admin")}>
+                      <Shield className="w-4 h-4 mr-2" />
+                      Admin Panel
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
 
-                  {/* Analyses Submenu */}
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>
-                      <BarChart3 className="w-4 h-4 mr-2" />
-                      Analizler
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
-                      <DropdownMenuItem onClick={() => navigate("/handwriting")}>
-                        ✍️ El Yazısı
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/numerology")}>
-                        🔢 Numeroloji
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/birth-chart")}>
-                        🌟 Doğum Haritası
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/compatibility")}>
-                        💕 Uyumluluk
-                      </DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-
-                  {/* Fortune Submenu */}
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Fallar
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
-                      <DropdownMenuItem onClick={() => navigate("/tarot")}>
-                        🔮 Tarot
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/coffee-fortune")}>
-                        ☕ Kahve Falı
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/dream")}>
-                        🌙 Rüya Tabiri
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/daily-horoscope")}>
-                        ⭐ Günlük Kehanet
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/palmistry")}>
-                        🤲 El Okuma
-                      </DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-
-                  <DropdownMenuSeparator />
-
-                  <DropdownMenuItem onClick={() => navigate("/match")}>
-                    <Heart className="w-4 h-4 mr-2" />
-                    Eşleşme
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/groups")}>
-                    <Users className="w-4 h-4 mr-2" />
-                    Gruplar
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/reels")}>
-                    <Video className="w-4 h-4 mr-2" />
-                    Reels
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
-
-                  <DropdownMenuItem onClick={() => navigate("/friends")}>
-                    <Heart className="w-4 h-4 mr-2" />
-                    Arkadaşlar
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
-
-                  <DropdownMenuItem onClick={() => navigate("/settings")}>
-                    <Settings className="w-4 h-4 mr-2" />
-                    Ayarlar
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/credits")}>
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    Kredi Al
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
-
-                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Çıkış Yap
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Profile Avatar */}
+              {/* Profile Avatar with double-click for match */}
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate("/profile")}
+                onDoubleClick={() => navigate("/match")}
                 className="h-8 sm:h-9 w-8 sm:w-9 rounded-full p-0 hover:scale-105 transition-transform"
+                title="Çift tıkla: Eşleşme ekranı"
               >
                 <Avatar className="w-8 sm:w-9 h-8 sm:h-9 border-2 border-primary/20">
                   <AvatarImage src={profilePhoto} alt={username} />

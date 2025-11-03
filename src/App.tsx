@@ -34,6 +34,7 @@ import Explore from "./pages/Explore";
 import Groups from "./pages/Groups";
 import GroupChat from "./pages/GroupChat";
 import GroupSettings from "./pages/GroupSettings";
+import Discovery from "./pages/Discovery";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -73,6 +74,7 @@ const App = () => {
           <Route path="/dream" element={<DreamInterpretation />} />
           <Route path="/reels" element={<Reels />} />
           <Route path="/explore" element={<Explore />} />
+          <Route path="/discovery" element={<Discovery />} />
           <Route path="/groups" element={<Groups />} />
           <Route path="/groups/:groupId" element={<GroupChat />} />
           <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
@@ -88,7 +90,7 @@ const App = () => {
 // Only show MobileNav on specific pages
 const MobileNavWrapper = () => {
   const location = window.location.pathname;
-  const showNav = ['/', '/feed', '/explore', '/messages', '/profile', '/match', '/friends'].some(
+  const showNav = ['/', '/feed', '/explore', '/reels', '/discovery', '/messages', '/profile', '/match', '/friends'].some(
     path => location === path || location.startsWith('/profile/')
   );
   

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -113,7 +113,7 @@ export const NotificationBell = () => {
     }
   };
 
-  const markAsRead = async (notificationId: string, link: string | null) => {
+  const markAsRead = async (notificationId: string, link: string | null, notificationType?: string) => {
     await supabase
       .from("notifications")
       .update({ read: true })
@@ -124,8 +124,50 @@ export const NotificationBell = () => {
     );
     setUnreadCount(prev => Math.max(0, prev - 1));
 
-    if (link) {
+    // Don't navigate if it's a friend request (handled by icon click)
+    if (link && notificationType !== 'friend_request') {
       navigate(link);
+    }
+  };
+
+  const handleAcceptFriendRequest = async (e: React.MouseEvent, notificationId: string, senderId: string) => {
+    e.stopPropagation();
+    
+    try {
+      // Find the friend request
+      const { data: friendRequest } = await supabase
+        .from("friends")
+        .select("id")
+        .eq("user_id", senderId)
+        .eq("friend_id", (await supabase.auth.getUser()).data.user?.id)
+        .eq("status", "pending")
+        .maybeSingle();
+
+      if (friendRequest) {
+        // Accept the friend request
+        await supabase
+          .from("friends")
+          .update({ status: "accepted" })
+          .eq("id", friendRequest.id);
+
+        // Mark notification as read
+        await markAsRead(notificationId, null, 'friend_request');
+
+        toast({
+          title: "Arkadaşlık isteği kabul edildi",
+          description: "Artık arkadaş listesinde görüneceksiniz",
+        });
+
+        // Reload notifications
+        await loadNotifications();
+      }
+    } catch (error) {
+      console.error("Error accepting friend request:", error);
+      toast({
+        title: "Hata",
+        description: "Arkadaşlık isteği kabul edilemedi",
+        variant: "destructive",
+      });
     }
   };
 
@@ -196,28 +238,46 @@ export const NotificationBell = () => {
               Henüz bildirim yok
             </div>
           ) : (
-            notifications.map((notification) => (
-              <DropdownMenuItem
-                key={notification.id}
-                className={`flex flex-col items-start p-4 cursor-pointer ${
-                  !notification.read ? 'bg-primary/5' : ''
-                }`}
-                onClick={() => markAsRead(notification.id, notification.link)}
-              >
-                <div className="flex items-start justify-between w-full mb-1">
-                  <p className="font-semibold text-sm">{notification.title}</p>
-                  {!notification.read && (
-                    <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 ml-2 mt-1" />
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground mb-2">
-                  {notification.message}
-                </p>
-                <span className="text-xs text-muted-foreground">
-                  {getTimeAgo(notification.created_at)}
-                </span>
-              </DropdownMenuItem>
-            ))
+            notifications.map((notification) => {
+              // Extract sender_id from link if it's a friend request
+              const isFriendRequest = notification.type === 'friend_request';
+              const senderId = isFriendRequest ? notification.link?.split('=')[1] : null;
+              
+              return (
+                <DropdownMenuItem
+                  key={notification.id}
+                  className={`flex flex-col items-start p-4 cursor-pointer ${
+                    !notification.read ? 'bg-primary/5' : ''
+                  }`}
+                  onClick={() => markAsRead(notification.id, notification.link, notification.type)}
+                >
+                  <div className="flex items-start justify-between w-full mb-1">
+                    <div className="flex items-center gap-2 flex-1">
+                      <p className="font-semibold text-sm">{notification.title}</p>
+                      {isFriendRequest && senderId && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 hover:bg-primary/20"
+                          onClick={(e) => handleAcceptFriendRequest(e, notification.id, senderId)}
+                        >
+                          <UserPlus className="w-4 h-4 text-primary" />
+                        </Button>
+                      )}
+                    </div>
+                    {!notification.read && (
+                      <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 ml-2 mt-1" />
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {notification.message}
+                  </p>
+                  <span className="text-xs text-muted-foreground">
+                    {getTimeAgo(notification.created_at)}
+                  </span>
+                </DropdownMenuItem>
+              );
+            })
           )}
         </ScrollArea>
       </DropdownMenuContent>
