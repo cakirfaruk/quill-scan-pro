@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Sparkles, ArrowRight, Shuffle } from "lucide-react";
+import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 
 // Import tarot card images
 import cardBackImg from "@/assets/tarot/card-back.png";
@@ -312,51 +313,13 @@ const Tarot = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Tarot Okuma Sonucu</CardTitle>
+                <CardTitle>🔮 Tarot Okuma Sonucu</CardTitle>
                 <CardDescription>Kartlarınız yorumlandı</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {result.cards && (
-                  <div className="space-y-4">
-                    <h3 className="font-bold text-lg">Kart Yorumları:</h3>
-                    {result.cards.map((card: any, index: number) => (
-                      <div key={index} className="p-4 bg-muted rounded-lg">
-                        <h4 className="font-semibold text-purple-600 mb-2">{card.position}</h4>
-                        <p className="mb-2">{card.interpretation}</p>
-                        <div className="flex flex-wrap gap-2">
-                          {card.keywords?.map((keyword: string, i: number) => (
-                            <span key={i} className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 rounded text-xs">
-                              {keyword}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {result.overall && (
-                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">Genel Yorum:</h3>
-                    <p className="whitespace-pre-wrap">{result.overall}</p>
-                  </div>
-                )}
-
-                {result.advice && (
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">💡 Tavsiyeler:</h3>
-                    <p className="whitespace-pre-wrap">{result.advice}</p>
-                  </div>
-                )}
-
-                {result.warnings && (
-                  <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">⚠️ Dikkat:</h3>
-                    <p className="whitespace-pre-wrap">{result.warnings}</p>
-                  </div>
-                )}
-
-                <Button onClick={() => { setResult(null); setSelectedCards([]); shuffleDeck(); }} className="w-full">
+              <CardContent>
+                <AnalysisDetailView result={result} analysisType="tarot" />
+                
+                <Button onClick={() => { setResult(null); setSelectedCards([]); shuffleDeck(); }} className="w-full mt-6">
                   Yeni Okuma Yap
                 </Button>
               </CardContent>

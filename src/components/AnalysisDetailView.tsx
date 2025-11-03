@@ -23,7 +23,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
   if (analysisType === "tarot") {
     return (
       <div className="space-y-6">
-        {result.general && (
+        {result.overall && (
           <Card className="p-6 bg-gradient-to-br from-purple-50 via-background to-background dark:from-purple-900/20 border-2 border-purple-200 dark:border-purple-800">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
@@ -34,8 +34,8 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
                   Genel Yorum
                 </h3>
               </div>
-              <p className="text-base leading-relaxed text-foreground pl-12">
-                {result.general}
+              <p className="text-base leading-relaxed text-foreground pl-12 whitespace-pre-wrap">
+                {result.overall}
               </p>
             </div>
           </Card>
@@ -51,23 +51,48 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Card key={index} className="p-5 hover:shadow-lg transition-shadow border-l-4 border-l-purple-600">
                 <div className="space-y-3">
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <Badge className="mb-2 bg-purple-100 text-purple-900 dark:bg-purple-900 dark:text-purple-100">
                         {card.position || `Kart ${index + 1}`}
                       </Badge>
-                      <h4 className="text-lg font-bold text-foreground">{card.name}</h4>
+                      <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap mt-2">
+                        {card.interpretation}
+                      </p>
                     </div>
-                    {card.reversed && (
-                      <Badge variant="outline" className="text-orange-600 border-orange-600">
-                        Ters
-                      </Badge>
-                    )}
                   </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{card.meaning}</p>
+                  {card.keywords && card.keywords.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {card.keywords.map((keyword: string, i: number) => (
+                        <span key={i} className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 rounded text-xs">
+                          {keyword}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </Card>
             ))}
           </div>
+        )}
+
+        {result.advice && (
+          <Card className="p-5 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/10 dark:to-cyan-900/10 border-blue-200 dark:border-blue-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Star className="w-5 h-5 text-blue-600" />
+              💡 Tavsiyeler
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.advice}</p>
+          </Card>
+        )}
+
+        {result.warnings && (
+          <Card className="p-5 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/10 dark:to-amber-900/10 border-orange-200 dark:border-orange-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Star className="w-5 h-5 text-orange-600" />
+              ⚠️ Dikkat Edilmesi Gerekenler
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.warnings}</p>
+          </Card>
         )}
       </div>
     );
@@ -77,7 +102,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
   if (analysisType === "coffee_fortune") {
     return (
       <div className="space-y-6">
-        {result.general && (
+        {result.overall && (
           <Card className="p-6 bg-gradient-to-br from-amber-50 via-background to-background dark:from-amber-900/20 border-2 border-amber-200 dark:border-amber-800">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
@@ -88,31 +113,81 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
                   Genel Yorum
                 </h3>
               </div>
-              <p className="text-base leading-relaxed text-foreground pl-12">
-                {result.general}
+              <p className="text-base leading-relaxed text-foreground pl-12 whitespace-pre-wrap">
+                {result.overall}
               </p>
             </div>
           </Card>
         )}
 
-        {result.areas && result.areas.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-amber-600" />
-              Detaylı Yorumlar
-            </h3>
-            {result.areas.map((area: any, index: number) => (
-              <Card key={index} className="p-5 hover:shadow-lg transition-shadow border-l-4 border-l-amber-600">
-                <div className="space-y-3">
-                  <h4 className="text-lg font-bold text-foreground flex items-center gap-2">
-                    {area.icon && <span>{area.icon}</span>}
-                    {area.title}
-                  </h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{area.interpretation}</p>
+        {result.love && (
+          <Card className="p-5 bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-900/10 dark:to-rose-900/10 border-pink-200 dark:border-pink-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Heart className="w-5 h-5 text-pink-600" />
+              💕 Aşk ve İlişkiler
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.love}</p>
+          </Card>
+        )}
+
+        {result.career && (
+          <Card className="p-5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 border-blue-200 dark:border-blue-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-blue-600" />
+              💼 Kariyer
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.career}</p>
+          </Card>
+        )}
+
+        {result.finance && (
+          <Card className="p-5 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10 border-green-200 dark:border-green-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-green-600" />
+              💰 Finans
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.finance}</p>
+          </Card>
+        )}
+
+        {result.health && (
+          <Card className="p-5 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/10 dark:to-orange-900/10 border-red-200 dark:border-red-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-red-600" />
+              🏥 Sağlık
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.health}</p>
+          </Card>
+        )}
+
+        {result.future && (
+          <Card className="p-5 bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/10 dark:to-violet-900/10 border-purple-200 dark:border-purple-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Star className="w-5 h-5 text-purple-600" />
+              🔮 Gelecek
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.future}</p>
+          </Card>
+        )}
+
+        {result.symbols && result.symbols.length > 0 && (
+          <Card className="p-5 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
+            <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+              <Coffee className="w-5 h-5 text-amber-600" />
+              🔍 Görülen Semboller
+            </h4>
+            <div className="grid md:grid-cols-2 gap-3">
+              {result.symbols.map((symbol: any, index: number) => (
+                <div key={index} className="p-3 bg-background rounded-lg border border-amber-200 dark:border-amber-800">
+                  <div className="font-semibold text-amber-900 dark:text-amber-100">{symbol.name}</div>
+                  {symbol.location && (
+                    <div className="text-xs text-muted-foreground mt-1">{symbol.location}</div>
+                  )}
+                  <div className="text-sm text-foreground mt-2">{symbol.meaning}</div>
                 </div>
-              </Card>
-            ))}
-          </div>
+              ))}
+            </div>
+          </Card>
         )}
       </div>
     );
@@ -122,7 +197,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
   if (analysisType === "dream") {
     return (
       <div className="space-y-6">
-        {result.general && (
+        {result.overall && (
           <Card className="p-6 bg-gradient-to-br from-indigo-50 via-background to-background dark:from-indigo-900/20 border-2 border-indigo-200 dark:border-indigo-800">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
@@ -130,40 +205,80 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
                   <Moon className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">
-                  Genel Yorum
+                  Genel Özet
                 </h3>
               </div>
-              <p className="text-base leading-relaxed text-foreground pl-12">
-                {result.general}
+              <p className="text-base leading-relaxed text-foreground pl-12 whitespace-pre-wrap">
+                {result.overall}
               </p>
             </div>
           </Card>
         )}
 
         {result.symbols && result.symbols.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-indigo-600" />
-              Semboller ve Anlamları
-            </h3>
-            {result.symbols.map((symbol: any, index: number) => (
-              <Card key={index} className="p-5 hover:shadow-lg transition-shadow border-l-4 border-l-indigo-600">
-                <div className="space-y-3">
-                  <h4 className="text-lg font-bold text-foreground">{symbol.symbol}</h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{symbol.meaning}</p>
+          <Card className="p-5 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
+            <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-600" />
+              🔮 Rüyadaki Semboller
+            </h4>
+            <div className="grid md:grid-cols-2 gap-3">
+              {result.symbols.map((symbol: any, index: number) => (
+                <div key={index} className="p-3 bg-background rounded-lg border border-purple-200 dark:border-purple-800">
+                  <div className="font-semibold text-purple-900 dark:text-purple-100">{symbol.symbol}</div>
+                  <div className="text-sm text-foreground mt-2">{symbol.meaning}</div>
                 </div>
-              </Card>
-            ))}
-          </div>
+              ))}
+            </div>
+          </Card>
         )}
 
-        {result.advice && (
+        {result.psychological && (
+          <Card className="p-5 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/10 dark:to-cyan-900/10 border-blue-200 dark:border-blue-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-blue-600" />
+              🧠 Psikolojik Yorum
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.psychological}</p>
+          </Card>
+        )}
+
+        {result.spiritual && (
           <Card className="p-5 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10 border-indigo-200 dark:border-indigo-800">
             <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
               <Star className="w-5 h-5 text-indigo-600" />
-              Öneri
+              ✨ Manevi Yorum
             </h4>
-            <p className="text-sm text-foreground/80">{result.advice}</p>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.spiritual}</p>
+          </Card>
+        )}
+
+        {result.future_signs && (
+          <Card className="p-5 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/10 dark:to-pink-900/10 border-purple-200 dark:border-purple-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Star className="w-5 h-5 text-purple-600" />
+              🔮 Gelecek İşaretleri
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.future_signs}</p>
+          </Card>
+        )}
+
+        {result.advice && (
+          <Card className="p-5 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10 border-green-200 dark:border-green-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Star className="w-5 h-5 text-green-600" />
+              💡 Tavsiyeler
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.advice}</p>
+          </Card>
+        )}
+
+        {result.warnings && (
+          <Card className="p-5 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/10 dark:to-amber-900/10 border-orange-200 dark:border-orange-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Star className="w-5 h-5 text-orange-600" />
+              ⚠️ Uyarılar
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.warnings}</p>
           </Card>
         )}
       </div>
@@ -174,7 +289,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
   if (analysisType === "palmistry") {
     return (
       <div className="space-y-6">
-        {result.general && (
+        {result.overall && (
           <Card className="p-6 bg-gradient-to-br from-teal-50 via-background to-background dark:from-teal-900/20 border-2 border-teal-200 dark:border-teal-800">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
@@ -182,40 +297,123 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
                   <Hand className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="text-2xl font-bold text-teal-900 dark:text-teal-100">
-                  Genel Değerlendirme
+                  Genel Özet
                 </h3>
               </div>
-              <p className="text-base leading-relaxed text-foreground pl-12">
-                {result.general}
+              <p className="text-base leading-relaxed text-foreground pl-12 whitespace-pre-wrap">
+                {result.overall}
               </p>
             </div>
           </Card>
         )}
 
-        {result.lines && result.lines.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-teal-600" />
-              Çizgi Yorumları
-            </h3>
-            {result.lines.map((line: any, index: number) => (
-              <Card key={index} className="p-5 hover:shadow-lg transition-shadow border-l-4 border-l-teal-600">
-                <div className="space-y-3">
-                  <h4 className="text-lg font-bold text-foreground">{line.name}</h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{line.interpretation}</p>
-                </div>
-              </Card>
-            ))}
-          </div>
+        {result.life_line && (
+          <Card className="p-5 bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/10 dark:to-rose-900/10 border-red-200 dark:border-red-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Heart className="w-5 h-5 text-red-600" />
+              ❤️ Hayat Çizgisi
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.life_line}</p>
+          </Card>
+        )}
+
+        {result.head_line && (
+          <Card className="p-5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 border-blue-200 dark:border-blue-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-blue-600" />
+              🧠 Akıl Çizgisi
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.head_line}</p>
+          </Card>
+        )}
+
+        {result.heart_line && (
+          <Card className="p-5 bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-900/10 dark:to-rose-900/10 border-pink-200 dark:border-pink-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Heart className="w-5 h-5 text-pink-600" />
+              💕 Kalp Çizgisi
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.heart_line}</p>
+          </Card>
+        )}
+
+        {result.fate_line && (
+          <Card className="p-5 bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/10 dark:to-violet-900/10 border-purple-200 dark:border-purple-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Star className="w-5 h-5 text-purple-600" />
+              🌟 Kader Çizgisi
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.fate_line}</p>
+          </Card>
         )}
 
         {result.personality && (
           <Card className="p-5 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/10 dark:to-cyan-900/10 border-teal-200 dark:border-teal-800">
             <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
               <User className="w-5 h-5 text-teal-600" />
-              Kişilik Analizi
+              🎭 Kişilik Analizi
             </h4>
-            <p className="text-sm text-foreground/80">{result.personality}</p>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.personality}</p>
+          </Card>
+        )}
+
+        {result.career && (
+          <Card className="p-5 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/10 dark:to-blue-900/10 border-indigo-200 dark:border-indigo-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-indigo-600" />
+              💼 Kariyer ve Yetenek
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.career}</p>
+          </Card>
+        )}
+
+        {result.relationships && (
+          <Card className="p-5 bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/10 dark:to-pink-900/10 border-rose-200 dark:border-rose-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Heart className="w-5 h-5 text-rose-600" />
+              💑 İlişkiler
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.relationships}</p>
+          </Card>
+        )}
+
+        {result.health && (
+          <Card className="p-5 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10 border-green-200 dark:border-green-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-green-600" />
+              🏥 Sağlık
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.health}</p>
+          </Card>
+        )}
+
+        {result.future && (
+          <Card className="p-5 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/10 dark:to-yellow-900/10 border-amber-200 dark:border-amber-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Star className="w-5 h-5 text-amber-600" />
+              🔮 Gelecek İşaretleri
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.future}</p>
+          </Card>
+        )}
+
+        {result.special_marks && result.special_marks.length > 0 && (
+          <Card className="p-5 bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800">
+            <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+              <Star className="w-5 h-5 text-violet-600" />
+              ✨ Özel İşaretler
+            </h4>
+            <div className="grid md:grid-cols-2 gap-3">
+              {result.special_marks.map((mark: any, index: number) => (
+                <div key={index} className="p-3 bg-background rounded-lg border border-violet-200 dark:border-violet-800">
+                  <div className="font-semibold text-violet-900 dark:text-violet-100">{mark.mark}</div>
+                  {mark.location && (
+                    <div className="text-xs text-muted-foreground mt-1">{mark.location}</div>
+                  )}
+                  <div className="text-sm text-foreground mt-2">{mark.meaning}</div>
+                </div>
+              ))}
+            </div>
           </Card>
         )}
       </div>
@@ -237,45 +435,85 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
                   Bugünkü Enerjiniz
                 </h3>
               </div>
-              <p className="text-base leading-relaxed text-foreground pl-12">
+              <p className="text-base leading-relaxed text-foreground pl-12 whitespace-pre-wrap">
                 {result.general}
               </p>
             </div>
           </Card>
         )}
 
-        {result.areas && result.areas.length > 0 && (
-          <div className="grid md:grid-cols-2 gap-4">
-            {result.areas.map((area: any, index: number) => (
-              <Card key={index} className="p-5 hover:shadow-lg transition-shadow border-l-4 border-l-violet-600">
-                <div className="space-y-2">
-                  <h4 className="text-base font-bold text-foreground flex items-center gap-2">
-                    {area.icon && <span>{area.icon}</span>}
-                    {area.title}
-                  </h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{area.text}</p>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
+        <div className="grid md:grid-cols-2 gap-4">
+          {result.love && (
+            <Card className="p-5 bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-900/10 dark:to-rose-900/10 border-pink-200 dark:border-pink-800">
+              <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                <Heart className="w-5 h-5 text-pink-600" />
+                Aşk ve İlişkiler
+              </h4>
+              <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.love}</p>
+            </Card>
+          )}
 
-        {(result.luckyNumber || result.luckyColor) && (
-          <Card className="p-5 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/10 dark:to-purple-900/10 border-violet-200 dark:border-violet-800">
+          {result.career && (
+            <Card className="p-5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 border-blue-200 dark:border-blue-800">
+              <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-blue-600" />
+                Kariyer
+              </h4>
+              <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.career}</p>
+            </Card>
+          )}
+
+          {result.money && (
+            <Card className="p-5 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10 border-green-200 dark:border-green-800">
+              <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-green-600" />
+                Para
+              </h4>
+              <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.money}</p>
+            </Card>
+          )}
+
+          {result.health && (
+            <Card className="p-5 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/10 dark:to-orange-900/10 border-red-200 dark:border-red-800">
+              <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-red-600" />
+                Sağlık
+              </h4>
+              <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.health}</p>
+            </Card>
+          )}
+        </div>
+
+        {(result.lucky_number || result.lucky_color) && (
+          <Card className="p-5 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/10 dark:to-yellow-900/10 border-amber-200 dark:border-amber-800">
+            <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+              <Star className="w-5 h-5 text-amber-600" />
+              🍀 Şanslı Öğeler
+            </h4>
             <div className="flex items-center justify-around">
-              {result.luckyNumber && (
+              {result.lucky_number && (
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground mb-1">Şanslı Sayı</p>
-                  <p className="text-3xl font-bold text-violet-600">{result.luckyNumber}</p>
+                  <p className="text-3xl font-bold text-violet-600">{result.lucky_number}</p>
                 </div>
               )}
-              {result.luckyColor && (
+              {result.lucky_color && (
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground mb-1">Şanslı Renk</p>
-                  <p className="text-xl font-bold text-violet-600">{result.luckyColor}</p>
+                  <p className="text-xl font-bold text-violet-600">{result.lucky_color}</p>
                 </div>
               )}
             </div>
+          </Card>
+        )}
+
+        {result.advice && (
+          <Card className="p-5 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10 border-indigo-200 dark:border-indigo-800">
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Star className="w-5 h-5 text-indigo-600" />
+              💡 Günün Tavsiyesi
+            </h4>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.advice}</p>
           </Card>
         )}
       </div>
@@ -372,7 +610,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
     );
   }
 
-  // For other analysis types (handwriting, numerology, birth_chart)
+  // For other analysis types (handwriting, numerology, birth_chart) - use generic display
   const renderAnalysisSection = (data: any, depth: number = 0): JSX.Element[] => {
     const elements: JSX.Element[] = [];
     
@@ -414,7 +652,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
             <p className="font-semibold text-foreground mb-1">
               {key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ")}:
             </p>
-            <p className="text-sm text-muted-foreground leading-relaxed pl-4">
+            <p className="text-sm text-muted-foreground leading-relaxed pl-4 whitespace-pre-wrap">
               {String(value)}
             </p>
           </div>

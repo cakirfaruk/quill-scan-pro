@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Sparkles, Star, Heart, Briefcase, DollarSign, Activity } from "lucide-react";
+import { Sparkles, Star } from "lucide-react";
+import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 
 const DailyHoroscope = () => {
   const navigate = useNavigate();
@@ -144,89 +145,17 @@ const DailyHoroscope = () => {
                   <Star className="w-6 h-6 text-violet-600" />
                   Bugünkü Falınız
                 </CardTitle>
-                {alreadyGenerated && (
-                  <p className="text-sm text-muted-foreground">
-                    Bugün zaten falınızı almıştınız. Yarın yeni bir fal alabilirsiniz.
-                  </p>
-                )}
+                <CardDescription>
+                  {alreadyGenerated 
+                    ? "Bugün zaten falınızı almıştınız. Yarın yeni bir fal alabilirsiniz." 
+                    : "Günlük kehanetiniz hazır"
+                  }
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {result.general && (
-                  <div className="p-4 bg-violet-50 dark:bg-violet-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
-                      <Sparkles className="w-5 h-5" />
-                      Genel Enerji:
-                    </h3>
-                    <p className="whitespace-pre-wrap">{result.general}</p>
-                  </div>
-                )}
-
-                {result.love && (
-                  <div className="p-4 bg-pink-50 dark:bg-pink-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
-                      <Heart className="w-5 h-5" />
-                      Aşk ve İlişkiler:
-                    </h3>
-                    <p className="whitespace-pre-wrap">{result.love}</p>
-                  </div>
-                )}
-
-                {result.career && (
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
-                      <Briefcase className="w-5 h-5" />
-                      Kariyer:
-                    </h3>
-                    <p className="whitespace-pre-wrap">{result.career}</p>
-                  </div>
-                )}
-
-                {result.money && (
-                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
-                      <DollarSign className="w-5 h-5" />
-                      Para:
-                    </h3>
-                    <p className="whitespace-pre-wrap">{result.money}</p>
-                  </div>
-                )}
-
-                {result.health && (
-                  <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
-                      <Activity className="w-5 h-5" />
-                      Sağlık:
-                    </h3>
-                    <p className="whitespace-pre-wrap">{result.health}</p>
-                  </div>
-                )}
-
-                {(result.lucky_number || result.lucky_color) && (
-                  <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">🍀 Şanslı Öğeler:</h3>
-                    <div className="flex gap-4">
-                      {result.lucky_number && (
-                        <div>
-                          <span className="font-semibold">Sayı:</span> {result.lucky_number}
-                        </div>
-                      )}
-                      {result.lucky_color && (
-                        <div>
-                          <span className="font-semibold">Renk:</span> {result.lucky_color}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {result.advice && (
-                  <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">💡 Günün Tavsiyesi:</h3>
-                    <p className="whitespace-pre-wrap">{result.advice}</p>
-                  </div>
-                )}
-
-                <div className="pt-4 text-center text-sm text-muted-foreground">
+              <CardContent>
+                <AnalysisDetailView result={result} analysisType="daily_horoscope" />
+                
+                <div className="pt-4 mt-6 text-center text-sm text-muted-foreground border-t">
                   Yarın yeni bir fal için geri gelin! 🌟
                 </div>
               </CardContent>

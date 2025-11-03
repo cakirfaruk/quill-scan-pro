@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Upload, X, Sparkles } from "lucide-react";
+import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 
 const CoffeeFortune = () => {
   const navigate = useNavigate();
@@ -206,66 +207,12 @@ const CoffeeFortune = () => {
             <Card>
               <CardHeader>
                 <CardTitle>☕ Kahve Falı Sonucu</CardTitle>
+                <CardDescription>Fincanınız yorumlandı</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {result.love && (
-                  <div className="p-4 bg-pink-50 dark:bg-pink-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">💕 Aşk ve İlişkiler:</h3>
-                    <p className="whitespace-pre-wrap">{result.love}</p>
-                  </div>
-                )}
-
-                {result.career && (
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">💼 Kariyer:</h3>
-                    <p className="whitespace-pre-wrap">{result.career}</p>
-                  </div>
-                )}
-
-                {result.finance && (
-                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">💰 Finans:</h3>
-                    <p className="whitespace-pre-wrap">{result.finance}</p>
-                  </div>
-                )}
-
-                {result.health && (
-                  <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">🏥 Sağlık:</h3>
-                    <p className="whitespace-pre-wrap">{result.health}</p>
-                  </div>
-                )}
-
-                {result.future && (
-                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">🔮 Gelecek:</h3>
-                    <p className="whitespace-pre-wrap">{result.future}</p>
-                  </div>
-                )}
-
-                {result.symbols && result.symbols.length > 0 && (
-                  <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-3">🔍 Görülen Semboller:</h3>
-                    <div className="grid md:grid-cols-2 gap-3">
-                      {result.symbols.map((symbol: any, index: number) => (
-                        <div key={index} className="p-3 bg-background rounded">
-                          <div className="font-semibold">{symbol.name}</div>
-                          <div className="text-sm text-muted-foreground">{symbol.location}</div>
-                          <div className="text-sm mt-1">{symbol.meaning}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {result.overall && (
-                  <div className="p-4 bg-muted rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">📋 Genel Yorum:</h3>
-                    <p className="whitespace-pre-wrap">{result.overall}</p>
-                  </div>
-                )}
-
-                <Button onClick={() => { setResult(null); setImages([]); }} className="w-full">
+              <CardContent>
+                <AnalysisDetailView result={result} analysisType="coffee_fortune" />
+                
+                <Button onClick={() => { setResult(null); setImages([]); }} className="w-full mt-6">
                   Yeni Fal Baktır
                 </Button>
               </CardContent>

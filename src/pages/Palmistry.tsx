@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Upload, X, Sparkles, Hand } from "lucide-react";
+import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 
 const Palmistry = () => {
   const navigate = useNavigate();
@@ -185,94 +186,12 @@ const Palmistry = () => {
             <Card>
               <CardHeader>
                 <CardTitle>🤲 El Okuma Sonucu</CardTitle>
+                <CardDescription>Eliniz yorumlandı</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {result.life_line && (
-                  <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">❤️ Hayat Çizgisi:</h3>
-                    <p className="whitespace-pre-wrap">{result.life_line}</p>
-                  </div>
-                )}
-
-                {result.head_line && (
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">🧠 Akıl Çizgisi:</h3>
-                    <p className="whitespace-pre-wrap">{result.head_line}</p>
-                  </div>
-                )}
-
-                {result.heart_line && (
-                  <div className="p-4 bg-pink-50 dark:bg-pink-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">💕 Kalp Çizgisi:</h3>
-                    <p className="whitespace-pre-wrap">{result.heart_line}</p>
-                  </div>
-                )}
-
-                {result.fate_line && (
-                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">🌟 Kader Çizgisi:</h3>
-                    <p className="whitespace-pre-wrap">{result.fate_line}</p>
-                  </div>
-                )}
-
-                {result.personality && (
-                  <div className="p-4 bg-teal-50 dark:bg-teal-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">🎭 Kişilik Analizi:</h3>
-                    <p className="whitespace-pre-wrap">{result.personality}</p>
-                  </div>
-                )}
-
-                {result.career && (
-                  <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">💼 Kariyer ve Yetenek:</h3>
-                    <p className="whitespace-pre-wrap">{result.career}</p>
-                  </div>
-                )}
-
-                {result.relationships && (
-                  <div className="p-4 bg-rose-50 dark:bg-rose-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">💑 İlişkiler:</h3>
-                    <p className="whitespace-pre-wrap">{result.relationships}</p>
-                  </div>
-                )}
-
-                {result.health && (
-                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">🏥 Sağlık:</h3>
-                    <p className="whitespace-pre-wrap">{result.health}</p>
-                  </div>
-                )}
-
-                {result.future && (
-                  <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">🔮 Gelecek İşaretleri:</h3>
-                    <p className="whitespace-pre-wrap">{result.future}</p>
-                  </div>
-                )}
-
-                {result.special_marks && result.special_marks.length > 0 && (
-                  <div className="p-4 bg-violet-50 dark:bg-violet-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-3">✨ Özel İşaretler:</h3>
-                    <div className="grid md:grid-cols-2 gap-3">
-                      {result.special_marks.map((mark: any, index: number) => (
-                        <div key={index} className="p-3 bg-background rounded">
-                          <div className="font-semibold">{mark.mark}</div>
-                          <div className="text-sm text-muted-foreground">{mark.location}</div>
-                          <div className="text-sm mt-1">{mark.meaning}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {result.overall && (
-                  <div className="p-4 bg-muted rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">📋 Genel Özet:</h3>
-                    <p className="whitespace-pre-wrap">{result.overall}</p>
-                  </div>
-                )}
-
-                <Button onClick={() => { setResult(null); setHandImage(""); }} className="w-full">
+              <CardContent>
+                <AnalysisDetailView result={result} analysisType="palmistry" />
+                
+                <Button onClick={() => { setResult(null); setHandImage(""); }} className="w-full mt-6">
                   Yeni Okuma Yap
                 </Button>
               </CardContent>

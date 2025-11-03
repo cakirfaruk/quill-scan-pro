@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Sparkles, Moon } from "lucide-react";
+import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 
 const DreamInterpretation = () => {
   const navigate = useNavigate();
@@ -151,65 +152,12 @@ const DreamInterpretation = () => {
             <Card>
               <CardHeader>
                 <CardTitle>🌙 Rüya Tabiriniz</CardTitle>
+                <CardDescription>Rüyanız yorumlandı</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {result.symbols && result.symbols.length > 0 && (
-                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-3">🔮 Rüyadaki Semboller:</h3>
-                    <div className="grid md:grid-cols-2 gap-3">
-                      {result.symbols.map((symbol: any, index: number) => (
-                        <div key={index} className="p-3 bg-background rounded">
-                          <div className="font-semibold">{symbol.symbol}</div>
-                          <div className="text-sm mt-1">{symbol.meaning}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {result.psychological && (
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">🧠 Psikolojik Yorum:</h3>
-                    <p className="whitespace-pre-wrap">{result.psychological}</p>
-                  </div>
-                )}
-
-                {result.spiritual && (
-                  <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">✨ Manevi Yorum:</h3>
-                    <p className="whitespace-pre-wrap">{result.spiritual}</p>
-                  </div>
-                )}
-
-                {result.future_signs && (
-                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">🔮 Gelecek İşaretleri:</h3>
-                    <p className="whitespace-pre-wrap">{result.future_signs}</p>
-                  </div>
-                )}
-
-                {result.advice && (
-                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">💡 Tavsiyeler:</h3>
-                    <p className="whitespace-pre-wrap">{result.advice}</p>
-                  </div>
-                )}
-
-                {result.warnings && (
-                  <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">⚠️ Uyarılar:</h3>
-                    <p className="whitespace-pre-wrap">{result.warnings}</p>
-                  </div>
-                )}
-
-                {result.overall && (
-                  <div className="p-4 bg-muted rounded-lg">
-                    <h3 className="font-bold text-lg mb-2">📋 Genel Özet:</h3>
-                    <p className="whitespace-pre-wrap">{result.overall}</p>
-                  </div>
-                )}
-
-                <Button onClick={() => { setResult(null); setDreamDescription(""); }} className="w-full">
+              <CardContent>
+                <AnalysisDetailView result={result} analysisType="dream" />
+                
+                <Button onClick={() => { setResult(null); setDreamDescription(""); }} className="w-full mt-6">
                   Yeni Rüya Yorumla
                 </Button>
               </CardContent>
