@@ -86,78 +86,43 @@ serve(async (req) => {
 
     console.log(`Analyzing compatibility with types: ${analysisTypes.join(", ")}...`);
 
-    // Build system prompt based on selected analysis types
-    let systemPrompt = `Sen profesyonel bir ilişki danışmanı ve uzman analistisin. İki kişi arasındaki uyumu farklı yöntemlerle değerlendiriyorsun.
+    // Build a simpler, more focused system prompt
+    let systemPrompt = `Sen profesyonel bir ilişki danışmanısın. İki kişi arasındaki uyumu değerlendiriyorsun.
 
-Seçilen Analiz Türleri: ${analysisTypes.join(", ")}
+Kişi 1: ${name1 || gender1} (${gender1 === "male" ? "Erkek" : "Kadın"})
+Kişi 2: ${name2 || gender2} (${gender2 === "male" ? "Erkek" : "Kadın"})
 
-Birinci kişi: ${gender1 === "male" ? "Erkek" : "Kadın"}
-İkinci kişi: ${gender2 === "male" ? "Erkek" : "Kadın"}`;
+`;
 
-    if (analysisTypes.includes("handwriting")) {
-      systemPrompt += `
-
-## El Yazısı Analizi
-Her iki kişinin el yazısını da detaylı olarak analiz et ve şu konularda uyum değerlendirmesi yap:`;
+    if (analysisTypes.includes("numerology") && birthDate1 && birthDate2) {
+      systemPrompt += `Doğum Tarihleri: ${birthDate1} ve ${birthDate2}\n`;
     }
     
-    if (analysisTypes.includes("numerology")) {
-      systemPrompt += `
-
-## Numeroloji Analizi  
-Birinci kişi: ${name1}, Doğum Tarihi: ${birthDate1}
-İkinci kişi: ${name2}, Doğum Tarihi: ${birthDate2}
-İsimlerden ve doğum tarihlerinden numerolojik sayıları hesaplayıp uyum değerlendir.`;
-    }
-    
-    if (analysisTypes.includes("birth_chart")) {
-      systemPrompt += `
-
-## Doğum Haritası Analizi
-Birinci kişi: ${name1}, Doğum: ${birthDate1} ${birthTime1}, Yer: ${birthPlace1}
-İkinci kişi: ${name2}, Doğum: ${birthDate2} ${birthTime2}, Yer: ${birthPlace2}
-Astrolojik doğum haritalarını ve gezegen konumlarını değerlendirerek uyum analizi yap.`;
+    if (analysisTypes.includes("birth_chart") && birthTime1 && birthPlace1) {
+      systemPrompt += `Doğum Bilgileri: ${birthDate1} ${birthTime1} ${birthPlace1} ve ${birthDate2} ${birthTime2} ${birthPlace2}\n`;
     }
 
     systemPrompt += `
+5 temel alanda uyum analizi yap:
+1. Kişilik Uyumu
+2. İletişim Uyumu
+3. Duygusal Bağ
+4. Değerler ve Hedefler
+5. Sosyal Uyum
 
-Her iki kişinin analizini de detaylı olarak yap ve uyum değerlendirmesi yap:
-
-1. Genel Kişilik Uyumu
-2. İletişim Tarzı Uyumu
-3. Duygusal Uyum
-4. Sosyal Etkileşim Uyumu
-5. İş ve Sorumluluk Uyumu
-6. Çatışma Çözme Tarzı
-7. Güven ve Dürüstlük
-8. Enerji Seviyesi Uyumu
-
-Her başlık için:
-- İki kişinin bu özelliklerini karşılaştır
-- Uyum yüzdesini belirt (0-100)
-- Güçlü yanları açıkla
-- Potansiyel zorlukları belirt
-- Öneriler sun
-
-Sonunda genel uyum skorunu (0-100) ve ilişki için önerileri içeren kapsamlı bir özet ver.
-
-ZORUNLU: Yanıtını aşağıdaki JSON formatında döndür:
+SADECE JSON formatında yanıt ver:
 {
-  "person1Analysis": "İlk kişinin genel el yazısı özellikleri",
-  "person2Analysis": "İkinci kişinin genel el yazısı özellikleri",
+  "overallScore": 75,
   "compatibilityAreas": [
     {
-      "name": "Başlık adı",
-      "person1Finding": "İlk kişinin bu alandaki özellikleri",
-      "person2Finding": "İkinci kişinin bu alandaki özellikleri",
-      "compatibilityScore": 85,
-      "strengths": "Bu alandaki güçlü yanlar",
-      "challenges": "Potansiyel zorluklar",
+      "name": "Alan adı",
+      "compatibilityScore": 80,
+      "strengths": "Güçlü yanlar",
+      "challenges": "Zorluklar",
       "recommendations": "Öneriler"
     }
   ],
-  "overallScore": 78,
-  "overallSummary": "Genel uyum değerlendirmesi ve öneriler"
+  "overallSummary": "Genel değerlendirme"
 }`;
 
     console.log("Calling Lovable AI for compatibility analysis...");
@@ -188,13 +153,18 @@ ZORUNLU: Yanıtını aşağıdaki JSON formatında döndür:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "openai/gpt-5-mini",
         messages: [
+          {
+            role: "system",
+            content: "You are a professional relationship analyst. Always respond with valid JSON only."
+          },
           {
             role: "user",
             content: messageContent,
           },
         ],
+        response_format: { type: "json_object" },
       }),
     });
 
@@ -242,36 +212,36 @@ ZORUNLU: Yanıtını aşağıdaki JSON formatında döndür:
 
     console.log("AI response content (first 500 chars):", trimmedContent.substring(0, 500));
 
-    // Try to extract JSON from response (handle markdown code blocks)
-    let jsonStr = trimmedContent;
-    
-    // Remove markdown code blocks if present
-    if (jsonStr.includes("```json")) {
-      const match = jsonStr.match(/```json\s*([\s\S]*?)\s*```/);
-      if (match) {
-        jsonStr = match[1];
-      }
-    } else if (jsonStr.includes("```")) {
-      const match = jsonStr.match(/```\s*([\s\S]*?)\s*```/);
-      if (match) {
-        jsonStr = match[1];
-      }
-    }
-    
-    // Try to find JSON object in the text
-    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error("Could not find JSON object in response:", trimmedContent);
-      throw new Error("Could not parse JSON from AI response - no JSON object found");
-    }
-
+    // With json_object format, content should be pure JSON
     let result;
     try {
-      result = JSON.parse(jsonMatch[0]);
-    } catch (jsonError) {
-      console.error("Failed to parse extracted JSON:", jsonError);
-      console.error("Extracted JSON string:", jsonMatch[0]);
-      throw new Error("Failed to parse JSON from AI response");
+      result = JSON.parse(trimmedContent);
+      console.log("Successfully parsed JSON result");
+    } catch (parseError) {
+      console.error("Failed to parse JSON directly:", parseError);
+      
+      // Fallback: try to extract JSON from markdown blocks
+      let jsonStr = trimmedContent;
+      if (jsonStr.includes("```json")) {
+        const match = jsonStr.match(/```json\s*([\s\S]*?)\s*```/);
+        if (match) jsonStr = match[1];
+      } else if (jsonStr.includes("```")) {
+        const match = jsonStr.match(/```\s*([\s\S]*?)\s*```/);
+        if (match) jsonStr = match[1];
+      }
+      
+      const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error("Could not find JSON in response:", trimmedContent);
+        throw new Error("No valid JSON found in AI response");
+      }
+      
+      try {
+        result = JSON.parse(jsonMatch[0]);
+      } catch (finalError) {
+        console.error("Final JSON parse failed:", finalError);
+        throw new Error("Failed to parse AI response as JSON");
+      }
     }
     console.log("Compatibility analysis completed successfully");
 
