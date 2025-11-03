@@ -1,11 +1,22 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Input validation schema
+const numerologySchema = z.object({
+  fullName: z.string().trim().min(2, 'İsim en az 2 karakter olmalıdır').max(100, 'İsim en fazla 100 karakter olabilir'),
+  birthDate: z.string().refine((date) => {
+    const parsed = new Date(date);
+    return !isNaN(parsed.getTime()) && parsed <= new Date();
+  }, 'Geçersiz veya gelecek tarih'),
+  selectedTopics: z.array(z.string()).min(1, 'En az bir konu seçilmelidir').max(20, 'En fazla 20 konu seçilebilir')
+});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -13,29 +24,18 @@ serve(async (req) => {
   }
 
   try {
-    const { fullName, birthDate, selectedTopics } = await req.json();
+    const body = await req.json();
 
-    // Validate inputs
-    if (!fullName || typeof fullName !== 'string' || fullName.trim().length < 2 || fullName.trim().length > 100) {
+    // Validate inputs with Zod
+    const validation = numerologySchema.safeParse(body);
+    if (!validation.success) {
       return new Response(
-        JSON.stringify({ error: "Geçersiz isim" }),
+        JSON.stringify({ error: "Geçersiz veri formatı" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (!birthDate || isNaN(Date.parse(birthDate)) || new Date(birthDate) > new Date()) {
-      return new Response(
-        JSON.stringify({ error: "Geçersiz doğum tarihi" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (!Array.isArray(selectedTopics) || selectedTopics.length === 0 || selectedTopics.length > 20) {
-      return new Response(
-        JSON.stringify({ error: "Geçersiz konu seçimi" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const { fullName, birthDate, selectedTopics } = validation.data;
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",

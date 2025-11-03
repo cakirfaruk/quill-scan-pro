@@ -10,26 +10,6 @@ const corsHeaders = {
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
-// Rate limiting map
-const rateLimits = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(userId: string): boolean {
-  const now = Date.now();
-  const limit = rateLimits.get(userId);
-  
-  if (!limit || now > limit.resetAt) {
-    rateLimits.set(userId, { count: 1, resetAt: now + 60000 }); // 1 minute window
-    return true;
-  }
-  
-  if (limit.count >= 10) { // 10 requests per minute
-    return false;
-  }
-  
-  limit.count++;
-  return true;
-}
-
 // Input validation schema
 const tarotSchema = z.object({
   spreadType: z.enum(['past-present-future', 'love', 'career', 'celtic-cross']),
@@ -72,12 +52,41 @@ serve(async (req) => {
       });
     }
 
-    // Rate limiting
-    if (!checkRateLimit(user.id)) {
+    // Database-backed rate limiting
+    const rateLimitWindow = 60000; // 1 minute
+    const rateLimitMax = 10;
+    const now = new Date();
+    const windowStart = new Date(now.getTime() - rateLimitWindow);
+
+    const { data: rateLimit } = await supabaseClient
+      .from('rate_limits')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('endpoint', 'analyze-tarot')
+      .gte('window_start', windowStart.toISOString())
+      .single();
+
+    if (rateLimit && rateLimit.request_count >= rateLimitMax) {
       return new Response(JSON.stringify({ error: 'Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin.' }), {
         status: 429,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    if (rateLimit) {
+      await supabaseClient
+        .from('rate_limits')
+        .update({ request_count: rateLimit.request_count + 1 })
+        .eq('id', rateLimit.id);
+    } else {
+      await supabaseClient
+        .from('rate_limits')
+        .insert({ 
+          user_id: user.id, 
+          endpoint: 'analyze-tarot', 
+          request_count: 1, 
+          window_start: now.toISOString() 
+        });
     }
 
     const body = await req.json();

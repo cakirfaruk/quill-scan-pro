@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,6 +9,11 @@ const corsHeaders = {
 };
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+
+// Input validation schema
+const dreamSchema = z.object({
+  dreamDescription: z.string().trim().min(10, 'Rüya açıklaması en az 10 karakter olmalıdır').max(5000, 'Rüya açıklaması en fazla 5000 karakter olabilir')
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -40,16 +46,20 @@ serve(async (req) => {
       });
     }
 
-    const { dreamDescription } = await req.json();
+    const body = await req.json();
 
-    // Input validation
-    if (!dreamDescription || typeof dreamDescription !== 'string' || dreamDescription.length < 10 || dreamDescription.length > 5000) {
-      return new Response(JSON.stringify({ error: 'Rüya açıklaması 10-5000 karakter arasında olmalıdır' }), {
+    // Validate input with Zod
+    const validation = dreamSchema.safeParse(body);
+    if (!validation.success) {
+      return new Response(JSON.stringify({ 
+        error: 'Geçersiz veri formatı'
+      }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    const { dreamDescription } = validation.data;
     console.log('Dream interpretation request');
 
     // Check and deduct credits
