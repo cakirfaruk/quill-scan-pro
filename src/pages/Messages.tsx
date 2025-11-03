@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Search, ArrowLeft, FileText, Smile, Paperclip, Ban, Check, CheckCheck, Mic } from "lucide-react";
+import { Loader2, Send, Search, ArrowLeft, FileText, Smile, Paperclip, Ban, Check, CheckCheck, Mic, Image as ImageIcon, Pin, Forward, MoreVertical } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { useIsMobile } from "@/hooks/use-mobile";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
@@ -20,6 +20,8 @@ import { soundEffects } from "@/utils/soundEffects";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { VoiceMessagePlayer } from "@/components/VoiceMessagePlayer";
 import { MessageReactions } from "@/components/MessageReactions";
+import { GifPicker } from "@/components/GifPicker";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface Friend {
   user_id: string;
@@ -38,6 +40,8 @@ interface Message {
   message_category: "friend" | "match" | "other";
   analysis_id?: string;
   analysis_type?: string;
+  pinned_at?: string | null;
+  forwarded_from?: string | null;
 }
 
 interface Conversation {
@@ -64,6 +68,8 @@ const Messages = () => {
   const [attachedFilePreview, setAttachedFilePreview] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"friends" | "matches" | "other">("friends");
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+  const [showGifPicker, setShowGifPicker] = useState(false);
+  const [pinnedMessages, setPinnedMessages] = useState<Message[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -301,6 +307,10 @@ const Messages = () => {
 
       setMessages(parsedMessages);
 
+      // Load pinned messages
+      const pinnedMsgs = parsedMessages.filter(m => m.pinned_at);
+      setPinnedMessages(pinnedMsgs);
+
       // Mark messages as read
       await supabase
         .from("messages")
@@ -535,6 +545,94 @@ const Messages = () => {
       });
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleSendGif = async (gifUrl: string) => {
+    if (!selectedFriend) return;
+
+    if (selectedCategory === "other") {
+      toast({
+        title: "Mesaj Gönderilemez",
+        description: "Bu kişiyle eşleşmeniz veya arkadaş olmanız gerekiyor.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      soundEffects.playMessageSent();
+      const messageContent = `[GIF:${gifUrl}]`;
+      let message_category: "friend" | "match" | "other" = selectedCategory || "other";
+
+      const { error } = await supabase
+        .from("messages")
+        .insert({
+          sender_id: currentUserId,
+          receiver_id: selectedFriend.user_id,
+          content: messageContent,
+          message_category,
+        });
+
+      if (error) throw error;
+
+      setShowGifPicker(false);
+      loadMessages(selectedFriend.user_id);
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: "GIF gönderilemedi.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handlePinMessage = async (messageId: string) => {
+    try {
+      const message = messages.find(m => m.id === messageId);
+      const isPinned = !!message?.pinned_at;
+
+      const { error } = await supabase
+        .from("messages")
+        .update({ pinned_at: isPinned ? null : new Date().toISOString() })
+        .eq("id", messageId);
+
+      if (error) throw error;
+
+      loadMessages(selectedFriend!.user_id);
+      toast({
+        title: isPinned ? "Sabitleme kaldırıldı" : "Mesaj sabitlendi",
+        description: isPinned ? "Mesaj artık sabitli değil" : "Mesaj konuşmanın başına sabitlendi",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: "İşlem gerçekleştirilemedi.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleForwardMessage = async (messageId: string) => {
+    try {
+      const message = messages.find(m => m.id === messageId);
+      if (!message) return;
+
+      // For now, just copy the message content to input
+      setNewMessage(message.content.replace(/\[.*?\]/g, ''));
+      toast({
+        title: "Mesaj kopyalandı",
+        description: "Mesaj içeriği giriş alanına kopyalandı. İstediğiniz kişiye gönderebilirsiniz.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: "Mesaj iletilemedi.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -809,13 +907,39 @@ const Messages = () => {
                 {/* Messages */}
                 <ScrollArea className="flex-1 p-4">
                   <div className="space-y-4">
+                    {/* Pinned Messages */}
+                    {pinnedMessages.length > 0 && (
+                      <div className="bg-accent/20 rounded-lg p-3 border-l-4 border-primary">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Pin className="w-4 h-4 text-primary" />
+                          <span className="text-sm font-medium">Sabitlenmiş Mesajlar</span>
+                        </div>
+                        <div className="space-y-2">
+                          {pinnedMessages.slice(0, 3).map(pm => (
+                            <p key={pm.id} className="text-xs text-muted-foreground truncate">
+                              {pm.content.replace(/\[.*?\]/g, '').substring(0, 50)}...
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {messages.map((msg) => {
                       const isAnalysisShare = msg.analysis_id;
                       const isVoiceMessage = msg.content.includes("[VOICE_MESSAGE:");
+                      const isGif = msg.content.includes("[GIF:");
                       const hasFilePreview = msg.content.includes("[FILE_PREVIEW:");
                       let displayContent = msg.content;
                       let filePreview = null;
                       let voiceMessageUrl = null;
+                      let gifUrl = null;
+
+                      if (isGif) {
+                        const gifMatch = msg.content.match(/\[GIF:([^\]]+)\]/);
+                        if (gifMatch) {
+                          gifUrl = gifMatch[1];
+                        }
+                      }
 
                       if (isVoiceMessage) {
                         const voiceMatch = msg.content.match(/\[VOICE_MESSAGE:([^\]]+)\]/);
@@ -835,11 +959,19 @@ const Messages = () => {
                       return (
                         <div
                           key={msg.id}
-                          className={`flex ${
+                          className={`flex gap-2 group ${
                             msg.sender_id === currentUserId ? "justify-end" : "justify-start"
                           }`}
                         >
-                           {isAnalysisShare ? (
+                          <div className="flex flex-col max-w-[85%]">
+                            {msg.pinned_at && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                                <Pin className="w-3 h-3" />
+                                <span>Sabitlendi</span>
+                              </div>
+                            )}
+                            
+                            {isAnalysisShare ? (
                             <Card
                               className={`max-w-[85%] cursor-pointer hover:shadow-lg transition-all border-2 ${
                                 msg.sender_id === currentUserId
@@ -884,7 +1016,23 @@ const Messages = () => {
                                 </div>
                               </div>
                             </Card>
-                          ) : isVoiceMessage && voiceMessageUrl ? (
+                            ) : isGif && gifUrl ? (
+                              <div className="rounded-lg overflow-hidden max-w-xs">
+                                <img
+                                  src={gifUrl}
+                                  alt="GIF"
+                                  className="w-full h-auto"
+                                />
+                                <div className={`px-2 py-1 text-xs opacity-70 ${
+                                  msg.sender_id === currentUserId ? "bg-primary text-primary-foreground" : "bg-muted"
+                                }`}>
+                                  {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </div>
+                              </div>
+                            ) : isVoiceMessage && voiceMessageUrl ? (
                             <div
                               className={`flex items-center gap-2 ${
                                 msg.sender_id === currentUserId ? "justify-end" : "justify-start"
@@ -953,12 +1101,36 @@ const Messages = () => {
                               </div>
                             </div>
                           )}
-                          {!isAnalysisShare && (
-                            <MessageReactions
-                              messageId={msg.id}
-                              currentUserId={currentUserId}
-                            />
-                          )}
+                            {!isAnalysisShare && (
+                              <MessageReactions
+                                messageId={msg.id}
+                                currentUserId={currentUserId}
+                              />
+                            )}
+                          </div>
+
+                          {/* Message Actions Menu */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                              >
+                                <MoreVertical className="h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handlePinMessage(msg.id)}>
+                                <Pin className="mr-2 h-4 w-4" />
+                                {msg.pinned_at ? "Sabitlemeyi Kaldır" : "Sabitle"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleForwardMessage(msg.id)}>
+                                <Forward className="mr-2 h-4 w-4" />
+                                İlet
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       );
                     })}
@@ -1024,6 +1196,18 @@ const Messages = () => {
                           >
                             <Mic className="w-5 h-5" />
                           </Button>
+
+                          {/* GIF Picker */}
+                          <Popover open={showGifPicker} onOpenChange={setShowGifPicker}>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="icon" type="button">
+                                <ImageIcon className="w-5 h-5" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <GifPicker onSelectGif={handleSendGif} />
+                            </PopoverContent>
+                          </Popover>
 
                           {/* File Attachment */}
                           <input

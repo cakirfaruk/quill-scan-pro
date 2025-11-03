@@ -406,8 +406,10 @@ export type Database = {
         Row: {
           content: string
           created_at: string | null
+          forwarded_from: string | null
           id: string
           message_category: string | null
+          pinned_at: string | null
           read: boolean | null
           receiver_id: string
           sender_id: string
@@ -415,8 +417,10 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string | null
+          forwarded_from?: string | null
           id?: string
           message_category?: string | null
+          pinned_at?: string | null
           read?: boolean | null
           receiver_id: string
           sender_id: string
@@ -424,13 +428,22 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string | null
+          forwarded_from?: string | null
           id?: string
           message_category?: string | null
+          pinned_at?: string | null
           read?: boolean | null
           receiver_id?: string
           sender_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "messages_forwarded_from_fkey"
+            columns: ["forwarded_from"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "messages_receiver_id_fkey"
             columns: ["receiver_id"]
