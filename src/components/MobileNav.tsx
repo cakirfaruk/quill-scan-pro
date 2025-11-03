@@ -16,8 +16,8 @@ export const MobileNav = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 lg:hidden">
-      <div className="flex items-center justify-around px-2 py-2">
+    <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border shadow-lg z-50 lg:hidden safe-area-bottom">
+      <div className="flex items-center justify-around px-1 py-1.5">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.path);
@@ -27,12 +27,16 @@ export const MobileNav = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                className={`w-full flex flex-col items-center gap-1 h-auto py-2 ${
-                  active ? "text-primary" : "text-muted-foreground"
+                className={`w-full flex flex-col items-center gap-0.5 h-auto py-1.5 transition-all ${
+                  active 
+                    ? "text-primary scale-105" 
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <Icon className={`w-5 h-5 ${active ? "fill-primary" : ""}`} />
-                <span className="text-xs">{item.label}</span>
+                <Icon className={`w-5 h-5 transition-all ${active ? "fill-primary stroke-2" : ""}`} />
+                <span className={`text-[10px] font-medium ${active ? "font-semibold" : ""}`}>
+                  {item.label}
+                </span>
               </Button>
             </Link>
           );

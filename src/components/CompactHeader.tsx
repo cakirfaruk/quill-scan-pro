@@ -95,11 +95,11 @@ export const CompactHeader = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border">
-      <div className="container mx-auto px-4 h-14 flex items-center justify-between">
+    <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border shadow-sm">
+      <div className="container mx-auto px-3 sm:px-4 h-14 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          <div className="p-1.5 bg-gradient-primary rounded-lg">
+        <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <div className="p-1.5 bg-gradient-primary rounded-lg shadow-glow">
             <Sparkles className="w-5 h-5 text-primary-foreground" />
           </div>
           <span className="font-bold text-lg bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent hidden sm:block">
@@ -108,7 +108,7 @@ export const CompactHeader = () => {
         </Link>
 
         {/* Right Section */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           {isLoggedIn ? (
             <>
               {/* Credits */}
@@ -116,10 +116,10 @@ export const CompactHeader = () => {
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate("/credits")}
-                className="gap-1.5 h-9"
+                className="gap-1.5 h-8 sm:h-9 px-2 sm:px-3"
               >
                 <Coins className="w-4 h-4 text-primary" />
-                <span className="font-semibold text-primary">{credits}</span>
+                <span className="font-semibold text-primary text-sm">{credits}</span>
               </Button>
 
               {/* Notifications */}
@@ -141,11 +141,11 @@ export const CompactHeader = () => {
               {/* Main Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <Button variant="ghost" size="icon" className="h-8 sm:h-9 w-8 sm:w-9">
                     <Menu className="w-5 h-5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-56 max-h-[80vh] overflow-y-auto">
                   {isAdmin && !isImpersonating && (
                     <>
                       <DropdownMenuItem onClick={() => navigate("/admin")}>
@@ -254,11 +254,11 @@ export const CompactHeader = () => {
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate("/profile")}
-                className="h-9 w-9 rounded-full p-0"
+                className="h-8 sm:h-9 w-8 sm:w-9 rounded-full p-0 hover:scale-105 transition-transform"
               >
-                <Avatar className="w-9 h-9 border-2 border-primary/20">
+                <Avatar className="w-8 sm:w-9 h-8 sm:h-9 border-2 border-primary/20">
                   <AvatarImage src={profilePhoto} alt={username} />
-                  <AvatarFallback className="bg-gradient-primary text-primary-foreground text-sm">
+                  <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs sm:text-sm">
                     {username.substring(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
