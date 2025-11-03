@@ -189,44 +189,50 @@ export const Header = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" className="flex items-center gap-1">
-                      Fallar & Kehanetler
-                      <ChevronDown className="w-4 h-4 ml-1" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-card z-50">
-                    <DropdownMenuItem asChild>
-                      <Link to="/tarot" className="cursor-pointer">
-                        🔮 Tarot Falı
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/coffee-fortune" className="cursor-pointer">
-                        ☕ Kahve Falı
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/dream" className="cursor-pointer">
-                        🌙 Rüya Tabiri
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/daily-horoscope" className="cursor-pointer">
-                        🌟 Günlük Kehanet
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/palmistry" className="cursor-pointer">
-                        🤲 El Okuma
-                      </Link>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  Fallar & Kehanetler
+                  <ChevronDown className="w-4 h-4 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-card z-50">
+                <DropdownMenuItem asChild>
+                  <Link to="/tarot" className="cursor-pointer">
+                    🔮 Tarot Falı
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/coffee-fortune" className="cursor-pointer">
+                    ☕ Kahve Falı
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/dream" className="cursor-pointer">
+                    🌙 Rüya Tabiri
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/daily-horoscope" className="cursor-pointer">
+                    🌟 Günlük Kehanet
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/palmistry" className="cursor-pointer">
+                    🤲 El Okuma
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-                <Link to="/match">
-                  <Button variant="ghost" size="sm">
-                    Eşleşme
-                  </Button>
-                </Link>
+            <Link to="/feed">
+              <Button variant="ghost" size="sm">
+                Akış
+              </Button>
+            </Link>
+
+            <Link to="/match">
+              <Button variant="ghost" size="sm">
+                Eşleşme
+              </Button>
+            </Link>
               </>
             )}
             
@@ -460,6 +466,11 @@ export const Header = () => {
                                 <Link to="/match" onClick={() => setMobileMenuOpen(false)}>
                                   <Button variant="ghost" className="w-full justify-start h-9">
                                     💕 Eşleşme
+                                  </Button>
+                                </Link>
+                                <Link to="/feed" onClick={() => setMobileMenuOpen(false)}>
+                                  <Button variant="ghost" className="w-full justify-start h-9">
+                                    📱 Akış
                                   </Button>
                                 </Link>
                                 <Link to="/friends" onClick={() => setMobileMenuOpen(false)}>

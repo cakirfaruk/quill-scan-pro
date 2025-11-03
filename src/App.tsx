@@ -23,6 +23,7 @@ import DreamInterpretation from "./pages/DreamInterpretation";
 import DailyHoroscope from "./pages/DailyHoroscope";
 import Palmistry from "./pages/Palmistry";
 import Handwriting from "./pages/Handwriting";
+import Feed from "./pages/Feed";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ const App = () => (
           <Route path="/daily-horoscope" element={<DailyHoroscope />} />
           <Route path="/palmistry" element={<Palmistry />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/feed" element={<Feed />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

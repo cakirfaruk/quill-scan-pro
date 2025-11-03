@@ -7,120 +7,132 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
+import { Heart, MessageCircle, Send, Loader2 } from "lucide-react";
+import { useImpersonate } from "@/hooks/use-impersonate";
 
 interface Post {
   id: string;
   user_id: string;
-  analysis_type: string;
+  content: string | null;
+  media_url: string | null;
+  media_type: string | null;
   created_at: string;
-  is_public: boolean;
   profile: {
     username: string;
     full_name: string | null;
     profile_photo: string | null;
   };
-  analysis_result: any;
+  likes: number;
+  comments: number;
+  hasLiked: boolean;
+}
+
+interface Comment {
+  id: string;
+  content: string;
+  created_at: string;
+  user: {
+    username: string;
+    full_name: string | null;
+    profile_photo: string | null;
+  };
 }
 
 const Feed = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [friendsPosts, setFriendsPosts] = useState<Post[]>([]);
-  const [publicPosts, setPublicPosts] = useState<Post[]>([]);
+  const [allPosts, setAllPosts] = useState<Post[]>([]);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+  const [userId, setUserId] = useState<string>("");
+  const { getEffectiveUserId } = useImpersonate();
 
   useEffect(() => {
-    checkUser();
+    checkUserAndLoad();
   }, []);
 
-  const checkUser = async () => {
+  const checkUserAndLoad = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       navigate("/auth");
       return;
     }
-    setUser(user);
-    await loadPosts(user.id);
+    
+    const effectiveUserId = getEffectiveUserId(user.id);
+    if (!effectiveUserId) {
+      navigate("/auth");
+      return;
+    }
+    
+    setUserId(effectiveUserId);
+    await loadPosts(effectiveUserId);
   };
 
-  const loadPosts = async (userId: string) => {
+  const loadPosts = async (currentUserId: string) => {
     try {
-      // Load friends' posts
-      const { data: friendsData, error: friendsError } = await supabase
-        .from("shared_analyses")
+      // Load all posts with profile data
+      const { data: postsData, error: postsError } = await supabase
+        .from("posts")
         .select(`
-          id,
-          user_id,
-          analysis_type,
-          analysis_id,
-          created_at,
-          is_public,
-          visibility_type,
-          profiles!shared_analyses_user_id_fkey (
+          *,
+          profiles!posts_user_id_fkey (
             username,
             full_name,
             profile_photo
           )
         `)
-        .eq("is_visible", true)
-        .in("visibility_type", ["friends", "public"])
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(100);
 
-      if (friendsError) throw friendsError;
+      if (postsError) throw postsError;
 
-      // Load public posts from everyone
-      const { data: publicData, error: publicError } = await supabase
-        .from("shared_analyses")
-        .select(`
-          id,
-          user_id,
-          analysis_type,
-          analysis_id,
-          created_at,
-          is_public,
-          profiles!shared_analyses_user_id_fkey (
-            username,
-            full_name,
-            profile_photo
-          )
-        `)
-        .eq("is_visible", true)
-        .eq("visibility_type", "public")
-        .order("created_at", { ascending: false })
-        .limit(50);
+      // Get likes and comments count for each post
+      const postsWithData = await Promise.all(
+        (postsData || []).map(async (post: any) => {
+          const { count: likesCount } = await supabase
+            .from("post_likes")
+            .select("*", { count: "exact", head: true })
+            .eq("post_id", post.id);
 
-      if (publicError) throw publicError;
+          const { count: commentsCount } = await supabase
+            .from("post_comments")
+            .select("*", { count: "exact", head: true })
+            .eq("post_id", post.id);
 
-      // Get analysis results for each post
-      const friendsPostsWithData = await Promise.all(
-        (friendsData || []).map(async (post: any) => {
-          const result = await getAnalysisResult(post.analysis_type, post.analysis_id);
+          const { data: likeCheck } = await supabase
+            .from("post_likes")
+            .select("id")
+            .eq("post_id", post.id)
+            .eq("user_id", currentUserId)
+            .maybeSingle();
+
           return {
             ...post,
             profile: post.profiles,
-            analysis_result: result,
+            likes: likesCount || 0,
+            comments: commentsCount || 0,
+            hasLiked: !!likeCheck,
           };
         })
       );
 
-      const publicPostsWithData = await Promise.all(
-        (publicData || []).map(async (post: any) => {
-          const result = await getAnalysisResult(post.analysis_type, post.analysis_id);
-          return {
-            ...post,
-            profile: post.profiles,
-            analysis_result: result,
-          };
-        })
-      );
+      // Filter friends posts (user's own posts + friends' posts)
+      const friendsPosts = postsWithData.filter(post => {
+        return post.user_id === currentUserId; // Will be extended with friends check via RLS
+      });
 
-      setFriendsPosts(friendsPostsWithData);
-      setPublicPosts(publicPostsWithData);
+      setFriendsPosts(friendsPosts);
+      setAllPosts(postsWithData);
     } catch (error: any) {
       console.error("Error loading posts:", error);
       toast({
@@ -133,38 +145,123 @@ const Feed = () => {
     }
   };
 
-  const getAnalysisResult = async (analysisType: string, analysisId: string) => {
+  const handleLike = async (postId: string, hasLiked: boolean) => {
     try {
-      let tableName = "";
-      if (analysisType === "handwriting") tableName = "analysis_history";
-      else if (analysisType === "numerology") tableName = "numerology_analyses";
-      else if (analysisType === "birth_chart") tableName = "birth_chart_analyses";
-      else if (analysisType === "compatibility") tableName = "compatibility_analyses";
+      if (hasLiked) {
+        const { error } = await supabase
+          .from("post_likes")
+          .delete()
+          .eq("post_id", postId)
+          .eq("user_id", userId);
 
-      if (!tableName) return null;
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("post_likes")
+          .insert({
+            post_id: postId,
+            user_id: userId,
+          });
 
+        if (error) throw error;
+      }
+
+      await loadPosts(userId);
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: "İşlem gerçekleştirilemedi",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleOpenComments = async (post: Post) => {
+    setSelectedPost(post);
+    setCommentsDialogOpen(true);
+
+    // Load comments
+    try {
       const { data, error } = await supabase
-        .from(tableName as any)
-        .select("*")
-        .eq("id", analysisId)
-        .maybeSingle();
+        .from("post_comments")
+        .select(`
+          *,
+          profiles!post_comments_user_id_fkey (
+            username,
+            full_name,
+            profile_photo
+          )
+        `)
+        .eq("post_id", post.id)
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
-      return (data as any)?.result;
+
+      setComments((data || []).map((c: any) => ({
+        id: c.id,
+        content: c.content,
+        created_at: c.created_at,
+        user: c.profiles,
+      })));
     } catch (error) {
-      console.error("Error loading analysis:", error);
-      return null;
+      console.error("Error loading comments:", error);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!selectedPost || !newComment.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from("post_comments")
+        .insert({
+          post_id: selectedPost.id,
+          user_id: userId,
+          content: newComment.trim(),
+        });
+
+      if (error) throw error;
+
+      setNewComment("");
+      handleOpenComments(selectedPost);
+      await loadPosts(userId);
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: "Yorum eklenemedi",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSendAsMessage = async (post: Post) => {
+    try {
+      const { error } = await supabase
+        .from("messages")
+        .insert({
+          sender_id: userId,
+          receiver_id: post.user_id,
+          content: `📸 Paylaşım: ${post.content || ""}`,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Başarılı",
+        description: "Mesaj gönderildi",
+      });
+
+      navigate(`/messages?userId=${post.user_id}`);
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: "Mesaj gönderilemedi",
+        variant: "destructive",
+      });
     }
   };
 
   const renderPost = (post: Post) => {
-    const analysisTypeNames: Record<string, string> = {
-      handwriting: "El Yazısı Analizi",
-      numerology: "Numeroloji Analizi",
-      birth_chart: "Doğum Haritası Analizi",
-      compatibility: "Uyum Analizi",
-    };
-
     return (
       <Card key={post.id} className="mb-4 hover:shadow-lg transition-shadow">
         <CardHeader>
@@ -175,7 +272,7 @@ const Feed = () => {
             >
               <Avatar>
                 <AvatarImage src={post.profile.profile_photo || undefined} />
-                <AvatarFallback>
+                <AvatarFallback className="bg-gradient-primary text-primary-foreground">
                   {post.profile.full_name?.[0] || post.profile.username[0].toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -186,25 +283,64 @@ const Feed = () => {
                 </p>
               </div>
             </div>
-            <Badge variant="secondary">{analysisTypeNames[post.analysis_type]}</Badge>
           </div>
         </CardHeader>
-        <CardContent>
-          {post.analysis_result && (
-            <div className="prose prose-sm max-w-none">
-              <p className="line-clamp-3 text-foreground">
-                {typeof post.analysis_result === "string"
-                  ? post.analysis_result.substring(0, 200) + "..."
-                  : JSON.stringify(post.analysis_result).substring(0, 200) + "..."}
-              </p>
-              <button
-                onClick={() => navigate(`/profile/${post.profile.username}`)}
-                className="text-primary hover:underline mt-2 text-sm font-medium"
-              >
-                Devamını oku
-              </button>
+        <CardContent className="space-y-3">
+          {post.content && (
+            <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
+          )}
+          
+          {post.media_url && (
+            <div className="rounded-lg overflow-hidden">
+              {post.media_type === "photo" ? (
+                <img 
+                  src={post.media_url} 
+                  alt="Post media" 
+                  className="w-full max-h-96 object-cover"
+                />
+              ) : (
+                <video 
+                  src={post.media_url} 
+                  controls 
+                  className="w-full max-h-96"
+                />
+              )}
             </div>
           )}
+
+          <div className="flex items-center gap-4 pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2"
+              onClick={() => handleLike(post.id, post.hasLiked)}
+            >
+              <Heart className={`w-4 h-4 ${post.hasLiked ? "fill-red-500 text-red-500" : ""}`} />
+              {post.likes}
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2"
+              onClick={() => handleOpenComments(post)}
+            >
+              <MessageCircle className="w-4 h-4" />
+              {post.comments}
+            </Button>
+
+            {post.user_id !== userId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2 ml-auto"
+                onClick={() => handleSendAsMessage(post)}
+              >
+                <Send className="w-4 h-4" />
+                Mesaj Gönder
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
     );
@@ -212,7 +348,7 @@ const Feed = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gradient-subtle">
         <Header />
         <div className="container mx-auto px-4 py-8 max-w-2xl">
           {[1, 2, 3].map((i) => (
@@ -237,10 +373,12 @@ const Feed = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-subtle">
       <Header />
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <h1 className="text-3xl font-bold mb-6">Akış</h1>
+        <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          Akış
+        </h1>
         
         <Tabs defaultValue="friends" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
@@ -261,18 +399,77 @@ const Feed = () => {
           </TabsContent>
           
           <TabsContent value="discover">
-            {publicPosts.length === 0 ? (
+            {allPosts.length === 0 ? (
               <Card className="p-8 text-center">
                 <p className="text-muted-foreground">
-                  Henüz herkese açık paylaşım yok
+                  Henüz paylaşım yok
                 </p>
               </Card>
             ) : (
-              publicPosts.map(renderPost)
+              allPosts.map(renderPost)
             )}
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Comments Dialog */}
+      <Dialog open={commentsDialogOpen} onOpenChange={setCommentsDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Yorumlar</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="max-h-[400px] overflow-y-auto space-y-3">
+              {comments.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Henüz yorum yok
+                </p>
+              ) : (
+                comments.map((comment) => (
+                  <div key={comment.id} className="flex gap-3">
+                    <Avatar 
+                      className="w-8 h-8 cursor-pointer"
+                      onClick={() => navigate(`/profile/${comment.user.username}`)}
+                    >
+                      <AvatarImage src={comment.user.profile_photo || undefined} />
+                      <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs">
+                        {comment.user.username.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p 
+                          className="font-semibold text-sm cursor-pointer hover:underline"
+                          onClick={() => navigate(`/profile/${comment.user.username}`)}
+                        >
+                          {comment.user.full_name || comment.user.username}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: tr })}
+                        </p>
+                      </div>
+                      <p className="text-sm mt-1">{comment.content}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="flex gap-2 pt-4 border-t">
+              <Input
+                placeholder="Yorum yaz..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
+              />
+              <Button onClick={handleAddComment} size="icon">
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

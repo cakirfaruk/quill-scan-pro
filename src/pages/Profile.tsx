@@ -79,6 +79,9 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState("photos");
   const [friendsDialogOpen, setFriendsDialogOpen] = useState(false);
   const { getEffectiveUserId } = useImpersonate();
+  const [sharePostDialogOpen, setSharePostDialogOpen] = useState(false);
+  const [sharePostContent, setSharePostContent] = useState("");
+  const [selectedPhotoForShare, setSelectedPhotoForShare] = useState<string | null>(null);
 
   useEffect(() => {
     loadProfile();
@@ -782,6 +785,38 @@ const Profile = () => {
     reader.readAsDataURL(file);
   };
 
+  const handleSharePhoto = async () => {
+    if (!selectedPhotoForShare) return;
+
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .insert({
+          user_id: currentUserId,
+          content: sharePostContent.trim() || null,
+          media_url: selectedPhotoForShare,
+          media_type: "photo",
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Başarılı",
+        description: "Fotoğraf paylaşıldı",
+      });
+
+      setSharePostDialogOpen(false);
+      setSharePostContent("");
+      setSelectedPhotoForShare(null);
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: "Paylaşım yapılamadı",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-subtle">
@@ -929,12 +964,26 @@ const Profile = () => {
                       className="w-full h-full object-cover rounded-lg"
                     />
                     {isOwnProfile && (
-                      <button
-                        onClick={() => handleDeletePhoto(photo.id)}
-                        className="absolute top-2 right-2 p-1.5 bg-destructive rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="w-4 h-4 text-destructive-foreground" />
-                      </button>
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => {
+                            setSelectedPhotoForShare(photo.photo_url);
+                            setSharePostDialogOpen(true);
+                          }}
+                        >
+                          <Share2 className="w-4 h-4 mr-1" />
+                          Paylaş
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeletePhoto(photo.id)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -1393,6 +1442,40 @@ const Profile = () => {
                   );
                 })
               )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Share Photo Dialog */}
+        <Dialog open={sharePostDialogOpen} onOpenChange={setSharePostDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Fotoğraf Paylaş</DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {selectedPhotoForShare && (
+                <img 
+                  src={selectedPhotoForShare} 
+                  alt="Preview" 
+                  className="w-full h-64 object-cover rounded-lg"
+                />
+              )}
+              
+              <div>
+                <Label>Açıklama (İsteğe Bağlı)</Label>
+                <Textarea
+                  value={sharePostContent}
+                  onChange={(e) => setSharePostContent(e.target.value)}
+                  placeholder="Fotoğrafınız hakkında bir şeyler yazın..."
+                  rows={3}
+                />
+              </div>
+
+              <Button onClick={handleSharePhoto} className="w-full">
+                <Share2 className="w-4 h-4 mr-2" />
+                Paylaş
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
