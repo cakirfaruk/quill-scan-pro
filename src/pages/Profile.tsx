@@ -86,6 +86,7 @@ const Profile = () => {
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
   const [shareAnalysisToPost, setShareAnalysisToPost] = useState<Analysis | null>(null);
+  const [friendshipStatus, setFriendshipStatus] = useState<"none" | "pending_sent" | "pending_received" | "accepted">("none");
 
   useEffect(() => {
     loadProfile();
@@ -247,6 +248,27 @@ const Profile = () => {
         .eq("status", "accepted");
 
       setFriends(friendsData || []);
+
+      // Check friendship status if not own profile
+      if (profileData.user_id !== effectiveUserId) {
+        const { data: friendshipData } = await supabase
+          .from("friends")
+          .select("*")
+          .or(`and(user_id.eq.${effectiveUserId},friend_id.eq.${profileData.user_id}),and(user_id.eq.${profileData.user_id},friend_id.eq.${effectiveUserId})`)
+          .maybeSingle();
+
+        if (friendshipData) {
+          if (friendshipData.status === "accepted") {
+            setFriendshipStatus("accepted");
+          } else if (friendshipData.user_id === effectiveUserId) {
+            setFriendshipStatus("pending_sent");
+          } else {
+            setFriendshipStatus("pending_received");
+          }
+        } else {
+          setFriendshipStatus("none");
+        }
+      }
     } catch (error: any) {
       console.error("Profile error details:", error);
       toast({
@@ -850,6 +872,129 @@ const Profile = () => {
     reader.readAsDataURL(file);
   };
 
+  const handleSendFriendRequest = async () => {
+    try {
+      const { error } = await supabase
+        .from("friends")
+        .insert({
+          user_id: currentUserId,
+          friend_id: profile.user_id,
+          status: "pending",
+        });
+
+      if (error) throw error;
+
+      setFriendshipStatus("pending_sent");
+      toast({
+        title: "Başarılı",
+        description: "Arkadaşlık isteği gönderildi.",
+      });
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Arkadaşlık isteği gönderilemedi.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAcceptFriendRequest = async () => {
+    try {
+      const { error } = await supabase
+        .from("friends")
+        .update({ status: "accepted" })
+        .eq("user_id", profile.user_id)
+        .eq("friend_id", currentUserId);
+
+      if (error) throw error;
+
+      setFriendshipStatus("accepted");
+      toast({
+        title: "Başarılı",
+        description: "Arkadaşlık isteği kabul edildi.",
+      });
+      loadProfile();
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Arkadaşlık isteği kabul edilemedi.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRejectFriendRequest = async () => {
+    try {
+      const { error } = await supabase
+        .from("friends")
+        .delete()
+        .eq("user_id", profile.user_id)
+        .eq("friend_id", currentUserId);
+
+      if (error) throw error;
+
+      setFriendshipStatus("none");
+      toast({
+        title: "Başarılı",
+        description: "Arkadaşlık isteği reddedildi.",
+      });
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Arkadaşlık isteği reddedilemedi.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelFriendRequest = async () => {
+    try {
+      const { error } = await supabase
+        .from("friends")
+        .delete()
+        .eq("user_id", currentUserId)
+        .eq("friend_id", profile.user_id);
+
+      if (error) throw error;
+
+      setFriendshipStatus("none");
+      toast({
+        title: "Başarılı",
+        description: "Arkadaşlık isteği iptal edildi.",
+      });
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Arkadaşlık isteği iptal edilemedi.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemoveFriend = async () => {
+    try {
+      const { error } = await supabase
+        .from("friends")
+        .delete()
+        .or(`and(user_id.eq.${currentUserId},friend_id.eq.${profile.user_id}),and(user_id.eq.${profile.user_id},friend_id.eq.${currentUserId})`);
+
+      if (error) throw error;
+
+      setFriendshipStatus("none");
+      toast({
+        title: "Başarılı",
+        description: "Arkadaşlıktan çıkarıldı.",
+      });
+      loadProfile();
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Arkadaşlıktan çıkarılamadı.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-subtle">
@@ -889,18 +1034,47 @@ const Profile = () => {
               )}
             </div>
 
-            <div className="flex-1">
+              <div className="flex-1">
               <div className="flex items-center gap-4 mb-4 flex-wrap">
                 <h1 className="text-2xl md:text-3xl font-bold">
                   {profile.full_name || profile.username}
                 </h1>
-                {isOwnProfile && (
+                {isOwnProfile ? (
                   <Link to="/settings">
                     <Button size="sm" variant="outline">
                       <Settings className="w-4 h-4 mr-2" />
                       Düzenle
                     </Button>
                   </Link>
+                ) : (
+                  <>
+                    {friendshipStatus === "none" && (
+                      <Button size="sm" onClick={handleSendFriendRequest}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Arkadaş Ekle
+                      </Button>
+                    )}
+                    {friendshipStatus === "pending_sent" && (
+                      <Button size="sm" variant="outline" onClick={handleCancelFriendRequest}>
+                        İstek Gönderildi
+                      </Button>
+                    )}
+                    {friendshipStatus === "pending_received" && (
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={handleAcceptFriendRequest}>
+                          Kabul Et
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={handleRejectFriendRequest}>
+                          Reddet
+                        </Button>
+                      </div>
+                    )}
+                    {friendshipStatus === "accepted" && (
+                      <Button size="sm" variant="outline" onClick={handleRemoveFriend}>
+                        Arkadaş
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
 

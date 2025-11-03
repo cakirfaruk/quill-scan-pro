@@ -621,25 +621,28 @@ const Match = () => {
     let analysisId = "";
     let analysisType = "";
 
-    // Get match ID for compatibility sharing
-    const [matchUser1, matchUser2] = [user.id, currentProfile.user_id].sort();
-    const { data: matchData } = await supabase
-      .from("matches")
+    // Get compatibility analysis ID - NOT match ID
+    // Compatibility analyses are stored in compatibility_analyses table
+    const { data: compatibilityAnalysis } = await supabase
+      .from("compatibility_analyses")
       .select("id")
-      .eq("user1_id", matchUser1)
-      .eq("user2_id", matchUser2)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
-    const matchId = matchData?.id || 'temp';
+    const compatibilityId = compatibilityAnalysis?.id || 'temp';
 
     if (shareType === "area") {
       creditsNeeded = 30;
-      shareContent = `📊 Uyum Alanı Paylaşımı\n\n${selectedArea?.name}\n${selectedArea?.strengths}\n\n[Analiz ID: ${matchId}]\n[Analiz Türü: compatibility]`;
+      shareContent = `📊 Uyum Alanı Paylaşımı\n\n${selectedArea?.name}\n${selectedArea?.strengths}\n\n[Analiz ID: ${compatibilityId}]\n[Analiz Türü: compatibility]`;
       analysisType = "compatibility";
+      analysisId = compatibilityId;
     } else if (shareType === "full") {
       creditsNeeded = 80;
-      shareContent = `📊 Tam Uyum Raporu\n\nGenel Uyum: %${compatibilityData.details?.overallScore}\n\n${compatibilityData.details?.overallSummary}\n\n[Analiz ID: ${matchId}]\n[Analiz Türü: compatibility]`;
+      shareContent = `📊 Tam Uyum Raporu\n\nGenel Uyum: %${compatibilityData.details?.overallScore}\n\n${compatibilityData.details?.overallSummary}\n\n[Analiz ID: ${compatibilityId}]\n[Analiz Türü: compatibility]`;
       analysisType = "compatibility";
+      analysisId = compatibilityId;
     } else if (shareType === "tarot") {
       creditsNeeded = 50;
       shareContent = `🔮 Tarot Falı Sonucu\n\n[Analiz ID: temp]\n[Analiz Türü: tarot]`;
@@ -656,17 +659,25 @@ const Match = () => {
     }
 
     try {
-      // Check if there's a mutual match between users
-      const [matchUser1, matchUser2] = [user.id, currentProfile.user_id].sort();
-      const { data: matchExists } = await supabase
-        .from("matches")
+      // Check if there's a MUTUAL MATCH via swipes (both users liked each other)
+      const { data: userLikedTarget } = await supabase
+        .from("swipes")
         .select("id")
-        .eq("user1_id", matchUser1)
-        .eq("user2_id", matchUser2)
+        .eq("user_id", user.id)
+        .eq("target_user_id", currentProfile.user_id)
+        .eq("action", "like")
         .maybeSingle();
 
-      // Determine message category based on match status
-      const messageCategory = matchExists ? "match" : "other";
+      const { data: targetLikedUser } = await supabase
+        .from("swipes")
+        .select("id")
+        .eq("user_id", currentProfile.user_id)
+        .eq("target_user_id", user.id)
+        .eq("action", "like")
+        .maybeSingle();
+
+      // Only "match" category if BOTH users liked each other via swipes
+      const messageCategory = (userLikedTarget && targetLikedUser) ? "match" : "other";
 
       // Send message with appropriate category
       const { error: messageError } = await supabase

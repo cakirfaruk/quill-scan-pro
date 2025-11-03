@@ -313,23 +313,16 @@ const Messages = () => {
 
       // Check different tables based on analysis type
       if (analysisType === "compatibility") {
-        // For compatibility, check matches table
+        // For compatibility, check compatibility_analyses table
         const { data } = await supabase
-          .from("matches")
+          .from("compatibility_analyses")
           .select("*")
           .eq("id", analysisId)
           .maybeSingle();
         
         if (data) {
           analysisData = {
-            id: data.id,
-            user_id: data.user1_id,
-            created_at: data.matched_at,
-            result: {
-              overallScore: data.overall_compatibility_score,
-              numerologyAnalysis: data.compatibility_numerology,
-              birthChartAnalysis: data.compatibility_birth_chart,
-            },
+            ...data,
             analysis_type: "compatibility",
           };
         }
@@ -343,13 +336,6 @@ const Messages = () => {
       } else if (analysisType === "birth_chart") {
         const { data } = await supabase
           .from("birth_chart_analyses")
-          .select("*")
-          .eq("id", analysisId)
-          .maybeSingle();
-        analysisData = data;
-      } else if (analysisType === "compatibility") {
-        const { data } = await supabase
-          .from("compatibility_analyses")
           .select("*")
           .eq("id", analysisId)
           .maybeSingle();
