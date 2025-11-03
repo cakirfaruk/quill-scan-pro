@@ -991,6 +991,7 @@ export type Database = {
           birth_time: string | null
           created_at: string
           credits: number
+          current_location: string | null
           full_name: string | null
           gender: string | null
           id: string
@@ -1009,6 +1010,7 @@ export type Database = {
           birth_time?: string | null
           created_at?: string
           credits?: number
+          current_location?: string | null
           full_name?: string | null
           gender?: string | null
           id?: string
@@ -1027,6 +1029,7 @@ export type Database = {
           birth_time?: string | null
           created_at?: string
           credits?: number
+          current_location?: string | null
           full_name?: string | null
           gender?: string | null
           id?: string

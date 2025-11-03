@@ -56,6 +56,7 @@ const Profile = () => {
     full_name: "",
     birth_date: "",
     birth_place: "",
+    current_location: "",
     bio: "",
     gender: "",
     profile_photo: "",
@@ -97,6 +98,8 @@ const Profile = () => {
   const [profileAnalysisDialogOpen, setProfileAnalysisDialogOpen] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockId, setBlockId] = useState<string | null>(null);
+  const [collections, setCollections] = useState<any[]>([]);
+  const [collectionsLoading, setCollectionsLoading] = useState(false);
 
   const handleRefresh = async () => {
     soundEffects.playClick();
@@ -118,8 +121,10 @@ const Profile = () => {
   useEffect(() => {
     if (profile.user_id && activeTab === "posts") {
       loadUserPosts();
+    } else if (profile.user_id && activeTab === "collections" && isOwnProfile) {
+      loadCollections();
     }
-  }, [profile.user_id, activeTab]);
+  }, [profile.user_id, activeTab, isOwnProfile]);
 
   const loadUserPosts = async () => {
     if (!profile.user_id) return;
@@ -175,6 +180,42 @@ const Profile = () => {
       console.error("Error loading posts:", error);
     } finally {
       setPostsLoading(false);
+    }
+  };
+
+  const loadCollections = async () => {
+    if (!profile.user_id) return;
+    
+    setCollectionsLoading(true);
+    try {
+      const { data: collectionsData, error } = await supabase
+        .from("collections")
+        .select("*")
+        .eq("user_id", profile.user_id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Load saved posts count for each collection
+      const collectionsWithCount = await Promise.all(
+        (collectionsData || []).map(async (collection) => {
+          const { count } = await supabase
+            .from("saved_posts")
+            .select("*", { count: "exact", head: true })
+            .eq("collection_id", collection.id);
+
+          return {
+            ...collection,
+            postsCount: count || 0,
+          };
+        })
+      );
+
+      setCollections(collectionsWithCount);
+    } catch (error) {
+      console.error("Error loading collections:", error);
+    } finally {
+      setCollectionsLoading(false);
     }
   };
 
@@ -1269,8 +1310,9 @@ const Profile = () => {
               <div className="flex gap-6 mb-4 text-sm flex-wrap">
                 <button 
                   onClick={() => setActiveTab("photos")}
-                  className="hover:opacity-70 transition-opacity"
+                  className="hover:opacity-70 transition-opacity flex items-center gap-1.5"
                 >
+                  <Camera className="w-4 h-4" />
                   <span className="font-bold">{photos.length}</span> fotoğraf
                 </button>
                 <button 
@@ -1310,7 +1352,13 @@ const Profile = () => {
                 {profile.birth_place && (
                   <div className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-full">
                     <MapPin className="w-3 h-3" />
-                    {profile.birth_place}
+                    Doğum: {profile.birth_place}
+                  </div>
+                )}
+                {profile.current_location && (
+                  <div className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-full">
+                    <MapPin className="w-3 h-3" />
+                    Yaşıyor: {profile.current_location}
                   </div>
                 )}
                 {latestBirthChart?.result?.sun_sign && (
@@ -1342,7 +1390,7 @@ const Profile = () => {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="posts">Gönderiler</TabsTrigger>
             <TabsTrigger value="analyses">Analizler</TabsTrigger>
-            <TabsTrigger value="friends">Arkadaşlar</TabsTrigger>
+            <TabsTrigger value="collections">Koleksiyonlar</TabsTrigger>
           </TabsList>
 
           <TabsContent value="posts">
@@ -1712,62 +1760,50 @@ const Profile = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="friends">
+          <TabsContent value="collections">
             <Card className="p-6">
               {isOwnProfile ? (
-                <div className="text-center py-12">
-                  <Button 
-                    onClick={() => navigate("/friends")}
-                    size="lg"
-                    className="bg-gradient-primary"
-                  >
-                    <Heart className="w-5 h-5 mr-2" />
-                    Arkadaş Listesine Git
-                  </Button>
-                  <p className="text-sm text-muted-foreground mt-4">
-                    Tüm arkadaşlarınızı görüntüleyin ve yeni arkadaşlar ekleyin
-                  </p>
-                </div>
-              ) : (
                 <>
-                  {friends.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      Arkadaş bilgisi görüntülenemiyor
+                  {collectionsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    </div>
+                  ) : collections.length === 0 ? (
+                    <div className="text-center py-12">
+                      <p className="text-muted-foreground mb-4">Henüz koleksiyonunuz yok</p>
+                      <Button onClick={() => navigate("/saved-posts")}>
+                        Kayıtlı Gönderiler
+                      </Button>
                     </div>
                   ) : (
-                    <div className="grid gap-3">
-                      {friends.map((friend) => {
-                        // Determine which profile to show (not the current user)
-                        const friendProfile = friend.user_id === currentUserId 
-                          ? friend.friend_profile 
-                          : friend.user_profile;
-                        
-                        if (!friendProfile) return null;
-                        
-                        return (
-                          <div
-                            key={friend.id}
-                            className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
-                            onClick={() => navigate(`/profile/${friendProfile.username}`)}
-                          >
-                            <div className="flex items-center gap-3">
-                              <Avatar className="w-12 h-12">
-                                <AvatarImage src={friendProfile.profile_photo} alt={friendProfile.username} />
-                                <AvatarFallback className="bg-gradient-primary text-primary-foreground">
-                                  {friendProfile.username.substring(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="font-semibold">{friendProfile.full_name || friendProfile.username}</p>
-                                <p className="text-sm text-muted-foreground">@{friendProfile.username}</p>
-                              </div>
-                            </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {collections.map((collection) => (
+                        <Card
+                          key={collection.id}
+                          className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+                          onClick={() => navigate("/saved-posts")}
+                        >
+                          <h3 className="font-semibold mb-2">{collection.name}</h3>
+                          {collection.description && (
+                            <p className="text-sm text-muted-foreground mb-3">
+                              {collection.description}
+                            </p>
+                          )}
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>{collection.postsCount} gönderi</span>
+                            <span>
+                              {new Date(collection.created_at).toLocaleDateString('tr-TR')}
+                            </span>
                           </div>
-                        );
-                      })}
+                        </Card>
+                      ))}
                     </div>
                   )}
                 </>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  Koleksiyonlar gizli
+                </div>
               )}
             </Card>
           </TabsContent>

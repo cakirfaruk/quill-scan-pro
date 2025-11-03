@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { Tutorial } from "@/components/Tutorial";
 import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -45,6 +46,7 @@ const App = () => {
       <Toaster />
       <Sonner />
       <OfflineIndicator />
+      <Tutorial />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />

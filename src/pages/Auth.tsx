@@ -8,12 +8,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FileText, Loader2 } from "lucide-react";
+import { OnboardingDialog } from "@/components/OnboardingDialog";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -53,11 +55,13 @@ const Auth = () => {
 
       if (error) throw error;
 
+      // Show onboarding for new users
+      setShowOnboarding(true);
+
       toast({
         title: "Kayıt başarılı!",
         description: "Hesabınız oluşturuldu.",
       });
-      navigate("/");
     } catch (error: any) {
       toast({
         title: "Kayıt hatası",
@@ -222,6 +226,14 @@ const Auth = () => {
           </TabsContent>
         </Tabs>
       </Card>
+
+      <OnboardingDialog 
+        open={showOnboarding} 
+        onComplete={() => {
+          setShowOnboarding(false);
+          navigate("/");
+        }}
+      />
     </div>
   );
 };

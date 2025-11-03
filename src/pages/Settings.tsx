@@ -24,6 +24,7 @@ const Settings = () => {
     birth_date: "",
     birth_time: "",
     birth_place: "",
+    current_location: "",
     bio: "",
     gender: "",
     email: "",
@@ -116,6 +117,7 @@ const Settings = () => {
           birth_date: newData.birth_date || "",
           birth_time: newData.birth_time || "",
           birth_place: newData.birth_place || "",
+          current_location: newData.current_location || "",
           bio: newData.bio || "",
           gender: newData.gender || "",
           email: user.email || "",
@@ -128,6 +130,7 @@ const Settings = () => {
           birth_date: data.birth_date || "",
           birth_time: data.birth_time || "",
           birth_place: data.birth_place || "",
+          current_location: data.current_location || "",
           bio: data.bio || "",
           gender: data.gender || "",
           email: user.email || "",
@@ -175,6 +178,7 @@ const Settings = () => {
           birth_date: profile.birth_date || null,
           birth_time: profile.birth_time || null,
           birth_place: profile.birth_place || null,
+          current_location: profile.current_location || null,
           bio: profile.bio || null,
           gender: profile.gender || null,
           show_in_matches: profile.show_in_matches,
@@ -492,6 +496,21 @@ const Settings = () => {
                       value={profile.birth_place}
                       onChange={(value) => setProfile({ ...profile, birth_place: value })}
                       placeholder="Şehir, Ülke"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="current_location">
+                    <MapPin className="w-4 h-4 inline mr-2" />
+                    Yaşadığı Yer
+                  </Label>
+                  <div className="mt-2">
+                    <PlaceAutocompleteInput
+                      id="current_location"
+                      value={profile.current_location}
+                      onChange={(value) => setProfile({ ...profile, current_location: value })}
+                      placeholder="Şu an yaşadığınız şehir, ülke"
                     />
                   </div>
                 </div>
