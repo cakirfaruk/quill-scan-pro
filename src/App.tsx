@@ -37,35 +37,32 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <OfflineIndicator />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/handwriting" element={<Handwriting />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/credits" element={<Credits />} />
-          <Route path="/compatibility" element={<Compatibility />} />
+          <Route path="/feed" element={<Feed />} />
+          <Route path="/profile/:userId?" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/about" element={<About />} />
           <Route path="/faq" element={<FAQ />} />
-          <Route path="/numerology" element={<Numerology />} />
-          <Route path="/birth-chart" element={<BirthChart />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/profile/:username" element={<Profile />} />
-          <Route path="/friends" element={<Friends />} />
+          <Route path="/credits" element={<Credits />} />
           <Route path="/messages" element={<Messages />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/friends" element={<Friends />} />
           <Route path="/match" element={<Match />} />
+          <Route path="/saved" element={<SavedPosts />} />
+          <Route path="/admin" element={<Admin />} />
           <Route path="/tarot" element={<Tarot />} />
           <Route path="/coffee-fortune" element={<CoffeeFortune />} />
-          <Route path="/dream" element={<DreamInterpretation />} />
-          <Route path="/daily-horoscope" element={<DailyHoroscope />} />
           <Route path="/palmistry" element={<Palmistry />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/feed" element={<Feed />} />
-          <Route path="/saved" element={<SavedPosts />} />
+          <Route path="/handwriting" element={<Handwriting />} />
+          <Route path="/birth-chart" element={<BirthChart />} />
+          <Route path="/numerology" element={<Numerology />} />
+          <Route path="/compatibility" element={<Compatibility />} />
+          <Route path="/daily-horoscope" element={<DailyHoroscope />} />
+          <Route path="/dream" element={<DreamInterpretation />} />
           <Route path="/reels" element={<Reels />} />
           <Route path="/explore" element={<Explore />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
