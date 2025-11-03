@@ -624,66 +624,37 @@ const Profile = () => {
 
   const loadSharedAnalyses = async (userId: string) => {
     try {
-      // Load all analysis types directly using RLS policies
-      // RLS policies will automatically filter based on visibility settings
-      
-      const allAnalyses: Analysis[] = [];
+      // **PARALEL SORGULAR** - Tüm analiz türlerini aynı anda getir
+      const [
+        handwritingResult,
+        numerologyResult,
+        birthChartResult,
+        compatibilityResult
+      ] = await Promise.all([
+        supabase.from("analysis_history").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("numerology_analyses").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("birth_chart_analyses").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("compatibility_analyses").select("*").eq("user_id", userId).order("created_at", { ascending: false })
+      ]);
 
-      // Fetch handwriting analyses
-      const { data: handwritingData } = await supabase
-        .from("analysis_history")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-      if (handwritingData) {
-        allAnalyses.push(...handwritingData.map(item => ({
+      const allAnalyses: Analysis[] = [
+        ...(handwritingResult.data || []).map(item => ({
           ...item,
           analysis_type: item.analysis_type === "full" || item.analysis_type === "selective" ? "handwriting" : item.analysis_type
-        })));
-      }
-
-      // Fetch numerology analyses
-      const { data: numerologyData } = await supabase
-        .from("numerology_analyses")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-      if (numerologyData) {
-        allAnalyses.push(...numerologyData.map(item => ({
+        })),
+        ...(numerologyResult.data || []).map(item => ({
           ...item,
           analysis_type: "numerology"
-        })));
-      }
-
-      // Fetch birth chart analyses
-      const { data: birthChartData } = await supabase
-        .from("birth_chart_analyses")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-      if (birthChartData) {
-        allAnalyses.push(...birthChartData.map(item => ({
+        })),
+        ...(birthChartResult.data || []).map(item => ({
           ...item,
           analysis_type: "birth_chart"
-        })));
-      }
-
-      // Fetch compatibility analyses
-      const { data: compatibilityData } = await supabase
-        .from("compatibility_analyses")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-      if (compatibilityData) {
-        allAnalyses.push(...compatibilityData.map(item => ({
+        })),
+        ...(compatibilityResult.data || []).map(item => ({
           ...item,
           analysis_type: "compatibility"
-        })));
-      }
+        }))
+      ];
 
       // Sort by created_at descending
       allAnalyses.sort((a, b) => 
@@ -2067,7 +2038,7 @@ const Profile = () => {
                 </div>
               ) : (
                 friends.map((friend) => {
-                  const friendProfile = friend.user_id === currentUserId 
+                  const friendProfile = friend.user_id === profile.user_id 
                     ? friend.friend_profile 
                     : friend.user_profile;
                   
