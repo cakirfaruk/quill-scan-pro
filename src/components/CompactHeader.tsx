@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
-  Home, Search, Plus, Video, Sparkles, Shield, Coins, MessageCircle, Menu
+  Home, Search, Plus, Video, Sparkles, Shield, Coins, MessageCircle, Menu, Heart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -112,16 +112,6 @@ export const CompactHeader = () => {
         {/* Desktop Navigation - Hidden on mobile */}
         {isLoggedIn && (
           <nav className="hidden lg:flex items-center gap-1">
-            <Link to="/">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`gap-2 ${location.pathname === "/" ? "text-primary" : ""}`}
-              >
-                <Home className="w-4 h-4" />
-                Ana Sayfa
-              </Button>
-            </Link>
             <Link to="/explore">
               <Button
                 variant="ghost"
@@ -132,20 +122,15 @@ export const CompactHeader = () => {
                 Keşfet
               </Button>
             </Link>
-            <Link to="/feed">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setCreatePostDialogOpen(true);
-                }}
-                className="gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Oluştur
-              </Button>
-            </Link>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setCreatePostDialogOpen(true)}
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Oluştur
+            </Button>
             <Link to="/reels">
               <Button
                 variant="ghost"
@@ -164,6 +149,16 @@ export const CompactHeader = () => {
               >
                 <Sparkles className="w-4 h-4" />
                 Analizler
+              </Button>
+            </Link>
+            <Link to="/match">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`gap-2 ${location.pathname === "/match" ? "text-primary" : ""}`}
+              >
+                <Heart className="w-4 h-4" />
+                Eşleşme
               </Button>
             </Link>
           </nav>
