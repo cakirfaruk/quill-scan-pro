@@ -39,12 +39,12 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => {
+// Wrapper component that safely uses hooks after providers are mounted
+const AppContent = () => {
   useUpdateOnlineStatus();
-
+  
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
+    <>
       <Toaster />
       <Sonner />
       <OfflineIndicator />
@@ -82,8 +82,17 @@ const App = () => {
         </Routes>
         <MobileNavWrapper />
       </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+    </>
+  );
+};
+
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AppContent />
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 };
 
