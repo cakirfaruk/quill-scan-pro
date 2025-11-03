@@ -11,12 +11,13 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, Plus, X, Settings, Calendar, MapPin, Share2, Eye, EyeOff, FileText, Sparkles, Heart, Moon, Hand, Coffee, Star, Send, MessageCircle, RefreshCw, UserX, ShieldOff } from "lucide-react";
+import { Loader2, Camera, Plus, X, Settings, Calendar, MapPin, Share2, Eye, EyeOff, FileText, Sparkles, Heart, Moon, Hand, Coffee, Star, Send, MessageCircle, RefreshCw, UserX, ShieldOff, Bookmark, Folder as FolderIcon, Trash2 as Trash2Icon, FolderPlus } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useImpersonate } from "@/hooks/use-impersonate";
 import { CreatePostDialog } from "@/components/CreatePostDialog";
@@ -100,6 +101,11 @@ const Profile = () => {
   const [blockId, setBlockId] = useState<string | null>(null);
   const [collections, setCollections] = useState<any[]>([]);
   const [collectionsLoading, setCollectionsLoading] = useState(false);
+  const [savedPosts, setSavedPosts] = useState<any[]>([]);
+  const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
+  const [newCollectionName, setNewCollectionName] = useState("");
+  const [newCollectionDesc, setNewCollectionDesc] = useState("");
+  const [createCollectionDialogOpen, setCreateCollectionDialogOpen] = useState(false);
 
   const handleRefresh = async () => {
     soundEffects.playClick();
@@ -131,48 +137,60 @@ const Profile = () => {
     
     setPostsLoading(true);
     try {
-      const { data: postsData } = await supabase
-        .from("posts")
-        .select(`
-          *,
-          profiles!posts_user_id_fkey (
-            username,
-            full_name,
-            profile_photo
-          )
-        `)
-        .eq("user_id", profile.user_id)
-        .order("created_at", { ascending: false });
+      // **PARALEL SORGULAR** - Tüm verileri tek seferde çek
+      const [postsResult, likesResult, commentsCountResult, userLikesResult] = await Promise.all([
+        // 1. Postları çek
+        supabase
+          .from("posts")
+          .select(`
+            *,
+            profiles!posts_user_id_fkey (
+              username,
+              full_name,
+              profile_photo
+            )
+          `)
+          .eq("user_id", profile.user_id)
+          .order("created_at", { ascending: false }),
+        
+        // 2. TÜM like'ları çek
+        supabase
+          .from("post_likes")
+          .select("post_id"),
+        
+        // 3. TÜM yorumları çek
+        supabase
+          .from("post_comments")
+          .select("post_id"),
+        
+        // 4. Kullanıcının like'larını çek
+        supabase
+          .from("post_likes")
+          .select("post_id")
+          .eq("user_id", currentUserId)
+      ]);
 
-      if (postsData) {
-        const postsWithData = await Promise.all(
-          postsData.map(async (post: any) => {
-            const { count: likesCount } = await supabase
-              .from("post_likes")
-              .select("*", { count: "exact", head: true })
-              .eq("post_id", post.id);
+      if (postsResult.data) {
+        // Like ve comment sayılarını grupla
+        const likesMap = new Map<string, number>();
+        (likesResult.data || []).forEach(like => {
+          likesMap.set(like.post_id, (likesMap.get(like.post_id) || 0) + 1);
+        });
 
-            const { count: commentsCount } = await supabase
-              .from("post_comments")
-              .select("*", { count: "exact", head: true })
-              .eq("post_id", post.id);
+        const commentsMap = new Map<string, number>();
+        (commentsCountResult.data || []).forEach(comment => {
+          commentsMap.set(comment.post_id, (commentsMap.get(comment.post_id) || 0) + 1);
+        });
 
-            const { data: likeCheck } = await supabase
-              .from("post_likes")
-              .select("id")
-              .eq("post_id", post.id)
-              .eq("user_id", currentUserId)
-              .maybeSingle();
+        const userLikesSet = new Set(userLikesResult.data?.map(l => l.post_id) || []);
 
-            return {
-              ...post,
-              profile: post.profiles,
-              likes: likesCount || 0,
-              comments: commentsCount || 0,
-              hasLiked: !!likeCheck,
-            };
-          })
-        );
+        const postsWithData = postsResult.data.map((post: any) => ({
+          ...post,
+          profile: post.profiles,
+          likes: likesMap.get(post.id) || 0,
+          comments: commentsMap.get(post.id) || 0,
+          hasLiked: userLikesSet.has(post.id),
+        }));
 
         setUserPosts(postsWithData);
       }
@@ -188,34 +206,172 @@ const Profile = () => {
     
     setCollectionsLoading(true);
     try {
-      const { data: collectionsData, error } = await supabase
+      // Load collections
+      const { data: collectionsData, error: collError } = await supabase
         .from("collections")
         .select("*")
         .eq("user_id", profile.user_id)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (collError) throw collError;
 
-      // Load saved posts count for each collection
-      const collectionsWithCount = await Promise.all(
-        (collectionsData || []).map(async (collection) => {
-          const { count } = await supabase
-            .from("saved_posts")
-            .select("*", { count: "exact", head: true })
-            .eq("collection_id", collection.id);
+      // Load saved posts
+      const { data: savedPostsData, error: savedError } = await supabase
+        .from("saved_posts")
+        .select(`
+          *,
+          posts!inner (
+            id,
+            content,
+            media_url,
+            media_type,
+            created_at,
+            profiles!posts_user_id_fkey (
+              username,
+              full_name,
+              profile_photo
+            )
+          )
+        `)
+        .eq("user_id", profile.user_id)
+        .order("created_at", { ascending: false });
 
-          return {
-            ...collection,
-            postsCount: count || 0,
-          };
-        })
-      );
+      if (savedError) throw savedError;
+
+      // Format saved posts
+      const formattedSavedPosts = (savedPostsData || []).map(item => ({
+        ...item,
+        post: {
+          ...item.posts,
+          profile: item.posts.profiles
+        }
+      }));
+
+      setSavedPosts(formattedSavedPosts);
+
+      // Add post counts to collections
+      const collectionsWithCount = (collectionsData || []).map(collection => ({
+        ...collection,
+        postsCount: formattedSavedPosts.filter(sp => sp.collection_id === collection.id).length,
+      }));
 
       setCollections(collectionsWithCount);
     } catch (error) {
       console.error("Error loading collections:", error);
     } finally {
       setCollectionsLoading(false);
+    }
+  };
+
+  const handleCreateCollection = async () => {
+    if (!newCollectionName.trim()) {
+      toast({
+        title: "Hata",
+        description: "Koleksiyon adı gerekli",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("collections")
+        .insert({
+          user_id: profile.user_id,
+          name: newCollectionName,
+          description: newCollectionDesc || null,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Başarılı",
+        description: "Koleksiyon oluşturuldu",
+      });
+
+      setNewCollectionName("");
+      setNewCollectionDesc("");
+      setCreateCollectionDialogOpen(false);
+      await loadCollections();
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: error.message || "Koleksiyon oluşturulamadı",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleMoveToCollection = async (savedPostId: string, collectionId: string | null) => {
+    try {
+      const { error } = await supabase
+        .from("saved_posts")
+        .update({ collection_id: collectionId })
+        .eq("id", savedPostId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Başarılı",
+        description: collectionId ? "Koleksiyona taşındı" : "Koleksiyondan çıkarıldı",
+      });
+
+      await loadCollections();
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: "İşlem gerçekleştirilemedi",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteCollection = async (collectionId: string) => {
+    try {
+      const { error } = await supabase
+        .from("collections")
+        .delete()
+        .eq("id", collectionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Başarılı",
+        description: "Koleksiyon silindi",
+      });
+
+      await loadCollections();
+      setSelectedCollection(null);
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: "Koleksiyon silinemedi",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUnsave = async (savedPostId: string) => {
+    try {
+      const { error } = await supabase
+        .from("saved_posts")
+        .delete()
+        .eq("id", savedPostId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Başarılı",
+        description: "Gönderi kaydedilenlerden kaldırıldı",
+      });
+
+      await loadCollections();
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: "İşlem gerçekleştirilemedi",
+        variant: "destructive",
+      });
     }
   };
 
@@ -1719,41 +1875,172 @@ const Profile = () => {
             <Card className="p-6">
               {isOwnProfile ? (
                 <>
-                  {collectionsLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                    </div>
-                  ) : collections.length === 0 ? (
-                    <div className="text-center py-12">
-                      <p className="text-muted-foreground mb-4">Henüz koleksiyonunuz yok</p>
-                      <Button onClick={() => navigate("/saved-posts")}>
-                        Kayıtlı Gönderiler
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-semibold">Kayıtlı Gönderilerim</h2>
+                    <Dialog open={createCollectionDialogOpen} onOpenChange={setCreateCollectionDialogOpen}>
+                      <Button onClick={() => setCreateCollectionDialogOpen(true)} size="sm" className="gap-2">
+                        <Plus className="w-4 h-4" />
+                        Yeni Koleksiyon
                       </Button>
-                    </div>
-                  ) : (
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {collections.map((collection) => (
-                        <Card
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Yeni Koleksiyon</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 mt-4">
+                          <Input
+                            placeholder="Koleksiyon adı"
+                            value={newCollectionName}
+                            onChange={(e) => setNewCollectionName(e.target.value)}
+                          />
+                          <Textarea
+                            placeholder="Açıklama (isteğe bağlı)"
+                            value={newCollectionDesc}
+                            onChange={(e) => setNewCollectionDesc(e.target.value)}
+                          />
+                          <Button onClick={handleCreateCollection} className="w-full">
+                            Oluştur
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+
+                  <Tabs value={selectedCollection || "all"} onValueChange={(v) => setSelectedCollection(v === "all" ? null : v)} className="w-full">
+                    <TabsList className="mb-4 flex-wrap h-auto">
+                      <TabsTrigger value="all" className="gap-2">
+                        <Bookmark className="w-4 h-4" />
+                        Tümü ({savedPosts.filter(sp => !sp.collection_id).length})
+                      </TabsTrigger>
+                      {collections.map(collection => (
+                        <TabsTrigger
                           key={collection.id}
-                          className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-                          onClick={() => navigate("/saved-posts")}
+                          value={collection.id}
+                          className="gap-2"
                         >
-                          <h3 className="font-semibold mb-2">{collection.name}</h3>
-                          {collection.description && (
-                            <p className="text-sm text-muted-foreground mb-3">
-                              {collection.description}
-                            </p>
-                          )}
-                          <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span>{collection.postsCount} gönderi</span>
-                            <span>
-                              {new Date(collection.created_at).toLocaleDateString('tr-TR')}
-                            </span>
-                          </div>
-                        </Card>
+                          <FolderIcon className="w-4 h-4" />
+                          {collection.name} ({collection.postsCount})
+                        </TabsTrigger>
                       ))}
-                    </div>
-                  )}
+                    </TabsList>
+
+                    <TabsContent value={selectedCollection || "all"}>
+                      {selectedCollection && (
+                        <div className="flex items-center justify-between mb-4 p-4 bg-muted rounded-lg">
+                          <div>
+                            <h3 className="font-semibold">{collections.find(c => c.id === selectedCollection)?.name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {collections.find(c => c.id === selectedCollection)?.description}
+                            </p>
+                          </div>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteCollection(selectedCollection)}
+                          >
+                            <Trash2Icon className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+
+                      {collectionsLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        </div>
+                      ) : (savedPosts.filter(sp => selectedCollection ? sp.collection_id === selectedCollection : !sp.collection_id).length === 0) ? (
+                        <div className="text-center py-12">
+                          <Bookmark className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                          <p className="text-muted-foreground">
+                            {selectedCollection ? "Bu koleksiyonda kayıtlı gönderi yok" : "Henüz kayıtlı gönderi yok"}
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-2">
+                            Feed'den gönderileri kaydederek buradan erişebilirsiniz
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {savedPosts
+                            .filter(sp => selectedCollection ? sp.collection_id === selectedCollection : !sp.collection_id)
+                            .map((saved) => (
+                              <Card key={saved.id} className="p-4">
+                                <div className="flex items-start gap-4 mb-4">
+                                  <Avatar className="w-12 h-12 cursor-pointer" onClick={() => navigate(`/profile/${saved.post.profile.username}`)}>
+                                    <AvatarImage src={saved.post.profile.profile_photo || ""} />
+                                    <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                                      {saved.post.profile.username.substring(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <button
+                                          onClick={() => navigate(`/profile/${saved.post.profile.username}`)}
+                                          className="font-semibold hover:underline"
+                                        >
+                                          {saved.post.profile.full_name || saved.post.profile.username}
+                                        </button>
+                                        <p className="text-xs text-muted-foreground">
+                                          @{saved.post.profile.username}
+                                        </p>
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <Select
+                                          value={saved.collection_id || "none"}
+                                          onValueChange={(value) =>
+                                            handleMoveToCollection(saved.id, value === "none" ? null : value)
+                                          }
+                                        >
+                                          <SelectTrigger className="w-[150px] h-8 text-xs">
+                                            <SelectValue placeholder="Koleksiyon" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="none">Koleksiyonsuz</SelectItem>
+                                            {collections.map((collection) => (
+                                              <SelectItem key={collection.id} value={collection.id}>
+                                                {collection.name}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8"
+                                          onClick={() => handleUnsave(saved.id)}
+                                        >
+                                          <Trash2Icon className="w-4 h-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {saved.post.content && (
+                                  <p className="text-sm mb-4 whitespace-pre-wrap">{saved.post.content}</p>
+                                )}
+
+                                {saved.post.media_url && (
+                                  <div className="rounded-lg overflow-hidden">
+                                    {saved.post.media_type === "image" ? (
+                                      <img
+                                        src={saved.post.media_url}
+                                        alt="Post media"
+                                        className="w-full max-h-96 object-cover"
+                                      />
+                                    ) : saved.post.media_type === "video" ? (
+                                      <video
+                                        src={saved.post.media_url}
+                                        controls
+                                        className="w-full max-h-96"
+                                      />
+                                    ) : null}
+                                  </div>
+                                )}
+                              </Card>
+                            ))}
+                        </div>
+                      )}
+                    </TabsContent>
+                  </Tabs>
                 </>
               ) : (
                 <div className="text-center py-12 text-muted-foreground">

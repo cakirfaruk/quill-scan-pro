@@ -123,8 +123,11 @@ const Feed = () => {
     }
     
     setUserId(effectiveUserId);
-    await loadFriends(effectiveUserId);
-    await loadPosts(effectiveUserId);
+    // **PARALEL YÜKLEME** - Arkadaşlar ve postlar aynı anda
+    await Promise.all([
+      loadFriends(effectiveUserId),
+      loadPosts(effectiveUserId)
+    ]);
   };
 
   const loadFriends = async (currentUserId: string) => {
@@ -161,68 +164,82 @@ const Feed = () => {
 
   const loadPosts = async (currentUserId: string) => {
     try {
-      const { data: postsData, error: postsError } = await supabase
-        .from("posts")
-        .select(`
-          *,
-          profiles!posts_user_id_fkey (
-            username,
-            full_name,
-            profile_photo
-          )
-        `)
-        .order("created_at", { ascending: false })
-        .limit(100);
+      // **PARALEL SORGULAR** - Tek seferde tüm verileri al
+      const [postsResult, friendsResult, likesResult, commentsCountResult, userLikesResult, userSavesResult] = await Promise.all([
+        // 1. Postları çek
+        supabase
+          .from("posts")
+          .select(`
+            *,
+            profiles!posts_user_id_fkey (
+              username,
+              full_name,
+              profile_photo
+            )
+          `)
+          .order("created_at", { ascending: false })
+          .limit(100),
+        
+        // 2. Arkadaşları çek
+        supabase
+          .from("friends")
+          .select("user_id, friend_id")
+          .or(`user_id.eq.${currentUserId},friend_id.eq.${currentUserId}`)
+          .eq("status", "accepted"),
+        
+        // 3. TÜM postların like sayılarını tek sorguda al
+        supabase
+          .from("post_likes")
+          .select("post_id"),
+        
+        // 4. TÜM postların yorum sayılarını tek sorguda al
+        supabase
+          .from("post_comments")
+          .select("post_id"),
+        
+        // 5. Kullanıcının like'larını tek sorguda al
+        supabase
+          .from("post_likes")
+          .select("post_id")
+          .eq("user_id", currentUserId),
+        
+        // 6. Kullanıcının kayıtlarını tek sorguda al
+        supabase
+          .from("saved_posts")
+          .select("post_id")
+          .eq("user_id", currentUserId)
+      ]);
 
-      if (postsError) throw postsError;
+      if (postsResult.error) throw postsResult.error;
 
-      const postsWithData = await Promise.all(
-        (postsData || []).map(async (post: any) => {
-          const { count: likesCount } = await supabase
-            .from("post_likes")
-            .select("*", { count: "exact", head: true })
-            .eq("post_id", post.id);
+      // Like ve comment sayılarını grupla
+      const likesMap = new Map<string, number>();
+      (likesResult.data || []).forEach(like => {
+        likesMap.set(like.post_id, (likesMap.get(like.post_id) || 0) + 1);
+      });
 
-          const { count: commentsCount } = await supabase
-            .from("post_comments")
-            .select("*", { count: "exact", head: true })
-            .eq("post_id", post.id);
+      const commentsMap = new Map<string, number>();
+      (commentsCountResult.data || []).forEach(comment => {
+        commentsMap.set(comment.post_id, (commentsMap.get(comment.post_id) || 0) + 1);
+      });
 
-          const { data: likeCheck } = await supabase
-            .from("post_likes")
-            .select("id")
-            .eq("post_id", post.id)
-            .eq("user_id", currentUserId)
-            .maybeSingle();
+      const userLikesSet = new Set(userLikesResult.data?.map(l => l.post_id) || []);
+      const userSavesSet = new Set(userSavesResult.data?.map(s => s.post_id) || []);
 
-          const { data: saveCheck } = await supabase
-            .from("saved_posts")
-            .select("id")
-            .eq("post_id", post.id)
-            .eq("user_id", currentUserId)
-            .maybeSingle();
+      // Postları enrich et
+      const postsWithData = (postsResult.data || []).map((post: any) => ({
+        ...post,
+        profile: post.profiles,
+        likes: likesMap.get(post.id) || 0,
+        comments: commentsMap.get(post.id) || 0,
+        hasLiked: userLikesSet.has(post.id),
+        hasSaved: userSavesSet.has(post.id),
+        shares_count: post.shares_count || 0,
+      }));
 
-          return {
-            ...post,
-            profile: post.profiles,
-            likes: likesCount || 0,
-            comments: commentsCount || 0,
-            hasLiked: !!likeCheck,
-            hasSaved: !!saveCheck,
-            shares_count: post.shares_count || 0,
-          };
-        })
-      );
-
-      // Get friend IDs from friends list
-      const { data: friendsData } = await supabase
-        .from("friends")
-        .select("user_id, friend_id")
-        .or(`user_id.eq.${currentUserId},friend_id.eq.${currentUserId}`)
-        .eq("status", "accepted");
-
+      // Arkadaş ID'lerini hesapla
       const friendIds = new Set(
-        (friendsData || []).map(f => 
+        (friendsResult.data || []).map(f => 
           f.user_id === currentUserId ? f.friend_id : f.user_id
         )
       );

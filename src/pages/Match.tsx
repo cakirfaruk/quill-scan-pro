@@ -354,50 +354,40 @@ const Match = () => {
       const numUserIds = new Set(numData?.map(d => d.user_id) || []);
       const birthUserIds = new Set(birthData?.map(d => d.user_id) || []);
 
-      // Load photos and summaries for each profile
+      // **PARALEL SORGULAR** - Tüm profil verilerini paralel yükle
       const enrichedProfiles = await Promise.all(
         availableProfiles.map(async (profile) => {
-          const { data: photos } = await supabase
-            .from("user_photos")
-            .select("photo_url")
-            .eq("user_id", profile.user_id)
-            .order("display_order");
-
-          const has_numerology = numUserIds.has(profile.user_id);
-          const has_birth_chart = birthUserIds.has(profile.user_id);
-
-          let numerology_summary = null;
-          let birth_chart_summary = null;
-
-          if (has_numerology) {
-            const { data: numAnalysis } = await supabase
+          const [photosResult, numResult, birthResult] = await Promise.all([
+            supabase
+              .from("user_photos")
+              .select("photo_url")
+              .eq("user_id", profile.user_id)
+              .order("display_order"),
+            
+            supabase
               .from("numerology_analyses")
               .select("result")
               .eq("user_id", profile.user_id)
               .order("created_at", { ascending: false })
               .limit(1)
-              .maybeSingle();
-            numerology_summary = numAnalysis?.result;
-          }
-
-          if (has_birth_chart) {
-            const { data: birthAnalysis } = await supabase
+              .maybeSingle(),
+            
+            supabase
               .from("birth_chart_analyses")
               .select("result")
               .eq("user_id", profile.user_id)
               .order("created_at", { ascending: false })
               .limit(1)
-              .maybeSingle();
-            birth_chart_summary = birthAnalysis?.result;
-          }
+              .maybeSingle()
+          ]);
 
           return {
             ...profile,
-            photos: photos || [],
-            numerology_summary,
-            birth_chart_summary,
-            has_numerology,
-            has_birth_chart,
+            photos: photosResult.data || [],
+            numerology_summary: numResult.data?.result || null,
+            birth_chart_summary: birthResult.data?.result || null,
+            has_numerology: !!numResult.data,
+            has_birth_chart: !!birthResult.data,
           };
         })
       );

@@ -60,7 +60,6 @@ const App = () => {
           <Route path="/credits" element={<Credits />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/friends" element={<Friends />} />
-          <Route path="/match" element={<Match />} />
           <Route path="/saved" element={<SavedPosts />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/tarot" element={<Tarot />} />

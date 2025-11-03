@@ -224,10 +224,6 @@ export const CompactHeader = () => {
                     <Heart className="w-4 h-4 mr-2" />
                     Arkadaşlar
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/saved")}>
-                    <Bookmark className="w-4 h-4 mr-2" />
-                    Kaydedilenler
-                  </DropdownMenuItem>
 
                   <DropdownMenuSeparator />
 

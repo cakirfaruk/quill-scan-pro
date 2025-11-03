@@ -301,15 +301,29 @@ const Settings = () => {
           description: "Artık önemli güncellemelerden haberdar olacaksınız.",
         });
       } else {
+        // Show instructions for different browsers
+        const isChrome = /Chrome/.test(navigator.userAgent);
+        const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+        
+        let instructions = "Tarayıcı ayarlarından bildirimlere izin verin:\n\n";
+        if (isChrome) {
+          instructions += "Chrome: Adres çubuğundaki 🔒 simgesine tıklayın → Bildirimler → İzin Ver";
+        } else if (isSafari) {
+          instructions += "Safari: Safari → Tercihler → Web Siteleri → Bildirimler";
+        } else {
+          instructions += "Adres çubuğundaki site ayarları simgesine tıklayın ve bildirimlere izin verin.";
+        }
+        
         toast({
-          title: "Bildirim İzni Verilmedi",
-          description: "Bildirimleri aktif etmek için tarayıcı ayarlarından izin vermeniz gerekiyor.",
+          title: "Bildirim İzni Gerekli",
+          description: instructions,
           variant: "destructive",
+          duration: 8000,
         });
       }
     } else {
       toast({
-        title: "Bildirimler",
+        title: "Bildirimler Aktif",
         description: "Bildirimleri kapatmak için tarayıcı ayarlarından izni kaldırabilirsiniz.",
       });
     }
@@ -324,24 +338,36 @@ const Settings = () => {
       const effectiveUserId = getEffectiveUserId(user.id);
       if (!effectiveUserId) return;
 
-      const { data: blockedData, error } = await supabase
+      // Get blocked user IDs
+      const { data: blockedData, error: blockedError } = await supabase
         .from("blocked_users")
-        .select(`
-          id,
-          blocked_user_id,
-          created_at,
-          profiles!blocked_users_blocked_user_id_fkey(
-            username,
-            full_name,
-            profile_photo
-          )
-        `)
+        .select("id, blocked_user_id, created_at")
         .eq("user_id", effectiveUserId)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (blockedError) throw blockedError;
 
-      setBlockedUsers(blockedData || []);
+      if (!blockedData || blockedData.length === 0) {
+        setBlockedUsers([]);
+        return;
+      }
+
+      // Get profiles for blocked users
+      const blockedUserIds = blockedData.map(b => b.blocked_user_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("user_id, username, full_name, profile_photo")
+        .in("user_id", blockedUserIds);
+
+      if (profilesError) throw profilesError;
+
+      // Combine blocked data with profile data
+      const enrichedBlockedUsers = blockedData.map(blocked => ({
+        ...blocked,
+        profiles: profilesData?.find(p => p.user_id === blocked.blocked_user_id)
+      }));
+
+      setBlockedUsers(enrichedBlockedUsers || []);
     } catch (error: any) {
       console.error("Error loading blocked users:", error);
       toast({
