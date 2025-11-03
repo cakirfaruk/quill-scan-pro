@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useImpersonate } from "@/hooks/use-impersonate";
 import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
+import { CreatePostDialog } from "@/components/CreatePostDialog";
 
 export const CompactHeader = () => {
   const [credits, setCredits] = useState(0);
@@ -29,6 +30,7 @@ export const CompactHeader = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
+  const [createPostDialogOpen, setCreatePostDialogOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -134,7 +136,11 @@ export const CompactHeader = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                className={`gap-2 ${location.pathname === "/feed" ? "text-primary" : ""}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setCreatePostDialogOpen(true);
+                }}
+                className="gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Oluştur
@@ -245,6 +251,22 @@ export const CompactHeader = () => {
           )}
         </div>
       </div>
+
+      {/* Create Post Dialog */}
+      <CreatePostDialog
+        open={createPostDialogOpen}
+        onOpenChange={setCreatePostDialogOpen}
+        userId={currentUserId || ""}
+        username={username}
+        profilePhoto={profilePhoto}
+        onPostCreated={() => {
+          toast({
+            title: "Başarılı",
+            description: "Gönderi oluşturuldu",
+          });
+          setCreatePostDialogOpen(false);
+        }}
+      />
     </header>
   );
 };

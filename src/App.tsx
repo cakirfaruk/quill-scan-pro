@@ -27,7 +27,6 @@ import DreamInterpretation from "./pages/DreamInterpretation";
 import DailyHoroscope from "./pages/DailyHoroscope";
 import Palmistry from "./pages/Palmistry";
 import Handwriting from "./pages/Handwriting";
-import Feed from "./pages/Feed";
 import SavedPosts from "./pages/SavedPosts";
 import Reels from "./pages/Reels";
 import Explore from "./pages/Explore";
@@ -53,7 +52,6 @@ const AppContent = () => {
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/feed" element={<Feed />} />
           <Route path="/profile/:username?" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/about" element={<About />} />
@@ -78,6 +76,7 @@ const AppContent = () => {
           <Route path="/groups" element={<Groups />} />
           <Route path="/groups/:groupId" element={<GroupChat />} />
           <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
+          <Route path="/match" element={<Match />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <MobileNavWrapper />
@@ -99,7 +98,7 @@ const App = () => {
 // Only show MobileNav on specific pages
 const MobileNavWrapper = () => {
   const location = window.location.pathname;
-  const showNav = ['/', '/feed', '/explore', '/reels', '/discovery', '/messages', '/profile', '/match', '/friends'].some(
+  const showNav = ['/', '/explore', '/reels', '/discovery', '/messages', '/profile', '/match', '/friends'].some(
     path => location === path || location.startsWith('/profile/')
   );
   
