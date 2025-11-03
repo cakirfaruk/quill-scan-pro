@@ -10,13 +10,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Search, ArrowLeft, FileText, Smile, Paperclip, Ban, Check, CheckCheck } from "lucide-react";
+import { Loader2, Send, Search, ArrowLeft, FileText, Smile, Paperclip, Ban, Check, CheckCheck, Mic } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { useIsMobile } from "@/hooks/use-mobile";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useImpersonate } from "@/hooks/use-impersonate";
 import { soundEffects } from "@/utils/soundEffects";
+import { VoiceRecorder } from "@/components/VoiceRecorder";
+import { VoiceMessagePlayer } from "@/components/VoiceMessagePlayer";
 
 interface Friend {
   user_id: string;
@@ -60,6 +62,7 @@ const Messages = () => {
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [attachedFilePreview, setAttachedFilePreview] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"friends" | "matches" | "other">("friends");
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -480,6 +483,60 @@ const Messages = () => {
     }
   };
 
+  const handleSendVoiceMessage = async (audioBlob: Blob) => {
+    if (!selectedFriend) return;
+
+    if (selectedCategory === "other") {
+      toast({
+        title: "Mesaj Gönderilemez",
+        description: "Bu kişiyle eşleşmeniz veya arkadaş olmanız gerekiyor.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      soundEffects.playMessageSent();
+      
+      // Convert audio blob to base64
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+      
+      await new Promise((resolve) => {
+        reader.onloadend = async () => {
+          const base64Audio = reader.result as string;
+          
+          const messageContent = `[VOICE_MESSAGE:${base64Audio}]`;
+          let message_category: "friend" | "match" | "other" = selectedCategory || "other";
+
+          const { error } = await supabase
+            .from("messages")
+            .insert({
+              sender_id: currentUserId,
+              receiver_id: selectedFriend.user_id,
+              content: messageContent,
+              message_category,
+            });
+
+          if (error) throw error;
+
+          setShowVoiceRecorder(false);
+          loadMessages(selectedFriend.user_id);
+          resolve(null);
+        };
+      });
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: "Sesli mesaj gönderilemedi.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   const handleSendMessage = async () => {
     if ((!newMessage.trim() && !attachedFile) || !selectedFriend) return;
 
@@ -753,9 +810,18 @@ const Messages = () => {
                   <div className="space-y-4">
                     {messages.map((msg) => {
                       const isAnalysisShare = msg.analysis_id;
+                      const isVoiceMessage = msg.content.includes("[VOICE_MESSAGE:");
                       const hasFilePreview = msg.content.includes("[FILE_PREVIEW:");
                       let displayContent = msg.content;
                       let filePreview = null;
+                      let voiceMessageUrl = null;
+
+                      if (isVoiceMessage) {
+                        const voiceMatch = msg.content.match(/\[VOICE_MESSAGE:([^\]]+)\]/);
+                        if (voiceMatch) {
+                          voiceMessageUrl = voiceMatch[1];
+                        }
+                      }
 
                       if (hasFilePreview) {
                         const previewMatch = msg.content.match(/\[FILE_PREVIEW:([^\]]+)\]/);
@@ -817,6 +883,28 @@ const Messages = () => {
                                 </div>
                               </div>
                             </Card>
+                          ) : isVoiceMessage && voiceMessageUrl ? (
+                            <div
+                              className={`flex items-center gap-2 ${
+                                msg.sender_id === currentUserId ? "justify-end" : "justify-start"
+                              }`}
+                            >
+                              <div className={`rounded-lg overflow-hidden ${
+                                msg.sender_id === currentUserId
+                                  ? "bg-primary/10"
+                                  : "bg-muted"
+                              }`}>
+                                <div className="p-2">
+                                  <VoiceMessagePlayer audioUrl={voiceMessageUrl} />
+                                  <p className="text-xs opacity-70 mt-1 text-right">
+                                    {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
                           ) : (
                             <div
                               className={`max-w-[70%] rounded-lg overflow-hidden ${
@@ -880,82 +968,102 @@ const Messages = () => {
                   </div>
                 ) : (
                   <div className="p-4 border-t space-y-3">
-                    {/* File Preview */}
-                    {attachedFile && (
-                      <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium truncate">{attachedFile.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {(attachedFile.size / 1024).toFixed(2)} KB
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={removeAttachment}
-                        >
-                          ✕
-                        </Button>
-                      </div>
-                    )}
-                    
-                    <div className="flex gap-2">
-                      {/* Emoji Picker */}
-                      <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
-                        <PopoverTrigger asChild>
-                          <Button variant="ghost" size="icon" type="button">
-                            <Smile className="w-5 h-5" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-full p-0 border-0" align="start">
-                          <EmojiPicker onEmojiClick={onEmojiClick} />
-                        </PopoverContent>
-                      </Popover>
-
-                      {/* File Attachment */}
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*,video/*,.pdf,.doc,.docx"
-                        onChange={handleFileSelect}
-                        className="hidden"
+                    {/* Voice Recorder */}
+                    {showVoiceRecorder ? (
+                      <VoiceRecorder
+                        onSend={handleSendVoiceMessage}
+                        onCancel={() => setShowVoiceRecorder(false)}
                       />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                      >
-                        <Paperclip className="w-5 h-5" />
-                      </Button>
-
-                      {/* Message Input */}
-                      <Input
-                        placeholder="Mesajınızı yazın..."
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyPress={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSendMessage();
-                          }
-                        }}
-                        className="flex-1"
-                      />
-                      
-                      {/* Send Button */}
-                      <Button
-                        onClick={handleSendMessage}
-                        disabled={(!newMessage.trim() && !attachedFile) || isSending}
-                        size="icon"
-                      >
-                        {isSending ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Send className="w-4 h-4" />
+                    ) : (
+                      <>
+                        {/* File Preview */}
+                        {attachedFile && (
+                          <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium truncate">{attachedFile.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {(attachedFile.size / 1024).toFixed(2)} KB
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={removeAttachment}
+                            >
+                              ✕
+                            </Button>
+                          </div>
                         )}
-                      </Button>
-                    </div>
+                        
+                        <div className="flex gap-2">
+                          {/* Emoji Picker */}
+                          <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="icon" type="button">
+                                <Smile className="w-5 h-5" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-full p-0 border-0" align="start">
+                              <EmojiPicker onEmojiClick={onEmojiClick} />
+                            </PopoverContent>
+                          </Popover>
+
+                          {/* Voice Recorder Button */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            type="button"
+                            onClick={() => setShowVoiceRecorder(true)}
+                          >
+                            <Mic className="w-5 h-5" />
+                          </Button>
+
+                          {/* File Attachment */}
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*,video/*,.pdf,.doc,.docx"
+                            onChange={handleFileSelect}
+                            className="hidden"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            <Paperclip className="w-5 h-5" />
+                          </Button>
+
+                          {/* Message Input */}
+                          <Input
+                            placeholder="Mesajınızı yazın..."
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            onKeyPress={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSendMessage();
+                              }
+                            }}
+                            className="flex-1"
+                          />
+                          
+                          {/* Send Button */}
+                          <Button
+                            onClick={handleSendMessage}
+                            disabled={(!newMessage.trim() && !attachedFile) || isSending}
+                            size="icon"
+                          >
+                            {isSending ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Send className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </>
