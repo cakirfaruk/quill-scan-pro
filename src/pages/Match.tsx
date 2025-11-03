@@ -893,9 +893,9 @@ const Match = () => {
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       <Header />
-      <div className="flex-1 flex flex-col px-4 pt-2 pb-2 md:py-8 max-w-md mx-auto w-full">
+      <div className="flex-1 flex flex-col px-4 pt-2 pb-20 md:py-8 max-w-md mx-auto w-full">
         <div 
-          className="flex-1 overflow-hidden card-hover animate-scale-in shadow-elegant relative select-none touch-none"
+          className="flex-1 overflow-hidden card-hover animate-scale-in shadow-elegant relative select-none touch-none max-h-[calc(100vh-200px)] md:max-h-none"
           {...cardGestures}
           style={{
             transform: `translateX(${cardGestures.offset.x}px) translateY(${cardGestures.offset.y}px) rotate(${cardGestures.rotation}deg)`,
@@ -903,7 +903,7 @@ const Match = () => {
           }}
         >
           <Card className="overflow-hidden h-full flex flex-col">
-            <div className="relative flex-1">
+            <div className="relative h-[50vh] md:flex-1">
               <img
                 src={currentProfile.profile_photo || currentProfile.photos[0]?.photo_url || "/placeholder.svg"}
                 alt={currentProfile.username}
@@ -938,12 +938,12 @@ const Match = () => {
               </div>
             </div>
           
-          <CardContent className="p-6">
+          <CardContent className="p-3 md:p-6">
             {currentProfile.bio && (
-              <p className="mb-4 text-foreground">{currentProfile.bio}</p>
+              <p className="mb-3 text-sm text-foreground line-clamp-2">{currentProfile.bio}</p>
             )}
             
-            <div className="space-y-2 mb-4">
+            <div className="space-y-2 mb-3">
               {currentProfile.has_numerology ? (
                 <Badge variant="outline" className="mr-2">
                   Numeroloji ✓
@@ -965,25 +965,25 @@ const Match = () => {
             </div>
 
             {!currentProfile.has_numerology && !currentProfile.has_birth_chart ? (
-              <div className="bg-muted p-4 rounded-lg mb-4">
-                <p className="text-sm text-muted-foreground text-center">
+              <div className="bg-muted p-2 rounded-lg mb-3">
+                <p className="text-xs text-muted-foreground text-center">
                   Uyum Belirlenemedi
                 </p>
               </div>
             ) : (
-              <div className="space-y-2 mb-4">
+              <div className="space-y-2 mb-3">
                 {currentProfile.has_numerology && compatibilityData.numerologyScore !== undefined && (
-                  <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
-                    <span className="text-sm font-medium">Numerolojik Uyum</span>
-                    <span className="text-lg font-bold text-primary">
+                  <div className="flex items-center justify-between p-2 bg-primary/10 rounded-lg">
+                    <span className="text-xs font-medium">Numerolojik</span>
+                    <span className="text-sm font-bold text-primary">
                       %{compatibilityData.numerologyScore}
                     </span>
                   </div>
                 )}
                 {currentProfile.has_birth_chart && compatibilityData.birthChartScore !== undefined && (
-                  <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
-                    <span className="text-sm font-medium">Astrolojik Uyum</span>
-                    <span className="text-lg font-bold text-primary">
+                  <div className="flex items-center justify-between p-2 bg-primary/10 rounded-lg">
+                    <span className="text-xs font-medium">Astrolojik</span>
+                    <span className="text-sm font-bold text-primary">
                       %{compatibilityData.birthChartScore}
                     </span>
                   </div>
@@ -994,7 +994,7 @@ const Match = () => {
             <div className="space-y-2">
               <Button
                 variant="outline"
-                className="w-full"
+                className="w-full h-9 text-xs"
                 onClick={() => {
                   setShowCompatibility(true);
                   if (!compatibilityData.details) {
@@ -1005,20 +1005,20 @@ const Match = () => {
               >
                 {compatibilityLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                     Analiz Ediliyor...
                   </>
                 ) : (
                   <>
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Uyum Detayını Gör (50 Kredi)
+                    <Sparkles className="mr-1 h-3 w-3" />
+                    Uyum Detayı (50 Kredi)
                   </>
                 )}
               </Button>
 
               <Button
                 variant="outline"
-                className="w-full"
+                className="w-full h-9 text-xs"
                 onClick={() => {
                   if (tarotResult) {
                     setShowTarotResultDialog(true);
@@ -1028,14 +1028,14 @@ const Match = () => {
                 }}
                 disabled={tarotLoading}
               >
-                <Sparkles className="w-4 h-4 mr-2" />
+                <Sparkles className="w-3 h-3 mr-1" />
                 {tarotLoading ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                     Yorumlanıyor...
                   </>
                 ) : tarotResult ? (
-                  "Tarot Sonucunu Gör"
+                  "Tarot Sonucu"
                 ) : (
                   "Tarot Baktır"
                 )}
