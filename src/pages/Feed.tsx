@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -91,12 +91,12 @@ const Feed = () => {
   const [selectedCollection, setSelectedCollection] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     soundEffects.playClick();
     if (userId) {
       await loadPosts(userId);
     }
-  };
+  }, [userId]);
 
   const { containerRef, isPulling, pullDistance, isRefreshing, shouldTrigger } = usePullToRefresh({
     onRefresh: handleRefresh,
@@ -255,7 +255,7 @@ const Feed = () => {
     }
   };
 
-  const handleLike = async (postId: string, hasLiked: boolean) => {
+  const handleLike = useCallback(async (postId: string, hasLiked: boolean) => {
     try {
       if (hasLiked) {
         await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", userId);
@@ -268,9 +268,9 @@ const Feed = () => {
       soundEffects.playError();
       toast({ title: "Hata", description: "İşlem gerçekleştirilemedi", variant: "destructive" });
     }
-  };
+  }, [userId]);
 
-  const handleSave = async (postId: string, hasSaved: boolean) => {
+  const handleSave = useCallback(async (postId: string, hasSaved: boolean) => {
     if (hasSaved) {
       try {
         await supabase.from("saved_posts").delete().eq("post_id", postId).eq("user_id", userId);
@@ -288,7 +288,7 @@ const Feed = () => {
         setSaveDialogOpen(true);
       }
     }
-  };
+  }, [userId, friendsPosts, allPosts]);
 
   const handleConfirmSave = async () => {
     if (!postToSave) return;

@@ -891,26 +891,19 @@ const Match = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       <Header />
-      <div className="container mx-auto px-4 py-8 max-w-md">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Eşleşme</h1>
-          <Badge variant="secondary" className="text-lg px-4 py-2">
-            {credits} Kredi
-          </Badge>
-        </div>
-
+      <div className="flex-1 flex flex-col px-4 pt-2 pb-2 md:py-8 max-w-md mx-auto w-full">
         <div 
-          className="overflow-hidden mb-6 card-hover animate-scale-in shadow-elegant relative select-none touch-none"
+          className="flex-1 overflow-hidden card-hover animate-scale-in shadow-elegant relative select-none touch-none"
           {...cardGestures}
           style={{
             transform: `translateX(${cardGestures.offset.x}px) translateY(${cardGestures.offset.y}px) rotate(${cardGestures.rotation}deg)`,
             transition: cardGestures.isDragging ? 'none' : 'transform 0.3s ease-out',
           }}
         >
-          <Card className="overflow-hidden">
-            <div className="relative h-96">
+          <Card className="overflow-hidden h-full flex flex-col">
+            <div className="relative flex-1">
               <img
                 src={currentProfile.profile_photo || currentProfile.photos[0]?.photo_url || "/placeholder.svg"}
                 alt={currentProfile.username}
@@ -1051,29 +1044,6 @@ const Match = () => {
           </CardContent>
         </Card>
         </div>
-
-        <div className="flex gap-4 justify-center animate-fade-in-up">
-          <Button
-            size="lg"
-            variant="outline"
-            className="rounded-full w-16 h-16 hover-scale press-effect border-destructive/50 hover:border-destructive hover:bg-destructive/10"
-            onClick={() => handleSwipe("pass")}
-          >
-            <X className="w-8 h-8 text-destructive transition-transform hover:rotate-90" />
-          </Button>
-          <Button
-            size="lg"
-            variant="default"
-            className="rounded-full w-16 h-16 hover-scale press-effect glow"
-            onClick={() => handleSwipe("like")}
-          >
-            <Heart className="w-8 h-8 transition-transform hover:scale-125" />
-          </Button>
-        </div>
-
-        <p className="text-center text-sm text-muted-foreground mt-4">
-          Beğenmek: 5 kredi • Geçmek: 1 kredi
-        </p>
       </div>
 
       <Dialog open={showCompatibility} onOpenChange={setShowCompatibility}>
