@@ -621,13 +621,24 @@ const Match = () => {
     let analysisId = "";
     let analysisType = "";
 
+    // Get match ID for compatibility sharing
+    const [matchUser1, matchUser2] = [user.id, currentProfile.user_id].sort();
+    const { data: matchData } = await supabase
+      .from("matches")
+      .select("id")
+      .eq("user1_id", matchUser1)
+      .eq("user2_id", matchUser2)
+      .maybeSingle();
+
+    const matchId = matchData?.id || 'temp';
+
     if (shareType === "area") {
       creditsNeeded = 30;
-      shareContent = `📊 Uyum Alanı Paylaşımı\n\n${selectedArea?.name}\n${selectedArea?.strengths}\n\n[Analiz ID: ${compatibilityData.details?.matchId || 'temp'}]\n[Analiz Türü: compatibility]`;
+      shareContent = `📊 Uyum Alanı Paylaşımı\n\n${selectedArea?.name}\n${selectedArea?.strengths}\n\n[Analiz ID: ${matchId}]\n[Analiz Türü: compatibility]`;
       analysisType = "compatibility";
     } else if (shareType === "full") {
       creditsNeeded = 80;
-      shareContent = `📊 Tam Uyum Raporu\n\nGenel Uyum: %${compatibilityData.details?.overallScore}\n\n${compatibilityData.details?.overallSummary}\n\n[Analiz ID: ${compatibilityData.details?.matchId || 'temp'}]\n[Analiz Türü: compatibility]`;
+      shareContent = `📊 Tam Uyum Raporu\n\nGenel Uyum: %${compatibilityData.details?.overallScore}\n\n${compatibilityData.details?.overallSummary}\n\n[Analiz ID: ${matchId}]\n[Analiz Türü: compatibility]`;
       analysisType = "compatibility";
     } else if (shareType === "tarot") {
       creditsNeeded = 50;
@@ -645,14 +656,26 @@ const Match = () => {
     }
 
     try {
-      // Send message directly (with 'other' category)
+      // Check if there's a mutual match between users
+      const [matchUser1, matchUser2] = [user.id, currentProfile.user_id].sort();
+      const { data: matchExists } = await supabase
+        .from("matches")
+        .select("id")
+        .eq("user1_id", matchUser1)
+        .eq("user2_id", matchUser2)
+        .maybeSingle();
+
+      // Determine message category based on match status
+      const messageCategory = matchExists ? "match" : "other";
+
+      // Send message with appropriate category
       const { error: messageError } = await supabase
         .from("messages")
         .insert({
           sender_id: user.id,
           receiver_id: currentProfile.user_id,
           content: shareContent,
-          message_category: "other",
+          message_category: messageCategory,
         });
 
       if (messageError) throw messageError;

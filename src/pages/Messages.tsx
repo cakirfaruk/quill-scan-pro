@@ -312,7 +312,28 @@ const Messages = () => {
         .maybeSingle();
 
       // Check different tables based on analysis type
-      if (analysisType === "numerology") {
+      if (analysisType === "compatibility") {
+        // For compatibility, check matches table
+        const { data } = await supabase
+          .from("matches")
+          .select("*")
+          .eq("id", analysisId)
+          .maybeSingle();
+        
+        if (data) {
+          analysisData = {
+            id: data.id,
+            user_id: data.user1_id,
+            created_at: data.matched_at,
+            result: {
+              overallScore: data.overall_compatibility_score,
+              numerologyAnalysis: data.compatibility_numerology,
+              birthChartAnalysis: data.compatibility_birth_chart,
+            },
+            analysis_type: "compatibility",
+          };
+        }
+      } else if (analysisType === "numerology") {
         const { data } = await supabase
           .from("numerology_analyses")
           .select("*")
