@@ -635,9 +635,10 @@ const Match = () => {
 
     if (shareType === "area") {
       creditsNeeded = 30;
-      shareContent = `📊 Uyum Alanı Paylaşımı\n\n${selectedArea?.name}\n${selectedArea?.strengths}\n\n[Analiz ID: ${compatibilityId}]\n[Analiz Türü: compatibility]`;
-      analysisType = "compatibility";
-      analysisId = compatibilityId;
+      // Don't send analysis ID for area sharing - just text
+      shareContent = `📊 Uyum Alanı Paylaşımı\n\n**${selectedArea?.name}**\n\n${selectedArea?.strengths}${selectedArea?.challenges ? '\n\n⚠️ ' + selectedArea.challenges : ''}`;
+      analysisType = "";
+      analysisId = "";
     } else if (shareType === "full") {
       creditsNeeded = 80;
       shareContent = `📊 Tam Uyum Raporu\n\nGenel Uyum: %${compatibilityData.details?.overallScore}\n\n${compatibilityData.details?.overallSummary}\n\n[Analiz ID: ${compatibilityId}]\n[Analiz Türü: compatibility]`;
