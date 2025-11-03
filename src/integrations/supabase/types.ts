@@ -47,6 +47,39 @@ export type Database = {
         }
         Relationships: []
       }
+      badges: {
+        Row: {
+          category: string
+          created_at: string | null
+          criteria: Json | null
+          description: string | null
+          icon: string
+          id: string
+          name: string
+          rarity: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          criteria?: Json | null
+          description?: string | null
+          icon: string
+          id?: string
+          name: string
+          rarity?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          criteria?: Json | null
+          description?: string | null
+          icon?: string
+          id?: string
+          name?: string
+          rarity?: string | null
+        }
+        Relationships: []
+      }
       birth_chart_analyses: {
         Row: {
           birth_date: string
@@ -757,6 +790,68 @@ export type Database = {
         }
         Relationships: []
       }
+      poll_votes: {
+        Row: {
+          created_at: string | null
+          id: string
+          option_ids: string[]
+          poll_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          option_ids: string[]
+          poll_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          option_ids?: string[]
+          poll_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      polls: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          multiple_choice: boolean | null
+          options: Json
+          question: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          multiple_choice?: boolean | null
+          options: Json
+          question: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          multiple_choice?: boolean | null
+          options?: Json
+          question?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       post_comments: {
         Row: {
           content: string
@@ -983,6 +1078,36 @@ export type Database = {
           },
         ]
       }
+      profile_boosts: {
+        Row: {
+          boost_type: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          is_active: boolean | null
+          started_at: string | null
+          user_id: string
+        }
+        Insert: {
+          boost_type: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          is_active?: boolean | null
+          started_at?: string | null
+          user_id: string
+        }
+        Update: {
+          boost_type?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          is_active?: boolean | null
+          started_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           bio: string | null
@@ -1201,6 +1326,7 @@ export type Database = {
           created_at: string | null
           credits_used: number
           id: string
+          is_super_like: boolean | null
           target_user_id: string
           user_id: string
         }
@@ -1209,6 +1335,7 @@ export type Database = {
           created_at?: string | null
           credits_used?: number
           id?: string
+          is_super_like?: boolean | null
           target_user_id: string
           user_id: string
         }
@@ -1217,6 +1344,7 @@ export type Database = {
           created_at?: string | null
           credits_used?: number
           id?: string
+          is_super_like?: boolean | null
           target_user_id?: string
           user_id?: string
         }
@@ -1254,6 +1382,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_badges: {
+        Row: {
+          badge_id: string
+          earned_at: string | null
+          id: string
+          is_displayed: boolean | null
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          earned_at?: string | null
+          id?: string
+          is_displayed?: boolean | null
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          earned_at?: string | null
+          id?: string
+          is_displayed?: boolean | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_photos: {
         Row: {
@@ -1348,6 +1508,39 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      video_calls: {
+        Row: {
+          caller_id: string
+          created_at: string | null
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          receiver_id: string
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          caller_id: string
+          created_at?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          receiver_id: string
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          caller_id?: string
+          created_at?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          receiver_id?: string
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: []
       }
       video_reactions: {
         Row: {
