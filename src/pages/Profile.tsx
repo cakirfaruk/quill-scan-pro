@@ -91,6 +91,9 @@ const Profile = () => {
   const [shareAnalysisToPost, setShareAnalysisToPost] = useState<Analysis | null>(null);
   const [friendshipStatus, setFriendshipStatus] = useState<"none" | "pending_sent" | "pending_received" | "accepted">("none");
   const [selectedProfileImage, setSelectedProfileImage] = useState<string | null>(null);
+  const [profileAnalysisLoading, setProfileAnalysisLoading] = useState(false);
+  const [profileAnalysisResult, setProfileAnalysisResult] = useState<string | null>(null);
+  const [profileAnalysisDialogOpen, setProfileAnalysisDialogOpen] = useState(false);
 
   const handleRefresh = async () => {
     soundEffects.playClick();
@@ -1012,6 +1015,44 @@ const Profile = () => {
     }
   };
 
+  const handleProfileAnalysis = async () => {
+    setProfileAnalysisLoading(true);
+    setProfileAnalysisResult(null);
+    
+    try {
+      soundEffects.playClick();
+      const { data, error } = await supabase.functions.invoke('analyze-user-profile', {
+        body: { userId: isOwnProfile ? currentUserId : profile.user_id }
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setProfileAnalysisResult(data.analysis);
+      setProfileAnalysisDialogOpen(true);
+      soundEffects.playMatch();
+      toast({
+        title: "Analiz tamamlandı",
+        description: `${data.creditsUsed} kredi kullanıldı.`,
+      });
+      
+      await loadProfile();
+    } catch (error: any) {
+      console.error('Profile analysis error:', error);
+      soundEffects.playError();
+      toast({
+        title: "Profil analizi yapılamadı",
+        description: error.message || "Bir hata oluştu. Lütfen tekrar deneyin.",
+        variant: "destructive",
+      });
+    } finally {
+      setProfileAnalysisLoading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-subtle">
@@ -1075,12 +1116,32 @@ const Profile = () => {
                   {profile.full_name || profile.username}
                 </h1>
                 {isOwnProfile ? (
-                  <Link to="/settings">
-                    <Button size="sm" variant="outline">
-                      <Settings className="w-4 h-4 mr-2" />
-                      Düzenle
+                  <>
+                    <Link to="/settings">
+                      <Button size="sm" variant="outline">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Düzenle
+                      </Button>
+                    </Link>
+                    <Button 
+                      size="sm" 
+                      onClick={handleProfileAnalysis}
+                      disabled={profileAnalysisLoading}
+                      className="gap-2"
+                    >
+                      {profileAnalysisLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Analiz Ediliyor...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4" />
+                          Profil Analizi (50₺)
+                        </>
+                      )}
                     </Button>
-                  </Link>
+                  </>
                 ) : (
                   <>
                     {friendshipStatus === "none" && (
@@ -1508,6 +1569,45 @@ const Profile = () => {
                   }}>
                     Kapat
                   </Button>
+                </DialogContent>
+              </Dialog>
+
+              {/* Profile Analysis Dialog */}
+              <Dialog open={profileAnalysisDialogOpen} onOpenChange={setProfileAnalysisDialogOpen}>
+                <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-2xl">
+                      <Sparkles className="w-6 h-6 text-primary" />
+                      Detaylı Profil Analizi
+                    </DialogTitle>
+                    <DialogDescription>
+                      AI destekli kişilik ve profil değerlendirmesi
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Separator className="my-4" />
+                  <div className="prose prose-sm max-w-none dark:prose-invert">
+                    <div className="whitespace-pre-wrap text-foreground leading-relaxed">
+                      {profileAnalysisResult}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-6 pt-4 border-t">
+                    <Button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(profileAnalysisResult || '');
+                        toast({ title: "Kopyalandı", description: "Analiz panoya kopyalandı" });
+                      }}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      📋 Kopyala
+                    </Button>
+                    <Button 
+                      onClick={() => setProfileAnalysisDialogOpen(false)}
+                      className="flex-1"
+                    >
+                      Kapat
+                    </Button>
+                  </div>
                 </DialogContent>
               </Dialog>
             </Card>
