@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useImpersonate } from "@/hooks/use-impersonate";
 import { Users, UserPlus, Loader2, Search, Check, X, User } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { OnlineStatusBadge } from "@/components/OnlineStatusBadge";
 
 interface Profile {
   user_id: string;
@@ -238,23 +240,21 @@ const Friends = () => {
   };
 
   const ProfileAvatar = ({ profile }: { profile: Profile }) => (
-    <div className="flex items-center gap-3">
-      {profile.profile_photo ? (
-        <img
-          src={profile.profile_photo}
-          alt={profile.username}
-          className="w-12 h-12 rounded-full object-cover"
-        />
-      ) : (
-        <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center">
-          <User className="w-6 h-6 text-primary-foreground" />
-        </div>
-      )}
-      <div>
+    <div className="flex items-center gap-3 flex-1">
+      <div className="relative">
+        <Avatar className="w-12 h-12">
+          <AvatarImage src={profile.profile_photo || undefined} />
+          <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+            {profile.username.substring(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+      </div>
+      <div className="flex-1">
         <p className="font-semibold">{profile.full_name || profile.username}</p>
         {profile.full_name && (
           <p className="text-sm text-muted-foreground">@{profile.username}</p>
         )}
+        <OnlineStatusBadge userId={profile.user_id} showLastSeen={false} size="sm" />
       </div>
     </div>
   );

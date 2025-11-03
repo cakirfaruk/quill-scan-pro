@@ -24,6 +24,7 @@ import { ProfilePosts } from "@/components/ProfilePosts";
 import { MutualFriends } from "@/components/MutualFriends";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { soundEffects } from "@/utils/soundEffects";
+import { OnlineStatusBadge } from "@/components/OnlineStatusBadge";
 
 interface UserPhoto {
   id: string;
@@ -1196,6 +1197,13 @@ const Profile = () => {
               </div>
 
               <p className="text-sm text-muted-foreground mb-2">@{profile.username}</p>
+              
+              {/* Online Status */}
+              {!isOwnProfile && profile.user_id && (
+                <div className="mb-3">
+                  <OnlineStatusBadge userId={profile.user_id} showLastSeen={true} size="md" />
+                </div>
+              )}
               
               {profile.bio && (
                 <p className="text-sm mb-3">{profile.bio}</p>

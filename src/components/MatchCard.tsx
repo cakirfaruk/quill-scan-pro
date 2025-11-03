@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Heart, X, Sparkles, Star, MapPin, Calendar, Eye } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { OnlineStatusBadge } from "./OnlineStatusBadge";
 
 interface MatchCardProps {
   profile: {
@@ -140,7 +141,10 @@ export const MatchCard = ({
                 </span>
               )}
             </h2>
-            <p className="text-white/90 text-sm mb-2">@{profile.username}</p>
+            <div className="flex items-center gap-2 mb-2">
+              <p className="text-white/90 text-sm">@{profile.username}</p>
+              <OnlineStatusBadge userId={profile.user_id} showLastSeen={false} size="sm" />
+            </div>
 
             {profile.bio && (
               <p className="text-white/90 text-sm line-clamp-2 mb-3">{profile.bio}</p>
