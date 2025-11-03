@@ -511,6 +511,11 @@ const Messages = () => {
   const matchConversations = filteredConversations.filter(c => c.category === "match");
   const otherConversations = filteredConversations.filter(c => c.category === "other");
 
+  // Count unread conversations
+  const friendUnreadCount = friendConversations.filter(c => c.unreadCount > 0).length;
+  const matchUnreadCount = matchConversations.filter(c => c.unreadCount > 0).length;
+  const otherUnreadCount = otherConversations.filter(c => c.unreadCount > 0).length;
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-subtle">
@@ -550,25 +555,25 @@ const Messages = () => {
               <TabsList className="grid w-full grid-cols-3 mb-4">
                 <TabsTrigger value="friends" className="text-xs">
                   Arkadaşlar
-                  {friendConversations.length > 0 && (
+                  {friendUnreadCount > 0 && (
                     <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px]">
-                      {friendConversations.length}
+                      {friendUnreadCount}
                     </span>
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="matches" className="text-xs">
                   Eşleşmeler
-                  {matchConversations.length > 0 && (
+                  {matchUnreadCount > 0 && (
                     <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px]">
-                      {matchConversations.length}
+                      {matchUnreadCount}
                     </span>
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="other" className="text-xs">
                   Diğer
-                  {otherConversations.length > 0 && (
+                  {otherUnreadCount > 0 && (
                     <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px]">
-                      {otherConversations.length}
+                      {otherUnreadCount}
                     </span>
                   )}
                 </TabsTrigger>
