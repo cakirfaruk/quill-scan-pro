@@ -1,9 +1,10 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import { requestNotificationPermission } from "./utils/notifications";
+import { requestNotificationPermission, registerServiceWorker } from "./utils/notifications";
 
-// Request notification permission when app loads
+// Register service worker and request notification permission
+registerServiceWorker();
 requestNotificationPermission();
 
 createRoot(document.getElementById("root")!).render(<App />);
