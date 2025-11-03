@@ -1,6 +1,16 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.78.0'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
   try {
     const authHeader = req.headers.get('Authorization')!
     const supabaseClient = createClient(
@@ -14,7 +24,7 @@ Deno.serve(async (req) => {
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
@@ -27,7 +37,7 @@ Deno.serve(async (req) => {
     if (!profile?.is_admin) {
       return new Response(JSON.stringify({ error: 'Not admin' }), {
         status: 403,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
@@ -35,7 +45,7 @@ Deno.serve(async (req) => {
     if (!userId) {
       return new Response(JSON.stringify({ error: 'User ID required' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
@@ -49,13 +59,13 @@ Deno.serve(async (req) => {
     if (deleteError) throw deleteError
 
     return new Response(JSON.stringify({ success: true }), {
-      headers: { 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (error: any) {
     console.error('Error deleting user:', error)
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
 })

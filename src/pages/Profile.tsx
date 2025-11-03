@@ -283,71 +283,81 @@ const Profile = () => {
       setProfile(profileData);
       setIsOwnProfile(profileData.user_id === effectiveUserId);
 
-      // Load photos
-      const { data: photosData } = await supabase
-        .from("user_photos")
-        .select("*")
-        .eq("user_id", profileData.user_id)
-        .order("display_order");
+      // **PARALEL SORGULAR** - Tüm sorguları aynı anda başlat
+      const [photosResult, friendsResult, friendshipResult, blockResult] = await Promise.all([
+        // Photos
+        supabase
+          .from("user_photos")
+          .select("*")
+          .eq("user_id", profileData.user_id)
+          .order("display_order"),
+        
+        // Friends
+        supabase
+          .from("friends")
+          .select(`
+            *,
+            friend_profile:profiles!friends_friend_id_fkey(user_id, username, full_name, profile_photo),
+            user_profile:profiles!friends_user_id_fkey(user_id, username, full_name, profile_photo)
+          `)
+          .or(`user_id.eq.${profileData.user_id},friend_id.eq.${profileData.user_id}`)
+          .eq("status", "accepted"),
+        
+        // Friendship status (only if not own profile)
+        profileData.user_id !== effectiveUserId
+          ? supabase
+              .from("friends")
+              .select("*")
+              .or(`and(user_id.eq.${effectiveUserId},friend_id.eq.${profileData.user_id}),and(user_id.eq.${profileData.user_id},friend_id.eq.${effectiveUserId})`)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+        
+        // Block status (only if not own profile)
+        profileData.user_id !== effectiveUserId
+          ? supabase
+              .from("blocked_users")
+              .select("id")
+              .eq("user_id", effectiveUserId)
+              .eq("blocked_user_id", profileData.user_id)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
 
-      if (photosData) setPhotos(photosData);
+      // Set results
+      if (photosResult.data) setPhotos(photosResult.data);
+      if (friendsResult.data) setFriends(friendsResult.data);
 
-      // Load analyses (only if own profile or shared)
-      if (profileData.user_id === effectiveUserId) {
-        await loadAnalyses(profileData.user_id);
-        await loadLatestAnalyses(profileData.user_id);
-      } else {
-        await loadSharedAnalyses(profileData.user_id);
+      // Set friendship status
+      if (profileData.user_id !== effectiveUserId && friendshipResult.data) {
+        const friendshipData = friendshipResult.data;
+        if (friendshipData.status === "accepted") {
+          setFriendshipStatus("accepted");
+        } else if (friendshipData.user_id === effectiveUserId) {
+          setFriendshipStatus("pending_sent");
+        } else {
+          setFriendshipStatus("pending_received");
+        }
+      } else if (profileData.user_id !== effectiveUserId) {
+        setFriendshipStatus("none");
       }
 
-      // Load friends count
-      const { data: friendsData } = await supabase
-        .from("friends")
-        .select(`
-          *,
-          friend_profile:profiles!friends_friend_id_fkey(user_id, username, full_name, profile_photo),
-          user_profile:profiles!friends_user_id_fkey(user_id, username, full_name, profile_photo)
-        `)
-        .or(`user_id.eq.${profileData.user_id},friend_id.eq.${profileData.user_id}`)
-        .eq("status", "accepted");
+      // Set block status
+      if (blockResult.data) {
+        setIsBlocked(true);
+        setBlockId(blockResult.data.id);
+      } else {
+        setIsBlocked(false);
+        setBlockId(null);
+      }
 
-      setFriends(friendsData || []);
-
-      // Check friendship status if not own profile
-      if (profileData.user_id !== effectiveUserId) {
-        const { data: friendshipData } = await supabase
-          .from("friends")
-          .select("*")
-          .or(`and(user_id.eq.${effectiveUserId},friend_id.eq.${profileData.user_id}),and(user_id.eq.${profileData.user_id},friend_id.eq.${effectiveUserId})`)
-          .maybeSingle();
-
-        if (friendshipData) {
-          if (friendshipData.status === "accepted") {
-            setFriendshipStatus("accepted");
-          } else if (friendshipData.user_id === effectiveUserId) {
-            setFriendshipStatus("pending_sent");
-          } else {
-            setFriendshipStatus("pending_received");
-          }
-        } else {
-          setFriendshipStatus("none");
-        }
-
-        // Check if user is blocked
-        const { data: blockData } = await supabase
-          .from("blocked_users")
-          .select("id")
-          .eq("user_id", effectiveUserId)
-          .eq("blocked_user_id", profileData.user_id)
-          .maybeSingle();
-
-        if (blockData) {
-          setIsBlocked(true);
-          setBlockId(blockData.id);
-        } else {
-          setIsBlocked(false);
-          setBlockId(null);
-        }
+      // Load analyses async (don't wait)
+      if (profileData.user_id === effectiveUserId) {
+        Promise.all([
+          loadAnalyses(profileData.user_id),
+          loadLatestAnalyses(profileData.user_id)
+        ]);
+      } else {
+        loadSharedAnalyses(profileData.user_id);
       }
     } catch (error: any) {
       console.error("Profile error details:", error);
@@ -363,119 +373,77 @@ const Profile = () => {
 
   const loadAnalyses = async (userId: string) => {
     try {
-      // Fetch handwriting analyses
-      const { data: handwritingData } = await supabase
-        .from("analysis_history")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-      // Fetch numerology analyses
-      const { data: numerologyData } = await supabase
-        .from("numerology_analyses")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-      // Fetch birth chart analyses
-      const { data: birthChartData } = await supabase
-        .from("birth_chart_analyses")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-      // Fetch compatibility analyses
-      const { data: compatibilityData } = await supabase
-        .from("compatibility_analyses")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-      // Fetch tarot readings
-      const { data: tarotData } = await supabase
-        .from("tarot_readings")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-      // Fetch coffee fortune readings
-      const { data: coffeeData } = await supabase
-        .from("coffee_fortune_readings")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-      // Fetch dream interpretations
-      const { data: dreamData } = await supabase
-        .from("dream_interpretations")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-      // Fetch palmistry readings
-      const { data: palmistryData } = await supabase
-        .from("palmistry_readings")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-      // Fetch daily horoscopes
-      const { data: horoscopeData } = await supabase
-        .from("daily_horoscopes")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
+      // **PARALEL SORGULAR** - Tüm analiz sorgularını aynı anda başlat
+      const [
+        handwritingResult,
+        numerologyResult,
+        birthChartResult,
+        compatibilityResult,
+        tarotResult,
+        coffeeResult,
+        dreamResult,
+        palmistryResult,
+        horoscopeResult
+      ] = await Promise.all([
+        supabase.from("analysis_history").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("numerology_analyses").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("birth_chart_analyses").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("compatibility_analyses").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("tarot_readings").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("coffee_fortune_readings").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("dream_interpretations").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("palmistry_readings").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("daily_horoscopes").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+      ]);
 
       // Combine all analyses into a single array
       const allAnalyses: Analysis[] = [
-        ...(handwritingData || []).map(item => ({
+        ...(handwritingResult.data || []).map(item => ({
           ...item,
           analysis_type: item.analysis_type === "full" || item.analysis_type === "selective" ? "handwriting" : item.analysis_type
         })),
-        ...(numerologyData || []).map(item => ({
+        ...(numerologyResult.data || []).map(item => ({
           ...item,
           analysis_type: "numerology"
         })),
-        ...(birthChartData || []).map(item => ({
+        ...(birthChartResult.data || []).map(item => ({
           ...item,
           analysis_type: "birth_chart"
         })),
-        ...(compatibilityData || []).map(item => ({
+        ...(compatibilityResult.data || []).map(item => ({
           ...item,
           analysis_type: "compatibility"
         })),
-        ...(tarotData || []).map(item => ({
+        ...(tarotResult.data || []).map(item => ({
           ...item,
           analysis_type: "tarot",
           result: item.interpretation
         })),
-        ...(coffeeData || []).map(item => ({
+        ...(coffeeResult.data || []).map(item => ({
           ...item,
           analysis_type: "coffee_fortune",
           result: item.interpretation
         })),
-        ...(dreamData || []).map(item => ({
+        ...(dreamResult.data || []).map(item => ({
           ...item,
           analysis_type: "dream",
           result: item.interpretation
         })),
-        ...(palmistryData || []).map(item => ({
+        ...(palmistryResult.data || []).map(item => ({
           ...item,
           analysis_type: "palmistry",
           result: item.interpretation
         })),
-        ...(horoscopeData || []).map(item => ({
+        ...(horoscopeResult.data || []).map(item => ({
           ...item,
           analysis_type: "daily_horoscope",
           result: item.horoscope_text
         })),
       ];
 
-      // Sort by created_at descending
-      allAnalyses.sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-
+      // Sort by creation date
+      allAnalyses.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      
       setAnalyses(allAnalyses);
     } catch (error: any) {
       console.error("Error loading analyses:", error);
@@ -488,27 +456,14 @@ const Profile = () => {
   };
 
   const loadLatestAnalyses = async (userId: string) => {
-    // Load latest birth chart
-    const { data: birthChart } = await supabase
-      .from("birth_chart_analyses")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // **PARALEL SORGULAR** - Latest analizleri paralel yükle
+    const [birthChartResult, numerologyResult] = await Promise.all([
+      supabase.from("birth_chart_analyses").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("numerology_analyses").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    ]);
 
-    if (birthChart) setLatestBirthChart(birthChart);
-
-    // Load latest numerology
-    const { data: numerology } = await supabase
-      .from("numerology_analyses")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (numerology) setLatestNumerology(numerology);
+    if (birthChartResult.data) setLatestBirthChart(birthChartResult.data);
+    if (numerologyResult.data) setLatestNumerology(numerologyResult.data);
   };
 
   const loadSharedAnalyses = async (userId: string) => {
