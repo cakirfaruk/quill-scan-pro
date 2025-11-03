@@ -206,12 +206,6 @@ export const Header = () => {
                     Eşleşme
                   </Button>
                 </Link>
-                
-                <Link to="/history">
-                  <Button variant="ghost" size="sm">
-                    Analizlerim
-                  </Button>
-                </Link>
               </>
             )}
             

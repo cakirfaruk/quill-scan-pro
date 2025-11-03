@@ -330,33 +330,76 @@ const Profile = () => {
   };
 
   const loadSharedAnalyses = async (userId: string) => {
-    const { data } = await supabase
-      .from("shared_analyses")
-      .select("*")
-      .eq("user_id", userId)
-      .or(`shared_with_user_id.eq.${currentUserId},is_public.eq.true`);
+    try {
+      // Load all analysis types directly using RLS policies
+      // RLS policies will automatically filter based on visibility settings
+      
+      const allAnalyses: Analysis[] = [];
 
-    if (data) {
-      // Load full analysis details
-      const analysesWithDetails = await Promise.all(
-        data.map(async (share: any) => {
-          const tableName = `${share.analysis_type}_analyses`;
-          const { data: analysis } = await supabase
-            .from(tableName as any)
-            .select("*")
-            .eq("id", share.analysis_id)
-            .maybeSingle();
+      // Fetch handwriting analyses
+      const { data: handwritingData } = await supabase
+        .from("analysis_history")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
 
-          return analysis ? {
-            id: (analysis as any).id,
-            analysis_type: share.analysis_type,
-            created_at: (analysis as any).created_at,
-            result: (analysis as any).result || {},
-          } : null;
-        })
+      if (handwritingData) {
+        allAnalyses.push(...handwritingData.map(item => ({
+          ...item,
+          analysis_type: item.analysis_type === "full" || item.analysis_type === "selective" ? "handwriting" : item.analysis_type
+        })));
+      }
+
+      // Fetch numerology analyses
+      const { data: numerologyData } = await supabase
+        .from("numerology_analyses")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (numerologyData) {
+        allAnalyses.push(...numerologyData.map(item => ({
+          ...item,
+          analysis_type: "numerology"
+        })));
+      }
+
+      // Fetch birth chart analyses
+      const { data: birthChartData } = await supabase
+        .from("birth_chart_analyses")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (birthChartData) {
+        allAnalyses.push(...birthChartData.map(item => ({
+          ...item,
+          analysis_type: "birth_chart"
+        })));
+      }
+
+      // Fetch compatibility analyses
+      const { data: compatibilityData } = await supabase
+        .from("compatibility_analyses")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (compatibilityData) {
+        allAnalyses.push(...compatibilityData.map(item => ({
+          ...item,
+          analysis_type: "compatibility"
+        })));
+      }
+
+      // Sort by created_at descending
+      allAnalyses.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
-      setAnalyses(analysesWithDetails.filter(a => a !== null) as Analysis[]);
+      setAnalyses(allAnalyses);
+    } catch (error: any) {
+      console.error("Error loading shared analyses:", error);
     }
   };
 
@@ -1212,54 +1255,60 @@ const Profile = () => {
 
           <TabsContent value="friends">
             <Card className="p-6">
-              {friends.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  {isOwnProfile ? "Henüz arkadaşınız yok" : "Arkadaş bilgisi görüntülenemiyor"}
+              {isOwnProfile ? (
+                <div className="text-center py-12">
+                  <Button 
+                    onClick={() => navigate("/friends")}
+                    size="lg"
+                    className="bg-gradient-primary"
+                  >
+                    <Heart className="w-5 h-5 mr-2" />
+                    Arkadaş Listesine Git
+                  </Button>
+                  <p className="text-sm text-muted-foreground mt-4">
+                    Tüm arkadaşlarınızı görüntüleyin ve yeni arkadaşlar ekleyin
+                  </p>
                 </div>
               ) : (
-                <div className="grid gap-3">
-                  {friends.map((friend) => {
-                    // Determine which profile to show (not the current user)
-                    const friendProfile = friend.user_id === currentUserId 
-                      ? friend.friend_profile 
-                      : friend.user_profile;
-                    
-                    if (!friendProfile) return null;
-                    
-                    return (
-                      <div
-                        key={friend.id}
-                        className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
-                        onClick={() => navigate(`/profile/${friendProfile.username}`)}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Avatar className="w-12 h-12">
-                            <AvatarImage src={friendProfile.profile_photo} alt={friendProfile.username} />
-                            <AvatarFallback className="bg-gradient-primary text-primary-foreground">
-                              {friendProfile.username.substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-semibold">{friendProfile.full_name || friendProfile.username}</p>
-                            <p className="text-sm text-muted-foreground">@{friendProfile.username}</p>
-                          </div>
-                        </div>
-                        {isOwnProfile && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/messages?userId=${friendProfile.user_id}`);
-                            }}
+                <>
+                  {friends.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      Arkadaş bilgisi görüntülenemiyor
+                    </div>
+                  ) : (
+                    <div className="grid gap-3">
+                      {friends.map((friend) => {
+                        // Determine which profile to show (not the current user)
+                        const friendProfile = friend.user_id === currentUserId 
+                          ? friend.friend_profile 
+                          : friend.user_profile;
+                        
+                        if (!friendProfile) return null;
+                        
+                        return (
+                          <div
+                            key={friend.id}
+                            className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+                            onClick={() => navigate(`/profile/${friendProfile.username}`)}
                           >
-                            Mesaj
-                          </Button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="w-12 h-12">
+                                <AvatarImage src={friendProfile.profile_photo} alt={friendProfile.username} />
+                                <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                                  {friendProfile.username.substring(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-semibold">{friendProfile.full_name || friendProfile.username}</p>
+                                <p className="text-sm text-muted-foreground">@{friendProfile.username}</p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               )}
             </Card>
           </TabsContent>

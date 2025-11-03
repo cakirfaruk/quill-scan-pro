@@ -538,13 +538,19 @@ const Messages = () => {
                       <ArrowLeft className="w-5 h-5" />
                     </Button>
                   )}
-                  <Avatar className="w-10 h-10">
+                  <Avatar 
+                    className="w-10 h-10 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+                    onClick={() => navigate(`/profile/${selectedFriend.username}`)}
+                  >
                     <AvatarImage src={selectedFriend.profile_photo} />
                     <AvatarFallback className="bg-gradient-primary text-primary-foreground">
                       {selectedFriend.username.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
+                  <div 
+                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => navigate(`/profile/${selectedFriend.username}`)}
+                  >
                     <p className="font-medium">
                       {selectedFriend.full_name || selectedFriend.username}
                     </p>
