@@ -144,6 +144,7 @@ export const StoriesBar = ({ currentUserId }: StoriesBarProps) => {
       if (friendsStoriesData && friendsStoriesData.length > 0) {
         // Get all unique user IDs
         const uniqueUserIds = [...new Set(friendsStoriesData.map((s: any) => s.user_id))];
+        const storyIds = friendsStoriesData.map((s: any) => s.id);
         
         // Get profiles for all users
         const { data: profilesData } = await supabase
@@ -151,7 +152,25 @@ export const StoriesBar = ({ currentUserId }: StoriesBarProps) => {
           .select("user_id, username, full_name, profile_photo")
           .in("user_id", uniqueUserIds);
 
+        // Batch fetch all view data for current user
+        const { data: viewsData } = await supabase
+          .from("story_views")
+          .select("story_id")
+          .in("story_id", storyIds)
+          .eq("viewer_id", currentUserId);
+
+        // Batch fetch all view counts
+        const { data: allViewsData } = await supabase
+          .from("story_views")
+          .select("story_id");
+
+        // Create maps for quick lookups
         const profilesMap = new Map(profilesData?.map((p: any) => [p.user_id, p]) || []);
+        const viewedStoriesSet = new Set(viewsData?.map((v: any) => v.story_id) || []);
+        const viewCountsMap = new Map<string, number>();
+        allViewsData?.forEach((view: any) => {
+          viewCountsMap.set(view.story_id, (viewCountsMap.get(view.story_id) || 0) + 1);
+        });
 
         // Group stories by user
         const groupedStories: { [key: string]: UserStories } = {};
@@ -160,18 +179,6 @@ export const StoriesBar = ({ currentUserId }: StoriesBarProps) => {
           const profile = profilesMap.get(story.user_id);
           if (!profile) continue;
 
-          const { data: viewData } = await supabase
-            .from("story_views")
-            .select("id")
-            .eq("story_id", story.id)
-            .eq("viewer_id", currentUserId)
-            .maybeSingle();
-
-          const { count } = await supabase
-            .from("story_views")
-            .select("*", { count: "exact", head: true })
-            .eq("story_id", story.id);
-
           const storyWithData: Story = {
             id: story.id,
             user_id: story.user_id,
@@ -179,8 +186,8 @@ export const StoriesBar = ({ currentUserId }: StoriesBarProps) => {
             media_type: story.media_type as "photo" | "video",
             created_at: story.created_at,
             profile,
-            views_count: count || 0,
-            has_viewed: !!viewData,
+            views_count: viewCountsMap.get(story.id) || 0,
+            has_viewed: viewedStoriesSet.has(story.id),
           };
 
           if (!groupedStories[story.user_id]) {
