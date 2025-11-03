@@ -610,7 +610,115 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
     );
   }
 
-  // For other analysis types (handwriting, numerology, birth_chart) - use generic display
+  // Birth Chart
+  if (analysisType === "birth_chart") {
+    const topics = result.seçilen_konular || result.secilen_konular || {};
+    const generalEvaluation = result.genel_degerlendirme || "";
+    const astronomicData = result.astronomik_veriler || {};
+    const planetarySigns = astronomicData.gezegen_burclari || {};
+
+    return (
+      <div className="space-y-6">
+        {Object.keys(planetarySigns).length > 0 && (
+          <Card className="p-6 bg-gradient-to-br from-purple-50 via-background to-background dark:from-purple-900/20 border-2 border-purple-200 dark:border-purple-800">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-gradient-to-br from-purple-600 to-purple-800 rounded-full">
+                  <Star className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+                  Gezegen Konumları
+                </h3>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pl-12">
+                {Object.entries(planetarySigns).map(([planet, sign]) => (
+                  <div key={planet} className="flex items-center justify-between p-3 bg-background rounded-lg border border-purple-200 dark:border-purple-800">
+                    <span className="font-semibold text-purple-900 dark:text-purple-100">{planet}:</span>
+                    <Badge className="ml-2 bg-purple-100 text-purple-900 dark:bg-purple-900 dark:text-purple-100">
+                      {String(sign)}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {generalEvaluation && (
+          <Card className="p-6 bg-gradient-to-br from-indigo-50 via-background to-background dark:from-indigo-900/20 border-2 border-indigo-200 dark:border-indigo-800">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-full">
+                  <Sparkles className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">
+                  Genel Değerlendirme
+                </h3>
+              </div>
+              <p className="text-base leading-relaxed text-foreground pl-12 whitespace-pre-wrap">
+                {generalEvaluation}
+              </p>
+            </div>
+          </Card>
+        )}
+
+        {Object.entries(topics).map(([topicName, topicData]: [string, any]) => (
+          <Card key={topicName} className="p-6 border-2 hover:shadow-lg transition-shadow">
+            <h3 className="text-xl font-bold text-primary mb-4 flex items-center gap-2">
+              <Sparkles className="w-5 h-5" />
+              {topicName}
+            </h3>
+            <div className="space-y-4">
+              {topicData.genel_bakis && (
+                <div>
+                  <h4 className="font-semibold text-foreground mb-2">Genel Bakış</h4>
+                  <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
+                    {topicData.genel_bakis}
+                  </p>
+                </div>
+              )}
+              {topicData.ozellikler && topicData.ozellikler.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-foreground mb-2">Özellikler</h4>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-foreground/80">
+                    {topicData.ozellikler.map((item: string, i: number) => (
+                      <li key={i}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {topicData.guclu_yonler && (
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                  <h4 className="font-semibold text-green-900 dark:text-green-100 mb-2">✨ Güçlü Yönler</h4>
+                  <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
+                    {topicData.guclu_yonler}
+                  </p>
+                </div>
+              )}
+              {topicData.dikkat_edilmesi_gerekenler && (
+                <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <h4 className="font-semibold text-orange-900 dark:text-orange-100 mb-2">⚠️ Dikkat Edilmesi Gerekenler</h4>
+                  <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
+                    {topicData.dikkat_edilmesi_gerekenler}
+                  </p>
+                </div>
+              )}
+              {topicData.tavsiyeler && (
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">💡 Tavsiyeler</h4>
+                  <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
+                    {topicData.tavsiyeler}
+                  </p>
+                </div>
+              )}
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  // For other analysis types (handwriting, numerology) - use generic display
   const renderAnalysisSection = (data: any, depth: number = 0): JSX.Element[] => {
     const elements: JSX.Element[] = [];
     

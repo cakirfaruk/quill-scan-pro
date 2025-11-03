@@ -88,32 +88,43 @@ serve(async (req) => {
     const [year, month, day] = birthDate.split('-').map(Number);
     const [hours, minutes] = birthTime.split(':').map(Number);
     
-    // Simple geocoding for Turkey - default to Istanbul coordinates
-    // In production, you'd use a geocoding service like OpenStreetMap Nominatim
-    let latitude = 41.0082; // Istanbul
-    let longitude = 28.9784; // Istanbul
+    // Geocode birthPlace using Google Maps API for accurate coordinates
+    let latitude = 41.0082; // Default: Istanbul
+    let longitude = 28.9784; // Default: Istanbul
     let timezone = 3; // Turkey UTC+3
     
-    // Try to get more accurate coordinates based on birthPlace
-    // This is a simplified approach - you'd ideally use a geocoding API
-    const placeMap: Record<string, {lat: number, lon: number}> = {
-      'istanbul': {lat: 41.0082, lon: 28.9784},
-      'ankara': {lat: 39.9334, lon: 32.8597},
-      'izmir': {lat: 38.4192, lon: 27.1287},
-      'antalya': {lat: 36.8969, lon: 30.7133},
-      'bursa': {lat: 40.1826, lon: 29.0665},
-    };
+    const GOOGLE_MAPS_API_KEY = Deno.env.get("GOOGLE_MAPS_API_KEY");
     
-    const birthPlaceLower = birthPlace.toLowerCase().trim();
-    for (const [city, coords] of Object.entries(placeMap)) {
-      if (birthPlaceLower.includes(city)) {
-        latitude = coords.lat;
-        longitude = coords.lon;
-        break;
+    if (GOOGLE_MAPS_API_KEY) {
+      try {
+        console.log(`Geocoding location: ${birthPlace}`);
+        const geocodeResponse = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(birthPlace + ', Turkey')}&key=${GOOGLE_MAPS_API_KEY}`
+        );
+        
+        if (geocodeResponse.ok) {
+          const geocodeData = await geocodeResponse.json();
+          if (geocodeData.results && geocodeData.results.length > 0) {
+            const location = geocodeData.results[0].geometry.location;
+            latitude = location.lat;
+            longitude = location.lng;
+            console.log(`Geocoded coordinates: ${latitude}, ${longitude}`);
+          } else {
+            console.warn("No geocoding results found, using default Istanbul coordinates");
+          }
+        } else {
+          console.error("Geocoding API error:", await geocodeResponse.text());
+        }
+      } catch (error) {
+        console.error("Error calling Google Maps Geocoding API:", error);
       }
+    } else {
+      console.warn("GOOGLE_MAPS_API_KEY not set, using default Istanbul coordinates");
     }
 
     let realPlanetData = null;
+    let planetarySigns: Record<string, string> = {};
+    
     try {
       const astrologyApiResponse = await fetch("https://json.freeastrologyapi.com/planets", {
         method: "POST",
@@ -140,6 +151,53 @@ serve(async (req) => {
       if (astrologyApiResponse.ok) {
         realPlanetData = await astrologyApiResponse.json();
         console.log("Real planetary positions received successfully");
+        
+        // Extract zodiac signs for each planet
+        if (realPlanetData && realPlanetData.output) {
+          const planets = realPlanetData.output;
+          
+          // Map Turkish planet names
+          const planetMap: Record<string, string> = {
+            "sun": "Güneş",
+            "moon": "Ay",
+            "mercury": "Merkür",
+            "venus": "Venüs",
+            "mars": "Mars",
+            "jupiter": "Jüpiter",
+            "saturn": "Satürn",
+            "uranus": "Uranüs",
+            "neptune": "Neptün",
+            "pluto": "Plüton",
+            "ascendant": "Yükselen"
+          };
+          
+          // Turkish zodiac signs
+          const signMap: Record<string, string> = {
+            "aries": "Koç",
+            "taurus": "Boğa",
+            "gemini": "İkizler",
+            "cancer": "Yengeç",
+            "leo": "Aslan",
+            "virgo": "Başak",
+            "libra": "Terazi",
+            "scorpio": "Akrep",
+            "sagittarius": "Yay",
+            "capricorn": "Oğlak",
+            "aquarius": "Kova",
+            "pisces": "Balık"
+          };
+          
+          for (const [planetKey, planetData] of Object.entries(planets)) {
+            const planetName = planetMap[planetKey.toLowerCase()];
+            const signName = signMap[(planetData as any)?.sign?.toLowerCase()];
+            
+            if (planetName && signName) {
+              planetarySigns[planetName] = signName;
+            }
+          }
+          
+          console.log("Extracted planetary signs:", planetarySigns);
+        }
       } else {
         console.error("Failed to fetch real planetary data:", await astrologyApiResponse.text());
       }
@@ -208,7 +266,8 @@ Yanıtını Türkçe ve JSON formatında ver:
   "dogum_yeri": "Doğum yeri",
   "astronomik_veriler": {
     "gercek_hesaplama": true/false,
-    "planet_pozisyonlari": "Özet bilgi"
+    "planet_pozisyonlari": "Özet bilgi",
+    "gezegen_burclari": ${JSON.stringify(planetarySigns)}
   },
   "seçilen_konular": {
     "konu_adı": {
