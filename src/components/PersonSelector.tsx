@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User, Users, UserPlus, Calendar, Clock, MapPin } from "lucide-react";
+import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
 
 interface PersonData {
   fullName?: string;
@@ -278,10 +279,10 @@ export const PersonSelector = ({
                   <MapPin className="w-4 h-4" />
                   Doğum Yeri *
                 </Label>
-                <Input
+                <PlaceAutocompleteInput
                   id="birthPlace"
                   value={personData.birthPlace || ""}
-                  onChange={(e) => onChange({ ...personData, birthPlace: e.target.value })}
+                  onChange={(value) => onChange({ ...personData, birthPlace: value })}
                   placeholder="Örn: İstanbul, Türkiye"
                 />
               </div>

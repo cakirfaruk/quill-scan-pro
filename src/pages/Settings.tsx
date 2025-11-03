@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell } from "lucide-react";
 import { requestNotificationPermission } from "@/utils/notifications";
+import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
 
 const Settings = () => {
   const [profile, setProfile] = useState({
@@ -395,13 +396,14 @@ const Settings = () => {
                     <MapPin className="w-4 h-4 inline mr-2" />
                     Doğum Yeri
                   </Label>
-                  <Input
-                    id="birth_place"
-                    value={profile.birth_place}
-                    onChange={(e) => setProfile({ ...profile, birth_place: e.target.value })}
-                    placeholder="Şehir, Ülke"
-                    className="mt-2"
-                  />
+                  <div className="mt-2">
+                    <PlaceAutocompleteInput
+                      id="birth_place"
+                      value={profile.birth_place}
+                      onChange={(value) => setProfile({ ...profile, birth_place: value })}
+                      placeholder="Şehir, Ülke"
+                    />
+                  </div>
                 </div>
 
                 <div>
