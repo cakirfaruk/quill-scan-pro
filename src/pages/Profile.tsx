@@ -4,17 +4,19 @@ import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, Plus, X, Settings, Calendar, MapPin, Share2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Camera, Plus, X, Settings, Calendar, MapPin, Share2, Eye, EyeOff, FileText, Sparkles, Heart, Moon, Hand, Coffee, Star, Send } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 
 interface UserPhoto {
   id: string;
@@ -28,6 +30,14 @@ interface Analysis {
   analysis_type: string;
   created_at: string;
   result: any;
+  selected_topics?: string[] | null;
+  credits_used: number;
+  full_name?: string;
+  birth_date?: string;
+  birth_time?: string;
+  birth_place?: string;
+  gender1?: string;
+  gender2?: string;
 }
 
 const Profile = () => {
@@ -48,11 +58,18 @@ const Profile = () => {
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [visibilityDialogOpen, setVisibilityDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedAnalysis, setSelectedAnalysis] = useState<Analysis | null>(null);
   const [visibilityType, setVisibilityType] = useState<"public" | "friends" | "specific_friends" | "friends_except">("friends");
   const [isVisible, setIsVisible] = useState(true);
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
+  const [selectedAnalysisIds, setSelectedAnalysisIds] = useState<string[]>([]);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [summaryResult, setSummaryResult] = useState<string | null>(null);
+  const [selectedFriendForShare, setSelectedFriendForShare] = useState<string>("");
+  const [shareNote, setShareNote] = useState("");
+  const [shareType, setShareType] = useState<"message" | "feed">("message");
   const { toast } = useToast();
   const navigate = useNavigate();
   const [currentUserId, setCurrentUserId] = useState("");
@@ -163,27 +180,129 @@ const Profile = () => {
   };
 
   const loadAnalyses = async (userId: string) => {
-    const types = ['analysis_history', 'numerology_analyses', 'birth_chart_analyses', 'compatibility_analyses'];
-    const allAnalyses: Analysis[] = [];
-
-    for (const type of types) {
-      const { data } = await supabase
-        .from(type as any)
+    try {
+      // Fetch handwriting analyses
+      const { data: handwritingData } = await supabase
+        .from("analysis_history")
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
-      if (data) {
-        allAnalyses.push(...(data as any[]).map((a: any) => ({
-          id: a.id,
-          analysis_type: type.replace('_analyses', '').replace('analysis_', ''),
-          created_at: a.created_at,
-          result: a.result || {},
-        })));
-      }
-    }
+      // Fetch numerology analyses
+      const { data: numerologyData } = await supabase
+        .from("numerology_analyses")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
 
-    setAnalyses(allAnalyses);
+      // Fetch birth chart analyses
+      const { data: birthChartData } = await supabase
+        .from("birth_chart_analyses")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      // Fetch compatibility analyses
+      const { data: compatibilityData } = await supabase
+        .from("compatibility_analyses")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      // Fetch tarot readings
+      const { data: tarotData } = await supabase
+        .from("tarot_readings")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      // Fetch coffee fortune readings
+      const { data: coffeeData } = await supabase
+        .from("coffee_fortune_readings")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      // Fetch dream interpretations
+      const { data: dreamData } = await supabase
+        .from("dream_interpretations")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      // Fetch palmistry readings
+      const { data: palmistryData } = await supabase
+        .from("palmistry_readings")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      // Fetch daily horoscopes
+      const { data: horoscopeData } = await supabase
+        .from("daily_horoscopes")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      // Combine all analyses into a single array
+      const allAnalyses: Analysis[] = [
+        ...(handwritingData || []).map(item => ({
+          ...item,
+          analysis_type: item.analysis_type === "full" || item.analysis_type === "selective" ? "handwriting" : item.analysis_type
+        })),
+        ...(numerologyData || []).map(item => ({
+          ...item,
+          analysis_type: "numerology"
+        })),
+        ...(birthChartData || []).map(item => ({
+          ...item,
+          analysis_type: "birth_chart"
+        })),
+        ...(compatibilityData || []).map(item => ({
+          ...item,
+          analysis_type: "compatibility"
+        })),
+        ...(tarotData || []).map(item => ({
+          ...item,
+          analysis_type: "tarot",
+          result: item.interpretation
+        })),
+        ...(coffeeData || []).map(item => ({
+          ...item,
+          analysis_type: "coffee_fortune",
+          result: item.interpretation
+        })),
+        ...(dreamData || []).map(item => ({
+          ...item,
+          analysis_type: "dream",
+          result: item.interpretation
+        })),
+        ...(palmistryData || []).map(item => ({
+          ...item,
+          analysis_type: "palmistry",
+          result: item.interpretation
+        })),
+        ...(horoscopeData || []).map(item => ({
+          ...item,
+          analysis_type: "daily_horoscope",
+          result: item.horoscope_text
+        })),
+      ];
+
+      // Sort by created_at descending
+      allAnalyses.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      setAnalyses(allAnalyses);
+    } catch (error: any) {
+      console.error("Error loading analyses:", error);
+      toast({
+        title: "Hata",
+        description: "Analizler yüklenemedi.",
+        variant: "destructive",
+      });
+    }
   };
 
   const loadLatestAnalyses = async (userId: string) => {
@@ -308,65 +427,224 @@ const Profile = () => {
     });
   };
 
+  const getAnalysisTypeLabel = (type: string) => {
+    if (type === "handwriting") return "El Yazısı Analizi";
+    if (type === "compatibility") return "Uyum Analizi";
+    if (type === "numerology") return "Numeroloji Analizi";
+    if (type === "birth_chart") return "Doğum Haritası Analizi";
+    if (type === "tarot") return "Tarot Okuma";
+    if (type === "coffee_fortune") return "Kahve Falı";
+    if (type === "dream") return "Rüya Tabiri";
+    if (type === "palmistry") return "El Okuma";
+    if (type === "daily_horoscope") return "Günlük Kehanet";
+    return type;
+  };
+
+  const getAnalysisIcon = (type: string) => {
+    if (type === "compatibility") return Heart;
+    if (type === "numerology") return Sparkles;
+    if (type === "birth_chart") return Calendar;
+    if (type === "tarot") return Sparkles;
+    if (type === "coffee_fortune") return Coffee;
+    if (type === "dream") return Moon;
+    if (type === "palmistry") return Hand;
+    if (type === "daily_horoscope") return Star;
+    return FileText;
+  };
+
+  const handleSelectAnalysis = (id: string, checked: boolean) => {
+    setSelectedAnalysisIds(prev => 
+      checked ? [...prev, id] : prev.filter(aid => aid !== id)
+    );
+  };
+
+  const calculateSummaryCost = () => {
+    if (selectedAnalysisIds.length === 0) return 0;
+    
+    const selectedAnalyses = analyses.filter(a => selectedAnalysisIds.includes(a.id));
+    const totalCredits = selectedAnalyses.reduce((sum, a) => sum + a.credits_used, 0);
+    
+    if (selectedAnalysisIds.length === 1) {
+      return Math.ceil(totalCredits / 3);
+    } else {
+      return Math.ceil((totalCredits * selectedAnalysisIds.length) / 3);
+    }
+  };
+
+  const handleSummarize = async () => {
+    if (selectedAnalysisIds.length === 0) {
+      toast({
+        title: "Analiz seçilmedi",
+        description: "Lütfen özetlemek için en az bir analiz seçin.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSummarizing(true);
+    setSummaryResult(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('summarize-analyses', {
+        body: { analysisIds: selectedAnalysisIds }
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        if (data.error === 'Insufficient credits') {
+          toast({
+            title: "Yetersiz kredi",
+            description: `${data.required} kredi gerekli, ${data.available} krediniz var.`,
+            variant: "destructive",
+          });
+          return;
+        }
+        throw new Error(data.error);
+      }
+
+      setSummaryResult(data.summary);
+      toast({
+        title: "Özet oluşturuldu",
+        description: `${data.analysisCount} analiz özeti başarıyla oluşturuldu. ${data.creditsUsed} kredi kullanıldı.`,
+      });
+      
+      await loadProfile();
+      
+    } catch (error: any) {
+      console.error('Summarize error:', error);
+      toast({
+        title: "Özet oluşturulamadı",
+        description: error.message || "Bir hata oluştu. Lütfen tekrar deneyin.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
+
   const handleShareAnalysis = async () => {
     if (!selectedAnalysis) return;
 
     try {
-      // Check if already shared
-      const { data: existing } = await supabase
-        .from("shared_analyses")
-        .select("id")
-        .eq("user_id", currentUserId)
-        .eq("analysis_id", selectedAnalysis.id)
-        .eq("analysis_type", selectedAnalysis.analysis_type)
-        .maybeSingle();
+      if (shareType === "message") {
+        if (!selectedFriendForShare) {
+          toast({
+            title: "Hata",
+            description: "Lütfen bir arkadaş seçin.",
+            variant: "destructive",
+          });
+          return;
+        }
 
-      if (existing) {
-        // Update existing share
-        const { error } = await supabase
-          .from("shared_analyses")
-          .update({
-            visibility_type: visibilityType,
-            is_visible: isVisible,
-            allowed_user_ids: visibilityType === "specific_friends" ? selectedFriendIds : null,
-            blocked_user_ids: visibilityType === "friends_except" ? selectedFriendIds : null,
-            is_public: visibilityType === "public",
-          })
-          .eq("id", existing.id);
+        const messageContent = `📊 ${getAnalysisTypeLabel(selectedAnalysis.analysis_type)} sonucumu paylaştım!\n\n${shareNote || "Analiz sonucumu görmek için tıkla."}\n\n[Analiz ID: ${selectedAnalysis.id}]\n[Analiz Türü: ${selectedAnalysis.analysis_type}]`;
 
-        if (error) throw error;
-      } else {
-        // Create new share
-        const { error } = await supabase
+        const { error: shareError } = await supabase
           .from("shared_analyses")
           .insert({
             user_id: currentUserId,
             analysis_id: selectedAnalysis.id,
             analysis_type: selectedAnalysis.analysis_type,
-            visibility_type: visibilityType,
-            is_visible: isVisible,
-            allowed_user_ids: visibilityType === "specific_friends" ? selectedFriendIds : null,
-            blocked_user_ids: visibilityType === "friends_except" ? selectedFriendIds : null,
-            is_public: visibilityType === "public",
+            shared_with_user_id: selectedFriendForShare,
+            visibility_type: "specific_friends",
+            is_visible: true,
+            is_public: false,
           });
+
+        if (shareError) {
+          await supabase
+            .from("shared_analyses")
+            .update({
+              shared_with_user_id: selectedFriendForShare,
+              visibility_type: "specific_friends",
+              is_visible: true,
+            })
+            .eq("analysis_id", selectedAnalysis.id)
+            .eq("user_id", currentUserId);
+        }
+
+        const { error } = await supabase
+          .from("messages")
+          .insert({
+            sender_id: currentUserId,
+            receiver_id: selectedFriendForShare,
+            content: messageContent,
+          });
+
+        if (error) throw error;
+
+        toast({
+          title: "Başarılı",
+          description: "Analiz arkadaşınıza gönderildi.",
+        });
+      } else {
+        toast({
+          title: "Bilgi",
+          description: "Profil akışı özelliği yakında eklenecek.",
+        });
+      }
+
+      setShareDialogOpen(false);
+      setShareNote("");
+      setSelectedFriendForShare("");
+    } catch (error: any) {
+      console.error("Share error:", error);
+      toast({
+        title: "Hata",
+        description: "Paylaşım yapılamadı.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleVisibilitySettings = async () => {
+    if (!selectedAnalysis) return;
+
+    try {
+      const { data: existingShare } = await supabase
+        .from("shared_analyses")
+        .select("id")
+        .eq("analysis_id", selectedAnalysis.id)
+        .eq("analysis_type", selectedAnalysis.analysis_type)
+        .maybeSingle();
+
+      const shareData = {
+        user_id: currentUserId,
+        analysis_id: selectedAnalysis.id,
+        analysis_type: selectedAnalysis.analysis_type,
+        visibility_type: visibilityType,
+        is_visible: isVisible,
+        is_public: visibilityType === "public",
+        allowed_user_ids: visibilityType === "specific_friends" ? selectedFriendIds : null,
+        blocked_user_ids: visibilityType === "friends_except" ? selectedFriendIds : null,
+      };
+
+      if (existingShare) {
+        const { error } = await supabase
+          .from("shared_analyses")
+          .update(shareData)
+          .eq("id", existingShare.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("shared_analyses")
+          .insert(shareData);
 
         if (error) throw error;
       }
 
       toast({
         title: "Başarılı",
-        description: "Analiz paylaşım ayarları güncellendi",
+        description: "Görünürlük ayarları güncellendi.",
       });
 
-      setShareDialogOpen(false);
-      setSelectedAnalysis(null);
-      setSelectedFriendIds([]);
-      setVisibilityType("friends");
-      setIsVisible(true);
+      setVisibilityDialogOpen(false);
     } catch (error: any) {
+      console.error("Visibility error:", error);
       toast({
         title: "Hata",
-        description: "Analiz paylaşılamadı.",
+        description: "Görünürlük ayarları güncellenemedi.",
         variant: "destructive",
       });
     }
@@ -374,30 +652,33 @@ const Profile = () => {
 
   const openShareDialog = async (analysis: Analysis) => {
     setSelectedAnalysis(analysis);
+    setShareDialogOpen(true);
+    setShareNote("");
+    setSelectedFriendForShare("");
+    setShareType("message");
+  };
+
+  const openVisibilityDialog = async (analysis: Analysis) => {
+    setSelectedAnalysis(analysis);
+    setVisibilityDialogOpen(true);
     
-    // Load existing share settings if any
     const { data: existingShare } = await supabase
       .from("shared_analyses")
-      .select("visibility_type, is_visible, allowed_user_ids, blocked_user_ids")
-      .eq("user_id", currentUserId)
+      .select("*")
       .eq("analysis_id", analysis.id)
       .eq("analysis_type", analysis.analysis_type)
       .maybeSingle();
 
     if (existingShare) {
-      setVisibilityType(existingShare.visibility_type as any);
-      setIsVisible(existingShare.is_visible);
-      setSelectedFriendIds(
-        existingShare.allowed_user_ids || existingShare.blocked_user_ids || []
-      );
+      const vt = existingShare.visibility_type as "public" | "friends" | "specific_friends" | "friends_except";
+      setVisibilityType(vt || "friends");
+      setIsVisible(existingShare.is_visible ?? true);
+      setSelectedFriendIds(existingShare.allowed_user_ids || []);
     } else {
-      // Reset to defaults for new share
       setVisibilityType("friends");
       setIsVisible(true);
       setSelectedFriendIds([]);
     }
-    
-    setShareDialogOpen(true);
   };
 
   const toggleFriendSelection = (friendId: string) => {
@@ -607,46 +888,110 @@ const Profile = () => {
 
           <TabsContent value="analyses">
             <Card className="p-6">
+              {isOwnProfile && analyses.length > 0 && (
+                <div className="flex items-center justify-between mb-6 pb-4 border-b">
+                  <div className="text-sm text-muted-foreground">
+                    {selectedAnalysisIds.length > 0 && (
+                      <span>{selectedAnalysisIds.length} analiz seçildi - {calculateSummaryCost()} kredi harcanacak</span>
+                    )}
+                  </div>
+                  <Button 
+                    onClick={handleSummarize}
+                    disabled={selectedAnalysisIds.length === 0 || isSummarizing}
+                    size="sm"
+                  >
+                    {isSummarizing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Özetleniyor...
+                      </>
+                    ) : (
+                      `Özetle (${selectedAnalysisIds.length})`
+                    )}
+                  </Button>
+                </div>
+              )}
+
               {analyses.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   {isOwnProfile ? "Henüz analiziniz yok" : "Paylaşılmış analiz bulunmuyor"}
                 </div>
               ) : (
-                <div className="grid gap-4">
-                  {analyses.map((analysis) => (
-                    <Card key={analysis.id} className="p-4 hover:shadow-md transition-shadow">
-                      <div className="flex justify-between items-start gap-4">
-                        <button 
-                          onClick={() => {
-                            setSelectedAnalysis(analysis);
-                            setDetailDialogOpen(true);
-                          }}
-                          className="flex-1 text-left hover:opacity-80 transition-opacity"
-                        >
-                          <h3 className="font-semibold capitalize mb-1">
-                            {analysis.analysis_type.replace('_', ' ')} Analizi
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(analysis.created_at).toLocaleDateString('tr-TR', {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric'
-                            })}
-                          </p>
-                        </button>
-                        {isOwnProfile && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openShareDialog(analysis)}
+                <div className="space-y-3">
+                  {analyses.map((analysis) => {
+                    const Icon = getAnalysisIcon(analysis.analysis_type);
+                    const isSelected = selectedAnalysisIds.includes(analysis.id);
+                    return (
+                      <Card
+                        key={analysis.id}
+                        className={`p-4 hover:shadow-md transition-shadow ${isSelected ? 'ring-2 ring-primary' : ''}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          {isOwnProfile && (
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={(checked) => handleSelectAnalysis(analysis.id, checked as boolean)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          )}
+                          <div 
+                            className="flex-1 cursor-pointer"
+                            onClick={() => {
+                              setSelectedAnalysis(analysis);
+                              setDetailDialogOpen(true);
+                            }}
                           >
-                            <Share2 className="w-4 h-4 mr-2" />
-                            Paylaşım Ayarları
-                          </Button>
-                        )}
-                      </div>
-                    </Card>
-                  ))}
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex items-center gap-3 flex-1">
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                  <Icon className="w-4 h-4 text-primary" />
+                                </div>
+                                <div className="flex-1">
+                                  <h3 className="font-semibold text-sm mb-1">
+                                    {getAnalysisTypeLabel(analysis.analysis_type)}
+                                  </h3>
+                                  <p className="text-xs text-muted-foreground">
+                                    {new Date(analysis.created_at).toLocaleDateString('tr-TR', {
+                                      day: 'numeric',
+                                      month: 'long',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </p>
+                                </div>
+                                <Badge variant="secondary" className="text-xs">{analysis.credits_used} Kredi</Badge>
+                              </div>
+                            </div>
+                          </div>
+                          {isOwnProfile && (
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openShareDialog(analysis);
+                                }}
+                              >
+                                <Share2 className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openVisibilityDialog(analysis);
+                                }}
+                              >
+                                <Settings className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
 
@@ -654,9 +999,18 @@ const Profile = () => {
               <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
                 <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle className="capitalize">
-                      {selectedAnalysis?.analysis_type.replace('_', ' ')} Analizi
+                    <DialogTitle>
+                      {selectedAnalysis && getAnalysisTypeLabel(selectedAnalysis.analysis_type)}
                     </DialogTitle>
+                    <DialogDescription>
+                      {selectedAnalysis && new Date(selectedAnalysis.created_at).toLocaleDateString('tr-TR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </DialogDescription>
                   </DialogHeader>
                   {selectedAnalysis && (
                     <div className="pt-4">
@@ -669,99 +1023,188 @@ const Profile = () => {
                 </DialogContent>
               </Dialog>
 
-              {/* Share Settings Dialog */}
+              {/* Share Dialog */}
               <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
                 <DialogContent className="max-w-md">
                   <DialogHeader>
-                    <DialogTitle>Analiz Paylaşım Ayarları</DialogTitle>
+                    <DialogTitle>Analizi Paylaş</DialogTitle>
+                    <DialogDescription>
+                      {selectedAnalysis && getAnalysisTypeLabel(selectedAnalysis.analysis_type)} sonucunuzu paylaşın
+                    </DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-6 pt-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Detayları Göster</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Kapalıysa sadece analiz sayısı görünür
-                        </p>
+
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Paylaşım Türü</Label>
+                      <Select value={shareType} onValueChange={(value: any) => setShareType(value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="message">Arkadaşa Mesaj Gönder</SelectItem>
+                          <SelectItem value="feed">Profil Akışına Paylaş</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {shareType === "message" && (
+                      <div>
+                        <Label>Arkadaş Seç</Label>
+                        <Select value={selectedFriendForShare} onValueChange={setSelectedFriendForShare}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Arkadaş seçin" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {friends.length === 0 ? (
+                              <SelectItem value="none" disabled>Henüz arkadaşınız yok</SelectItem>
+                            ) : (
+                              friends.map((friend) => {
+                                const friendProfile = friend.user_id === currentUserId 
+                                  ? friend.friend_profile 
+                                  : friend.user_profile;
+                                const friendId = friendProfile?.user_id;
+                                
+                                if (!friendId) return null;
+                                
+                                return (
+                                  <SelectItem key={friend.id} value={friendId}>
+                                    {friendProfile?.full_name || friendProfile?.username || "Arkadaş"}
+                                  </SelectItem>
+                                );
+                              })
+                            )}
+                          </SelectContent>
+                        </Select>
                       </div>
+                    )}
+
+                    <div>
+                      <Label>Not Ekle (İsteğe Bağlı)</Label>
+                      <Textarea
+                        value={shareNote}
+                        onChange={(e) => setShareNote(e.target.value)}
+                        placeholder="Paylaşırken bir not ekleyebilirsiniz..."
+                        rows={3}
+                      />
+                    </div>
+
+                    <Button
+                      onClick={handleShareAnalysis}
+                      className="w-full"
+                      disabled={shareType === "message" && !selectedFriendForShare}
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      Paylaş
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Visibility Settings Dialog */}
+              <Dialog open={visibilityDialogOpen} onOpenChange={setVisibilityDialogOpen}>
+                <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Görünürlük Ayarları</DialogTitle>
+                    <DialogDescription>
+                      Bu analizin kimler tarafından görülebileceğini ayarlayın
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="visible">Görünür</Label>
                       <Switch
+                        id="visible"
                         checked={isVisible}
                         onCheckedChange={setIsVisible}
                       />
                     </div>
 
-                    <div className="space-y-3">
-                      <Label>Kimler Görebilir?</Label>
+                    <div>
+                      <Label>Görünürlük</Label>
                       <Select value={visibilityType} onValueChange={(value: any) => setVisibilityType(value)}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="public">
-                            <div className="flex items-center gap-2">
-                              <Eye className="w-4 h-4" />
-                              Herkes
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="friends">
-                            <div className="flex items-center gap-2">
-                              👥 Tüm Arkadaşlarım
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="specific_friends">
-                            <div className="flex items-center gap-2">
-                              ✅ Sadece Seçtiklerim
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="friends_except">
-                            <div className="flex items-center gap-2">
-                              <EyeOff className="w-4 h-4" />
-                              Arkadaşlarım (Bazıları Hariç)
-                            </div>
-                          </SelectItem>
+                          <SelectItem value="public">Herkes</SelectItem>
+                          <SelectItem value="friends">Tüm Arkadaşlarım</SelectItem>
+                          <SelectItem value="specific_friends">Sadece Seçtiklerim</SelectItem>
+                          <SelectItem value="friends_except">Seçtiklerim Hariç</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     {(visibilityType === "specific_friends" || visibilityType === "friends_except") && (
-                      <div className="space-y-3">
+                      <div>
                         <Label>
-                          {visibilityType === "specific_friends" ? "Görebilecek Arkadaşlar" : "Göremeyecek Arkadaşlar"}
+                          {visibilityType === "specific_friends" ? "Paylaşılacak Arkadaşlar" : "Hariç Tutulacak Arkadaşlar"}
                         </Label>
-                        <div className="border rounded-lg p-3 space-y-2 max-h-48 overflow-y-auto">
+                        <div className="mt-2 space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
                           {friends.length === 0 ? (
                             <p className="text-sm text-muted-foreground text-center py-4">
                               Henüz arkadaşınız yok
                             </p>
                           ) : (
-                            friends.map((friend) => (
-                              <div key={friend.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`friend-${friend.id}`}
-                                  checked={selectedFriendIds.includes(friend.friend_id === currentUserId ? friend.user_id : friend.friend_id)}
-                                  onCheckedChange={() => toggleFriendSelection(friend.friend_id === currentUserId ? friend.user_id : friend.friend_id)}
-                                />
-                                <label
-                                  htmlFor={`friend-${friend.id}`}
-                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
-                                >
-                                  Arkadaş
-                                </label>
-                              </div>
-                            ))
+                            friends.map((friend) => {
+                              const friendProfile = friend.user_id === currentUserId 
+                                ? friend.friend_profile 
+                                : friend.user_profile;
+                              const friendId = friendProfile?.user_id;
+                              
+                              if (!friendId) return null;
+                              
+                              return (
+                                <div key={friend.id} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`friend-${friend.id}`}
+                                    checked={selectedFriendIds.includes(friendId)}
+                                    onCheckedChange={() => toggleFriendSelection(friendId)}
+                                  />
+                                  <label
+                                    htmlFor={`friend-${friend.id}`}
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                                  >
+                                    {friendProfile?.full_name || friendProfile?.username || "Arkadaş"}
+                                  </label>
+                                </div>
+                              );
+                            })
                           )}
                         </div>
                       </div>
                     )}
 
                     <Button
-                      onClick={handleShareAnalysis}
+                      onClick={handleVisibilitySettings}
                       className="w-full"
                       disabled={(visibilityType === "specific_friends" || visibilityType === "friends_except") && selectedFriendIds.length === 0}
                     >
-                      <Share2 className="w-4 h-4 mr-2" />
+                      <Settings className="w-4 h-4 mr-2" />
                       Ayarları Kaydet
                     </Button>
                   </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Summary Dialog */}
+              <Dialog open={!!summaryResult} onOpenChange={() => setSummaryResult(null)}>
+                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Analiz Özeti</DialogTitle>
+                    <DialogDescription>
+                      {selectedAnalysisIds.length} analiz özeti
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="prose prose-sm max-w-none">
+                    <p className="whitespace-pre-wrap text-foreground">{summaryResult}</p>
+                  </div>
+                  <Button onClick={() => {
+                    setSummaryResult(null);
+                    setSelectedAnalysisIds([]);
+                  }}>
+                    Kapat
+                  </Button>
                 </DialogContent>
               </Dialog>
             </Card>

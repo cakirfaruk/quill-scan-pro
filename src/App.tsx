@@ -7,7 +7,6 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Credits from "./pages/Credits";
 import Compatibility from "./pages/Compatibility";
-import History from "./pages/History";
 import About from "./pages/About";
 import FAQ from "./pages/FAQ";
 import Numerology from "./pages/Numerology";
@@ -40,7 +39,6 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/credits" element={<Credits />} />
           <Route path="/compatibility" element={<Compatibility />} />
-          <Route path="/history" element={<History />} />
           <Route path="/about" element={<About />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/numerology" element={<Numerology />} />
