@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Brain, Target, Sparkles, Heart, Users, MessageCircle, Moon, Coffee, Hand, Star, Calendar, FileText, Zap, Shield, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { OnboardingDialog } from "@/components/OnboardingDialog";
 
 const Index = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -19,11 +21,33 @@ const Index = () => {
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     setIsLoggedIn(!!user);
+    
+    // Check if user has seen onboarding
+    if (user) {
+      const hasSeenOnboarding = localStorage.getItem(`onboarding_${user.id}`);
+      if (!hasSeenOnboarding) {
+        setShowOnboarding(true);
+      }
+    }
+  };
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    const userId = supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user) {
+        localStorage.setItem(`onboarding_${data.session.user.id}`, 'true');
+      }
+    });
   };
 
   // Show feed if logged in
   if (isLoggedIn) {
-    return <Feed />;
+    return (
+      <>
+        <OnboardingDialog open={showOnboarding} onComplete={handleOnboardingComplete} />
+        <Feed />
+      </>
+    );
   }
 
   // Show loading while checking auth

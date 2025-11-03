@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FileText, Coins, LogOut, User, Heart, CreditCard, ChevronDown, Sparkles, Calendar, Menu, MessageCircle, Settings, Shield } from "lucide-react";
+import { FileText, Coins, LogOut, User, Heart, CreditCard, ChevronDown, Sparkles, Calendar, Menu, MessageCircle, Settings, Shield, Bookmark } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -317,8 +317,14 @@ export const Header = () => {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
+                      <Link to="/saved" className="cursor-pointer flex items-center">
+                        <Bookmark className="w-4 h-4 mr-2" />
+                        Kaydedilenler
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
                       <Link to="/settings" className="cursor-pointer flex items-center">
-                        <User className="w-4 h-4 mr-2" />
+                        <Settings className="w-4 h-4 mr-2" />
                         Ayarlar
                       </Link>
                     </DropdownMenuItem>
@@ -491,6 +497,12 @@ export const Header = () => {
                                   <Button variant="ghost" className="w-full justify-start gap-2 h-9">
                                     <MessageCircle className="w-4 h-4" />
                                     Mesajlar
+                                  </Button>
+                                </Link>
+                                <Link to="/saved" onClick={() => setMobileMenuOpen(false)}>
+                                  <Button variant="ghost" className="w-full justify-start gap-2 h-9">
+                                    <Bookmark className="w-4 h-4" />
+                                    Kaydedilenler
                                   </Button>
                                 </Link>
                               </div>

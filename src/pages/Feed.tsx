@@ -10,11 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Reply, Loader2, RefreshCw, Bookmark } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Reply, Loader2, RefreshCw, Bookmark, Folder, FolderPlus } from "lucide-react";
 import { useImpersonate } from "@/hooks/use-impersonate";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { soundEffects } from "@/utils/soundEffects";
@@ -62,6 +63,12 @@ interface Friend {
   profile_photo: string | null;
 }
 
+interface Collection {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
 const Feed = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -77,6 +84,10 @@ const Feed = () => {
   const [postToShare, setPostToShare] = useState<Post | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [postToSave, setPostToSave] = useState<Post | null>(null);
+  const [selectedCollection, setSelectedCollection] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
   const { getEffectiveUserId } = useImpersonate();
 
@@ -248,16 +259,45 @@ const Feed = () => {
   };
 
   const handleSave = async (postId: string, hasSaved: boolean) => {
-    try {
-      if (hasSaved) {
+    if (hasSaved) {
+      try {
         await supabase.from("saved_posts").delete().eq("post_id", postId).eq("user_id", userId);
         toast({ title: "Kaydedildi", description: "Gönderi kaydedilenlerden kaldırıldı" });
-      } else {
-        soundEffects.playClick();
-        await supabase.from("saved_posts").insert({ post_id: postId, user_id: userId });
-        toast({ title: "Kaydedildi", description: "Gönderi başarıyla kaydedildi" });
+        await loadPosts(userId);
+      } catch (error: any) {
+        soundEffects.playError();
+        toast({ title: "Hata", description: "İşlem gerçekleştirilemedi", variant: "destructive" });
       }
+    } else {
+      // Open dialog to select collection
+      const post = [...friendsPosts, ...allPosts].find(p => p.id === postId);
+      if (post) {
+        setPostToSave(post);
+        setSaveDialogOpen(true);
+      }
+    }
+  };
+
+  const handleConfirmSave = async () => {
+    if (!postToSave) return;
+
+    try {
+      soundEffects.playClick();
+      await supabase.from("saved_posts").insert({
+        post_id: postToSave.id,
+        user_id: userId,
+        collection_id: selectedCollection || null,
+      });
+      toast({
+        title: "Kaydedildi",
+        description: selectedCollection
+          ? "Gönderi koleksiyona kaydedildi"
+          : "Gönderi başarıyla kaydedildi"
+      });
       await loadPosts(userId);
+      setSaveDialogOpen(false);
+      setPostToSave(null);
+      setSelectedCollection("");
     } catch (error: any) {
       soundEffects.playError();
       toast({ title: "Hata", description: "İşlem gerçekleştirilemedi", variant: "destructive" });
@@ -819,6 +859,63 @@ const Feed = () => {
                 className="flex-1"
               >
                 Gönder ({selectedFriends.size})
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Save to Collection Dialog */}
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Kaydet</DialogTitle>
+            <DialogDescription>
+              Gönderiyi bir koleksiyona kaydedin veya koleksiyonsuz kaydedin
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-4">
+            <Select value={selectedCollection} onValueChange={setSelectedCollection}>
+              <SelectTrigger>
+                <SelectValue placeholder="Koleksiyon seç (isteğe bağlı)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Koleksiyonsuz</SelectItem>
+                {collections.map((collection) => (
+                  <SelectItem key={collection.id} value={collection.id}>
+                    <div className="flex items-center gap-2">
+                      <Folder className="w-4 h-4" />
+                      {collection.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Button
+              onClick={() => navigate("/saved")}
+              variant="outline"
+              className="w-full gap-2"
+            >
+              <FolderPlus className="w-4 h-4" />
+              Yeni Koleksiyon Oluştur
+            </Button>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSaveDialogOpen(false);
+                  setPostToSave(null);
+                  setSelectedCollection("");
+                }}
+                className="flex-1"
+              >
+                İptal
+              </Button>
+              <Button onClick={handleConfirmSave} className="flex-1">
+                Kaydet
               </Button>
             </div>
           </div>

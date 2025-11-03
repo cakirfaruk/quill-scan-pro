@@ -24,6 +24,7 @@ import DailyHoroscope from "./pages/DailyHoroscope";
 import Palmistry from "./pages/Palmistry";
 import Handwriting from "./pages/Handwriting";
 import Feed from "./pages/Feed";
+import SavedPosts from "./pages/SavedPosts";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,7 @@ const App = () => (
           <Route path="/palmistry" element={<Palmistry />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/feed" element={<Feed />} />
+          <Route path="/saved" element={<SavedPosts />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
