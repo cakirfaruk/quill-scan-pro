@@ -94,7 +94,7 @@ JSON formatında şu yapıda cevap ver:
           { role: 'system', content: 'Sen deneyimli bir rüya yorumcususun. Psikoloji ve sembolizmden anlarsın.' },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.7,
+        response_format: { type: "json_object" },
       }),
     });
 

@@ -115,7 +115,7 @@ Yorumun mistik, anlayışlı ve rehberlik edici olsun. JSON formatında şu yap�
           { role: 'system', content: 'Sen uzman bir tarot okuyucususun. Kartları derinlemesine ve mistik bir şekilde yorumlarsın.' },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.8,
+        response_format: { type: "json_object" },
       }),
     });
 

@@ -122,7 +122,7 @@ JSON formatında şu yapıda cevap ver:
           { role: 'system', content: 'Sen astroloji ve kehanet uzmanısın. Kişiselleştirilmiş günlük yorumlar yaparsın.' },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.9,
+        response_format: { type: "json_object" },
       }),
     });
 

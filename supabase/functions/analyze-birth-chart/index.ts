@@ -83,6 +83,8 @@ serve(async (req) => {
 
     const systemPrompt = `Sen profesyonel bir astrolog ve doğum haritası uzmanısın. Verilen doğum bilgilerine göre detaylı astrolojik analiz yapıyorsun.
 
+ÖNEMLİ UYARI: Bu analiz, gerçek astronomik hesaplamalara dayanmayan, genel astrolojik yorumlar içerir. Doğum bilgilerine göre genel burç özelliklerini ve astrolojik prensipleri kullanarak kişiselleştirilmiş yorumlar sunarsın.
+
 Doğum Bilgileri:
 - İsim: ${fullName}
 - Doğum Tarihi: ${birthDate}
@@ -91,7 +93,7 @@ Doğum Bilgileri:
 
 Seçilen Konular: ${selectedTopics.join(", ")}
 
-Her konu için detaylı ve kapsamlı analiz yap:
+Her konu için detaylı ve kapsamlı genel astrolojik yorum yap (gerçek gezegen pozisyonları hesaplanmamıştır):
 
 1. **Güneş Burcu**: Temel kişilik özellikleri, hayat amacı, bilinç
 2. **Ay Burcu**: Duygusal dünya, iç güvenlik ihtiyaçları, sezgiler
