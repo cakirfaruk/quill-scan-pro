@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { Tutorial } from "@/components/Tutorial";
+import { MobileNav } from "@/components/MobileNav";
 import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -78,6 +79,7 @@ const App = () => {
           <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <MobileNav />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
