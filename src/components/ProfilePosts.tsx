@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Loader2, MessageCircle, Heart, Share2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -30,6 +32,8 @@ interface ProfilePostsProps {
 }
 
 export const ProfilePosts = ({ posts, loading, isOwnProfile }: ProfilePostsProps) => {
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
   if (loading) {
     return (
       <Card className="p-6">
@@ -63,10 +67,13 @@ export const ProfilePosts = ({ posts, loading, isOwnProfile }: ProfilePostsProps
       <div className="space-y-4 sm:space-y-6">
         {posts.map((post) => (
           <Card key={post.id} className="overflow-hidden hover:shadow-xl transition-all duration-300">
-            <div className="p-3 sm:p-4">
+              <div className="p-3 sm:p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <Avatar className="w-9 h-9 sm:w-10 sm:h-10 ring-2 ring-border">
+                  <Avatar 
+                    className="w-9 h-9 sm:w-10 sm:h-10 ring-2 ring-border cursor-pointer hover:ring-primary transition-all"
+                    onClick={() => post.profile.profile_photo && setSelectedImage(post.profile.profile_photo)}
+                  >
                     <AvatarImage src={post.profile.profile_photo || undefined} />
                     <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs sm:text-sm">
                       {post.profile.full_name?.[0] || post.profile.username[0].toUpperCase()}
@@ -144,6 +151,16 @@ export const ProfilePosts = ({ posts, loading, isOwnProfile }: ProfilePostsProps
           </Card>
         ))}
       </div>
+
+      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden">
+          <img 
+            src={selectedImage || ""} 
+            alt="Profile" 
+            className="w-full h-auto"
+          />
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

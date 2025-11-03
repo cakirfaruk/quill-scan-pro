@@ -177,7 +177,22 @@ const Feed = () => {
         })
       );
 
-      const friendsPosts = postsWithData.filter(post => post.user_id === currentUserId);
+      // Get friend IDs from friends list
+      const { data: friendsData } = await supabase
+        .from("friends")
+        .select("user_id, friend_id")
+        .or(`user_id.eq.${currentUserId},friend_id.eq.${currentUserId}`)
+        .eq("status", "accepted");
+
+      const friendIds = new Set(
+        (friendsData || []).map(f => 
+          f.user_id === currentUserId ? f.friend_id : f.user_id
+        )
+      );
+
+      const friendsPosts = postsWithData.filter(post => 
+        friendIds.has(post.user_id) || post.user_id === currentUserId
+      );
 
       setFriendsPosts(friendsPosts);
       setAllPosts(postsWithData);

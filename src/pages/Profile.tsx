@@ -87,6 +87,7 @@ const Profile = () => {
   const [postsLoading, setPostsLoading] = useState(false);
   const [shareAnalysisToPost, setShareAnalysisToPost] = useState<Analysis | null>(null);
   const [friendshipStatus, setFriendshipStatus] = useState<"none" | "pending_sent" | "pending_received" | "accepted">("none");
+  const [selectedProfileImage, setSelectedProfileImage] = useState<string | null>(null);
 
   useEffect(() => {
     loadProfile();
@@ -1015,7 +1016,10 @@ const Profile = () => {
         <Card className="p-6 mb-6">
           <div className="flex flex-col md:flex-row gap-6 items-start">
             <div className="relative flex-shrink-0">
-              <Avatar className="w-32 h-32 md:w-40 md:h-40 border-4 border-primary/20">
+              <Avatar 
+                className="w-32 h-32 md:w-40 md:h-40 border-4 border-primary/20 cursor-pointer hover:border-primary/40 transition-all"
+                onClick={() => profile.profile_photo && setSelectedProfileImage(profile.profile_photo)}
+              >
                 <AvatarImage src={profile.profile_photo} alt={profile.full_name} />
                 <AvatarFallback className="bg-gradient-primary text-primary-foreground text-4xl">
                   {profile.username.substring(0, 2).toUpperCase()}
@@ -1624,6 +1628,17 @@ const Profile = () => {
             <Plus className="w-6 h-6" />
           </Button>
         )}
+
+        {/* Profile Image Zoom Dialog */}
+        <Dialog open={!!selectedProfileImage} onOpenChange={() => setSelectedProfileImage(null)}>
+          <DialogContent className="max-w-4xl p-0 overflow-hidden">
+            <img 
+              src={selectedProfileImage || ""} 
+              alt="Profile" 
+              className="w-full h-auto"
+            />
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
