@@ -58,6 +58,56 @@ const Match = () => {
     checkUser();
   }, []);
 
+  // Load compatibility data when profile changes
+  useEffect(() => {
+    const loadCompatibilityForCurrentProfile = async () => {
+      if (!user || currentIndex >= profiles.length) {
+        setCompatibilityData({});
+        return;
+      }
+
+      const currentProfile = profiles[currentIndex];
+      if (!currentProfile) {
+        setCompatibilityData({});
+        return;
+      }
+
+      const [user1, user2] = [user.id, currentProfile.user_id].sort();
+      const { data: existingMatch } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("user1_id", user1)
+        .eq("user2_id", user2)
+        .maybeSingle();
+
+      if (existingMatch && (existingMatch.compatibility_numerology || existingMatch.compatibility_birth_chart)) {
+        const numerologyData = existingMatch.compatibility_numerology as any;
+        const birthChartData = existingMatch.compatibility_birth_chart as any;
+        
+        const numerologyScore = numerologyData?.overallScore || 0;
+        const birthChartScore = birthChartData?.overallScore || 0;
+        
+        setCompatibilityData({
+          numerologyScore,
+          birthChartScore,
+          details: {
+            overallScore: Math.round((numerologyScore + birthChartScore) / 2),
+            compatibilityAreas: [
+              ...(numerologyData?.compatibilityAreas || []),
+              ...(birthChartData?.compatibilityAreas || [])
+            ],
+            numerologyAnalysis: numerologyData,
+            birthChartAnalysis: birthChartData,
+          },
+        });
+      } else {
+        setCompatibilityData({});
+      }
+    };
+
+    loadCompatibilityForCurrentProfile();
+  }, [currentIndex, user, profiles]);
+
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
