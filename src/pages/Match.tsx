@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useImpersonate } from "@/hooks/use-impersonate";
 import { Header } from "@/components/Header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,7 @@ const Match = () => {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [shareType, setShareType] = useState<"area" | "full" | "tarot">("area");
   const [selectedArea, setSelectedArea] = useState<any>(null);
+  const { getEffectiveUserId } = useImpersonate();
 
   useEffect(() => {
     checkUser();
@@ -62,21 +64,28 @@ const Match = () => {
       navigate("/auth");
       return;
     }
-    setUser(user);
+    
+    const effectiveUserId = getEffectiveUserId(user.id);
+    if (!effectiveUserId) {
+      navigate("/auth");
+      return;
+    }
+    
+    setUser({ ...user, id: effectiveUserId });
     
     // Get user gender
     const { data: profile } = await supabase
       .from("profiles")
       .select("gender")
-      .eq("user_id", user.id)
+      .eq("user_id", effectiveUserId)
       .maybeSingle();
     
     if (profile?.gender) {
       setUserGender(profile.gender);
     }
     
-    await loadCredits(user.id);
-    await loadProfiles(user.id);
+    await loadCredits(effectiveUserId);
+    await loadProfiles(effectiveUserId);
   };
 
   const loadCredits = async (userId: string) => {
@@ -328,17 +337,24 @@ const Match = () => {
       if (error) throw error;
 
       // Calculate scores from compatibility data
-      const numerologyScore = data?.compatibilityAreas?.find((a: any) => 
-        a.name.toLowerCase().includes("numeroloji")
-      )?.compatibilityScore || 0;
+      const numerologyScore = Math.round(
+        data?.compatibilityAreas?.find((a: any) => 
+          a.name && (a.name.toLowerCase().includes("numeroloji") || a.name.toLowerCase().includes("sayı"))
+        )?.compatibilityScore || 0
+      );
       
-      const birthChartScore = data?.compatibilityAreas?.find((a: any) => 
-        a.name.toLowerCase().includes("astroloji") || a.name.toLowerCase().includes("doğum")
-      )?.compatibilityScore || 0;
+      const birthChartScore = Math.round(
+        data?.compatibilityAreas?.find((a: any) => 
+          a.name && (a.name.toLowerCase().includes("astroloji") || a.name.toLowerCase().includes("doğum") || a.name.toLowerCase().includes("burç"))
+        )?.compatibilityScore || 0
+      );
 
+      // If both scores are 0, try to extract from overall score
+      const overallScore = Math.round(data?.overallScore || 0);
+      
       setCompatibilityData({
-        numerologyScore,
-        birthChartScore,
+        numerologyScore: numerologyScore || overallScore,
+        birthChartScore: birthChartScore || overallScore,
         details: data,
       });
 
@@ -449,6 +465,23 @@ const Match = () => {
     }
 
     try {
+      // Check if they are friends first
+      const { data: friendCheck } = await supabase
+        .from("friends")
+        .select("id")
+        .or(`and(user_id.eq.${user.id},friend_id.eq.${currentProfile.user_id}),and(user_id.eq.${currentProfile.user_id},friend_id.eq.${user.id})`)
+        .eq("status", "accepted")
+        .maybeSingle();
+
+      if (!friendCheck) {
+        toast({
+          title: "Hata",
+          description: "Sadece arkadaşlarınızla paylaşım yapabilirsiniz",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Send message with shared content
       const { error: messageError } = await supabase
         .from("messages")
