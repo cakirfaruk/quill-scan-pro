@@ -98,13 +98,13 @@ const BirthChart = () => {
       );
       const geocodeData = await geocodeResponse.json();
       
-      let latitude = 40.1917; // Default: Bursa
-      let longitude = 29.0610;
-      
-      if (geocodeData.results && geocodeData.results.length > 0) {
-        latitude = geocodeData.results[0].geometry.location.lat;
-        longitude = geocodeData.results[0].geometry.location.lng;
+      // Check if we got valid coordinates
+      if (!geocodeData.results || geocodeData.results.length === 0) {
+        throw new Error("Doğum yeri geçersiz veya haritadan seçilmedi. Lütfen doğum yerini yazarken açılan listeden seçim yapın. Profil ayarlarından da güncelleyebilirsiniz.");
       }
+      
+      const latitude = geocodeData.results[0].geometry.location.lat;
+      const longitude = geocodeData.results[0].geometry.location.lng;
 
       // Combine date and time
       const dateTimeString = `${birthDate}T${birthTime}:00`;
