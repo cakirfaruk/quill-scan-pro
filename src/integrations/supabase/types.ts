@@ -1044,6 +1044,7 @@ export type Database = {
           id: string
           media_type: string | null
           media_url: string | null
+          post_type: string | null
           shares_count: number | null
           updated_at: string | null
           user_id: string
@@ -1054,6 +1055,7 @@ export type Database = {
           id?: string
           media_type?: string | null
           media_url?: string | null
+          post_type?: string | null
           shares_count?: number | null
           updated_at?: string | null
           user_id: string
@@ -1064,6 +1066,7 @@ export type Database = {
           id?: string
           media_type?: string | null
           media_url?: string | null
+          post_type?: string | null
           shares_count?: number | null
           updated_at?: string | null
           user_id?: string

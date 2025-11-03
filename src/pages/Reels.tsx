@@ -77,7 +77,7 @@ const Reels = () => {
 
       setCurrentUserId(user.id);
 
-      // Get friends' videos and own videos
+      // Get friends' reels and own reels
       const { data: friendsData } = await supabase
         .from("friends")
         .select("friend_id, user_id")
@@ -90,26 +90,35 @@ const Reels = () => {
 
       const userIds = [user.id, ...friendIds];
 
-      // Get videos
-      const { data: videosData, error } = await supabase
-        .from("user_videos")
+      // Get only reels posts (post_type='reels')
+      const { data: reelsData, error } = await supabase
+        .from("posts")
         .select(`
           *,
-          profiles!user_videos_user_id_fkey (
+          profiles!posts_user_id_fkey (
             username,
             profile_photo
           )
         `)
         .in("user_id", userIds)
+        .eq("post_type", "reels")
+        .eq("media_type", "video")
+        .not("media_url", "is", null)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      const reelsWithData = videosData?.map(video => ({
-        ...video,
+      const reelsWithData = reelsData?.map(post => ({
+        id: post.id,
+        user_id: post.user_id,
+        video_url: post.media_url || "",
+        thumbnail_url: "", // posts don't have thumbnails, can be added later if needed
+        title: post.content || "",
+        description: post.content,
+        created_at: post.created_at,
         user: {
-          username: video.profiles?.username || "Unknown",
-          profile_photo: video.profiles?.profile_photo || "",
+          username: post.profiles?.username || "Unknown",
+          profile_photo: post.profiles?.profile_photo || "",
         },
       })) || [];
 
@@ -118,7 +127,7 @@ const Reels = () => {
       console.error("Error loading reels:", error);
       toast({
         title: "Hata",
-        description: "Videolar yüklenemedi.",
+        description: "Reels yüklenemedi.",
         variant: "destructive",
       });
     } finally {

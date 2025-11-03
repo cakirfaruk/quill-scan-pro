@@ -126,6 +126,36 @@ export const CreatePostDialog = ({
       return;
     }
 
+    // For reels, check if video is vertical (portrait)
+    if (postType === "reels" && file.type.startsWith("video/")) {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.onloadedmetadata = () => {
+        URL.revokeObjectURL(video.src);
+        const aspectRatio = video.videoWidth / video.videoHeight;
+        
+        // Video is vertical if aspect ratio < 1 (height > width)
+        if (aspectRatio >= 1) {
+          toast({
+            title: "Geçersiz video formatı",
+            description: "Reels için sadece dik (portre) videolar yükleyebilirsiniz.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // If vertical, proceed with setting the file
+        setMediaFile(file);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setMediaPreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+      };
+      video.src = URL.createObjectURL(file);
+      return;
+    }
+
     setMediaFile(file);
 
     // Create preview
@@ -202,6 +232,7 @@ export const CreatePostDialog = ({
           content: content.trim(),
           media_url: mediaPreview,
           media_type: mediaPreview ? (postType === "video" || postType === "reels" ? "video" : "photo") : null,
+          post_type: postType,
         })
         .select()
         .single();
