@@ -94,7 +94,7 @@ const BirthChart = () => {
     try {
       // Get coordinates from Google Maps API
       const geocodeResponse = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(birthPlace)}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyDummy'}`
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(birthPlace)}&key=AIzaSyCONL709dmB9jCd3Pd2li5xACFF7qltmSI`
       );
       const geocodeData = await geocodeResponse.json();
       

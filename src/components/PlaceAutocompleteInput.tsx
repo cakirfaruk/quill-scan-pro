@@ -28,12 +28,7 @@ export const PlaceAutocompleteInput = ({
 
   useEffect(() => {
     // Load Google Maps script
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-    
-    if (!apiKey) {
-      console.error("Google Maps API key not found");
-      return;
-    }
+    const apiKey = "AIzaSyCONL709dmB9jCd3Pd2li5xACFF7qltmSI";
 
     // Check if already loaded
     if (window.google && window.google.maps) {
