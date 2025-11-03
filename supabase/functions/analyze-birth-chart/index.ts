@@ -31,9 +31,48 @@ serve(async (req) => {
   try {
     const { fullName, birthDate, birthTime, birthPlace, selectedTopics, chartData } = await req.json();
     
+    // Validate inputs
+    if (!fullName || typeof fullName !== 'string' || fullName.trim().length < 2 || fullName.trim().length > 100) {
+      return new Response(
+        JSON.stringify({ error: "Geçersiz isim" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!birthDate || isNaN(Date.parse(birthDate)) || new Date(birthDate) > new Date()) {
+      return new Response(
+        JSON.stringify({ error: "Geçersiz doğum tarihi" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!birthTime || typeof birthTime !== 'string' || !/^([01]\d|2[0-3]):([0-5]\d)/.test(birthTime)) {
+      return new Response(
+        JSON.stringify({ error: "Geçersiz doğum saati" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!birthPlace || typeof birthPlace !== 'string' || birthPlace.trim().length < 2 || birthPlace.trim().length > 200) {
+      return new Response(
+        JSON.stringify({ error: "Geçersiz doğum yeri" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!Array.isArray(selectedTopics) || selectedTopics.length === 0 || selectedTopics.length > 20) {
+      return new Response(
+        JSON.stringify({ error: "Geçersiz konu seçimi" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
-      throw new Error("Authorization header missing");
+      return new Response(
+        JSON.stringify({ error: "Kimlik doğrulama gerekli" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
     
     const supabase = createClient(

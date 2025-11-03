@@ -15,6 +15,28 @@ serve(async (req) => {
   try {
     const { fullName, birthDate, selectedTopics } = await req.json();
 
+    // Validate inputs
+    if (!fullName || typeof fullName !== 'string' || fullName.trim().length < 2 || fullName.trim().length > 100) {
+      return new Response(
+        JSON.stringify({ error: "Geçersiz isim" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!birthDate || isNaN(Date.parse(birthDate)) || new Date(birthDate) > new Date()) {
+      return new Response(
+        JSON.stringify({ error: "Geçersiz doğum tarihi" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!Array.isArray(selectedTopics) || selectedTopics.length === 0 || selectedTopics.length > 20) {
+      return new Response(
+        JSON.stringify({ error: "Geçersiz konu seçimi" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",

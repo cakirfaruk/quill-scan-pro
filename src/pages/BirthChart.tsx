@@ -10,6 +10,24 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { getAllPlanets } from "ephemeris";
+import { z } from "zod";
+
+const birthChartSchema = z.object({
+  fullName: z.string()
+    .trim()
+    .min(2, "İsim en az 2 karakter olmalı")
+    .max(100, "İsim çok uzun")
+    .regex(/^[a-zA-ZğüşıöçĞÜŞİÖÇ\s]+$/, "İsim sadece harf içerebilir"),
+  birthDate: z.string()
+    .refine((date) => !isNaN(Date.parse(date)), "Geçerli bir tarih girin")
+    .refine((date) => new Date(date) <= new Date(), "Doğum tarihi gelecekte olamaz"),
+  birthTime: z.string()
+    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Geçerli bir saat girin (ÖR: 14:30)"),
+  birthPlace: z.string()
+    .trim()
+    .min(2, "Doğum yeri en az 2 karakter olmalı")
+    .max(200, "Doğum yeri çok uzun"),
+});
 
 const birthChartTopics = [
   "Güneş Burcu (Kişilik)",

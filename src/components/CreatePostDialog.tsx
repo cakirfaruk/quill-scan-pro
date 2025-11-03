@@ -28,6 +28,13 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { z } from "zod";
+
+const postSchema = z.object({
+  content: z.string()
+    .trim()
+    .max(5000, "Gönderi içeriği çok uzun (maksimum 5000 karakter)"),
+});
 
 interface CreatePostDialogProps {
   open: boolean;
@@ -164,6 +171,17 @@ export const CreatePostDialog = ({
       toast({
         title: "Uyarı",
         description: "Lütfen bir içerik veya medya ekleyin",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate content
+    const validation = postSchema.safeParse({ content });
+    if (!validation.success) {
+      toast({
+        title: "Geçersiz İçerik",
+        description: validation.error.errors[0].message,
         variant: "destructive",
       });
       return;
@@ -374,6 +392,7 @@ export const CreatePostDialog = ({
                   onChange={(e) => setContent(e.target.value)}
                   rows={4}
                   className="resize-none"
+                  maxLength={5000}
                 />
                 <div className="absolute bottom-2 right-2 flex gap-1">
                   <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>

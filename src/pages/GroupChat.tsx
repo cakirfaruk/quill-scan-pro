@@ -14,6 +14,14 @@ import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
+import { z } from "zod";
+
+const messageSchema = z.object({
+  content: z.string()
+    .trim()
+    .min(1, "Mesaj boş olamaz")
+    .max(2000, "Mesaj çok uzun (maksimum 2000 karakter)"),
+});
 
 interface GroupMessage {
   id: string;
@@ -204,6 +212,17 @@ const GroupChat = () => {
     if (!newMessage.trim() || sending) return;
 
     try {
+      // Validate message
+      const validation = messageSchema.safeParse({ content: newMessage });
+      if (!validation.success) {
+        toast({
+          title: "Geçersiz Mesaj",
+          description: validation.error.errors[0].message,
+          variant: "destructive",
+        });
+        return;
+      }
+
       setSending(true);
 
       const { error } = await supabase.from("group_messages").insert({
@@ -389,6 +408,7 @@ const GroupChat = () => {
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Mesaj yaz..."
               disabled={sending}
+              maxLength={2000}
             />
 
             <Button type="submit" disabled={sending || !newMessage.trim()}>

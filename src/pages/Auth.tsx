@@ -9,6 +9,22 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FileText, Loader2 } from "lucide-react";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
+import { z } from "zod";
+
+const authSchema = z.object({
+  username: z.string()
+    .trim()
+    .min(3, "Kullanıcı adı en az 3 karakter olmalı")
+    .max(30, "Kullanıcı adı en fazla 30 karakter olabilir")
+    .regex(/^[a-zA-Z0-9_]+$/, "Kullanıcı adı sadece harf, rakam ve alt çizgi içerebilir"),
+  email: z.string()
+    .trim()
+    .email("Geçerli bir e-posta adresi girin")
+    .max(255, "E-posta adresi çok uzun"),
+  password: z.string()
+    .min(6, "Şifre en az 6 karakter olmalı")
+    .max(100, "Şifre çok uzun"),
+});
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -42,6 +58,12 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
+      // Validate inputs
+      const validation = authSchema.safeParse({ username, email, password });
+      if (!validation.success) {
+        throw new Error(validation.error.errors[0].message);
+      }
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -78,6 +100,16 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
+      // Validate inputs
+      const validation = z.object({
+        email: z.string().trim().email("Geçerli bir e-posta adresi girin"),
+        password: z.string().min(1, "Şifre gerekli"),
+      }).safeParse({ email, password });
+      
+      if (!validation.success) {
+        throw new Error(validation.error.errors[0].message);
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -176,6 +208,8 @@ const Auth = () => {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
+                  maxLength={30}
+                  pattern="[a-zA-Z0-9_]+"
                 />
               </div>
 
@@ -188,6 +222,7 @@ const Auth = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  maxLength={255}
                 />
               </div>
 
@@ -201,6 +236,7 @@ const Auth = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
+                  maxLength={100}
                 />
               </div>
 

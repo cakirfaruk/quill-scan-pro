@@ -12,6 +12,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+import { z } from "zod";
+
+const numerologySchema = z.object({
+  fullName: z.string()
+    .trim()
+    .min(2, "İsim en az 2 karakter olmalı")
+    .max(100, "İsim çok uzun")
+    .regex(/^[a-zA-ZğüşıöçĞÜŞİÖÇ\s]+$/, "İsim sadece harf içerebilir"),
+  birthDate: z.string()
+    .refine((date) => !isNaN(Date.parse(date)), "Geçerli bir tarih girin")
+    .refine((date) => new Date(date) <= new Date(), "Doğum tarihi gelecekte olamaz"),
+});
 
 const allTopics = [
   "Kader Rakamı (Yaşam Yolu Sayısı)",
@@ -84,6 +96,21 @@ export default function Numerology() {
       toast({
         title: "Eksik Profil Bilgileri",
         description: `Lütfen profil bilgilerinizi eksiksiz doldurun: ${missingFields.join(", ")}. Ayarlar > Profil Düzenle sayfasından bilgilerinizi güncelleyebilirsiniz.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate inputs
+    const validation = numerologySchema.safeParse({
+      fullName: personData.fullName,
+      birthDate: personData.birthDate,
+    });
+    
+    if (!validation.success) {
+      toast({
+        title: "Geçersiz Veri",
+        description: validation.error.errors[0].message,
         variant: "destructive",
       });
       return;

@@ -12,6 +12,14 @@ import { useToast } from "@/hooks/use-toast";
 import { Shield, Users, CreditCard, History, Loader2, Eye, UserCheck, Trash2 } from "lucide-react";
 import { useImpersonate } from "@/hooks/use-impersonate";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+import { z } from "zod";
+
+const creditSchema = z.object({
+  amount: z.number()
+    .int("Kredi tam sayı olmalı")
+    .positive("Kredi pozitif olmalı")
+    .max(10000, "Maksimum 10000 kredi eklenebilir"),
+});
 
 interface Profile {
   id: string;
@@ -193,10 +201,13 @@ const Admin = () => {
     if (!selectedUser || !creditAmount) return;
 
     const amount = parseInt(creditAmount);
-    if (isNaN(amount) || amount <= 0) {
+    
+    // Validate credit amount
+    const validation = creditSchema.safeParse({ amount });
+    if (!validation.success) {
       toast({
         title: "Geçersiz Miktar",
-        description: "Lütfen geçerli bir kredi miktarı girin.",
+        description: validation.error.errors[0].message,
         variant: "destructive",
       });
       return;
@@ -369,6 +380,8 @@ const Admin = () => {
                           onChange={(e) => setCreditAmount(e.target.value)}
                           placeholder="Örn: 100"
                           className="mt-2"
+                          min="1"
+                          max="10000"
                         />
                       </div>
 

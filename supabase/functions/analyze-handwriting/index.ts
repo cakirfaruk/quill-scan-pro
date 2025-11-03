@@ -30,11 +30,37 @@ serve(async (req) => {
 
   try {
     const { image, selectedTopics } = await req.json();
+
+    // Validate inputs
+    if (!image || typeof image !== 'string' || image.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Geçersiz görsel" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check image size (base64, max ~10MB = ~13.3MB base64)
+    if (image.length > 14000000) {
+      return new Response(
+        JSON.stringify({ error: "Görsel çok büyük (maksimum 10MB)" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!Array.isArray(selectedTopics) || selectedTopics.length === 0 || selectedTopics.length > allTopics.length) {
+      return new Response(
+        JSON.stringify({ error: "Geçersiz konu seçimi" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     
     // Get authorization token
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
-      throw new Error("Authorization header missing");
+      return new Response(
+        JSON.stringify({ error: "Kimlik doğrulama gerekli" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
     
     // Create Supabase client for user verification
