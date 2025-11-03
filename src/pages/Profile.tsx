@@ -2101,17 +2101,6 @@ const Profile = () => {
           }}
         />
 
-        {/* Floating Action Button */}
-        {isOwnProfile && (
-          <Button
-            size="icon"
-            className="fixed bottom-24 right-6 w-14 h-14 rounded-full shadow-2xl bg-gradient-to-r from-primary to-accent hover:scale-110 transition-transform z-50"
-            onClick={() => setCreatePostDialogOpen(true)}
-          >
-            <Plus className="w-6 h-6" />
-          </Button>
-        )}
-
         {/* Profile Image Zoom Dialog */}
         <Dialog open={!!selectedProfileImage} onOpenChange={() => setSelectedProfileImage(null)}>
           <DialogContent className="max-w-4xl p-0 overflow-hidden">

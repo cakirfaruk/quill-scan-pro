@@ -15,13 +15,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Reply, Loader2, RefreshCw, Bookmark, Folder, FolderPlus } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Reply, Loader2, RefreshCw, Bookmark, Folder, FolderPlus, Plus } from "lucide-react";
 import { useImpersonate } from "@/hooks/use-impersonate";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { soundEffects } from "@/utils/soundEffects";
 import { StoriesBar } from "@/components/StoriesBar";
 import { SkeletonPost } from "@/components/ui/enhanced-skeleton";
 import { ParsedText } from "@/components/ParsedText";
+import { CreatePostDialog } from "@/components/CreatePostDialog";
 
 interface Post {
   id: string;
@@ -91,6 +92,8 @@ const Feed = () => {
   const [postToSave, setPostToSave] = useState<Post | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
+  const [createPostDialogOpen, setCreatePostDialogOpen] = useState(false);
+  const [currentProfile, setCurrentProfile] = useState<{ username: string; profile_photo: string | null }>({ username: "", profile_photo: null });
   const { getEffectiveUserId } = useImpersonate();
 
   const handleRefresh = async () => {
@@ -123,6 +126,18 @@ const Feed = () => {
     }
     
     setUserId(effectiveUserId);
+    
+    // Load current user profile for post creation
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("username, profile_photo")
+      .eq("user_id", effectiveUserId)
+      .maybeSingle();
+    
+    if (profileData) {
+      setCurrentProfile(profileData);
+    }
+    
     // **PARALEL YÜKLEME** - Arkadaşlar ve postlar aynı anda
     await Promise.all([
       loadFriends(effectiveUserId),
@@ -933,6 +948,31 @@ const Feed = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Create Post Dialog */}
+      <CreatePostDialog
+        open={createPostDialogOpen}
+        onOpenChange={setCreatePostDialogOpen}
+        userId={userId}
+        username={currentProfile.username}
+        profilePhoto={currentProfile.profile_photo}
+        onPostCreated={() => {
+          loadPosts(userId);
+          toast({
+            title: "Başarılı",
+            description: "Gönderi oluşturuldu",
+          });
+        }}
+      />
+
+      {/* Floating Action Button */}
+      <Button
+        size="icon"
+        className="fixed bottom-24 right-6 w-14 h-14 rounded-full shadow-2xl bg-gradient-to-r from-primary to-accent hover:scale-110 transition-transform z-50 lg:hidden"
+        onClick={() => setCreatePostDialogOpen(true)}
+      >
+        <Plus className="w-6 h-6" />
+      </Button>
     </div>
   );
 };
