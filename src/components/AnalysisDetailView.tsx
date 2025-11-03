@@ -631,17 +631,35 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
                 </h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-12">
-                {Object.entries(planetarySigns).map(([planet, data]: [string, any]) => (
-                  <div key={planet} className="flex flex-col p-3 bg-background rounded-lg border border-purple-200 dark:border-purple-800">
-                    <span className="font-semibold text-purple-900 dark:text-purple-100 mb-1 capitalize">{planet}:</span>
-                    <div className="flex items-center justify-between">
-                      <Badge className="bg-purple-100 text-purple-900 dark:bg-purple-900 dark:text-purple-100">
-                        {data.burc}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">{data.derece}</span>
+                {Object.entries(planetarySigns).map(([planet, data]: [string, any]) => {
+                  const planetNames: Record<string, string> = {
+                    gunes: "Güneş",
+                    ay: "Ay",
+                    merkur: "Merkür",
+                    venus: "Venüs",
+                    mars: "Mars",
+                    jupiter: "Jüpiter",
+                    saturn: "Satürn",
+                    uranus: "Uranüs",
+                    neptun: "Neptün",
+                    pluton: "Plüton",
+                    chiron: "Chiron",
+                  };
+                  
+                  return (
+                    <div key={planet} className="flex flex-col p-3 bg-background rounded-lg border border-purple-200 dark:border-purple-800">
+                      <span className="font-semibold text-purple-900 dark:text-purple-100 mb-1">
+                        {planetNames[planet] || planet}:
+                      </span>
+                      <div className="flex items-center justify-between">
+                        <Badge className="bg-purple-100 text-purple-900 dark:bg-purple-900 dark:text-purple-100">
+                          {data.burc}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">{data.derece}</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </Card>

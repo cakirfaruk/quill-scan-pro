@@ -23,6 +23,7 @@ const birthChartTopics = [
   "Uranüs (Değişim & Yenilik)",
   "Neptün (Rüyalar & Sezgi)",
   "Plüton (Dönüşüm & Güç)",
+  "Chiron (Yaralı İyileştirici)",
   "Evler (Yaşam Alanları)",
 ];
 
@@ -185,6 +186,7 @@ const BirthChart = () => {
         uranus: { burc: getZodiacSign(planets.uranus.apparentLongitudeDd), derece: formatDegrees(planets.uranus.apparentLongitudeDd) },
         neptun: { burc: getZodiacSign(planets.neptune.apparentLongitudeDd), derece: formatDegrees(planets.neptune.apparentLongitudeDd) },
         pluton: { burc: getZodiacSign(planets.pluto.apparentLongitudeDd), derece: formatDegrees(planets.pluto.apparentLongitudeDd) },
+        chiron: { burc: getZodiacSign(planets.chiron.apparentLongitudeDd), derece: formatDegrees(planets.chiron.apparentLongitudeDd) },
       };
 
       return {

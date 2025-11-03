@@ -14,6 +14,7 @@ const birthChartTopics = [
   "Uranüs (Değişim & Yenilik)",
   "Neptün (Rüyalar & Sezgi)",
   "Plüton (Dönüşüm & Güç)",
+  "Chiron (Yaralı İyileştirici)",
   "Evler (Yaşam Alanları)",
 ];
 
