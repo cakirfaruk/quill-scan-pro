@@ -111,7 +111,8 @@ const BirthChart = () => {
       const birthDateTime = new Date(dateTimeString);
 
       // Calculate planets using ephemeris
-      const planets = getAllPlanets(birthDateTime, longitude, latitude);
+      const result = getAllPlanets(birthDateTime, longitude, latitude, 0);
+      const planets = result.observed;
 
       // Convert to zodiac signs
       const getZodiacSign = (longitude: number) => {
