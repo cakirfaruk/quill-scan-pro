@@ -11,13 +11,16 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, Plus, X, Settings, Calendar, MapPin, Share2, Eye, EyeOff, FileText, Sparkles, Heart, Moon, Hand, Coffee, Star, Send } from "lucide-react";
+import { Loader2, Camera, Plus, X, Settings, Calendar, MapPin, Share2, Eye, EyeOff, FileText, Sparkles, Heart, Moon, Hand, Coffee, Star, Send, MessageCircle } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import { useImpersonate } from "@/hooks/use-impersonate";
+import { CreatePostDialog } from "@/components/CreatePostDialog";
+import { ProfilePosts } from "@/components/ProfilePosts";
 
 interface UserPhoto {
   id: string;
@@ -76,18 +79,80 @@ const Profile = () => {
   const [currentUserId, setCurrentUserId] = useState("");
   const [latestBirthChart, setLatestBirthChart] = useState<any>(null);
   const [latestNumerology, setLatestNumerology] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState("photos");
+  const [activeTab, setActiveTab] = useState("posts");
   const [friendsDialogOpen, setFriendsDialogOpen] = useState(false);
   const { getEffectiveUserId } = useImpersonate();
-  const [sharePostDialogOpen, setSharePostDialogOpen] = useState(false);
-  const [sharePostContent, setSharePostContent] = useState("");
-  const [selectedPhotoForShare, setSelectedPhotoForShare] = useState<string | null>(null);
+  const [createPostDialogOpen, setCreatePostDialogOpen] = useState(false);
+  const [userPosts, setUserPosts] = useState<any[]>([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+  const [shareAnalysisToPost, setShareAnalysisToPost] = useState<Analysis | null>(null);
 
   useEffect(() => {
     loadProfile();
   }, [username]);
 
-  const loadProfile = async () => {
+  useEffect(() => {
+    if (profile.user_id && activeTab === "posts") {
+      loadUserPosts();
+    }
+  }, [profile.user_id, activeTab]);
+
+  const loadUserPosts = async () => {
+    if (!profile.user_id) return;
+    
+    setPostsLoading(true);
+    try {
+      const { data: postsData } = await supabase
+        .from("posts")
+        .select(`
+          *,
+          profiles!posts_user_id_fkey (
+            username,
+            full_name,
+            profile_photo
+          )
+        `)
+        .eq("user_id", profile.user_id)
+        .order("created_at", { ascending: false });
+
+      if (postsData) {
+        const postsWithData = await Promise.all(
+          postsData.map(async (post: any) => {
+            const { count: likesCount } = await supabase
+              .from("post_likes")
+              .select("*", { count: "exact", head: true })
+              .eq("post_id", post.id);
+
+            const { count: commentsCount } = await supabase
+              .from("post_comments")
+              .select("*", { count: "exact", head: true })
+              .eq("post_id", post.id);
+
+            const { data: likeCheck } = await supabase
+              .from("post_likes")
+              .select("id")
+              .eq("post_id", post.id)
+              .eq("user_id", currentUserId)
+              .maybeSingle();
+
+            return {
+              ...post,
+              profile: post.profiles,
+              likes: likesCount || 0,
+              comments: commentsCount || 0,
+              hasLiked: !!likeCheck,
+            };
+          })
+        );
+
+        setUserPosts(postsWithData);
+      }
+    } catch (error) {
+      console.error("Error loading posts:", error);
+    } finally {
+      setPostsLoading(false);
+    }
+  };
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -746,8 +811,6 @@ const Profile = () => {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!isOwnProfile) return;
-
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -783,38 +846,6 @@ const Profile = () => {
       });
     };
     reader.readAsDataURL(file);
-  };
-
-  const handleSharePhoto = async () => {
-    if (!selectedPhotoForShare) return;
-
-    try {
-      const { error } = await supabase
-        .from("posts")
-        .insert({
-          user_id: currentUserId,
-          content: sharePostContent.trim() || null,
-          media_url: selectedPhotoForShare,
-          media_type: "photo",
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Başarılı",
-        description: "Fotoğraf paylaşıldı",
-      });
-
-      setSharePostDialogOpen(false);
-      setSharePostContent("");
-      setSelectedPhotoForShare(null);
-    } catch (error: any) {
-      toast({
-        title: "Hata",
-        description: "Paylaşım yapılamadı",
-        variant: "destructive",
-      });
-    }
   };
 
   if (isLoading) {
@@ -933,68 +964,13 @@ const Profile = () => {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="photos">Fotoğraflar</TabsTrigger>
+            <TabsTrigger value="posts">Gönderiler</TabsTrigger>
             <TabsTrigger value="analyses">Analizler</TabsTrigger>
             <TabsTrigger value="friends">Arkadaşlar</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="photos">
-            <Card className="p-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {isOwnProfile && (
-                  <label className="aspect-square border-2 border-dashed border-border rounded-lg flex items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
-                    <div className="text-center">
-                      <Plus className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">Fotoğraf Ekle</p>
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleAddPhoto}
-                    />
-                  </label>
-                )}
-
-                {photos.map((photo) => (
-                  <div key={photo.id} className="relative aspect-square group">
-                    <img
-                      src={photo.photo_url}
-                      alt=""
-                      className="w-full h-full object-cover rounded-lg"
-                    />
-                    {isOwnProfile && (
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => {
-                            setSelectedPhotoForShare(photo.photo_url);
-                            setSharePostDialogOpen(true);
-                          }}
-                        >
-                          <Share2 className="w-4 h-4 mr-1" />
-                          Paylaş
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDeletePhoto(photo.id)}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {photos.length === 0 && !isOwnProfile && (
-                  <div className="col-span-full text-center py-12 text-muted-foreground">
-                    Henüz fotoğraf eklenmemiş
-                  </div>
-                )}
-              </div>
-            </Card>
+          <TabsContent value="posts">
+            <ProfilePosts posts={userPosts} loading={postsLoading} isOwnProfile={isOwnProfile} />
           </TabsContent>
 
           <TabsContent value="analyses">
@@ -1446,39 +1422,32 @@ const Profile = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Share Photo Dialog */}
-        <Dialog open={sharePostDialogOpen} onOpenChange={setSharePostDialogOpen}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Fotoğraf Paylaş</DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              {selectedPhotoForShare && (
-                <img 
-                  src={selectedPhotoForShare} 
-                  alt="Preview" 
-                  className="w-full h-64 object-cover rounded-lg"
-                />
-              )}
-              
-              <div>
-                <Label>Açıklama (İsteğe Bağlı)</Label>
-                <Textarea
-                  value={sharePostContent}
-                  onChange={(e) => setSharePostContent(e.target.value)}
-                  placeholder="Fotoğrafınız hakkında bir şeyler yazın..."
-                  rows={3}
-                />
-              </div>
+        {/* Create Post Dialog */}
+        <CreatePostDialog
+          open={createPostDialogOpen}
+          onOpenChange={setCreatePostDialogOpen}
+          userId={currentUserId}
+          username={profile.username}
+          profilePhoto={profile.profile_photo}
+          onPostCreated={() => {
+            loadUserPosts();
+            toast({
+              title: "Başarılı",
+              description: "Gönderi oluşturuldu",
+            });
+          }}
+        />
 
-              <Button onClick={handleSharePhoto} className="w-full">
-                <Share2 className="w-4 h-4 mr-2" />
-                Paylaş
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        {/* Floating Action Button */}
+        {isOwnProfile && (
+          <Button
+            size="icon"
+            className="fixed bottom-24 right-6 w-14 h-14 rounded-full shadow-2xl bg-gradient-to-r from-primary to-accent hover:scale-110 transition-transform z-50"
+            onClick={() => setCreatePostDialogOpen(true)}
+          >
+            <Plus className="w-6 h-6" />
+          </Button>
+        )}
       </main>
     </div>
   );
