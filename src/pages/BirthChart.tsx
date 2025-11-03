@@ -119,8 +119,23 @@ const BirthChart = () => {
       }
 
       // Combine date and time
-      const dateTimeString = `${birthDate}T${birthTime}:00`;
+      console.log("Birth date:", birthDate);
+      console.log("Birth time:", birthTime);
+      
+      // birthTime format: "HH:MM" or "HH:MM:SS"
+      const timeWithSeconds = birthTime.includes(':') && birthTime.split(':').length === 2 
+        ? `${birthTime}:00` 
+        : birthTime;
+      
+      const dateTimeString = `${birthDate}T${timeWithSeconds}`;
+      console.log("DateTime string:", dateTimeString);
+      
       const birthDateTime = new Date(dateTimeString);
+      console.log("Birth date time object:", birthDateTime);
+      
+      if (isNaN(birthDateTime.getTime())) {
+        throw new Error("Geçersiz tarih formatı. Lütfen doğum tarihi ve saatini kontrol edin.");
+      }
       
       console.log("Birth date time:", birthDateTime);
       console.log("Calling getAllPlanets with:", { birthDateTime, longitude, latitude });
