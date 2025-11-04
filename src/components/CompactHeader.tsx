@@ -181,18 +181,18 @@ export const CompactHeader = () => {
                 <span className="font-semibold text-primary text-sm">{credits}</span>
               </Button>
 
-              {/* Messages */}
+              {/* Notifications */}
+              <NotificationBell />
+
+              {/* Messages - Mobile Visible */}
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate("/messages")}
-                className="h-8 sm:h-9 w-8 sm:w-9"
+                className={`h-8 sm:h-9 w-8 sm:w-9 ${location.pathname === "/messages" ? "text-primary" : ""}`}
               >
                 <MessageCircle className="w-5 h-5" />
               </Button>
-
-              {/* Notifications */}
-              <NotificationBell />
 
               {/* Main Menu - Desktop only for admin */}
               {isAdmin && (
