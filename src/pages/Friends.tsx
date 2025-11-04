@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Users, UserPlus, Loader2, Search, Check, X, User, Send } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { OnlineStatusBadge } from "@/components/OnlineStatusBadge";
+import { FriendSuggestions } from "@/components/FriendSuggestions";
 
 interface Profile {
   user_id: string;
@@ -424,45 +425,50 @@ const Friends = () => {
           </TabsContent>
 
           <TabsContent value="search">
-            <Card className="p-4 sm:p-6">
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Kullanıcı adı veya isim ile ara..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                  />
-                  <Button onClick={handleSearch} disabled={isSearching}>
-                    {isSearching ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Search className="w-4 h-4" />
-                    )}
-                  </Button>
-                </div>
-
-                {searchResults.length > 0 && (
-                  <div className="space-y-3">
-                    {searchResults.map((profile) => (
-                      <div
-                        key={profile.user_id}
-                        className="flex items-center justify-between p-4 rounded-lg border bg-card"
-                      >
-                        <ProfileAvatar profile={profile} />
-                        <Button
-                          size="sm"
-                          onClick={() => sendFriendRequest(profile.user_id)}
-                        >
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Ekle
-                        </Button>
-                      </div>
-                    ))}
+            <div className="space-y-4">
+              <FriendSuggestions />
+              
+              <Card className="p-4 sm:p-6">
+                <h3 className="text-lg font-semibold mb-4">Kullanıcı Ara</h3>
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Kullanıcı adı veya isim ile ara..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                    />
+                    <Button onClick={handleSearch} disabled={isSearching}>
+                      {isSearching ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Search className="w-4 h-4" />
+                      )}
+                    </Button>
                   </div>
-                )}
-              </div>
-            </Card>
+
+                  {searchResults.length > 0 && (
+                    <div className="space-y-3">
+                      {searchResults.map((profile) => (
+                        <div
+                          key={profile.user_id}
+                          className="flex items-center justify-between p-4 rounded-lg border bg-card"
+                        >
+                          <ProfileAvatar profile={profile} />
+                          <Button
+                            size="sm"
+                            onClick={() => sendFriendRequest(profile.user_id)}
+                          >
+                            <UserPlus className="w-4 h-4 mr-2" />
+                            Ekle
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </main>

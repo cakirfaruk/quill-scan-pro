@@ -376,6 +376,39 @@ export type Database = {
         }
         Relationships: []
       }
+      friend_suggestions: {
+        Row: {
+          common_interests: string[] | null
+          compatibility_score: number
+          created_at: string
+          dismissed: boolean | null
+          id: string
+          reason: string | null
+          suggested_user_id: string
+          user_id: string
+        }
+        Insert: {
+          common_interests?: string[] | null
+          compatibility_score?: number
+          created_at?: string
+          dismissed?: boolean | null
+          id?: string
+          reason?: string | null
+          suggested_user_id: string
+          user_id: string
+        }
+        Update: {
+          common_interests?: string[] | null
+          compatibility_score?: number
+          created_at?: string
+          dismissed?: boolean | null
+          id?: string
+          reason?: string | null
+          suggested_user_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       friends: {
         Row: {
           created_at: string | null
@@ -1123,14 +1156,17 @@ export type Database = {
           full_name: string | null
           gender: string | null
           id: string
+          interests: string[] | null
           is_online: boolean | null
           last_seen: string | null
+          looking_for: string[] | null
           profile_photo: string | null
           show_in_matches: boolean
           updated_at: string
           user_id: string
           username: string
           visibility: string | null
+          zodiac_sign: string | null
         }
         Insert: {
           bio?: string | null
@@ -1143,14 +1179,17 @@ export type Database = {
           full_name?: string | null
           gender?: string | null
           id?: string
+          interests?: string[] | null
           is_online?: boolean | null
           last_seen?: string | null
+          looking_for?: string[] | null
           profile_photo?: string | null
           show_in_matches?: boolean
           updated_at?: string
           user_id: string
           username: string
           visibility?: string | null
+          zodiac_sign?: string | null
         }
         Update: {
           bio?: string | null
@@ -1163,14 +1202,17 @@ export type Database = {
           full_name?: string | null
           gender?: string | null
           id?: string
+          interests?: string[] | null
           is_online?: boolean | null
           last_seen?: string | null
+          looking_for?: string[] | null
           profile_photo?: string | null
           show_in_matches?: boolean
           updated_at?: string
           user_id?: string
           username?: string
           visibility?: string | null
+          zodiac_sign?: string | null
         }
         Relationships: []
       }
