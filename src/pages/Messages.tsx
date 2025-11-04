@@ -28,6 +28,7 @@ import { ScheduleMessageDialog } from "@/components/ScheduleMessageDialog";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { playRingtone, vibrate, showBrowserNotification } from "@/utils/callNotifications";
+import { requestNotificationPermission, subscribeToPushNotifications, checkNotificationPermission } from "@/utils/pushNotifications";
 
 interface Friend {
   user_id: string;
@@ -115,6 +116,7 @@ const Messages = () => {
     callType: "audio" | "video";
   } | null>(null);
   const [ringtone, setRingtone] = useState<{ stop: () => void } | null>(null);
+  const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -123,6 +125,32 @@ const Messages = () => {
 
   useEffect(() => {
     loadConversations();
+
+    // Request notification permission and subscribe to push notifications
+    const setupPushNotifications = async () => {
+      const permission = checkNotificationPermission();
+      
+      if (permission === 'default') {
+        // Ask for permission
+        const granted = await requestNotificationPermission();
+        if (granted) {
+          const subscribed = await subscribeToPushNotifications();
+          setPushNotificationsEnabled(subscribed);
+          if (subscribed) {
+            toast({
+              title: "Bildirimler Aktif",
+              description: "Artık browser kapalıyken bile arama bildirimi alacaksınız",
+            });
+          }
+        }
+      } else if (permission === 'granted') {
+        // Already granted, just subscribe
+        const subscribed = await subscribeToPushNotifications();
+        setPushNotificationsEnabled(subscribed);
+      }
+    };
+
+    setupPushNotifications();
   }, []);
 
   // Watch for URL parameter changes
@@ -204,7 +232,7 @@ const Messages = () => {
               // Vibrate
               vibrate();
               
-              // Show browser notification
+              // Show browser notification (for when browser is open)
               showBrowserNotification(
                 `${callerProfile.full_name || callerProfile.username} arıyor`,
                 {
@@ -212,6 +240,22 @@ const Messages = () => {
                   tag: call.call_id,
                 }
               );
+
+              // Send push notification (for when browser is closed)
+              try {
+                await supabase.functions.invoke('send-call-notification', {
+                  body: {
+                    receiverId: call.receiver_id,
+                    callerName: callerProfile.full_name || callerProfile.username || "Bilinmeyen",
+                    callerPhoto: callerProfile.profile_photo,
+                    callType: call.call_type,
+                    callId: call.call_id,
+                  },
+                });
+                console.log('Push notification sent successfully');
+              } catch (error) {
+                console.error('Error sending push notification:', error);
+              }
               
               setIncomingCall({
                 id: call.id,
