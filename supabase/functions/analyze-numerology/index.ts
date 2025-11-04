@@ -180,12 +180,25 @@ JSON formatında yanıt ver, her konu için ayrı alan oluştur.`;
     const aiData = await response.json();
     console.log("AI Response:", JSON.stringify(aiData, null, 2));
     
-    const toolCall = aiData.choices[0].message.tool_calls?.[0];
+    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) {
-      throw new Error("No tool call in AI response");
+      console.error("No tool call found in AI response");
+      throw new Error("AI did not return structured data");
     }
     
-    const analysisResult = JSON.parse(toolCall.function.arguments);
+    // Parse the arguments - they might already be an object or a string
+    let analysisResult;
+    if (typeof toolCall.function.arguments === 'string') {
+      try {
+        analysisResult = JSON.parse(toolCall.function.arguments);
+      } catch (parseError) {
+        console.error("Failed to parse tool arguments:", parseError);
+        console.error("Arguments string:", toolCall.function.arguments);
+        throw new Error("Invalid AI response format");
+      }
+    } else {
+      analysisResult = toolCall.function.arguments;
+    }
 
     await supabaseClient
       .from("profiles")
