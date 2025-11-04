@@ -9,7 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Send, Users, Settings, Smile, Loader2, UserPlus, BarChart3, Megaphone } from "lucide-react";
+import { ArrowLeft, Send, Users, Settings, Smile, Loader2, UserPlus, BarChart3, Megaphone, Image as ImageIcon, Paperclip } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -19,6 +19,7 @@ import { GroupPollCard } from "@/components/GroupPollCard";
 import { CreateGroupPollDialog } from "@/components/CreateGroupPollDialog";
 import { GroupAnnouncementCard } from "@/components/GroupAnnouncementCard";
 import { CreateGroupAnnouncementDialog } from "@/components/CreateGroupAnnouncementDialog";
+import { GroupMediaGallery } from "@/components/GroupMediaGallery";
 
 const messageSchema = z.object({
   content: z.string()
@@ -30,6 +31,8 @@ const messageSchema = z.object({
 interface GroupMessage {
   id: string;
   content: string;
+  media_url?: string | null;
+  media_type?: string | null;
   created_at: string;
   sender_id: string;
   sender: {
@@ -64,12 +67,15 @@ const GroupChat = () => {
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [membersDialogOpen, setMembersDialogOpen] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [createPollDialogOpen, setCreatePollDialogOpen] = useState(false);
   const [createAnnouncementDialogOpen, setCreateAnnouncementDialogOpen] = useState(false);
+  const [mediaGalleryOpen, setMediaGalleryOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadGroup();
@@ -185,7 +191,7 @@ const GroupChat = () => {
     try {
       const { data, error } = await supabase
         .from("group_messages")
-        .select("*")
+        .select("id, content, media_url, media_type, created_at, sender_id")
         .eq("group_id", groupId)
         .order("created_at", { ascending: true })
         .limit(100);
@@ -322,6 +328,78 @@ const GroupChat = () => {
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "video/mp4", "video/webm"];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: "Hata",
+        description: "Sadece resim (JPG, PNG, WEBP) ve video (MP4, WEBM) dosyaları yüklenebilir",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (20MB)
+    if (file.size > 20 * 1024 * 1024) {
+      toast({
+        title: "Hata",
+        description: "Dosya boyutu 20MB'dan küçük olmalı",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setUploading(true);
+
+      // Upload file to storage
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${currentUserId}/${groupId}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("group-media")
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from("group-media")
+        .getPublicUrl(fileName);
+
+      // Send message with media
+      const { error: messageError } = await supabase.from("group_messages").insert({
+        group_id: groupId,
+        sender_id: currentUserId,
+        content: file.type.startsWith("image") ? "📷 Fotoğraf" : "🎥 Video",
+        media_url: publicUrl,
+        media_type: file.type,
+      });
+
+      if (messageError) throw messageError;
+
+      toast({
+        title: "Başarılı",
+        description: "Medya paylaşıldı",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: error.message || "Medya yüklenemedi",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     setNewMessage((prev) => prev + emojiData.emoji);
   };
@@ -396,6 +474,14 @@ const GroupChat = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMediaGalleryOpen(true)}
+              title="Medya Galerisi"
+            >
+              <ImageIcon className="w-5 h-5" />
+            </Button>
             {isAdmin && (
               <>
                 <Button
@@ -488,13 +574,36 @@ const GroupChat = () => {
                     </p>
                   )}
                   <div
-                    className={`rounded-lg px-4 py-2 inline-block ${
+                    className={`rounded-lg overflow-hidden ${
+                      msg.media_url ? "" : "px-4 py-2"
+                    } inline-block ${
                       msg.sender_id === currentUserId
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted"
                     }`}
                   >
-                    <p className="text-sm">{msg.content}</p>
+                    {msg.media_url ? (
+                      <div>
+                        {msg.media_type?.startsWith("image") ? (
+                          <img
+                            src={msg.media_url}
+                            alt="Paylaşılan medya"
+                            className="max-w-[300px] max-h-[300px] object-cover"
+                          />
+                        ) : (
+                          <video
+                            src={msg.media_url}
+                            controls
+                            className="max-w-[300px] max-h-[300px]"
+                          />
+                        )}
+                        {msg.content && (
+                          <p className="text-sm px-4 py-2">{msg.content}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm">{msg.content}</p>
+                    )}
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-1">
                     {formatDistanceToNow(new Date(msg.created_at), {
@@ -511,6 +620,28 @@ const GroupChat = () => {
         {/* Message Input */}
         <div className="p-4 border-t">
           <form onSubmit={handleSendMessage} className="flex gap-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              accept="image/jpeg,image/jpg,image/png,image/webp,video/mp4,video/webm"
+              className="hidden"
+            />
+            
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Paperclip className="w-5 h-5" />
+              )}
+            </Button>
+
             <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
               <PopoverTrigger asChild>
                 <Button type="button" variant="ghost" size="icon">
@@ -526,11 +657,11 @@ const GroupChat = () => {
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Mesaj yaz..."
-              disabled={sending}
+              disabled={sending || uploading}
               maxLength={2000}
             />
 
-            <Button type="submit" disabled={sending || !newMessage.trim()}>
+            <Button type="submit" disabled={sending || uploading || !newMessage.trim()}>
               {sending ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
@@ -604,6 +735,13 @@ const GroupChat = () => {
         onOpenChange={setCreateAnnouncementDialogOpen}
         groupId={groupId!}
         onAnnouncementCreated={loadAnnouncements}
+      />
+
+      {/* Media Gallery */}
+      <GroupMediaGallery
+        open={mediaGalleryOpen}
+        onOpenChange={setMediaGalleryOpen}
+        groupId={groupId!}
       />
     </div>
   );
