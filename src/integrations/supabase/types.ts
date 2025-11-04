@@ -378,6 +378,33 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_pins: {
+        Row: {
+          conversation_id: string
+          conversation_type: string
+          created_at: string
+          id: string
+          pinned_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          conversation_type: string
+          created_at?: string
+          id?: string
+          pinned_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          conversation_type?: string
+          created_at?: string
+          id?: string
+          pinned_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       credit_packages: {
         Row: {
           created_at: string

@@ -25,6 +25,8 @@ import { SwipeableMessage } from "@/components/SwipeableMessage";
 import { useLongPress } from "@/hooks/use-gestures";
 import { CallInterface } from "@/components/CallInterface";
 import { ScheduleMessageDialog } from "@/components/ScheduleMessageDialog";
+import { formatDistanceToNow } from "date-fns";
+import { tr } from "date-fns/locale";
 
 interface Friend {
   user_id: string;
@@ -33,6 +35,14 @@ interface Friend {
   profile_photo: string;
   is_online?: boolean;
   last_seen?: string;
+}
+
+interface Group {
+  id: string;
+  name: string;
+  description: string | null;
+  photo_url: string | null;
+  member_count?: number;
 }
 
 interface Message {
@@ -50,10 +60,15 @@ interface Message {
 }
 
 interface Conversation {
-  friend: Friend;
-  lastMessage?: Message;
+  type: 'direct' | 'group';
+  id: string;
+  friend?: Friend;
+  group?: Group;
+  lastMessage?: any;
+  lastMessageSenderName?: string;
   unreadCount: number;
-  category: "friend" | "match" | "other";
+  category?: "friend" | "match" | "other";
+  isPinned?: boolean;
 }
 
 const Messages = () => {
@@ -71,7 +86,7 @@ const Messages = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [attachedFilePreview, setAttachedFilePreview] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"friends" | "matches" | "other">("friends");
+  const [activeTab, setActiveTab] = useState<"friends" | "matches" | "other" | "groups">("friends");
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [showGifPicker, setShowGifPicker] = useState(false);
   const [pinnedMessages, setPinnedMessages] = useState<Message[]>([]);
@@ -86,13 +101,12 @@ const Messages = () => {
 
   useEffect(() => {
     loadConversations();
-  }, []); // Only load once on mount
+  }, []);
 
   useEffect(() => {
     if (!currentUserId) return;
     
-    // Subscribe to new messages
-    const channel = supabase
+    const messagesChannel = supabase
       .channel("messages-changes")
       .on(
         "postgres_changes",
@@ -110,8 +124,24 @@ const Messages = () => {
       )
       .subscribe();
 
+    const groupMessagesChannel = supabase
+      .channel("group-messages-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "group_messages",
+        },
+        () => {
+          loadConversations();
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(groupMessagesChannel);
     };
   }, [selectedFriend, currentUserId]);
 
@@ -125,144 +155,202 @@ const Messages = () => {
 
       setCurrentUserId(user.id);
 
-      // Get all people who have messaged or received messages from current user
+      // Load pinned conversations
+      const { data: pinnedData } = await supabase
+        .from("conversation_pins")
+        .select("conversation_type, conversation_id")
+        .eq("user_id", user.id);
+
+      const pinnedMap = new Map<string, boolean>();
+      pinnedData?.forEach(pin => {
+        pinnedMap.set(`${pin.conversation_type}:${pin.conversation_id}`, true);
+      });
+
+      // Get direct message conversations
       const { data: allMessages } = await supabase
         .from("messages")
         .select("sender_id, receiver_id, message_category")
         .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
 
-      if (!allMessages) {
-        setIsLoading(false);
-        return;
-      }
+      const directConversations: Conversation[] = [];
 
-      // Get unique user IDs
-      const userIds = new Set<string>();
-      allMessages.forEach(msg => {
-        if (msg.sender_id !== user.id) userIds.add(msg.sender_id);
-        if (msg.receiver_id !== user.id) userIds.add(msg.receiver_id);
-      });
-
-      if (userIds.size === 0) {
-        setIsLoading(false);
-        return;
-      }
-
-      // Get profiles for all users
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("user_id, username, full_name, profile_photo, is_online, last_seen")
-        .in("user_id", Array.from(userIds));
-
-      if (!profilesData) {
-        setIsLoading(false);
-        return;
-      }
-
-      // Get friends
-      const { data: friendsData } = await supabase
-        .from("friends")
-        .select("user_id, friend_id")
-        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
-        .eq("status", "accepted");
-
-      const friendIds = new Set<string>();
-      friendsData?.forEach(f => {
-        if (f.user_id === user.id) friendIds.add(f.friend_id);
-        else friendIds.add(f.user_id);
-      });
-
-      // Get REAL matches - mutual likes via swipes, NOT just compatibility analyses
-      const { data: userSwipes } = await supabase
-        .from("swipes")
-        .select("target_user_id, action")
-        .eq("user_id", user.id)
-        .eq("action", "like");
-
-      const matchIds = new Set<string>();
-      
-      if (userSwipes && userSwipes.length > 0) {
-        const likedUserIds = userSwipes.map(s => s.target_user_id);
-        
-        // Check which of these users also liked back
-        const { data: mutualSwipes } = await supabase
-          .from("swipes")
-          .select("user_id")
-          .in("user_id", likedUserIds)
-          .eq("target_user_id", user.id)
-          .eq("action", "like");
-        
-        mutualSwipes?.forEach(s => {
-          matchIds.add(s.user_id);
+      if (allMessages && allMessages.length > 0) {
+        const userIds = new Set<string>();
+        allMessages.forEach(msg => {
+          if (msg.sender_id !== user.id) userIds.add(msg.sender_id);
+          if (msg.receiver_id !== user.id) userIds.add(msg.receiver_id);
         });
-      }
 
-      // Build conversations with categories
-      const conversationsWithMessages = await Promise.all(
-        profilesData.map(async (profile) => {
-          let category: "friend" | "match" | "other" = "other";
-          if (friendIds.has(profile.user_id)) {
-            category = "friend";
-          } else if (matchIds.has(profile.user_id)) {
-            category = "match";
+        if (userIds.size > 0) {
+          const { data: profilesData } = await supabase
+            .from("profiles")
+            .select("user_id, username, full_name, profile_photo, is_online, last_seen")
+            .in("user_id", Array.from(userIds));
+
+          const { data: friendsData } = await supabase
+            .from("friends")
+            .select("user_id, friend_id")
+            .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
+            .eq("status", "accepted");
+
+          const friendIds = new Set<string>();
+          friendsData?.forEach(f => {
+            if (f.user_id === user.id) friendIds.add(f.friend_id);
+            else friendIds.add(f.user_id);
+          });
+
+          const { data: userSwipes } = await supabase
+            .from("swipes")
+            .select("target_user_id, action")
+            .eq("user_id", user.id)
+            .eq("action", "like");
+
+          const matchIds = new Set<string>();
+          if (userSwipes && userSwipes.length > 0) {
+            const likedUserIds = userSwipes.map(s => s.target_user_id);
+            const { data: mutualSwipes } = await supabase
+              .from("swipes")
+              .select("user_id")
+              .in("user_id", likedUserIds)
+              .eq("target_user_id", user.id)
+              .eq("action", "like");
+            
+            mutualSwipes?.forEach(s => matchIds.add(s.user_id));
           }
 
-          const { data: lastMsg } = await supabase
-            .from("messages")
-            .select("*")
-            .or(`and(sender_id.eq.${profile.user_id},receiver_id.eq.${user.id}),and(sender_id.eq.${user.id},receiver_id.eq.${profile.user_id})`)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
+          const conversationsWithMessages = await Promise.all(
+            (profilesData || []).map(async (profile) => {
+              let category: "friend" | "match" | "other" = "other";
+              if (friendIds.has(profile.user_id)) category = "friend";
+              else if (matchIds.has(profile.user_id)) category = "match";
 
-          const { count } = await supabase
-            .from("messages")
+              const { data: lastMsg } = await supabase
+                .from("messages")
+                .select("*")
+                .or(`and(sender_id.eq.${profile.user_id},receiver_id.eq.${user.id}),and(sender_id.eq.${user.id},receiver_id.eq.${profile.user_id})`)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+              const { count } = await supabase
+                .from("messages")
+                .select("*", { count: "exact", head: true })
+                .eq("sender_id", profile.user_id)
+                .eq("receiver_id", user.id)
+                .eq("read", false);
+
+              const conversationId = profile.user_id;
+              const isPinned = pinnedMap.has(`direct:${conversationId}`);
+
+              return {
+                type: 'direct' as const,
+                id: conversationId,
+                friend: {
+                  user_id: profile.user_id,
+                  username: profile.username,
+                  full_name: profile.full_name,
+                  profile_photo: profile.profile_photo,
+                  is_online: profile.is_online,
+                  last_seen: profile.last_seen,
+                },
+                lastMessage: lastMsg,
+                unreadCount: count || 0,
+                category,
+                isPinned,
+              };
+            })
+          );
+
+          directConversations.push(...conversationsWithMessages);
+        }
+      }
+
+      // Get group conversations
+      const { data: groupMemberships } = await supabase
+        .from("group_members")
+        .select(`
+          group_id,
+          groups (
+            id,
+            name,
+            description,
+            photo_url
+          )
+        `)
+        .eq("user_id", user.id);
+
+      const groupConversations: Conversation[] = await Promise.all(
+        (groupMemberships || []).map(async (membership: any) => {
+          const group = membership.groups;
+          if (!group) return null;
+
+          const { count: memberCount } = await supabase
+            .from("group_members")
             .select("*", { count: "exact", head: true })
-            .eq("sender_id", profile.user_id)
-            .eq("receiver_id", user.id)
-            .eq("read", false);
+            .eq("group_id", group.id);
+
+          const { data: lastMessages } = await supabase
+            .from("group_messages")
+            .select("*")
+            .eq("group_id", group.id)
+            .order("created_at", { ascending: false })
+            .limit(1);
+
+          const lastMessage = lastMessages?.[0];
+          let lastMessageSenderName = "Bilinmeyen";
+
+          if (lastMessage) {
+            const { data: senderProfile } = await supabase
+              .from("profiles")
+              .select("username")
+              .eq("user_id", lastMessage.sender_id)
+              .single();
+            
+            lastMessageSenderName = senderProfile?.username || "Bilinmeyen";
+          }
+
+          const isPinned = pinnedMap.has(`group:${group.id}`);
 
           return {
-            friend: {
-              user_id: profile.user_id,
-              username: profile.username,
-              full_name: profile.full_name,
-              profile_photo: profile.profile_photo,
-              is_online: profile.is_online,
-              last_seen: profile.last_seen,
+            type: 'group' as const,
+            id: group.id,
+            group: {
+              id: group.id,
+              name: group.name,
+              description: group.description,
+              photo_url: group.photo_url,
+              member_count: memberCount || 0,
             },
-            lastMessage: lastMsg ? {
-              ...lastMsg,
-              message_category: (lastMsg.message_category || "other") as "friend" | "match" | "other"
-            } : undefined,
-            unreadCount: count || 0,
-            category,
+            lastMessage: lastMessage,
+            lastMessageSenderName,
+            unreadCount: 0,
+            isPinned,
           };
         })
-      );
+      ).then(results => results.filter(r => r !== null) as Conversation[]);
 
-      const sortedConversations = conversationsWithMessages.sort((a, b) => {
+      // Combine and sort all conversations
+      const allConversations = [...directConversations, ...groupConversations].sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+
         const aTime = a.lastMessage?.created_at || "";
         const bTime = b.lastMessage?.created_at || "";
         return bTime.localeCompare(aTime);
       });
 
-      setConversations(sortedConversations);
+      setConversations(allConversations);
 
-      // If userId param exists and no friend selected yet, auto-select that user
-      const userIdParam = searchParams.get("userId");
+      const userIdParam = searchParams.get("userId");      
       if (userIdParam && !selectedFriend) {
-        const conv = sortedConversations.find(c => c.friend.user_id === userIdParam);
+        const conv = allConversations.find(c => c.type === 'direct' && c.friend?.user_id === userIdParam);
         if (conv) {
-          setSelectedFriend(conv.friend);
-          setSelectedCategory(conv.category);
-          
-          // Set active tab based on category
+          setSelectedFriend(conv.friend!);
+          setSelectedCategory(conv.category!);
           if (conv.category === "friend") setActiveTab("friends");
           else if (conv.category === "match") setActiveTab("matches");
           else setActiveTab("other");
-
-          loadMessages(conv.friend.user_id);
+          loadMessages(conv.friend!.user_id);
         }
       }
       
@@ -290,7 +378,6 @@ const Messages = () => {
 
       if (error) throw error;
 
-      // Parse messages to detect analysis shares
       const parsedMessages = data?.map(msg => {
         const analysisIdMatch = msg.content.match(/\[Analiz ID: ([^\]]+)\]/);
         const analysisTypeMatch = msg.content.match(/\[Analiz Türü: ([^\]]+)\]/);
@@ -310,11 +397,9 @@ const Messages = () => {
 
       setMessages(parsedMessages);
 
-      // Load pinned messages
       const pinnedMsgs = parsedMessages.filter(m => m.pinned_at);
       setPinnedMessages(pinnedMsgs);
 
-      // Mark messages as read
       await supabase
         .from("messages")
         .update({ read: true })
@@ -740,16 +825,55 @@ const Messages = () => {
     }
   };
 
-  const filteredConversations = conversations.filter((conv) =>
-    conv.friend.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conv.friend.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handlePinConversation = async (conv: Conversation) => {
+    try {
+      if (conv.isPinned) {
+        await supabase
+          .from("conversation_pins")
+          .delete()
+          .eq("user_id", currentUserId)
+          .eq("conversation_type", conv.type)
+          .eq("conversation_id", conv.id);
+        
+        toast({ title: "Sabitleme kaldırıldı" });
+      } else {
+        await supabase
+          .from("conversation_pins")
+          .insert({
+            user_id: currentUserId,
+            conversation_type: conv.type,
+            conversation_id: conv.id,
+          });
+        
+        toast({ title: "Konuşma sabitlendi" });
+      }
+      
+      loadConversations();
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: "İşlem gerçekleştirilemedi.",
+        variant: "destructive",
+      });
+    }
+  };
 
-  const friendConversations = filteredConversations.filter(c => c.category === "friend");
-  const matchConversations = filteredConversations.filter(c => c.category === "match");
-  const otherConversations = filteredConversations.filter(c => c.category === "other");
+  const filteredConversations = conversations.filter((conv) => {
+    const searchLower = searchQuery.toLowerCase();
+    if (conv.type === 'direct' && conv.friend) {
+      return conv.friend.username.toLowerCase().includes(searchLower) ||
+             conv.friend.full_name?.toLowerCase().includes(searchLower);
+    } else if (conv.type === 'group' && conv.group) {
+      return conv.group.name.toLowerCase().includes(searchLower);
+    }
+    return false;
+  });
 
-  // Count unread conversations
+  const friendConversations = filteredConversations.filter(c => c.type === 'direct' && c.category === "friend");
+  const matchConversations = filteredConversations.filter(c => c.type === 'direct' && c.category === "match");
+  const otherConversations = filteredConversations.filter(c => c.type === 'direct' && c.category === "other");
+  const groupConversations = filteredConversations.filter(c => c.type === 'group');
+
   const friendUnreadCount = friendConversations.filter(c => c.unreadCount > 0).length;
   const matchUnreadCount = matchConversations.filter(c => c.unreadCount > 0).length;
   const otherUnreadCount = otherConversations.filter(c => c.unreadCount > 0).length;
@@ -765,6 +889,65 @@ const Messages = () => {
     );
   }
 
+  // Conversation Item Component
+  const ConversationItem = ({ conv, selected, onClick }: any) => {
+    const isGroup = conv.type === 'group';
+    const displayName = isGroup ? conv.group?.name : (conv.friend?.full_name || conv.friend?.username);
+    const displayPhoto = isGroup ? conv.group?.photo_url : conv.friend?.profile_photo;
+    const displayUsername = isGroup ? `${conv.group?.member_count || 0} üye` : `@${conv.friend?.username}`;
+    
+    const lastMessageText = isGroup 
+      ? (conv.lastMessage ? `${conv.lastMessageSenderName}: ${conv.lastMessage.content}` : "Henüz mesaj yok")
+      : (conv.lastMessage?.content || "");
+    
+    const lastMessageTime = conv.lastMessage?.created_at 
+      ? formatDistanceToNow(new Date(conv.lastMessage.created_at), { addSuffix: true, locale: tr })
+      : "";
+
+    return (
+      <div
+        className={`p-3 rounded-lg cursor-pointer transition-colors hover:bg-accent/50 relative ${
+          selected ? "bg-accent" : ""
+        }`}
+        onClick={onClick}
+      >
+        {conv.isPinned && (
+          <Pin className="absolute top-2 right-2 w-3 h-3 text-primary" />
+        )}
+        <div className="flex items-start gap-3">
+          <div className="relative">
+            <Avatar className="w-12 h-12">
+              <AvatarImage src={displayPhoto || undefined} />
+              <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                {isGroup ? <Users className="w-6 h-6" /> : displayName?.substring(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            {!isGroup && conv.friend?.is_online && (
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-card"></span>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-0.5">
+              <p className="font-medium truncate">{displayName}</p>
+              <span className="text-xs text-muted-foreground">{lastMessageTime}</span>
+            </div>
+            <p className="text-xs text-muted-foreground mb-1">{displayUsername}</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground truncate flex-1">
+                {lastMessageText.substring(0, 50)}
+              </p>
+              {conv.unreadCount > 0 && (
+                <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs ml-2">
+                  {conv.unreadCount}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Header />
@@ -774,14 +957,6 @@ const Messages = () => {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Mesajlar
           </h1>
-          <Button 
-            onClick={() => navigate("/groups")}
-            variant="outline"
-            className="gap-2"
-          >
-            <Users className="w-4 h-4" />
-            Grup Oluştur
-          </Button>
         </div>
 
         <div className="grid md:grid-cols-3 gap-4 h-[calc(100vh-220px)]">
@@ -800,9 +975,9 @@ const Messages = () => {
             </div>
 
             <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-4">
+              <TabsList className="grid w-full grid-cols-4 mb-4">
                 <TabsTrigger value="friends" className="text-xs">
-                  Arkadaşlar
+                  Arkadaş
                   {friendUnreadCount > 0 && (
                     <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px]">
                       {friendUnreadCount}
@@ -810,12 +985,15 @@ const Messages = () => {
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="matches" className="text-xs">
-                  Eşleşmeler
+                  Eşleşme
                   {matchUnreadCount > 0 && (
                     <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px]">
                       {matchUnreadCount}
                     </span>
                   )}
+                </TabsTrigger>
+                <TabsTrigger value="groups" className="text-xs">
+                  Gruplar
                 </TabsTrigger>
                 <TabsTrigger value="other" className="text-xs">
                   Diğer
@@ -836,16 +1014,28 @@ const Messages = () => {
                       </p>
                     ) : (
                       friendConversations.map((conv) => (
-                        <ConversationItem
-                          key={conv.friend.user_id}
-                          conv={conv}
-                          selected={selectedFriend?.user_id === conv.friend.user_id}
-                          onClick={() => {
-                            setSelectedFriend(conv.friend);
-                            setSelectedCategory(conv.category);
-                            loadMessages(conv.friend.user_id);
-                          }}
-                        />
+                        <div key={conv.id} className="relative group">
+                          <ConversationItem
+                            conv={conv}
+                            selected={selectedFriend?.user_id === conv.id}
+                            onClick={() => {
+                              setSelectedFriend(conv.friend!);
+                              setSelectedCategory(conv.category!);
+                              loadMessages(conv.friend!.user_id);
+                            }}
+                          />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePinConversation(conv);
+                            }}
+                          >
+                            <Pin className="w-4 h-4" />
+                          </Button>
+                        </div>
                       ))
                     )}
                   </div>
@@ -861,16 +1051,69 @@ const Messages = () => {
                       </p>
                     ) : (
                       matchConversations.map((conv) => (
-                        <ConversationItem
-                          key={conv.friend.user_id}
-                          conv={conv}
-                          selected={selectedFriend?.user_id === conv.friend.user_id}
-                          onClick={() => {
-                            setSelectedFriend(conv.friend);
-                            setSelectedCategory(conv.category);
-                            loadMessages(conv.friend.user_id);
-                          }}
-                        />
+                        <div key={conv.id} className="relative group">
+                          <ConversationItem
+                            conv={conv}
+                            selected={selectedFriend?.user_id === conv.id}
+                            onClick={() => {
+                              setSelectedFriend(conv.friend!);
+                              setSelectedCategory(conv.category!);
+                              loadMessages(conv.friend!.user_id);
+                            }}
+                          />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePinConversation(conv);
+                            }}
+                          >
+                            <Pin className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="groups" className="mt-0">
+                <ScrollArea className="h-[calc(100vh-380px)]">
+                  <div className="space-y-2">
+                    {groupConversations.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground text-sm mb-4">
+                          Henüz grubunuz yok
+                        </p>
+                        <Button onClick={() => {
+                          navigate("/groups");
+                        }}>
+                          <Users className="w-4 h-4 mr-2" />
+                          Grup Oluştur
+                        </Button>
+                      </div>
+                    ) : (
+                      groupConversations.map((conv) => (
+                        <div key={conv.id} className="relative group">
+                          <ConversationItem
+                            conv={conv}
+                            selected={false}
+                            onClick={() => navigate(`/groups/${conv.id}`)}
+                          />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePinConversation(conv);
+                            }}
+                          >
+                            <Pin className="w-4 h-4" />
+                          </Button>
+                        </div>
                       ))
                     )}
                   </div>
@@ -886,16 +1129,28 @@ const Messages = () => {
                       </p>
                     ) : (
                       otherConversations.map((conv) => (
-                        <ConversationItem
-                          key={conv.friend.user_id}
-                          conv={conv}
-                          selected={selectedFriend?.user_id === conv.friend.user_id}
-                          onClick={() => {
-                            setSelectedFriend(conv.friend);
-                            setSelectedCategory(conv.category);
-                            loadMessages(conv.friend.user_id);
-                          }}
-                        />
+                        <div key={conv.id} className="relative group">
+                          <ConversationItem
+                            conv={conv}
+                            selected={selectedFriend?.user_id === conv.id}
+                            onClick={() => {
+                              setSelectedFriend(conv.friend!);
+                              setSelectedCategory(conv.category!);
+                              loadMessages(conv.friend!.user_id);
+                            }}
+                          />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePinConversation(conv);
+                            }}
+                          >
+                            <Pin className="w-4 h-4" />
+                          </Button>
+                        </div>
                       ))
                     )}
                   </div>
@@ -1410,8 +1665,12 @@ const Messages = () => {
                 )}
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                Mesajlaşmak için bir arkadaş seçin
+              <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                <Users className="w-16 h-16 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">Bir konuşma seçin</h3>
+                <p className="text-sm text-muted-foreground">
+                  Mesajlaşmaya başlamak için sol taraftan bir kişi veya grup seçin
+                </p>
               </div>
             )}
           </Card>
@@ -1459,48 +1718,5 @@ const Messages = () => {
     </div>
   );
 };
-
-// Conversation Item Component
-const ConversationItem = ({ conv, selected, onClick }: {
-  conv: Conversation;
-  selected: boolean;
-  onClick: () => void;
-}) => (
-  <button
-    onClick={onClick}
-    className={`w-full p-3 rounded-lg flex items-center gap-3 transition-colors overflow-hidden ${
-      selected ? "bg-primary/10" : "hover:bg-muted"
-    }`}
-  >
-    <div className="relative flex-shrink-0">
-      <Avatar className="w-12 h-12">
-        <AvatarImage src={conv.friend.profile_photo} />
-        <AvatarFallback className="bg-gradient-primary text-primary-foreground">
-          {conv.friend.username.substring(0, 2).toUpperCase()}
-        </AvatarFallback>
-      </Avatar>
-      {conv.friend.is_online && (
-        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-card"></span>
-      )}
-    </div>
-    <div className="flex-1 min-w-0 text-left">
-      <div className="flex justify-between items-start gap-2">
-        <p className="font-medium text-sm truncate flex-1 min-w-0">
-          {conv.friend.full_name || conv.friend.username}
-        </p>
-        {conv.unreadCount > 0 && (
-          <span className="bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5 flex-shrink-0">
-            {conv.unreadCount}
-          </span>
-        )}
-      </div>
-      {conv.lastMessage && (
-        <p className="text-xs text-muted-foreground truncate break-all">
-          {conv.lastMessage.content.split('[Analiz ID:')[0]}
-        </p>
-      )}
-    </div>
-  </button>
-);
 
 export default Messages;
