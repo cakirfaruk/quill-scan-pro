@@ -108,26 +108,26 @@ serve(async (req) => {
         .insert({ user_id: user.id, endpoint: 'interpret-dream', request_count: 1, window_start: now.toISOString() })
     }
 
-    const prompt = `Sen uzman bir rüya yorumcususun. Aşağıdaki rüyayı Türkçe olarak çok detaylı ve kapsamlı şekilde yorumla:
+    const prompt = `Sen uzman bir rüya yorumcususun. Aşağıdaki rüyayı Türkçe olarak detaylı yorumla:
 
 Rüya: ${dreamDescription}
 
-Yorumunda şunları MUTLAKA içer ve her bölüm çok detaylı olmalı:
-1. Rüyadaki ana semboller ve anlamları (minimum 5-6 paragraf, her sembol için ayrı ayrı derinlemesine açıklama)
-2. Psikolojik yorumu (minimum 6-7 paragraf, Jung, Freud ve modern rüya psikolojisi perspektifinden detaylı analiz)
-3. Manevi/Mistik yorumu (minimum 5-6 paragraf, rüyanın manevi ve ezoterik anlamları)
-4. Gelecek hakkında işaretler (minimum 4-5 paragraf, rüyanın geleceğe dair mesajları)
-5. Pratik tavsiyeler (minimum 5-6 paragraf, günlük hayata uygulanabilir detaylı öneriler)
-6. Uyarılar (minimum 3-4 paragraf, dikkat edilmesi gereken konular)
-7. Genel Özet (minimum 6-8 paragraf, tüm yorumları birleştiren kapsamlı değerlendirme)
+Yorumunda şunları içer, her bölüm detaylı olmalı:
+1. Rüyadaki ana semboller ve anlamları (3-4 paragraf, sembolleri ayrı ayrı açıkla)
+2. Psikolojik yorumu (3-4 paragraf, Jung, Freud perspektifinden analiz)
+3. Manevi/Mistik yorumu (3-4 paragraf, rüyanın manevi anlamları)
+4. Gelecek hakkında işaretler (2-3 paragraf, geleceğe dair mesajlar)
+5. Pratik tavsiyeler (3-4 paragraf, günlük hayata uygulanabilir öneriler)
+6. Uyarılar (2 paragraf, dikkat edilmesi gereken konular)
+7. Genel Özet (4-5 paragraf, tüm yorumları birleştiren değerlendirme)
 
 Her bölümde:
-- Sembolizm ve arketipleri derinlemesine açıkla
-- Kişiye özel yorumlar yap, genel bilgiler verme
-- Minimum 500-700 kelime kullan
-- Psikolojik ve manevi boyutları birlikte ele al
+- Sembolizm ve arketipleri açıkla
+- Kişiye özel yorumlar yap
+- Yaklaşık 250-350 kelime kullan
+- Psikolojik ve manevi boyutları ele al
 
-ÖNEMLİ: Analizin çok uzun, detaylı ve kapsamlı olmalı. Rüyanın her yönünü incele ve yorumla.
+ÖNEMLİ: Analizin detaylı olmalı. Rüyanın farklı yönlerini incele ve yorumla.
 
 JSON formatında şu yapıda cevap ver:
 {

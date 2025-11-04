@@ -162,29 +162,29 @@ Sağlanan el yazısı görsellerinden her iki kişinin karakteristik özellikler
     systemPrompt += `
 🎯 DETAYLI UYUM ANALİZİ YAPILACAK ALANLAR:
 
-1. 💫 KİŞİLİK UYUMU (minimum 6-7 paragraf)
-2. 💬 İLETİŞİM UYUMU (minimum 5-6 paragraf)
-3. 💓 DUYGUSAL BAĞ (minimum 5-6 paragraf)
-4. 🎯 DEĞERLER VE HEDEFLER (minimum 4-5 paragraf)
-5. 🌍 SOSYAL UYUM (minimum 4-5 paragraf)
+1. 💫 KİŞİLİK UYUMU (3-4 paragraf)
+2. 💬 İLETİŞİM UYUMU (2-3 paragraf)
+3. 💓 DUYGUSAL BAĞ (2-3 paragraf)
+4. 🎯 DEĞERLER VE HEDEFLER (2-3 paragraf)
+5. 🌍 SOSYAL UYUM (2-3 paragraf)
 
-ÖNEMLİ: Her alan için ÇOK DETAYLI analiz yap. Minimum 500-700 kelime kullan.
+ÖNEMLİ: Her alan için detaylı analiz yap. Yaklaşık 250-350 kelime kullan.
 
 SADECE AŞAĞIDAKİ JSON FORMATINDA YANITLA:
 {
   "overallScore": 75,
-  "overallSummary": "Minimum 8-10 paragraf uzunluğunda çok detaylı genel değerlendirme - ilişkinin tüm yönlerini kapsamlı şekilde ele al",
-  "person1Analysis": "Minimum 6-7 paragraf - Kişi 1'in çok detaylı genel profili, kişilik özellikleri, güçlü ve zayıf yönleri",
-  "person2Analysis": "Minimum 6-7 paragraf - Kişi 2'nin çok detaylı genel profili, kişilik özellikleri, güçlü ve zayıf yönleri",
+  "overallSummary": "4-5 paragraf detaylı genel değerlendirme - ilişkinin ana yönlerini kapsamlı şekilde ele al",
+  "person1Analysis": "3-4 paragraf - Kişi 1'in genel profili, kişilik özellikleri, güçlü ve zayıf yönleri",
+  "person2Analysis": "3-4 paragraf - Kişi 2'nin genel profili, kişilik özellikleri, güçlü ve zayıf yönleri",
   "compatibilityAreas": [
     {
       "name": "Alan Adı",
-      "person1Finding": "Minimum 5-6 paragraf - Kişi 1'in bu alandaki özelliklerinin çok detaylı analizi",
-      "person2Finding": "Minimum 5-6 paragraf - Kişi 2'nin bu alandaki özelliklerinin çok detaylı analizi",
+      "person1Finding": "2-3 paragraf - Kişi 1'in bu alandaki özelliklerinin analizi",
+      "person2Finding": "2-3 paragraf - Kişi 2'nin bu alandaki özelliklerinin analizi",
       "compatibilityScore": 80,
-      "strengths": "Minimum 4-5 paragraf - Güçlü yanların çok detaylı açıklaması ve örneklerle desteklenmesi",
-      "challenges": "Minimum 4-5 paragraf - Zorlukların çok detaylı açıklaması ve nasıl üstesinden gelinebileceği",
-      "recommendations": "Minimum 5-6 paragraf - İlişkiyi geliştirmek için çok detaylı, uygulanabilir öneriler"
+      "strengths": "2-3 paragraf - Güçlü yanların açıklaması ve örnekler",
+      "challenges": "2-3 paragraf - Zorlukların açıklaması ve çözüm önerileri",
+      "recommendations": "2-3 paragraf - İlişkiyi geliştirmek için uygulanabilir öneriler"
     }
   ]
 }`;
@@ -287,41 +287,38 @@ SADECE AŞAĞIDAKİ JSON FORMATINDA YANITLA:
       });
     }
 
-    console.log("AI response content (first 500 chars):", trimmedContent.substring(0, 500));
+    console.log("AI response (first 300 chars):", trimmedContent.substring(0, 300));
 
     let result;
+    
+    // Multiple parsing strategies
     try {
       result = JSON.parse(trimmedContent);
-      console.log("Successfully parsed JSON result");
+      console.log("✓ Parsed JSON directly");
     } catch (parseError) {
-      console.error("Failed to parse JSON directly:", parseError);
+      console.log("× Direct parse failed, trying markdown extraction");
       
-      let jsonStr = trimmedContent;
-      if (jsonStr.includes("```json")) {
-        const match = jsonStr.match(/```json\s*([\s\S]*?)\s*```/);
-        if (match) jsonStr = match[1];
-      } else if (jsonStr.includes("```")) {
-        const match = jsonStr.match(/```\s*([\s\S]*?)\s*```/);
-        if (match) jsonStr = match[1];
-      }
-      
-      const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        console.error("Could not find JSON in response:", trimmedContent);
-        return new Response(JSON.stringify({ error: 'İşlem başarısız oldu. Lütfen tekrar deneyin.' }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      
+      // Try to extract JSON from markdown code blocks
       try {
-        result = JSON.parse(jsonMatch[0]);
-      } catch (finalError) {
-        console.error("Final JSON parse failed:", finalError);
-        return new Response(JSON.stringify({ error: 'İşlem başarısız oldu. Lütfen tekrar deneyin.' }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        let jsonStr = trimmedContent;
+        if (jsonStr.includes('```json')) {
+          jsonStr = jsonStr.split('```json')[1].split('```')[0].trim();
+        } else if (jsonStr.includes('```')) {
+          jsonStr = jsonStr.split('```')[1].split('```')[0].trim();
+        }
+        
+        result = JSON.parse(jsonStr);
+        console.log("✓ Parsed JSON from markdown");
+      } catch (e2) {
+        console.log("× Markdown parse failed");
+        // Wrap raw content as fallback
+        result = {
+          overallScore: 70,
+          overallSummary: trimmedContent.slice(0, 1000),
+          categories: {},
+          advice: "Detaylı analiz için lütfen tekrar deneyin."
+        };
+        console.log("⚠ Using fallback structure");
       }
     }
     console.log("Compatibility analysis completed successfully");

@@ -13,7 +13,7 @@ const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 // Input validation schema
 const tarotSchema = z.object({
   spreadType: z.enum(['past-present-future', 'love', 'career', 'celtic-cross']),
-  question: z.string().max(500).optional(),
+  question: z.string().max(500).nullable().optional(),
   selectedCards: z.array(z.object({
     name: z.string(),
     suit: z.string().optional(),
@@ -143,19 +143,18 @@ Soru: ${question || 'Genel okuma'}
 Seçilen Kartlar:
 ${cardsText}
 
-Her kart için MUTLAKA:
-1. Kartın genel anlamını çok detaylı açıkla (minimum 4-5 paragraf)
-2. Düz ve ters pozisyonlarındaki farklı anlamları derinlemesine açıkla (minimum 3-4 paragraf)
-3. Bu pozisyondaki önemini ve etkisini kapsamlıca belirt (minimum 3-4 paragraf)
-4. Soru ile ilişkisini detaylıca yorumla (minimum 4-5 paragraf)
-5. Kartın sembolleri, renkleri ve figürlerinin mistik anlamlarını açıkla (minimum 2-3 paragraf)
+Her kart için:
+1. Kartın genel anlamını detaylı açıkla (2-3 paragraf)
+2. Düz ve ters pozisyonlarındaki anlamları açıkla (2 paragraf)
+3. Bu pozisyondaki önemini belirt (2 paragraf)
+4. Soru ile ilişkisini yorumla (2-3 paragraf)
 
-Sonunda MUTLAKA:
-- Genel bir özet ver (minimum 5-6 paragraf)
-- Detaylı tavsiyeler sun (minimum 4-5 paragraf)
-- Uyarıları ve dikkat edilmesi gerekenleri belirt (minimum 3-4 paragraf)
+Sonunda:
+- Genel özet ver (3-4 paragraf)
+- Tavsiyeler sun (2-3 paragraf)
+- Dikkat edilmesi gerekenleri belirt (2 paragraf)
 
-ÖNEMLİ: Her kart için minimum 600-800 kelime yaz. Yorumun çok mistik, derin, anlayışlı ve rehberlik edici olsun. Genel bilgiler değil, soruya ve kişiye özel derinlemesine yorumlar yap.
+ÖNEMLİ: Yorumlar mistik, derin ve rehberlik edici olsun. Her kart için yaklaşık 300-400 kelime kullan.
 
 JSON formatında şu yapıda cevap ver:
 {

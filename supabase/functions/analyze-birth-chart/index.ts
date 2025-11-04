@@ -163,22 +163,22 @@ Verilen gerçek gezegen pozisyonlarını kullanarak her konu için ÇOK DETAYLI 
 6. **Yükselen**: Dış görünüm ve yaklaşım tarzını detaylıca açıkla
 7. **Orta Göğe (MC)**: Kariyer ve sosyal statüyü kapsamlıca değerlendir
 
-Her konu için MUTLAKA:
+Her konu için:
 
-1. **Güneş Burcu**: Temel kişilik özellikleri, hayat amacı, bilinç - minimum 5-6 paragraf
-2. **Ay Burcu**: Duygusal dünya, iç güvenlik ihtiyaçları, sezgiler - minimum 5-6 paragraf
-3. **Yükselen Burcu**: Dış görünüm, ilk izlenim, yaklaşım tarzı - minimum 5-6 paragraf
-4. **Merkür**: İletişim tarzı, düşünce yapısı, öğrenme şekli - minimum 4-5 paragraf
-5. **Venüs**: Aşk dili, estetik zevk, ilişki tarzı, değerler - minimum 4-5 paragraf
-6. **Mars**: Enerji kullanımı, öfke ifadesi, tutku, cinsellik - minimum 4-5 paragraf
-7. **Jüpiter**: Büyüme alanları, şans konuları, felsefe, inançlar - minimum 4-5 paragraf
-8. **Satürn**: Sorumluluklar, kısıtlamalar, yaşam dersleri, disiplin - minimum 4-5 paragraf
-9. **Uranüs**: Bireysellik, orijinallik, ani değişimler - minimum 3-4 paragraf
-10. **Neptün**: Rüyalar, sezgiler, maneviyat, yanılsamalar - minimum 3-4 paragraf
-11. **Plüton**: Dönüşüm, güç, derin psikoloji - minimum 3-4 paragraf
-12. **Evler**: 12 astrolojik evin yaşam alanlarındaki etkileri - minimum 6-8 paragraf
+1. **Güneş Burcu**: Temel kişilik, hayat amacı, bilinç - 3-4 paragraf
+2. **Ay Burcu**: Duygusal dünya, iç güvenlik, sezgiler - 3-4 paragraf
+3. **Yükselen Burcu**: Dış görünüm, ilk izlenim, yaklaşım - 3-4 paragraf
+4. **Merkür**: İletişim, düşünce, öğrenme - 2-3 paragraf
+5. **Venüs**: Aşk, estetik, ilişkiler, değerler - 2-3 paragraf
+6. **Mars**: Enerji, öfke, tutku, cinsellik - 2-3 paragraf
+7. **Jüpiter**: Büyüme, şans, felsefe, inançlar - 2-3 paragraf
+8. **Satürn**: Sorumluluk, kısıtlama, dersler - 2-3 paragraf
+9. **Uranüs**: Bireysellik, orijinallik, değişim - 2 paragraf
+10. **Neptün**: Rüyalar, sezgi, maneviyat - 2 paragraf
+11. **Plüton**: Dönüşüm, güç, psikoloji - 2 paragraf
+12. **Evler**: 12 evin yaşam alanları etkileri - 4-5 paragraf
 
-ÖNEMLİ: Her konu için minimum 500-800 kelime yaz. Analizler çok uzun, detaylı ve kapsamlı olmalı. Genel bilgiler değil, kişiye özel derinlemesine yorumlar yap.
+ÖNEMLİ: Her konu için 250-400 kelime kullan. Analizler detaylı ve kişiye özel olmalı.
 
 Yanıtını Türkçe ve JSON formatında ver:
 {
@@ -193,14 +193,14 @@ Yanıtını Türkçe ve JSON formatında ver:
   },
   "seçilen_konular": {
     "konu_adı": {
-      "genel_bakis": "Minimum 4-5 paragraf uzunluğunda konunun çok detaylı açıklaması",
-      "ozellikler": ["Her özellik minimum 2-3 cümle açıklama ile"],
-      "guclu_yonler": "Minimum 3-4 paragraf uzunluğunda güçlü yönlerin detaylı analizi",
-      "dikkat_edilmesi_gerekenler": "Minimum 3-4 paragraf uzunluğunda dikkat edilmesi gereken noktaların detaylı açıklaması",
-      "tavsiyeler": "Minimum 4-5 paragraf uzunluğunda kişisel gelişim tavsiyeleri"
+      "genel_bakis": "2-3 paragraf konunun detaylı açıklaması",
+      "ozellikler": ["Her özellik 1-2 cümle açıklama ile"],
+      "guclu_yonler": "2-3 paragraf güçlü yönlerin analizi",
+      "dikkat_edilmesi_gerekenler": "2 paragraf dikkat edilmesi gereken noktalar",
+      "tavsiyeler": "2-3 paragraf kişisel gelişim tavsiyeleri"
     }
   },
-  "genel_degerlendirme": "Minimum 6-8 paragraf uzunluğunda tüm seçilen konuları birleştiren çok kapsamlı değerlendirme"
+  "genel_degerlendirme": "4-5 paragraf tüm konuları birleştiren kapsamlı değerlendirme"
 }`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -253,16 +253,30 @@ Yanıtını Türkçe ve JSON formatında ver:
     }
 
     const data = await response.json();
-    const content = data.choices[0].message.content;
-    
     console.log("Birth chart analysis completed successfully");
     
     let analysisResult;
     try {
-      analysisResult = JSON.parse(content);
+      const content = data.choices[0].message.content;
+      
+      // Try to extract JSON from markdown code blocks
+      let jsonStr = content;
+      if (content.includes('```json')) {
+        jsonStr = content.split('```json')[1].split('```')[0].trim();
+      } else if (content.includes('```')) {
+        jsonStr = content.split('```')[1].split('```')[0].trim();
+      }
+      
+      analysisResult = JSON.parse(jsonStr);
     } catch (e) {
       console.error("Failed to parse JSON response:", e);
-      throw new Error("AI yanıtı beklenmeyen formatta. Lütfen tekrar deneyin.");
+      // Try to use raw content as fallback
+      try {
+        analysisResult = JSON.parse(data.choices[0].message.content);
+      } catch (e2) {
+        console.error("Second parse attempt failed:", e2);
+        throw new Error("AI yanıtı beklenmeyen formatta. Lütfen tekrar deneyin.");
+      }
     }
 
     // Deduct credits
