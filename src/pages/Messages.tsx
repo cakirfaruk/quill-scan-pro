@@ -1234,185 +1234,183 @@ const Messages = () => {
             {searchMode === "conversations" && (
               <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="w-full">
                 <TabsList className="grid w-full grid-cols-4 mb-4">
-                <TabsTrigger value="friends" className="text-xs">
-                  Arkadaş
-                  {friendUnreadCount > 0 && (
-                    <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px]">
-                      {friendUnreadCount}
-                    </span>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="matches" className="text-xs">
-                  Eşleşme
-                  {matchUnreadCount > 0 && (
-                    <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px]">
-                      {matchUnreadCount}
-                    </span>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="groups" className="text-xs">
-                  Gruplar
-                </TabsTrigger>
-                <TabsTrigger value="other" className="text-xs">
-                  Diğer
-                  {otherUnreadCount > 0 && (
-                    <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px]">
-                      {otherUnreadCount}
-                    </span>
-                  )}
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="friends" className="mt-0">
-                <ScrollArea className="h-[calc(100vh-380px)]">
-                  <div className="space-y-2">
-                    {friendConversations.length === 0 ? (
-                      <p className="text-center text-muted-foreground py-8 text-sm">
-                        Henüz arkadaş mesajınız yok
-                      </p>
-                    ) : (
-                      friendConversations.map((conv) => (
-                        <div key={conv.id} className="relative group">
-                          <ConversationItem
-                            conv={conv}
-                            selected={selectedFriend?.user_id === conv.id}
-                            onClick={() => {
-                              setSelectedFriend(conv.friend!);
-                              setSelectedCategory(conv.category!);
-                              loadMessages(conv.friend!.user_id);
-                            }}
-                          />
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePinConversation(conv);
-                            }}
-                          >
-                            <Pin className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))
+                  <TabsTrigger value="friends" className="text-xs">
+                    Arkadaş
+                    {friendUnreadCount > 0 && (
+                      <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px]">
+                        {friendUnreadCount}
+                      </span>
                     )}
-                  </div>
-                </ScrollArea>
-              </TabsContent>
-
-              <TabsContent value="matches" className="mt-0">
-                <ScrollArea className="h-[calc(100vh-380px)]">
-                  <div className="space-y-2">
-                    {matchConversations.length === 0 ? (
-                      <p className="text-center text-muted-foreground py-8 text-sm">
-                        Henüz eşleşme mesajınız yok
-                      </p>
-                    ) : (
-                      matchConversations.map((conv) => (
-                        <div key={conv.id} className="relative group">
-                          <ConversationItem
-                            conv={conv}
-                            selected={selectedFriend?.user_id === conv.id}
-                            onClick={() => {
-                              setSelectedFriend(conv.friend!);
-                              setSelectedCategory(conv.category!);
-                              loadMessages(conv.friend!.user_id);
-                            }}
-                          />
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePinConversation(conv);
-                            }}
-                          >
-                            <Pin className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))
+                  </TabsTrigger>
+                  <TabsTrigger value="matches" className="text-xs">
+                    Eşleşme
+                    {matchUnreadCount > 0 && (
+                      <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px]">
+                        {matchUnreadCount}
+                      </span>
                     )}
-                  </div>
-                </ScrollArea>
-              </TabsContent>
+                  </TabsTrigger>
+                  <TabsTrigger value="groups" className="text-xs">
+                    Gruplar
+                  </TabsTrigger>
+                  <TabsTrigger value="other" className="text-xs">
+                    Diğer
+                    {otherUnreadCount > 0 && (
+                      <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px]">
+                        {otherUnreadCount}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="groups" className="mt-0">
-                <ScrollArea className="h-[calc(100vh-380px)]">
-                  <div className="space-y-2">
-                    {groupConversations.length === 0 ? (
-                      <div className="text-center py-8">
-                        <p className="text-muted-foreground text-sm mb-4">
-                          Henüz grubunuz yok
+                <TabsContent value="friends" className="mt-0">
+                  <ScrollArea className="h-[calc(100vh-380px)]">
+                    <div className="space-y-2">
+                      {friendConversations.length === 0 ? (
+                        <p className="text-center text-muted-foreground py-8 text-sm">
+                          Henüz arkadaş mesajınız yok
                         </p>
-                        <Button onClick={() => {
-                          navigate("/groups");
-                        }}>
-                          <Users className="w-4 h-4 mr-2" />
-                          Grup Oluştur
-                        </Button>
-                      </div>
-                    ) : (
-                      groupConversations.map((conv) => (
-                        <div key={conv.id} className="relative group">
-                          <ConversationItem
-                            conv={conv}
-                            selected={false}
-                            onClick={() => navigate(`/groups/${conv.id}`)}
-                          />
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePinConversation(conv);
-                            }}
-                          >
-                            <Pin className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </ScrollArea>
-              </TabsContent>
+                      ) : (
+                        friendConversations.map((conv) => (
+                          <div key={conv.id} className="relative group">
+                            <ConversationItem
+                              conv={conv}
+                              selected={selectedFriend?.user_id === conv.id}
+                              onClick={() => {
+                                setSelectedFriend(conv.friend!);
+                                setSelectedCategory(conv.category!);
+                                loadMessages(conv.friend!.user_id);
+                              }}
+                            />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePinConversation(conv);
+                              }}
+                            >
+                              <Pin className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
 
-              <TabsContent value="other" className="mt-0">
-                <ScrollArea className="h-[calc(100vh-380px)]">
-                  <div className="space-y-2">
-                    {otherConversations.length === 0 ? (
-                      <p className="text-center text-muted-foreground py-8 text-sm">
-                        Henüz başka mesajınız yok
-                      </p>
-                    ) : (
-                      otherConversations.map((conv) => (
-                        <div key={conv.id} className="relative group">
-                          <ConversationItem
-                            conv={conv}
-                            selected={selectedFriend?.user_id === conv.id}
-                            onClick={() => {
-                              setSelectedFriend(conv.friend!);
-                              setSelectedCategory(conv.category!);
-                              loadMessages(conv.friend!.user_id);
-                            }}
-                          />
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePinConversation(conv);
-                            }}
-                          >
-                            <Pin className="w-4 h-4" />
+                <TabsContent value="matches" className="mt-0">
+                  <ScrollArea className="h-[calc(100vh-380px)]">
+                    <div className="space-y-2">
+                      {matchConversations.length === 0 ? (
+                        <p className="text-center text-muted-foreground py-8 text-sm">
+                          Henüz eşleşme mesajınız yok
+                        </p>
+                      ) : (
+                        matchConversations.map((conv) => (
+                          <div key={conv.id} className="relative group">
+                            <ConversationItem
+                              conv={conv}
+                              selected={selectedFriend?.user_id === conv.id}
+                              onClick={() => {
+                                setSelectedFriend(conv.friend!);
+                                setSelectedCategory(conv.category!);
+                                loadMessages(conv.friend!.user_id);
+                              }}
+                            />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePinConversation(conv);
+                              }}
+                            >
+                              <Pin className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+
+                <TabsContent value="groups" className="mt-0">
+                  <ScrollArea className="h-[calc(100vh-380px)]">
+                    <div className="space-y-2">
+                      {groupConversations.length === 0 ? (
+                        <div className="text-center py-8">
+                          <p className="text-muted-foreground text-sm mb-4">
+                            Henüz grubunuz yok
+                          </p>
+                          <Button onClick={() => navigate("/groups")}>
+                            <Users className="w-4 h-4 mr-2" />
+                            Grup Oluştur
                           </Button>
                         </div>
-                      ))
-                    )}
-                  </div>
-                </ScrollArea>
+                      ) : (
+                        groupConversations.map((conv) => (
+                          <div key={conv.id} className="relative group">
+                            <ConversationItem
+                              conv={conv}
+                              selected={false}
+                              onClick={() => navigate(`/groups/${conv.id}`)}
+                            />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePinConversation(conv);
+                              }}
+                            >
+                              <Pin className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+
+                <TabsContent value="other" className="mt-0">
+                  <ScrollArea className="h-[calc(100vh-380px)]">
+                    <div className="space-y-2">
+                      {otherConversations.length === 0 ? (
+                        <p className="text-center text-muted-foreground py-8 text-sm">
+                          Henüz başka mesajınız yok
+                        </p>
+                      ) : (
+                        otherConversations.map((conv) => (
+                          <div key={conv.id} className="relative group">
+                            <ConversationItem
+                              conv={conv}
+                              selected={selectedFriend?.user_id === conv.id}
+                              onClick={() => {
+                                setSelectedFriend(conv.friend!);
+                                setSelectedCategory(conv.category!);
+                                loadMessages(conv.friend!.user_id);
+                              }}
+                            />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePinConversation(conv);
+                              }}
+                            >
+                              <Pin className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </ScrollArea>
                 </TabsContent>
               </Tabs>
             )}
