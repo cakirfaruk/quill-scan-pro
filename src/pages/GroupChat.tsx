@@ -27,7 +27,7 @@ import { CreateGroupEventDialog } from "@/components/CreateGroupEventDialog";
 import { GroupFileCard } from "@/components/GroupFileCard";
 import { CreateGroupFileDialog } from "@/components/CreateGroupFileDialog";
 import { PinnedMessages } from "@/components/PinnedMessages";
-import { CallInterface } from "@/components/CallInterface";
+import { GroupVideoCallDialog } from "@/components/GroupVideoCallDialog";
 
 const messageSchema = z.object({
   content: z.string()
@@ -1181,14 +1181,16 @@ const GroupChat = () => {
         onFileUploaded={loadFiles}
       />
 
-      {/* Call Interface */}
+      {/* Group Video Call */}
       {showCallInterface && (
-        <CallInterface
-          receiverId={groupId!}
-          receiverName={group?.name || "Grup"}
-          receiverAvatar={group?.cover_photo}
+        <GroupVideoCallDialog
+          isOpen={showCallInterface}
+          onClose={() => setShowCallInterface(false)}
+          callId={`group-${groupId}`}
+          groupId={groupId!}
+          groupName={group?.name || "Grup"}
+          groupPhoto={group?.cover_photo}
           callType={callType}
-          onEnd={() => setShowCallInterface(false)}
         />
       )}
     </div>
