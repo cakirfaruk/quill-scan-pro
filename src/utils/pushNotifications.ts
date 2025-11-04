@@ -50,10 +50,8 @@ export async function subscribeToPushNotifications(): Promise<boolean> {
     let subscription = await registration.pushManager.getSubscription();
 
     if (!subscription) {
-      // VAPID public key - this should match your backend
-      // For development, you can generate keys at: https://vapidkeys.com/
-      const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY || 
-        'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U'; // Default for development
+      // VAPID public key
+      const vapidPublicKey = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEq5JAhzneEPYGQVoNY9D7bk2YDbrGRKumsNFitz4Awsd3cq10USM0i3pUCYmuFEnw42Q9sgB9783DEEMhYydjGQ';
 
       const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
 
