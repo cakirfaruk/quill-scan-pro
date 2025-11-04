@@ -114,6 +114,16 @@ export const CompactHeader = () => {
                 Keşfet
               </Button>
             </Link>
+            <Link to="/messages">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`gap-2 ${location.pathname === "/messages" ? "text-primary" : ""}`}
+              >
+                <MessageCircle className="w-4 h-4" />
+                Mesajlar
+              </Button>
+            </Link>
             <Link to="/match">
               <Button
                 variant="ghost"
@@ -169,16 +179,6 @@ export const CompactHeader = () => {
               >
                 <Coins className="w-4 h-4 text-primary" />
                 <span className="font-semibold text-primary text-sm">{credits}</span>
-              </Button>
-
-              {/* Messages - Desktop only */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate("/messages")}
-                className="h-8 sm:h-9 w-8 sm:w-9 hidden lg:flex"
-              >
-                <MessageCircle className="w-5 h-5" />
               </Button>
 
               {/* Notifications */}
