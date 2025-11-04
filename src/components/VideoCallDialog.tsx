@@ -31,6 +31,7 @@ export const VideoCallDialog = ({
   const [callStatus, setCallStatus] = useState<"connecting" | "active" | "ended">("connecting");
   const [callDuration, setCallDuration] = useState(0);
   const [callStartTime] = useState(new Date());
+  const [isCallAccepted, setIsCallAccepted] = useState(!isIncoming); // Auto-accept for outgoing calls
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
@@ -61,16 +62,17 @@ export const VideoCallDialog = ({
   });
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !isCallAccepted) return;
 
+    console.log("Starting call...", { isIncoming, callType });
+    
     if (isIncoming) {
+      console.log("Answering incoming call...");
       answerCall(callType === "video");
     } else {
+      console.log("Starting outgoing call...");
       startCall(callType === "video");
     }
-
-    // Update call log
-    updateCallLog("active");
     
     const interval = setInterval(() => {
       const duration = Math.floor((new Date().getTime() - callStartTime.getTime()) / 1000);
@@ -80,7 +82,7 @@ export const VideoCallDialog = ({
     return () => {
       clearInterval(interval);
     };
-  }, [isOpen]);
+  }, [isOpen, isCallAccepted]);
 
   useEffect(() => {
     if (localStream && localVideoRef.current) {
@@ -90,7 +92,9 @@ export const VideoCallDialog = ({
 
   useEffect(() => {
     if (isConnected) {
+      console.log("WebRTC connection established, updating call status to active");
       setCallStatus("active");
+      updateCallLog("active");
     }
   }, [isConnected]);
 
@@ -104,23 +108,50 @@ export const VideoCallDialog = ({
           duration: status === "completed" ? callDuration : 0,
           has_video: callType === "video",
         })
-        .eq("id", callId);
+        .eq("call_id", callId);
+      
+      console.log("Call log updated:", { callId, status });
     } catch (error) {
       console.error("Error updating call log:", error);
     }
   };
 
   async function handleCallEnd() {
+    console.log("Handling call end...");
     await updateCallLog("completed");
+    endCall();
     onClose();
   }
 
-  const handleDeclineCall = async () => {
+  const handleAcceptCall = async () => {
+    console.log("Call accepted by user");
     try {
       await supabase
         .from("call_logs")
-        .update({ status: "missed" })
-        .eq("id", callId);
+        .update({ status: "accepted" })
+        .eq("call_id", callId);
+
+      setIsCallAccepted(true);
+    } catch (error) {
+      console.error("Error accepting call:", error);
+      toast({
+        title: "Hata",
+        description: "Arama kabul edilemedi",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeclineCall = async () => {
+    console.log("Call declined by user");
+    try {
+      await supabase
+        .from("call_logs")
+        .update({ 
+          status: "rejected",
+          ended_at: new Date().toISOString(),
+        })
+        .eq("call_id", callId);
 
       endCall();
       onClose();
@@ -156,15 +187,25 @@ export const VideoCallDialog = ({
           {/* Placeholder when no remote video */}
           {!isConnected && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20">
-              <Avatar className="w-32 h-32 mb-4">
-                <AvatarImage src={friendPhoto} />
-                <AvatarFallback className="text-4xl">
-                  {friendName?.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                {isIncoming && !isCallAccepted && (
+                  <>
+                    <div className="absolute inset-0 w-32 h-32 rounded-full bg-primary/30 animate-ping" />
+                    <div className="absolute inset-2 w-28 h-28 rounded-full bg-primary/20 animate-pulse" />
+                  </>
+                )}
+                <Avatar className="relative w-32 h-32 mb-4 ring-4 ring-primary/50">
+                  <AvatarImage src={friendPhoto} />
+                  <AvatarFallback className="text-4xl">
+                    {friendName?.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
               <h3 className="text-2xl font-bold text-white mb-2">{friendName}</h3>
-              <p className="text-white/70">
-                {isIncoming ? "Gelen arama..." : "Bağlanıyor..."}
+              <p className="text-white/70 animate-pulse text-lg">
+                {isIncoming && !isCallAccepted
+                  ? `${callType === "video" ? "📹 Görüntülü" : "📞 Sesli"} arama geliyor...`
+                  : "Bağlanıyor..."}
               </p>
             </div>
           )}
@@ -184,25 +225,30 @@ export const VideoCallDialog = ({
 
           {/* Call Controls */}
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4">
-            {isIncoming && !isConnected ? (
-              <>
-                <Button
-                  size="lg"
-                  variant="default"
-                  className="rounded-full w-16 h-16 bg-green-500 hover:bg-green-600"
-                  onClick={() => answerCall(callType === "video")}
-                >
-                  <Phone className="w-6 h-6" />
-                </Button>
-                <Button
-                  size="lg"
-                  variant="destructive"
-                  className="rounded-full w-16 h-16"
-                  onClick={handleDeclineCall}
-                >
-                  <PhoneOff className="w-6 h-6" />
-                </Button>
-              </>
+            {isIncoming && !isCallAccepted ? (
+              <div className="flex items-center gap-8">
+                <div className="flex flex-col items-center gap-2">
+                  <Button
+                    size="lg"
+                    variant="destructive"
+                    className="rounded-full w-20 h-20 shadow-lg hover:scale-110 transition-transform"
+                    onClick={handleDeclineCall}
+                  >
+                    <PhoneOff className="w-8 h-8" />
+                  </Button>
+                  <span className="text-sm text-white/70">Reddet</span>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <Button
+                    size="lg"
+                    className="rounded-full w-20 h-20 bg-green-500 hover:bg-green-600 shadow-lg hover:scale-110 transition-transform animate-bounce"
+                    onClick={handleAcceptCall}
+                  >
+                    {callType === "video" ? <Video className="w-8 h-8" /> : <Phone className="w-8 h-8" />}
+                  </Button>
+                  <span className="text-sm text-green-400 font-semibold">Kabul Et</span>
+                </div>
+              </div>
             ) : (
               <>
                 <Button

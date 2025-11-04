@@ -25,7 +25,6 @@ import { SwipeableMessage } from "@/components/SwipeableMessage";
 import { useLongPress } from "@/hooks/use-gestures";
 import { VideoCallDialog } from "@/components/VideoCallDialog";
 import { ScheduleMessageDialog } from "@/components/ScheduleMessageDialog";
-import { IncomingCallDialog } from "@/components/IncomingCallDialog";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { playRingtone, vibrate, showBrowserNotification } from "@/utils/callNotifications";
@@ -108,14 +107,6 @@ const Messages = () => {
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [activeCallId, setActiveCallId] = useState<string | null>(null);
   const [incomingCall, setIncomingCall] = useState<{
-    id: string;
-    callId: string;
-    callerId: string;
-    callerName: string;
-    callerPhoto?: string;
-    callType: "audio" | "video";
-  } | null>(null);
-  const [acceptedCall, setAcceptedCall] = useState<{
     id: string;
     callId: string;
     callerId: string;
@@ -250,28 +241,15 @@ const Messages = () => {
         async (payload) => {
           const call = payload.new;
           
-          console.log("Call status updated:", call);
+          console.log("Receiver: Call status updated:", call);
           
-          if (call.status === "accepted" && incomingCall?.callId === call.call_id) {
-            // Stop ringtone
+          // If call is rejected or ended, stop ringtone and close dialog
+          if ((call.status === "rejected" || call.status === "ended") && incomingCall?.callId === call.call_id) {
             if (ringtone) {
               ringtone.stop();
               setRingtone(null);
             }
-            
-            // Close incoming call dialog
-            const currentIncomingCall = incomingCall;
             setIncomingCall(null);
-            
-            // Open video call dialog
-            setAcceptedCall({
-              id: call.id,
-              callId: call.call_id,
-              callerId: call.caller_id,
-              callerName: currentIncomingCall.callerName,
-              callerPhoto: currentIncomingCall.callerPhoto,
-              callType: call.call_type,
-            });
           }
         }
       )
@@ -798,6 +776,41 @@ const Messages = () => {
         title: "Arama Başlatıldı",
         description: `${selectedFriend.full_name || selectedFriend.username} aranıyor...`,
       });
+
+      // Listen for call status updates (accepted, rejected)
+      const callStatusChannel = supabase
+        .channel(`call-status-${callLog.call_id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "call_logs",
+            filter: `call_id=eq.${callLog.call_id}`,
+          },
+          (payload) => {
+            console.log("Caller: Call status updated", payload.new);
+            if (payload.new.status === "accepted") {
+              toast({
+                title: "Arama Kabul Edildi",
+                description: "Bağlanıyor...",
+              });
+            } else if (payload.new.status === "rejected") {
+              toast({
+                title: "Arama Reddedildi",
+                variant: "destructive",
+              });
+              setShowCallInterface(false);
+              setActiveCallId(null);
+              supabase.removeChannel(callStatusChannel);
+            } else if (payload.new.status === "ended") {
+              setShowCallInterface(false);
+              setActiveCallId(null);
+              supabase.removeChannel(callStatusChannel);
+            }
+          }
+        )
+        .subscribe();
 
       console.log("Call initiated successfully. Call ID:", callLog.call_id);
     } catch (error: any) {
@@ -2220,9 +2233,9 @@ const Messages = () => {
           />
         )}
 
-        {/* Incoming Call Dialog */}
+        {/* Incoming/Active Call Dialog */}
         {incomingCall && (
-          <IncomingCallDialog
+          <VideoCallDialog
             isOpen={true}
             onClose={() => {
               setIncomingCall(null);
@@ -2232,26 +2245,11 @@ const Messages = () => {
               }
             }}
             callId={incomingCall.callId}
-            callerId={incomingCall.callerId}
-            callerName={incomingCall.callerName}
-            callerPhoto={incomingCall.callerPhoto}
-            callType={incomingCall.callType}
-          />
-        )}
-
-        {/* Accepted Call Dialog */}
-        {acceptedCall && (
-          <VideoCallDialog
-            isOpen={true}
-            onClose={() => {
-              setAcceptedCall(null);
-            }}
-            callId={acceptedCall.callId}
-            friendId={acceptedCall.callerId}
-            friendName={acceptedCall.callerName}
-            friendPhoto={acceptedCall.callerPhoto}
-            callType={acceptedCall.callType}
+            friendId={incomingCall.callerId}
+            friendName={incomingCall.callerName}
+            friendPhoto={incomingCall.callerPhoto}
             isIncoming={true}
+            callType={incomingCall.callType}
           />
         )}
       </main>

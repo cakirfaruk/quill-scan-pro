@@ -12,10 +12,10 @@ export const playRingtone = () => {
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
     
-    // Higher frequency and volume for more noticeable sound
-    oscillator.frequency.value = 1000;
+    // Very high frequency and maximum volume for alert
+    oscillator.frequency.value = 1400;
     oscillator.type = 'sine';
-    gainNode.gain.value = 0.8;
+    gainNode.gain.value = 1.0; // Maximum volume
     
     oscillator.start(0);
     
@@ -34,8 +34,8 @@ export const playRingtone = () => {
   // Play immediately
   playBeep();
   
-  // Repeat every 1.5 seconds for more urgency
-  interval = setInterval(playBeep, 1500);
+  // Repeat every 1 second for maximum urgency
+  interval = setInterval(playBeep, 1000);
   
   return {
     stop: () => {
