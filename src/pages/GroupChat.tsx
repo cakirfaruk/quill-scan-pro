@@ -9,7 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Send, Users, Settings, Smile, Loader2, UserPlus, BarChart3, Megaphone, Image as ImageIcon, Paperclip, Reply, X, TrendingUp, Search, CalendarDays, Pin } from "lucide-react";
+import { ArrowLeft, Send, Users, Settings, Smile, Loader2, UserPlus, BarChart3, Megaphone, Image as ImageIcon, Paperclip, Reply, X, TrendingUp, Search, CalendarDays, Pin, Phone, Video } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -27,6 +27,7 @@ import { CreateGroupEventDialog } from "@/components/CreateGroupEventDialog";
 import { GroupFileCard } from "@/components/GroupFileCard";
 import { CreateGroupFileDialog } from "@/components/CreateGroupFileDialog";
 import { PinnedMessages } from "@/components/PinnedMessages";
+import { CallInterface } from "@/components/CallInterface";
 
 const messageSchema = z.object({
   content: z.string()
@@ -98,6 +99,8 @@ const GroupChat = () => {
   const [createEventDialogOpen, setCreateEventDialogOpen] = useState(false);
   const [uploadFileDialogOpen, setUploadFileDialogOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState<GroupMessage | null>(null);
+  const [showCallInterface, setShowCallInterface] = useState(false);
+  const [callType, setCallType] = useState<"audio" | "video">("audio");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -714,6 +717,28 @@ const GroupChat = () => {
             <Button
               variant="ghost"
               size="icon"
+              onClick={() => {
+                setCallType("audio");
+                setShowCallInterface(true);
+              }}
+              title="Sesli Grup Araması"
+            >
+              <Phone className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                setCallType("video");
+                setShowCallInterface(true);
+              }}
+              title="Görüntülü Grup Araması"
+            >
+              <Video className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setSearchOpen(true)}
               title="Ara"
             >
@@ -1155,6 +1180,17 @@ const GroupChat = () => {
         groupId={groupId!}
         onFileUploaded={loadFiles}
       />
+
+      {/* Call Interface */}
+      {showCallInterface && (
+        <CallInterface
+          receiverId={groupId!}
+          receiverName={group?.name || "Grup"}
+          receiverAvatar={group?.cover_photo}
+          callType={callType}
+          onEnd={() => setShowCallInterface(false)}
+        />
+      )}
     </div>
   );
 };
