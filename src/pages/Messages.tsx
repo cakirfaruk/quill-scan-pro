@@ -114,6 +114,14 @@ const Messages = () => {
     loadConversations();
   }, []);
 
+  // Watch for URL parameter changes
+  useEffect(() => {
+    const userIdParam = searchParams.get("userId");
+    if (userIdParam && currentUserId && userIdParam !== selectedFriend?.user_id) {
+      loadConversations();
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     if (!currentUserId) return;
     
@@ -362,6 +370,56 @@ const Messages = () => {
           else if (conv.category === "match") setActiveTab("matches");
           else setActiveTab("other");
           loadMessages(conv.friend!.user_id);
+        } else if (!conv) {
+          // If user is not in conversations (no messages yet), fetch their profile
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("user_id, username, full_name, profile_photo, is_online, last_seen")
+            .eq("user_id", userIdParam)
+            .maybeSingle();
+          
+          if (profileData) {
+            // Check if they're a friend or match
+            let category: "friend" | "match" | "other" = "other";
+            
+            // Check friendship status
+            const { data: friendCheck } = await supabase
+              .from("friends")
+              .select("id")
+              .or(`and(user_id.eq.${user.id},friend_id.eq.${userIdParam}),and(user_id.eq.${userIdParam},friend_id.eq.${user.id})`)
+              .eq("status", "accepted")
+              .maybeSingle();
+            
+            if (friendCheck) {
+              category = "friend";
+            } else {
+              // Check match status
+              const isMatch = await supabase.rpc('check_mutual_match', {
+                p_user1_id: user.id,
+                p_user2_id: userIdParam
+              });
+              
+              if (isMatch.data) {
+                category = "match";
+              }
+            }
+            
+            const friendData: Friend = {
+              user_id: profileData.user_id,
+              username: profileData.username,
+              full_name: profileData.full_name,
+              profile_photo: profileData.profile_photo,
+              is_online: profileData.is_online,
+              last_seen: profileData.last_seen,
+            };
+            
+            setSelectedFriend(friendData);
+            setSelectedCategory(category);
+            if (category === "friend") setActiveTab("friends");
+            else if (category === "match") setActiveTab("matches");
+            else setActiveTab("other");
+            loadMessages(friendData.user_id);
+          }
         }
       }
       
