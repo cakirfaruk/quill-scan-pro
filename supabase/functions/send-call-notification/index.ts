@@ -63,7 +63,7 @@ serve(async (req) => {
       badge: '/favicon.ico',
       tag: `call-${callId}`,
       data: {
-        url: '/messages',
+        url: `/messages?callId=${callId}`,
         callId,
         callerId: callerName,
         callType,

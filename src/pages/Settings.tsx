@@ -800,6 +800,9 @@ const Settings = () => {
                       <p className="text-sm text-muted-foreground">
                         Mesajlar ve arkadaşlık istekleri için bildirim alın
                       </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        ⚠️ Browser tamamen kapalıyken bildirimler çalışmaz. Browser arka planda açıkken çalışır.
+                      </p>
                     </div>
                     <Switch
                       checked={notificationsEnabled}

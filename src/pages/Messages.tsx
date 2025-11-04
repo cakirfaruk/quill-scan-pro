@@ -126,6 +126,94 @@ const Messages = () => {
   useEffect(() => {
     loadConversations();
 
+    // Check for pending incoming call (from push notification URL)
+    const checkPendingCall = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Check URL parameters for call ID
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlCallId = urlParams.get('callId');
+      
+      if (urlCallId) {
+        // Load call from database
+        const { data: call } = await supabase
+          .from('call_logs')
+          .select('*')
+          .eq('call_id', urlCallId)
+          .eq('receiver_id', user.id)
+          .eq('status', 'ringing')
+          .single();
+
+        if (call) {
+          // Load caller profile
+          const { data: callerProfile } = await supabase
+            .from('profiles')
+            .select('username, full_name, profile_photo')
+            .eq('user_id', call.caller_id)
+            .single();
+
+          if (callerProfile) {
+            // Play ringtone
+            const audio = playRingtone();
+            setRingtone(audio);
+            
+            // Vibrate
+            vibrate();
+
+            setIncomingCall({
+              id: call.id,
+              callId: call.call_id,
+              callerId: call.caller_id,
+              callerName: callerProfile.full_name || callerProfile.username,
+              callerPhoto: callerProfile.profile_photo,
+              callType: call.call_type as "audio" | "video",
+            });
+          }
+        }
+      } else {
+        // Check for any pending calls in the database
+        const { data: pendingCalls } = await supabase
+          .from('call_logs')
+          .select('*')
+          .eq('receiver_id', user.id)
+          .eq('status', 'ringing')
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (pendingCalls && pendingCalls.length > 0) {
+          const call = pendingCalls[0];
+          
+          // Load caller profile
+          const { data: callerProfile } = await supabase
+            .from('profiles')
+            .select('username, full_name, profile_photo')
+            .eq('user_id', call.caller_id)
+            .single();
+
+          if (callerProfile) {
+            // Play ringtone
+            const audio = playRingtone();
+            setRingtone(audio);
+            
+            // Vibrate
+            vibrate();
+
+            setIncomingCall({
+              id: call.id,
+              callId: call.call_id,
+              callerId: call.caller_id,
+              callerName: callerProfile.full_name || callerProfile.username,
+              callerPhoto: callerProfile.profile_photo,
+              callType: call.call_type as "audio" | "video",
+            });
+          }
+        }
+      }
+    };
+
+    checkPendingCall();
+
     // Request notification permission and subscribe to push notifications
     const setupPushNotifications = async () => {
       const permission = checkNotificationPermission();
@@ -139,7 +227,7 @@ const Messages = () => {
           if (subscribed) {
             toast({
               title: "Bildirimler Aktif",
-              description: "Artık browser kapalıyken bile arama bildirimi alacaksınız",
+              description: "Browser arka planda açıkken arama bildirimi alacaksınız",
             });
           }
         }

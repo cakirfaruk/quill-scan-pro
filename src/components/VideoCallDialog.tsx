@@ -173,8 +173,12 @@ export const VideoCallDialog = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl h-[600px] p-0">
+    <Dialog open={isOpen} onOpenChange={handleClose} modal={true}>
+      <DialogContent 
+        className="max-w-4xl h-[600px] p-0"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <div className="relative w-full h-full bg-black rounded-lg overflow-hidden">
           {/* Remote Video (Full screen) */}
           <video
