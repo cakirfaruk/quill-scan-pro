@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell, UserPlus } from "lucide-react";
+import { Bell, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -23,6 +23,7 @@ interface Notification {
   link: string | null;
   read: boolean;
   created_at: string;
+  reference_id: string | null;
 }
 
 export const NotificationBell = () => {
@@ -130,42 +131,61 @@ export const NotificationBell = () => {
     }
   };
 
-  const handleAcceptFriendRequest = async (e: React.MouseEvent, notificationId: string, senderId: string) => {
+  const handleAcceptFriendRequest = async (e: React.MouseEvent, notificationId: string, friendRequestId: string) => {
     e.stopPropagation();
     
     try {
-      // Find the friend request
-      const { data: friendRequest } = await supabase
+      // Accept the friend request
+      await supabase
         .from("friends")
-        .select("id")
-        .eq("user_id", senderId)
-        .eq("friend_id", (await supabase.auth.getUser()).data.user?.id)
-        .eq("status", "pending")
-        .maybeSingle();
+        .update({ status: "accepted" })
+        .eq("id", friendRequestId);
 
-      if (friendRequest) {
-        // Accept the friend request
-        await supabase
-          .from("friends")
-          .update({ status: "accepted" })
-          .eq("id", friendRequest.id);
+      // Mark notification as read
+      await markAsRead(notificationId, null, 'friend_request');
 
-        // Mark notification as read
-        await markAsRead(notificationId, null, 'friend_request');
+      toast({
+        title: "Arkadaşlık isteği kabul edildi",
+        description: "Artık arkadaş listesinde görüneceksiniz",
+      });
 
-        toast({
-          title: "Arkadaşlık isteği kabul edildi",
-          description: "Artık arkadaş listesinde görüneceksiniz",
-        });
-
-        // Reload notifications
-        await loadNotifications();
-      }
+      // Reload notifications
+      await loadNotifications();
     } catch (error) {
       console.error("Error accepting friend request:", error);
       toast({
         title: "Hata",
         description: "Arkadaşlık isteği kabul edilemedi",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRejectFriendRequest = async (e: React.MouseEvent, notificationId: string, friendRequestId: string) => {
+    e.stopPropagation();
+    
+    try {
+      // Delete the friend request
+      await supabase
+        .from("friends")
+        .delete()
+        .eq("id", friendRequestId);
+
+      // Mark notification as read
+      await markAsRead(notificationId, null, 'friend_request');
+
+      toast({
+        title: "Arkadaşlık isteği reddedildi",
+        description: "İstek başarıyla reddedildi",
+      });
+
+      // Reload notifications
+      await loadNotifications();
+    } catch (error) {
+      console.error("Error rejecting friend request:", error);
+      toast({
+        title: "Hata",
+        description: "Arkadaşlık isteği reddedilemedi",
         variant: "destructive",
       });
     }
@@ -239,9 +259,8 @@ export const NotificationBell = () => {
             </div>
           ) : (
             notifications.map((notification) => {
-              // Extract sender_id from link if it's a friend request
               const isFriendRequest = notification.type === 'friend_request';
-              const senderId = isFriendRequest ? notification.link?.split('=')[1] : null;
+              const friendRequestId = notification.reference_id;
               
               return (
                 <DropdownMenuItem
@@ -254,15 +273,27 @@ export const NotificationBell = () => {
                   <div className="flex items-start justify-between w-full mb-1">
                     <div className="flex items-center gap-2 flex-1">
                       <p className="font-semibold text-sm">{notification.title}</p>
-                      {isFriendRequest && senderId && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 hover:bg-primary/20"
-                          onClick={(e) => handleAcceptFriendRequest(e, notification.id, senderId)}
-                        >
-                          <UserPlus className="w-4 h-4 text-primary" />
-                        </Button>
+                      {isFriendRequest && friendRequestId && (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 hover:bg-green-500/20 rounded-full"
+                            onClick={(e) => handleAcceptFriendRequest(e, notification.id, friendRequestId)}
+                            title="Onayla"
+                          >
+                            <Check className="w-4 h-4 text-green-600" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 hover:bg-red-500/20 rounded-full"
+                            onClick={(e) => handleRejectFriendRequest(e, notification.id, friendRequestId)}
+                            title="Reddet"
+                          >
+                            <X className="w-4 h-4 text-red-600" />
+                          </Button>
+                        </div>
                       )}
                     </div>
                     {!notification.read && (
