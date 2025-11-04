@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Search, ArrowLeft, FileText, Smile, Paperclip, Ban, Check, CheckCheck, Mic, Image as ImageIcon, Pin, Forward, MoreVertical, Users } from "lucide-react";
+import { Loader2, Send, Search, ArrowLeft, FileText, Smile, Paperclip, Ban, Check, CheckCheck, Mic, Image as ImageIcon, Pin, Forward, MoreVertical, Users, Phone, Video, Clock } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { useIsMobile } from "@/hooks/use-mobile";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
@@ -23,6 +23,8 @@ import { GifPicker } from "@/components/GifPicker";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { SwipeableMessage } from "@/components/SwipeableMessage";
 import { useLongPress } from "@/hooks/use-gestures";
+import { CallInterface } from "@/components/CallInterface";
+import { ScheduleMessageDialog } from "@/components/ScheduleMessageDialog";
 
 interface Friend {
   user_id: string;
@@ -73,6 +75,9 @@ const Messages = () => {
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [showGifPicker, setShowGifPicker] = useState(false);
   const [pinnedMessages, setPinnedMessages] = useState<Message[]>([]);
+  const [showCallInterface, setShowCallInterface] = useState(false);
+  const [callType, setCallType] = useState<"audio" | "video">("audio");
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -967,6 +972,36 @@ const Messages = () => {
                       )}
                     </div>
                   </div>
+                  
+                  <div className="flex items-center gap-2">
+                    {selectedCategory !== "other" && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setCallType("audio");
+                            setShowCallInterface(true);
+                          }}
+                          title="Sesli Arama"
+                        >
+                          <Phone className="w-5 h-5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setCallType("video");
+                            setShowCallInterface(true);
+                          }}
+                          title="Görüntülü Arama"
+                        >
+                          <Video className="w-5 h-5" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                  
                   {selectedCategory === "other" && (
                     <div className="text-xs text-muted-foreground flex items-center gap-1">
                       <Ban className="w-3 h-3" />
@@ -1344,6 +1379,18 @@ const Messages = () => {
                             className="flex-1"
                           />
                           
+                          {/* Schedule Button */}
+                          {selectedCategory === "friend" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setScheduleDialogOpen(true)}
+                              title="Mesaj Zamanla"
+                            >
+                              <Clock className="w-4 h-4" />
+                            </Button>
+                          )}
+                          
                           {/* Send Button */}
                           <Button
                             onClick={handleSendMessage}
@@ -1387,6 +1434,27 @@ const Messages = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Call Interface */}
+        {showCallInterface && selectedFriend && (
+          <CallInterface
+            receiverId={selectedFriend.user_id}
+            receiverName={selectedFriend.full_name || selectedFriend.username}
+            receiverAvatar={selectedFriend.profile_photo}
+            callType={callType}
+            onEnd={() => setShowCallInterface(false)}
+          />
+        )}
+
+        {/* Schedule Message Dialog */}
+        {selectedFriend && (
+          <ScheduleMessageDialog
+            open={scheduleDialogOpen}
+            onOpenChange={setScheduleDialogOpen}
+            receiverId={selectedFriend.user_id}
+            receiverName={selectedFriend.full_name || selectedFriend.username}
+          />
+        )}
       </main>
     </div>
   );

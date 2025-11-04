@@ -47,6 +47,42 @@ export type Database = {
         }
         Relationships: []
       }
+      auto_responses: {
+        Row: {
+          created_at: string
+          days_of_week: string[] | null
+          enabled: boolean | null
+          end_time: string | null
+          id: string
+          message: string
+          start_time: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          days_of_week?: string[] | null
+          enabled?: boolean | null
+          end_time?: string | null
+          id?: string
+          message: string
+          start_time?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          days_of_week?: string[] | null
+          enabled?: boolean | null
+          end_time?: string | null
+          id?: string
+          message?: string
+          start_time?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       badges: {
         Row: {
           category: string
@@ -137,6 +173,39 @@ export type Database = {
           created_at?: string
           id?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      call_logs: {
+        Row: {
+          call_type: string
+          caller_id: string
+          duration: number | null
+          ended_at: string | null
+          id: string
+          receiver_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          call_type: string
+          caller_id: string
+          duration?: number | null
+          ended_at?: string | null
+          id?: string
+          receiver_id: string
+          started_at?: string
+          status: string
+        }
+        Update: {
+          call_type?: string
+          caller_id?: string
+          duration?: number | null
+          ended_at?: string | null
+          id?: string
+          receiver_id?: string
+          started_at?: string
+          status?: string
         }
         Relationships: []
       }
@@ -1282,6 +1351,39 @@ export type Database = {
           },
         ]
       }
+      scheduled_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          receiver_id: string
+          scheduled_for: string
+          sender_id: string
+          sent: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          receiver_id: string
+          scheduled_for: string
+          sender_id: string
+          sent?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          receiver_id?: string
+          scheduled_for?: string
+          sender_id?: string
+          sent?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       shared_analyses: {
         Row: {
           allowed_user_ids: string[] | null
@@ -1710,6 +1812,7 @@ export type Database = {
         Returns: boolean
       }
       increment_hashtag_usage: { Args: { tag_text: string }; Returns: string }
+      send_scheduled_messages: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"

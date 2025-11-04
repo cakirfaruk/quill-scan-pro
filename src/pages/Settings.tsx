@@ -15,6 +15,7 @@ import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, He
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { requestNotificationPermission } from "@/utils/notifications";
 import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
+import { AutoResponseSettings } from "@/components/AutoResponseSettings";
 
 const Settings = () => {
   const [profile, setProfile] = useState({
@@ -712,78 +713,82 @@ const Settings = () => {
           </TabsContent>
 
           <TabsContent value="appearance">
-            <Card>
-              <CardHeader>
-                <CardTitle>Görünüm ve Bildirimler</CardTitle>
-                <CardDescription>
-                  Uygulamanın görünümünü ve bildirim tercihlerinizi özelleştirin
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="text-base flex items-center gap-2">
-                      {darkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-                      Koyu Tema
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Gözlerinizi korumak için koyu temayı kullanın
-                    </p>
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Görünüm ve Bildirimler</CardTitle>
+                  <CardDescription>
+                    Uygulamanın görünümünü ve bildirim tercihlerinizi özelleştirin
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-base flex items-center gap-2">
+                        {darkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                        Koyu Tema
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Gözlerinizi korumak için koyu temayı kullanın
+                      </p>
+                    </div>
+                    <Switch
+                      checked={darkMode}
+                      onCheckedChange={toggleDarkMode}
+                    />
                   </div>
-                  <Switch
-                    checked={darkMode}
-                    onCheckedChange={toggleDarkMode}
-                  />
-                </div>
 
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <div className="space-y-0.5">
-                    <Label className="text-base flex items-center gap-2">
-                      <Bell className="w-4 h-4" />
-                      Bildirimler
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Mesajlar ve arkadaşlık istekleri için bildirim alın
-                    </p>
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <div className="space-y-0.5">
+                      <Label className="text-base flex items-center gap-2">
+                        <Bell className="w-4 h-4" />
+                        Bildirimler
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Mesajlar ve arkadaşlık istekleri için bildirim alın
+                      </p>
+                    </div>
+                    <Switch
+                      checked={notificationsEnabled}
+                      onCheckedChange={toggleNotifications}
+                    />
                   </div>
-                  <Switch
-                    checked={notificationsEnabled}
-                    onCheckedChange={toggleNotifications}
-                  />
-                </div>
 
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <div className="space-y-0.5">
-                    <Label className="text-base flex items-center gap-2">
-                      <Heart className="w-4 h-4" />
-                      Eşleşme Ekranında Görün
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Profilinizin diğer kullanıcılara gösterilmesini kontrol edin
-                    </p>
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <div className="space-y-0.5">
+                      <Label className="text-base flex items-center gap-2">
+                        <Heart className="w-4 h-4" />
+                        Eşleşme Ekranında Görün
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Profilinizin diğer kullanıcılara gösterilmesini kontrol edin
+                      </p>
+                    </div>
+                    <Switch
+                      checked={profile.show_in_matches}
+                      onCheckedChange={(checked) => {
+                        setProfile({ ...profile, show_in_matches: checked });
+                        handleSaveProfile();
+                      }}
+                    />
                   </div>
-                  <Switch
-                    checked={profile.show_in_matches}
-                    onCheckedChange={(checked) => {
-                      setProfile({ ...profile, show_in_matches: checked });
-                      handleSaveProfile();
-                     }}
-                   />
-                 </div>
 
-                 <div className="pt-6 border-t">
-                   <Button
-                     variant="destructive"
-                     onClick={handleLogout}
-                     className="w-full gap-2"
-                   >
-                     <LogOut className="w-4 h-4" />
-                     Çıkış Yap
-                   </Button>
-                 </div>
-               </CardContent>
-             </Card>
-           </TabsContent>
+                  <div className="pt-6 border-t">
+                    <Button
+                      variant="destructive"
+                      onClick={handleLogout}
+                      className="w-full gap-2"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Çıkış Yap
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <AutoResponseSettings />
+            </div>
+          </TabsContent>
         </Tabs>
       </main>
     </div>
