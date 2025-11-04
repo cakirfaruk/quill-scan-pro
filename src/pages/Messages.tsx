@@ -369,7 +369,7 @@ const Messages = () => {
           if (conv.category === "friend") setActiveTab("friends");
           else if (conv.category === "match") setActiveTab("matches");
           else setActiveTab("other");
-          loadMessages(conv.friend!.user_id);
+          loadMessages(conv.friend!.user_id, user.id);
         } else if (!conv) {
           // If user is not in conversations (no messages yet), fetch their profile
           const { data: profileData } = await supabase
@@ -418,7 +418,7 @@ const Messages = () => {
             if (category === "friend") setActiveTab("friends");
             else if (category === "match") setActiveTab("matches");
             else setActiveTab("other");
-            loadMessages(friendData.user_id);
+            loadMessages(friendData.user_id, user.id);
           }
         }
       }
@@ -437,12 +437,19 @@ const Messages = () => {
     }
   };
 
-  const loadMessages = async (friendId: string) => {
+  const loadMessages = async (friendId: string, userId?: string) => {
     try {
+      const effectiveUserId = userId || currentUserId;
+      
+      if (!effectiveUserId) {
+        console.error("No user ID available");
+        return;
+      }
+
       const { data, error } = await supabase
         .from("messages")
         .select("*")
-        .or(`and(sender_id.eq.${friendId},receiver_id.eq.${currentUserId}),and(sender_id.eq.${currentUserId},receiver_id.eq.${friendId})`)
+        .or(`and(sender_id.eq.${friendId},receiver_id.eq.${effectiveUserId}),and(sender_id.eq.${effectiveUserId},receiver_id.eq.${friendId})`)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
@@ -469,19 +476,27 @@ const Messages = () => {
       const pinnedMsgs = parsedMessages.filter(m => m.pinned_at);
       setPinnedMessages(pinnedMsgs);
 
+      if (parsedMessages.length === 0) {
+        // First time messaging - no error needed
+        return;
+      }
+
       await supabase
         .from("messages")
         .update({ read: true })
         .eq("sender_id", friendId)
-        .eq("receiver_id", currentUserId)
+        .eq("receiver_id", effectiveUserId)
         .eq("read", false);
     } catch (error: any) {
       console.error("Error loading messages:", error);
-      toast({
-        title: "Hata",
-        description: "Mesajlar yüklenemedi.",
-        variant: "destructive",
-      });
+      // Don't show error toast for empty conversations
+      if (error?.message && !error.message.includes("No rows")) {
+        toast({
+          title: "Hata",
+          description: "Mesajlar yüklenemedi.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
