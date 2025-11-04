@@ -619,6 +619,79 @@ export type Database = {
           },
         ]
       }
+      group_poll_votes: {
+        Row: {
+          created_at: string | null
+          id: string
+          option_ids: string[]
+          poll_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          option_ids: string[]
+          poll_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          option_ids?: string[]
+          poll_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "group_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_polls: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          expires_at: string
+          group_id: string
+          id: string
+          multiple_choice: boolean | null
+          options: Json
+          question: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          expires_at: string
+          group_id: string
+          id?: string
+          multiple_choice?: boolean | null
+          options: Json
+          question: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          expires_at?: string
+          group_id?: string
+          id?: string
+          multiple_choice?: boolean | null
+          options?: Json
+          question?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_polls_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       groups: {
         Row: {
           created_at: string | null

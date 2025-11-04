@@ -9,12 +9,14 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Send, Users, Settings, Smile, Loader2, UserPlus } from "lucide-react";
+import { ArrowLeft, Send, Users, Settings, Smile, Loader2, UserPlus, BarChart3 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { z } from "zod";
+import { GroupPollCard } from "@/components/GroupPollCard";
+import { CreateGroupPollDialog } from "@/components/CreateGroupPollDialog";
 
 const messageSchema = z.object({
   content: z.string()
@@ -55,6 +57,7 @@ const GroupChat = () => {
   const [group, setGroup] = useState<any>(null);
   const [messages, setMessages] = useState<GroupMessage[]>([]);
   const [members, setMembers] = useState<GroupMember[]>([]);
+  const [polls, setPolls] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -62,14 +65,16 @@ const GroupChat = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [membersDialogOpen, setMembersDialogOpen] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [createPollDialogOpen, setCreatePollDialogOpen] = useState(false);
 
   useEffect(() => {
     loadGroup();
     loadMessages();
     loadMembers();
+    loadPolls();
     
     // Subscribe to new messages
-    const channel = supabase
+    const messagesChannel = supabase
       .channel(`group-messages-${groupId}`)
       .on(
         "postgres_changes",
@@ -85,8 +90,26 @@ const GroupChat = () => {
       )
       .subscribe();
 
+    // Subscribe to polls
+    const pollsChannel = supabase
+      .channel(`group-polls-${groupId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "group_polls",
+          filter: `group_id=eq.${groupId}`,
+        },
+        () => {
+          loadPolls();
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(pollsChannel);
     };
   }, [groupId]);
 
@@ -207,6 +230,21 @@ const GroupChat = () => {
     }
   };
 
+  const loadPolls = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("group_polls")
+        .select("*")
+        .eq("group_id", groupId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setPolls(data || []);
+    } catch (error: any) {
+      console.error("Error loading polls:", error);
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || sending) return;
@@ -320,6 +358,16 @@ const GroupChat = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCreatePollDialogOpen(true)}
+                title="Anket Oluştur"
+              >
+                <BarChart3 className="w-5 h-5" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -344,6 +392,18 @@ const GroupChat = () => {
       <Card className="flex-1 mx-4 my-4 flex flex-col">
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
           <div className="space-y-4">
+            {/* Polls */}
+            {polls.map((poll) => (
+              <GroupPollCard
+                key={poll.id}
+                poll={poll}
+                currentUserId={currentUserId}
+                isAdmin={isAdmin}
+                onDelete={loadPolls}
+              />
+            ))}
+
+            {/* Messages */}
             {messages.map((msg) => (
               <div
                 key={msg.id}
@@ -470,6 +530,14 @@ const GroupChat = () => {
           </Button>
         </DialogContent>
       </Dialog>
+
+      {/* Create Poll Dialog */}
+      <CreateGroupPollDialog
+        open={createPollDialogOpen}
+        onOpenChange={setCreatePollDialogOpen}
+        groupId={groupId!}
+        onPollCreated={loadPolls}
+      />
     </div>
   );
 };
