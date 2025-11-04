@@ -43,10 +43,9 @@ const queryClient = new QueryClient();
 
 // Wrapper component that safely uses hooks after providers are mounted
 const AppContent = () => {
-  useUpdateOnlineStatus();
-  
   return (
     <TooltipProvider>
+      <OnlineStatusWrapper />
       <Toaster />
       <Sonner />
       <OfflineIndicator />
@@ -88,6 +87,11 @@ const AppContent = () => {
       </BrowserRouter>
     </TooltipProvider>
   );
+};
+
+const OnlineStatusWrapper = () => {
+  useUpdateOnlineStatus();
+  return null;
 };
 
 const App = () => {
