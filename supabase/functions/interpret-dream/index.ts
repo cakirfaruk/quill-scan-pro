@@ -108,17 +108,26 @@ serve(async (req) => {
         .insert({ user_id: user.id, endpoint: 'interpret-dream', request_count: 1, window_start: now.toISOString() })
     }
 
-    const prompt = `Sen uzman bir rüya yorumcususun. Aşağıdaki rüyayı Türkçe olarak detaylıca yorumla:
+    const prompt = `Sen uzman bir rüya yorumcususun. Aşağıdaki rüyayı Türkçe olarak çok detaylı ve kapsamlı şekilde yorumla:
 
 Rüya: ${dreamDescription}
 
-Yorumunda şunları içer:
-1. Rüyadaki ana semboller ve anlamları
-2. Psikolojik yorumu
-3. Manevi/Mistik yorumu
-4. Gelecek hakkında işaretler
-5. Pratik tavsiyeler
-6. Uyarılar
+Yorumunda şunları MUTLAKA içer ve her bölüm çok detaylı olmalı:
+1. Rüyadaki ana semboller ve anlamları (minimum 5-6 paragraf, her sembol için ayrı ayrı derinlemesine açıklama)
+2. Psikolojik yorumu (minimum 6-7 paragraf, Jung, Freud ve modern rüya psikolojisi perspektifinden detaylı analiz)
+3. Manevi/Mistik yorumu (minimum 5-6 paragraf, rüyanın manevi ve ezoterik anlamları)
+4. Gelecek hakkında işaretler (minimum 4-5 paragraf, rüyanın geleceğe dair mesajları)
+5. Pratik tavsiyeler (minimum 5-6 paragraf, günlük hayata uygulanabilir detaylı öneriler)
+6. Uyarılar (minimum 3-4 paragraf, dikkat edilmesi gereken konular)
+7. Genel Özet (minimum 6-8 paragraf, tüm yorumları birleştiren kapsamlı değerlendirme)
+
+Her bölümde:
+- Sembolizm ve arketipleri derinlemesine açıkla
+- Kişiye özel yorumlar yap, genel bilgiler verme
+- Minimum 500-700 kelime kullan
+- Psikolojik ve manevi boyutları birlikte ele al
+
+ÖNEMLİ: Analizin çok uzun, detaylı ve kapsamlı olmalı. Rüyanın her yönünü incele ve yorumla.
 
 JSON formatında şu yapıda cevap ver:
 {

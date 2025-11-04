@@ -133,7 +133,7 @@ serve(async (req) => {
       `${index + 1}. Pozisyon: ${card.name} (${card.suit || 'Major Arcana'}) - ${card.isReversed ? 'Ters' : 'Düz'}`
     ).join('\n');
 
-    const prompt = `Bir tarot uzmanı olarak aşağıdaki tarot okumasını Türkçe olarak yorumla:
+    const prompt = `Bir tarot uzmanı olarak aşağıdaki tarot okumasını Türkçe olarak çok detaylı ve kapsamlı şekilde yorumla:
 
 Yayılım Türü: ${spreadType}
 ${spreadDescriptions[spreadType]}
@@ -143,17 +143,21 @@ Soru: ${question || 'Genel okuma'}
 Seçilen Kartlar:
 ${cardsText}
 
-Her kart için:
-1. Kartın anlamını açıkla
-2. Pozisyonundaki önemini belirt
-3. Soru ile ilişkisini yorumla
+Her kart için MUTLAKA:
+1. Kartın genel anlamını çok detaylı açıkla (minimum 4-5 paragraf)
+2. Düz ve ters pozisyonlarındaki farklı anlamları derinlemesine açıkla (minimum 3-4 paragraf)
+3. Bu pozisyondaki önemini ve etkisini kapsamlıca belirt (minimum 3-4 paragraf)
+4. Soru ile ilişkisini detaylıca yorumla (minimum 4-5 paragraf)
+5. Kartın sembolleri, renkleri ve figürlerinin mistik anlamlarını açıkla (minimum 2-3 paragraf)
 
-Sonunda:
-- Genel bir özet ver
-- Tavsiyeler sun
-- Uyarılar belirt
+Sonunda MUTLAKA:
+- Genel bir özet ver (minimum 5-6 paragraf)
+- Detaylı tavsiyeler sun (minimum 4-5 paragraf)
+- Uyarıları ve dikkat edilmesi gerekenleri belirt (minimum 3-4 paragraf)
 
-Yorumun mistik, anlayışlı ve rehberlik edici olsun. JSON formatında şu yapıda cevap ver:
+ÖNEMLİ: Her kart için minimum 600-800 kelime yaz. Yorumun çok mistik, derin, anlayışlı ve rehberlik edici olsun. Genel bilgiler değil, soruya ve kişiye özel derinlemesine yorumlar yap.
+
+JSON formatında şu yapıda cevap ver:
 {
   "cards": [
     {

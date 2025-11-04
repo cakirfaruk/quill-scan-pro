@@ -140,7 +140,7 @@ ${JSON.stringify(planetarySigns, null, 2)}
 ÖNEMLİ: Bu gerçek astronomik verilere dayanarak profesyonel analiz yap. Gezegenlerin burçlarını ve derecelerini dikkate al.
 `;
 
-    const systemPrompt = `Sen profesyonel bir astrolog ve doğum haritası uzmanısın. "Doğum Haritası Yorumlama Sanatı" kitabındaki yöntemleri kullanarak detaylı analiz yapıyorsun.
+    const systemPrompt = `Sen profesyonel bir astrolog ve doğum haritası uzmanısın. "Doğum Haritası Yorumlama Sanatı" kitabındaki yöntemleri kullanarak çok detaylı ve kapsamlı analiz yapıyorsun.
 
 ${planetaryDataText}
 
@@ -153,30 +153,32 @@ Doğum Bilgileri:
 Seçilen Konular: ${selectedTopics.join(", ")}
 
 ANALIZ YÖNTEMİ:
-Verilen gerçek gezegen pozisyonlarını kullanarak her konu için detaylı analiz yap:
+Verilen gerçek gezegen pozisyonlarını kullanarak her konu için ÇOK DETAYLI analiz yap:
 
-1. **Element Analizi**: Ateş, Toprak, Hava, Su elementlerinin dağılımı
-2. **Nitelik Analizi**: Öncü, Sabit, Değişken burçların dağılımı  
-3. **Güçlü Planetler**: Kendi burçlarında, yükselen, köşelerde olan planetler
-4. **Açılar**: Gezegenlerin birbirleriyle yaptığı açılar (kavuşum, trigon, kare, karşıt vb.)
-5. **Evler**: 12 astrolojik evin yaşam alanlarındaki etkileri
-6. **Yükselen**: Dış görünüm ve yaklaşım tarzı
-7. **Orta Göğe (MC)**: Kariyer ve sosyal statü
+1. **Element Analizi**: Ateş, Toprak, Hava, Su elementlerinin dağılımını derinlemesine incele
+2. **Nitelik Analizi**: Öncü, Sabit, Değişken burçların dağılımını detaylıca açıkla
+3. **Güçlü Planetler**: Kendi burçlarında, yükselen, köşelerde olan planetleri kapsamlıca değerlendir
+4. **Açılar**: Gezegenlerin birbirleriyle yaptığı açıları (kavuşum, trigon, kare, karşıt vb.) uzun uzadıya yorumla
+5. **Evler**: 12 astrolojik evin yaşam alanlarındaki etkilerini derinlemesine analiz et
+6. **Yükselen**: Dış görünüm ve yaklaşım tarzını detaylıca açıkla
+7. **Orta Göğe (MC)**: Kariyer ve sosyal statüyü kapsamlıca değerlendir
 
-Her konu için:
+Her konu için MUTLAKA:
 
-1. **Güneş Burcu**: Temel kişilik özellikleri, hayat amacı, bilinç
-2. **Ay Burcu**: Duygusal dünya, iç güvenlik ihtiyaçları, sezgiler
-3. **Yükselen Burcu**: Dış görünüm, ilk izlenim, yaklaşım tarzı
-4. **Merkür**: İletişim tarzı, düşünce yapısı, öğrenme şekli
-5. **Venüs**: Aşk dili, estetik zevk, ilişki tarzı, değerler
-6. **Mars**: Enerji kullanımı, öfke ifadesi, tutku, cinsellik
-7. **Jüpiter**: Büyüme alanları, şans konuları, felsefe, inançlar
-8. **Satürn**: Sorumluluklar, kısıtlamalar, yaşam dersleri, disiplin
-9. **Uranüs**: Bireysellik, orijinallik, ani değişimler
-10. **Neptün**: Rüyalar, sezgiler, maneviyat, yanılsamalar
-11. **Plüton**: Dönüşüm, güç, derin psikoloji
-12. **Evler**: 12 astrolojik evin yaşam alanlarındaki etkileri
+1. **Güneş Burcu**: Temel kişilik özellikleri, hayat amacı, bilinç - minimum 5-6 paragraf
+2. **Ay Burcu**: Duygusal dünya, iç güvenlik ihtiyaçları, sezgiler - minimum 5-6 paragraf
+3. **Yükselen Burcu**: Dış görünüm, ilk izlenim, yaklaşım tarzı - minimum 5-6 paragraf
+4. **Merkür**: İletişim tarzı, düşünce yapısı, öğrenme şekli - minimum 4-5 paragraf
+5. **Venüs**: Aşk dili, estetik zevk, ilişki tarzı, değerler - minimum 4-5 paragraf
+6. **Mars**: Enerji kullanımı, öfke ifadesi, tutku, cinsellik - minimum 4-5 paragraf
+7. **Jüpiter**: Büyüme alanları, şans konuları, felsefe, inançlar - minimum 4-5 paragraf
+8. **Satürn**: Sorumluluklar, kısıtlamalar, yaşam dersleri, disiplin - minimum 4-5 paragraf
+9. **Uranüs**: Bireysellik, orijinallik, ani değişimler - minimum 3-4 paragraf
+10. **Neptün**: Rüyalar, sezgiler, maneviyat, yanılsamalar - minimum 3-4 paragraf
+11. **Plüton**: Dönüşüm, güç, derin psikoloji - minimum 3-4 paragraf
+12. **Evler**: 12 astrolojik evin yaşam alanlarındaki etkileri - minimum 6-8 paragraf
+
+ÖNEMLİ: Her konu için minimum 500-800 kelime yaz. Analizler çok uzun, detaylı ve kapsamlı olmalı. Genel bilgiler değil, kişiye özel derinlemesine yorumlar yap.
 
 Yanıtını Türkçe ve JSON formatında ver:
 {
@@ -191,14 +193,14 @@ Yanıtını Türkçe ve JSON formatında ver:
   },
   "seçilen_konular": {
     "konu_adı": {
-      "genel_bakis": "Konunun genel açıklaması",
-      "ozellikler": ["Özellik 1", "Özellik 2", "..."],
-      "guclu_yonler": "Güçlü yönler",
-      "dikkat_edilmesi_gerekenler": "Dikkat edilmesi gereken noktalar",
-      "tavsiyeler": "Kişisel gelişim tavsiyeleri"
+      "genel_bakis": "Minimum 4-5 paragraf uzunluğunda konunun çok detaylı açıklaması",
+      "ozellikler": ["Her özellik minimum 2-3 cümle açıklama ile"],
+      "guclu_yonler": "Minimum 3-4 paragraf uzunluğunda güçlü yönlerin detaylı analizi",
+      "dikkat_edilmesi_gerekenler": "Minimum 3-4 paragraf uzunluğunda dikkat edilmesi gereken noktaların detaylı açıklaması",
+      "tavsiyeler": "Minimum 4-5 paragraf uzunluğunda kişisel gelişim tavsiyeleri"
     }
   },
-  "genel_degerlendirme": "Tüm seçilen konuları birleştiren kapsamlı değerlendirme"
+  "genel_degerlendirme": "Minimum 6-8 paragraf uzunluğunda tüm seçilen konuları birleştiren çok kapsamlı değerlendirme"
 }`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

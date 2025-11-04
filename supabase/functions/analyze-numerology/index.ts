@@ -92,9 +92,9 @@ Her rakamın anlamları:
 - 8: Sekiz, güç, maddi dünya, sonsuzluk
 - 9: Dokuz, tamamlanma, yüksek bilinç
 
-Analizlerini detaylı, anlamlı ve kişiye özel yap. Her konuyu ayrı bölümler halinde sun.`;
+ÖNEMLİ: Analizlerini çok detaylı, kapsamlı ve uzun yap. Her konu için minimum 4-5 paragraf yaz. Kişiye özel, derin ve mistik yorumlar sun. Mitolojik referansları bol kullan. Her konuyu ayrı bölümler halinde sun ve her bölümü derinlemesine açıkla.`;
 
-    const userPrompt = `Aşağıdaki kişi için seçilen konularda detaylı numeroloji analizi yap:
+    const userPrompt = `Aşağıdaki kişi için seçilen konularda çok detaylı ve kapsamlı numeroloji analizi yap:
 
 İsim: ${fullName}
 Doğum Tarihi: ${birthDate}
@@ -102,11 +102,14 @@ Doğum Tarihi: ${birthDate}
 Analiz Konuları:
 ${selectedTopics.map((topic: string, i: number) => `${i + 1}. ${topic}`).join("\n")}
 
-Her konu için:
-- Hesaplama adımlarını göster
-- Rakamların ezoterik anlamlarını açıkla
-- Kişiye özel yorumlar yap
-- İlgili mitoloji ve felsefe referansları ver
+Her konu için MUTLAKA:
+- Hesaplama adımlarını detaylıca göster (minimum 2-3 paragraf)
+- Rakamların ezoterik, okültist ve mistik anlamlarını derinlemesine açıkla (minimum 3-4 paragraf)
+- Kişiye özel, detaylı yorumlar yap - genel bilgiler değil spesifik analizler (minimum 4-5 paragraf)
+- İlgili mitoloji, felsefe, çakra sistemi ve ezoterik bilgi referansları ver (minimum 2-3 paragraf)
+- Her konuyu minimum 500-800 kelime ile açıkla
+
+ÖNEMLİ: Analizler çok uzun, detaylı ve kapsamlı olmalı. Kısa cümleler kullanma, her paragraf dolu dolu bilgi içermeli.
 
 JSON formatında yanıt ver, her konu için ayrı alan oluştur.`;
 
@@ -121,10 +124,10 @@ JSON formatında yanıt ver, her konu için ayrı alan oluştur.`;
       topicProperties[topic] = {
         type: "object",
         properties: {
-          calculation: { type: "string", description: "Hesaplama adımları" },
-          meaning: { type: "string", description: "Rakamların ezoterik anlamları" },
-          personal_interpretation: { type: "string", description: "Kişiye özel yorumlar" },
-          references: { type: "string", description: "Mitoloji ve felsefe referansları" }
+          calculation: { type: "string", description: "Minimum 2-3 paragraf uzunluğunda detaylı hesaplama adımları" },
+          meaning: { type: "string", description: "Minimum 3-4 paragraf uzunluğunda rakamların ezoterik, okültist ve mistik anlamları" },
+          personal_interpretation: { type: "string", description: "Minimum 4-5 paragraf uzunluğunda kişiye özel, detaylı ve derinlemesine yorumlar" },
+          references: { type: "string", description: "Minimum 2-3 paragraf uzunluğunda mitoloji, felsefe, çakra sistemi ve ezoterik bilgi referansları" }
         },
         required: ["calculation", "meaning", "personal_interpretation", "references"]
       };
@@ -153,7 +156,7 @@ JSON formatında yanıt ver, her konu için ayrı alan oluştur.`;
                 properties: {
                   overall_summary: { 
                     type: "string", 
-                    description: "Genel özet ve başlangıç yorumu" 
+                    description: "Minimum 5-6 paragraf uzunluğunda genel özet ve başlangıç yorumu" 
                   },
                   topics: {
                     type: "object",

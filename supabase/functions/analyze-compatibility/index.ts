@@ -127,7 +127,7 @@ serve(async (req) => {
 
     console.log(`Analyzing compatibility with types: ${analysisTypes.join(", ")}...`);
 
-    let systemPrompt = `Sen profesyonel bir ilişki danışmanı ve uyum analistisin. İki kişi arasındaki uyumu çok detaylı bir şekilde değerlendiriyorsun.
+    let systemPrompt = `Sen profesyonel bir ilişki danışmanı ve uyum analistisin. İki kişi arasındaki uyumu ÇOK DETAYLI ve KAPSAMLI bir şekilde değerlendiriyorsun.
 
 📋 KİŞİ BİLGİLERİ:
 Kişi 1: ${name1 || gender1} (${gender1 === "male" ? "Erkek" : "Kadın"})
@@ -162,27 +162,29 @@ Sağlanan el yazısı görsellerinden her iki kişinin karakteristik özellikler
     systemPrompt += `
 🎯 DETAYLI UYUM ANALİZİ YAPILACAK ALANLAR:
 
-1. 💫 KİŞİLİK UYUMU
-2. 💬 İLETİŞİM UYUMU
-3. 💓 DUYGUSAL BAĞ
-4. 🎯 DEĞERLER VE HEDEFLER
-5. 🌍 SOSYAL UYUM
+1. 💫 KİŞİLİK UYUMU (minimum 6-7 paragraf)
+2. 💬 İLETİŞİM UYUMU (minimum 5-6 paragraf)
+3. 💓 DUYGUSAL BAĞ (minimum 5-6 paragraf)
+4. 🎯 DEĞERLER VE HEDEFLER (minimum 4-5 paragraf)
+5. 🌍 SOSYAL UYUM (minimum 4-5 paragraf)
+
+ÖNEMLİ: Her alan için ÇOK DETAYLI analiz yap. Minimum 500-700 kelime kullan.
 
 SADECE AŞAĞIDAKİ JSON FORMATINDA YANITLA:
 {
   "overallScore": 75,
-  "overallSummary": "5-6 cümlelik detaylı genel değerlendirme",
-  "person1Analysis": "Kişi 1'in genel profili - 4-5 cümle",
-  "person2Analysis": "Kişi 2'nin genel profili - 4-5 cümle",
+  "overallSummary": "Minimum 8-10 paragraf uzunluğunda çok detaylı genel değerlendirme - ilişkinin tüm yönlerini kapsamlı şekilde ele al",
+  "person1Analysis": "Minimum 6-7 paragraf - Kişi 1'in çok detaylı genel profili, kişilik özellikleri, güçlü ve zayıf yönleri",
+  "person2Analysis": "Minimum 6-7 paragraf - Kişi 2'nin çok detaylı genel profili, kişilik özellikleri, güçlü ve zayıf yönleri",
   "compatibilityAreas": [
     {
-      "name": "Kişilik Uyumu",
-      "person1Finding": "Kişi 1'in kişilik özellikleri - detaylı analiz 3-4 cümle",
-      "person2Finding": "Kişi 2'nin kişilik özellikleri - detaylı analiz 3-4 cümle",
+      "name": "Alan Adı",
+      "person1Finding": "Minimum 5-6 paragraf - Kişi 1'in bu alandaki özelliklerinin çok detaylı analizi",
+      "person2Finding": "Minimum 5-6 paragraf - Kişi 2'nin bu alandaki özelliklerinin çok detaylı analizi",
       "compatibilityScore": 80,
-      "strengths": "Güçlü yanlar - minimum 3 cümle",
-      "challenges": "Zorluklar - minimum 2 cümle",
-      "recommendations": "Öneriler - minimum 3 madde"
+      "strengths": "Minimum 4-5 paragraf - Güçlü yanların çok detaylı açıklaması ve örneklerle desteklenmesi",
+      "challenges": "Minimum 4-5 paragraf - Zorlukların çok detaylı açıklaması ve nasıl üstesinden gelinebileceği",
+      "recommendations": "Minimum 5-6 paragraf - İlişkiyi geliştirmek için çok detaylı, uygulanabilir öneriler"
     }
   ]
 }`;

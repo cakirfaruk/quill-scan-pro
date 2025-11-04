@@ -118,21 +118,28 @@ serve(async (req) => {
       });
     }
 
-    const prompt = `Sen uzman bir falcısın. Bu 3 farklı açıdan çekilmiş kahve fincanı fotoğraflarını analiz et ve Türkçe detaylı bir fal yorumu yap.
+    const prompt = `Sen uzman bir falcısın. Bu 3 farklı açıdan çekilmiş kahve fincanı fotoğraflarını çok detaylı ve kapsamlı şekilde analiz et ve Türkçe detaylı bir fal yorumu yap.
 
 İlk fotoğraf: Fincanın ana görünümü
 İkinci fotoğraf: Farklı açıdan görünüm
 Üçüncü fotoğraf: Tabak görünümü
 
-Yorumunda şunları içer:
-1. Aşk ve İlişkiler
-2. Kariyer ve İş
-3. Para ve Finans
-4. Sağlık
-5. Gelecek ve Uyarılar
-6. Genel Yorum
+Yorumunda şunları MUTLAKA içer ve her bölüm çok detaylı olmalı:
+1. Aşk ve İlişkiler (minimum 5-6 paragraf, gördüğün sembolleri detaylı açıkla)
+2. Kariyer ve İş (minimum 5-6 paragraf, iş hayatı hakkında derinlemesine yorumlar)
+3. Para ve Finans (minimum 4-5 paragraf, finansal durum ve gelecek hakkında kapsamlı analiz)
+4. Sağlık (minimum 4-5 paragraf, sağlık durumu ve dikkat edilmesi gerekenler)
+5. Gelecek ve Uyarılar (minimum 5-6 paragraf, gelecek hakkında detaylı işaretler ve uyarılar)
+6. Genel Yorum (minimum 6-8 paragraf, tüm yorumları birleştiren kapsamlı değerlendirme)
 
-Her bölümde gördüğün şekilleri ve sembol anlamlarını detaylıca açıkla. Mistik ve anlayışlı ol.
+Her bölümde:
+- Gördüğün şekilleri ve sembol anlamlarını çok detaylı açıkla
+- Her sembol için minimum 2-3 paragraf yorum yap
+- Mistik ve anlayışlı ol
+- Genel bilgiler değil, kişiye özel yorumlar yap
+- Minimum 400-600 kelime kullan
+
+ÖNEMLİ: Fotoğraflardaki her detayı incele ve yorumla. Kısa cümleler kullanma, her yorumun dolu dolu bilgi içermeli.
 
 JSON formatında şu yapıda cevap ver:
 {

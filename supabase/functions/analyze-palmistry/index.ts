@@ -115,25 +115,33 @@ serve(async (req) => {
       });
     }
 
-    const prompt = `Sen deneyimli bir el falı (palmistry) uzmanısın. Bu avuç içi fotoğrafını analiz et ve Türkçe detaylı bir yorum yap.
+    const prompt = `Sen deneyimli bir el falı (palmistry) uzmanısın. Bu avuç içi fotoğrafını çok detaylı ve kapsamlı şekilde analiz et ve Türkçe detaylı bir yorum yap.
 
 El falında analiz edilmesi gerekenler:
 1. Ana Çizgiler:
-   - Hayat çizgisi (Life line)
-   - Akıl çizgisi (Head line)
-   - Kalp çizgisi (Heart line)
-   - Kader çizgisi (Fate line)
+   - Hayat çizgisi (Life line) - minimum 4-5 paragraf detaylı analiz
+   - Akıl çizgisi (Head line) - minimum 4-5 paragraf detaylı analiz
+   - Kalp çizgisi (Heart line) - minimum 4-5 paragraf detaylı analiz
+   - Kader çizgisi (Fate line) - minimum 4-5 paragraf detaylı analiz
 
-2. İkincil Çizgiler ve İşaretler
+2. İkincil Çizgiler ve İşaretler (minimum 4-5 paragraf)
 
-3. Parmak ve Tırnak Analizi
+3. Parmak ve Tırnak Analizi (minimum 3-4 paragraf)
 
-4. El Şekli ve Yüzeyi
+4. El Şekli ve Yüzeyi (minimum 3-4 paragraf)
 
-Her çizgi için:
-- Uzunluğu ve derinliği
-- Kesintileri ve işaretleri
-- Anlamı ve yorumu
+Her çizgi için MUTLAKA:
+- Uzunluğunu, derinliğini, kalitesini detaylıca açıkla
+- Kesintileri, dallanan yerleri, işaretleri derinlemesine yorumla
+- Kişilik, sağlık, kariyer, ilişkiler açısından anlamını kapsamlıca belirt
+- Minimum 400-600 kelime kullan
+
+Her alan için (kişilik, sağlık, kariyer, ilişkiler, gelecek):
+- Minimum 5-6 paragraf yazarak çok detaylı analiz yap
+- Eldeki işaretlere göre kişiye özel yorumlar sun
+- Mistik ve geleneksel palmistry bilgilerini birleştir
+
+ÖNEMLİ: Analizin çok uzun, detaylı ve kapsamlı olmalı. Elde gördüğün her detayı yorumla.
 
 JSON formatında şu yapıda cevap ver:
 {
