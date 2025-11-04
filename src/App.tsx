@@ -11,6 +11,7 @@ import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { IncomingCallDialog } from "@/components/IncomingCallDialog";
+import { IncomingGroupCallDialog } from "@/components/IncomingGroupCallDialog";
 import Index from "./pages/Index";
 
 // Lazy load routes for better performance
@@ -50,6 +51,7 @@ const AppRoutes = () => {
   useUpdateOnlineStatus();
   const location = useLocation();
   const [incomingCall, setIncomingCall] = useState<any>(null);
+  const [incomingGroupCall, setIncomingGroupCall] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Get current user
@@ -103,6 +105,62 @@ const AppRoutes = () => {
       supabase.removeChannel(channel);
     };
   }, [currentUserId]);
+
+  // Listen for incoming group calls
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const channel = supabase
+      .channel("incoming-group-calls")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "group_call_participants",
+          filter: `user_id=eq.${currentUserId}`,
+        },
+        async (payload) => {
+          const participant = payload.new;
+          
+          // Only show dialog if status is invited
+          if (participant.status === "invited") {
+            // Get group call info
+            const { data: groupCall } = await supabase
+              .from("group_calls")
+              .select("*, groups(*)")
+              .eq("id", participant.call_id)
+              .single();
+
+            if (groupCall && groupCall.status === "ringing") {
+              // Get caller info
+              const { data: callerProfile } = await supabase
+                .from("profiles")
+                .select("username, full_name, profile_photo")
+                .eq("user_id", groupCall.started_by)
+                .single();
+
+              if (callerProfile) {
+                setIncomingGroupCall({
+                  callId: groupCall.call_id,
+                  groupCallId: groupCall.id,
+                  groupId: groupCall.group_id,
+                  groupName: groupCall.groups.name,
+                  groupPhoto: groupCall.groups.photo_url,
+                  callType: groupCall.call_type,
+                  callerName: callerProfile.full_name || callerProfile.username,
+                });
+              }
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUserId]);
   
   const showNav = ['/', '/explore', '/reels', '/discovery', '/messages', '/profile', '/match', '/friends'].some(
     path => location.pathname === path || location.pathname.startsWith('/profile/')
@@ -119,6 +177,19 @@ const AppRoutes = () => {
           callerName={incomingCall.callerName}
           callerPhoto={incomingCall.callerPhoto}
           callType={incomingCall.callType}
+        />
+      )}
+      {incomingGroupCall && (
+        <IncomingGroupCallDialog
+          isOpen={true}
+          onClose={() => setIncomingGroupCall(null)}
+          callId={incomingGroupCall.callId}
+          groupCallId={incomingGroupCall.groupCallId}
+          groupId={incomingGroupCall.groupId}
+          groupName={incomingGroupCall.groupName}
+          groupPhoto={incomingGroupCall.groupPhoto}
+          callType={incomingGroupCall.callType}
+          callerName={incomingGroupCall.callerName}
         />
       )}
       <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>

@@ -664,6 +664,88 @@ export type Database = {
           },
         ]
       }
+      group_call_participants: {
+        Row: {
+          call_id: string
+          duration: number | null
+          id: string
+          joined_at: string | null
+          left_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          call_id: string
+          duration?: number | null
+          id?: string
+          joined_at?: string | null
+          left_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          call_id?: string
+          duration?: number | null
+          id?: string
+          joined_at?: string | null
+          left_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_call_participants_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "group_calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_calls: {
+        Row: {
+          call_id: string | null
+          call_type: string
+          created_at: string | null
+          ended_at: string | null
+          group_id: string
+          id: string
+          started_at: string
+          started_by: string
+          status: string
+        }
+        Insert: {
+          call_id?: string | null
+          call_type: string
+          created_at?: string | null
+          ended_at?: string | null
+          group_id: string
+          id?: string
+          started_at?: string
+          started_by: string
+          status: string
+        }
+        Update: {
+          call_id?: string | null
+          call_type?: string
+          created_at?: string | null
+          ended_at?: string | null
+          group_id?: string
+          id?: string
+          started_at?: string
+          started_by?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_calls_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_events: {
         Row: {
           created_at: string | null

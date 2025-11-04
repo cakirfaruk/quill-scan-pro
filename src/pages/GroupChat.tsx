@@ -98,9 +98,10 @@ const GroupChat = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [createEventDialogOpen, setCreateEventDialogOpen] = useState(false);
   const [uploadFileDialogOpen, setUploadFileDialogOpen] = useState(false);
-  const [replyingTo, setReplyingTo] = useState<GroupMessage | null>(null);
   const [showCallInterface, setShowCallInterface] = useState(false);
+  const [activeCallId, setActiveCallId] = useState<string | null>(null);
   const [callType, setCallType] = useState<"audio" | "video">("audio");
+  const [replyingTo, setReplyingTo] = useState<GroupMessage | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -481,6 +482,65 @@ const GroupChat = () => {
     }
   };
 
+  const startGroupCall = async (type: "audio" | "video") => {
+    if (!groupId || !currentUserId) return;
+
+    try {
+      // Create group call
+      const { data: groupCall, error: callError } = await supabase
+        .from("group_calls")
+        .insert({
+          group_id: groupId,
+          call_type: type,
+          status: "ringing",
+          started_by: currentUserId,
+        })
+        .select()
+        .single();
+
+      if (callError) throw callError;
+
+      // Add all group members as participants
+      const participantInserts = members
+        .filter(m => m.user_id !== currentUserId)
+        .map(m => ({
+          call_id: groupCall.id,
+          user_id: m.user_id,
+          status: "invited",
+        }));
+
+      if (participantInserts.length > 0) {
+        const { error: participantsError } = await supabase
+          .from("group_call_participants")
+          .insert(participantInserts);
+
+        if (participantsError) throw participantsError;
+      }
+
+      // Add self as joined
+      await supabase
+        .from("group_call_participants")
+        .insert({
+          call_id: groupCall.id,
+          user_id: currentUserId,
+          status: "joined",
+        });
+
+      setActiveCallId(groupCall.call_id);
+      setCallType(type);
+      setShowCallInterface(true);
+
+      console.log("Group call initiated:", groupCall);
+    } catch (error) {
+      console.error("Error starting group call:", error);
+      toast({
+        title: "Arama Başlatılamadı",
+        description: "Grup araması başlatılırken bir hata oluştu.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || sending) return;
@@ -736,10 +796,7 @@ const GroupChat = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => {
-                setCallType("audio");
-                setShowCallInterface(true);
-              }}
+              onClick={() => startGroupCall("audio")}
               title="Sesli Grup Araması"
             >
               <Phone className="w-5 h-5" />
@@ -747,10 +804,7 @@ const GroupChat = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => {
-                setCallType("video");
-                setShowCallInterface(true);
-              }}
+              onClick={() => startGroupCall("video")}
               title="Görüntülü Grup Araması"
             >
               <Video className="w-5 h-5" />
@@ -1201,14 +1255,17 @@ const GroupChat = () => {
       />
 
       {/* Group Video Call */}
-      {showCallInterface && (
+      {showCallInterface && activeCallId && (
         <GroupVideoCallDialog
           isOpen={showCallInterface}
-          onClose={() => setShowCallInterface(false)}
-          callId={`group-${groupId}`}
+          onClose={() => {
+            setShowCallInterface(false);
+            setActiveCallId(null);
+          }}
+          callId={activeCallId}
           groupId={groupId!}
           groupName={group?.name || "Grup"}
-          groupPhoto={group?.cover_photo}
+          groupPhoto={group?.photo_url}
           callType={callType}
         />
       )}
