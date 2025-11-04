@@ -9,7 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Send, Users, Settings, Smile, Loader2, UserPlus, BarChart3, Megaphone, Image as ImageIcon, Paperclip, Reply, X, TrendingUp, Search } from "lucide-react";
+import { ArrowLeft, Send, Users, Settings, Smile, Loader2, UserPlus, BarChart3, Megaphone, Image as ImageIcon, Paperclip, Reply, X, TrendingUp, Search, CalendarDays } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -22,6 +22,8 @@ import { CreateGroupAnnouncementDialog } from "@/components/CreateGroupAnnouncem
 import { GroupMediaGallery } from "@/components/GroupMediaGallery";
 import { GroupStats } from "@/components/GroupStats";
 import { GroupSearch } from "@/components/GroupSearch";
+import { GroupEventCard } from "@/components/GroupEventCard";
+import { CreateGroupEventDialog } from "@/components/CreateGroupEventDialog";
 
 const messageSchema = z.object({
   content: z.string()
@@ -74,6 +76,7 @@ const GroupChat = () => {
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [polls, setPolls] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -87,6 +90,7 @@ const GroupChat = () => {
   const [mediaGalleryOpen, setMediaGalleryOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [createEventDialogOpen, setCreateEventDialogOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState<GroupMessage | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -96,6 +100,7 @@ const GroupChat = () => {
     loadMembers();
     loadPolls();
     loadAnnouncements();
+    loadEvents();
     
     // Subscribe to new messages
     const messagesChannel = supabase
@@ -148,10 +153,28 @@ const GroupChat = () => {
       )
       .subscribe();
 
+    // Subscribe to events
+    const eventsChannel = supabase
+      .channel(`group-events-${groupId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "group_events",
+          filter: `group_id=eq.${groupId}`,
+        },
+        () => {
+          loadEvents();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(messagesChannel);
       supabase.removeChannel(pollsChannel);
       supabase.removeChannel(announcementsChannel);
+      supabase.removeChannel(eventsChannel);
     };
   }, [groupId]);
 
@@ -323,6 +346,21 @@ const GroupChat = () => {
       setAnnouncements(data || []);
     } catch (error: any) {
       console.error("Error loading announcements:", error);
+    }
+  };
+
+  const loadEvents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("group_events")
+        .select("*")
+        .eq("group_id", groupId)
+        .order("event_date", { ascending: true });
+
+      if (error) throw error;
+      setEvents(data || []);
+    } catch (error: any) {
+      console.error("Error loading events:", error);
     }
   };
 
@@ -542,6 +580,14 @@ const GroupChat = () => {
                 <Button
                   variant="ghost"
                   size="icon"
+                  onClick={() => setCreateEventDialogOpen(true)}
+                  title="Etkinlik Oluştur"
+                >
+                  <CalendarDays className="w-5 h-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => setCreateAnnouncementDialogOpen(true)}
                   title="Duyuru Oluştur"
                 >
@@ -589,6 +635,16 @@ const GroupChat = () => {
                 currentUserId={currentUserId}
                 isAdmin={isAdmin}
                 onDelete={loadAnnouncements}
+              />
+            ))}
+
+            {/* Events */}
+            {events.map((event) => (
+              <GroupEventCard
+                key={event.id}
+                event={event}
+                currentUserId={currentUserId}
+                onDelete={loadEvents}
               />
             ))}
 
@@ -878,6 +934,14 @@ const GroupChat = () => {
         open={searchOpen}
         onOpenChange={setSearchOpen}
         groupId={groupId!}
+      />
+
+      {/* Create Event Dialog */}
+      <CreateGroupEventDialog
+        open={createEventDialogOpen}
+        onOpenChange={setCreateEventDialogOpen}
+        groupId={groupId!}
+        onEventCreated={loadEvents}
       />
     </div>
   );
