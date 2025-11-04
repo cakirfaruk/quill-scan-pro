@@ -69,41 +69,44 @@ export const StoriesBar = ({ currentUserId }: StoriesBarProps) => {
 
   const loadStories = async () => {
     try {
-      // Load own stories
-      const { data: ownStoriesData } = await supabase
-        .from("stories")
-        .select("*")
-        .eq("user_id", currentUserId)
-        .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: false });
-
-      if (ownStoriesData && ownStoriesData.length > 0) {
-        // Get user profile
-        const { data: profileData } = await supabase
+      // **PARALEL YÜKLEME** - Kendi hikayeler ve profil
+      const [ownStoriesData, profileData, allViewsData] = await Promise.all([
+        supabase
+          .from("stories")
+          .select("*")
+          .eq("user_id", currentUserId)
+          .gt("expires_at", new Date().toISOString())
+          .order("created_at", { ascending: false }),
+        
+        supabase
           .from("profiles")
           .select("username, full_name, profile_photo")
           .eq("user_id", currentUserId)
-          .single();
+          .single(),
+        
+        supabase
+          .from("story_views")
+          .select("story_id")
+      ]);
 
-        const storiesWithViews = await Promise.all(
-          ownStoriesData.map(async (story: any) => {
-            const { count } = await supabase
-              .from("story_views")
-              .select("*", { count: "exact", head: true })
-              .eq("story_id", story.id);
+      if (ownStoriesData.data && ownStoriesData.data.length > 0) {
+        // View sayılarını grupla
+        const viewCountsMap = new Map<string, number>();
+        (allViewsData.data || []).forEach((view: any) => {
+          viewCountsMap.set(view.story_id, (viewCountsMap.get(view.story_id) || 0) + 1);
+        });
 
-            return {
-              id: story.id,
-              user_id: story.user_id,
-              media_url: story.media_url,
-              media_type: story.media_type as "photo" | "video",
-              created_at: story.created_at,
-              profile: profileData || { username: "", full_name: null, profile_photo: null },
-              views_count: count || 0,
-              has_viewed: false,
-            };
-          })
-        );
+        const storiesWithViews = ownStoriesData.data.map((story: any) => ({
+          id: story.id,
+          user_id: story.user_id,
+          media_url: story.media_url,
+          media_type: story.media_type as "photo" | "video",
+          created_at: story.created_at,
+          profile: profileData.data || { username: "", full_name: null, profile_photo: null },
+          views_count: viewCountsMap.get(story.id) || 0,
+          has_viewed: false,
+        }));
+        
         setOwnStories(storiesWithViews);
       }
 

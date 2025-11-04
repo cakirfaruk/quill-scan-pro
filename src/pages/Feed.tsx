@@ -159,7 +159,7 @@ const Feed = () => {
     try {
       // **PARALEL SORGULAR** - Tek seferde tüm verileri al
       const [postsResult, friendsResult, likesResult, commentsCountResult, userLikesResult, userSavesResult] = await Promise.all([
-        // 1. Postları çek
+      // 1. Postları çek - SADECE 20 TANE!
         supabase
           .from("posts")
           .select(`
@@ -171,7 +171,7 @@ const Feed = () => {
             )
           `)
           .order("created_at", { ascending: false })
-          .limit(100),
+          .limit(20),
         
         // 2. Arkadaşları çek
         supabase
@@ -333,48 +333,52 @@ const Feed = () => {
 
   const loadComments = async (postId: string) => {
     try {
-      const { data, error } = await supabase
-        .from("post_comments")
-        .select(`
-          *,
-          profiles!post_comments_user_id_fkey (
-            username,
-            full_name,
-            profile_photo
-          )
-        `)
-        .eq("post_id", postId)
-        .order("created_at", { ascending: true });
+      // **PARALEL YÜKLEME** - Yorumları ve like'ları aynı anda çek
+      const [commentsResult, likesResult, userLikesResult] = await Promise.all([
+        supabase
+          .from("post_comments")
+          .select(`
+            *,
+            profiles!post_comments_user_id_fkey (
+              username,
+              full_name,
+              profile_photo
+            )
+          `)
+          .eq("post_id", postId)
+          .order("created_at", { ascending: true }),
+        
+        supabase
+          .from("comment_likes")
+          .select("comment_id"),
+        
+        supabase
+          .from("comment_likes")
+          .select("comment_id")
+          .eq("user_id", userId)
+      ]);
 
-      if (error) throw error;
+      if (commentsResult.error) throw commentsResult.error;
 
-      const commentsWithLikes = await Promise.all(
-        (data || []).map(async (c: any) => {
-          const { count: likesCount } = await supabase
-            .from("comment_likes")
-            .select("*", { count: "exact", head: true })
-            .eq("comment_id", c.id);
+      // Like sayılarını grupla
+      const likesMap = new Map<string, number>();
+      (likesResult.data || []).forEach(like => {
+        likesMap.set(like.comment_id, (likesMap.get(like.comment_id) || 0) + 1);
+      });
 
-          const { data: likeCheck } = await supabase
-            .from("comment_likes")
-            .select("id")
-            .eq("comment_id", c.id)
-            .eq("user_id", userId)
-            .maybeSingle();
+      const userLikesSet = new Set(userLikesResult.data?.map(l => l.comment_id) || []);
 
-          return {
-            id: c.id,
-            content: c.content,
-            created_at: c.created_at,
-            parent_comment_id: c.parent_comment_id,
-            user_id: c.user_id,
-            user: c.profiles,
-            likes: likesCount || 0,
-            hasLiked: !!likeCheck,
-            replies: [],
-          };
-        })
-      );
+      const commentsWithLikes = (commentsResult.data || []).map((c: any) => ({
+        id: c.id,
+        content: c.content,
+        created_at: c.created_at,
+        parent_comment_id: c.parent_comment_id,
+        user_id: c.user_id,
+        user: c.profiles,
+        likes: likesMap.get(c.id) || 0,
+        hasLiked: userLikesSet.has(c.id),
+        replies: [],
+      }));
 
       // Organize comments into parent-child structure
       const parentComments = commentsWithLikes.filter(c => !c.parent_comment_id);
