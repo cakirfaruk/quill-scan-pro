@@ -26,13 +26,19 @@ export const IncomingCallDialog = ({
   callerPhoto,
   callType,
 }: IncomingCallDialogProps) => {
-  const [hasAccepted, setHasAccepted] = useState(false);
   const { toast } = useToast();
 
   const handleAccept = async () => {
     try {
-      // Update call status to accepted (will be handled by VideoCallDialog)
-      setHasAccepted(true);
+      // Update call status to accepted
+      await supabase
+        .from("call_logs")
+        .update({ 
+          status: "accepted",
+        })
+        .eq("call_id", callId);
+
+      onClose();
     } catch (error) {
       console.error("Error accepting call:", error);
       toast({
@@ -64,21 +70,6 @@ export const IncomingCallDialog = ({
       });
     }
   };
-
-  if (hasAccepted) {
-    return (
-      <VideoCallDialog
-        isOpen={true}
-        onClose={onClose}
-        callId={callId}
-        friendId={callerId}
-        friendName={callerName}
-        friendPhoto={callerPhoto}
-        callType={callType}
-        isIncoming={true}
-      />
-    );
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose} modal={true}>

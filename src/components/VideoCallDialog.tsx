@@ -135,8 +135,14 @@ export const VideoCallDialog = ({
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const handleClose = () => {
+    console.log('Closing video call dialog...');
+    endCall();
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl h-[600px] p-0">
         <div className="relative w-full h-full bg-black rounded-lg overflow-hidden">
           {/* Remote Video (Full screen) */}
@@ -237,7 +243,7 @@ export const VideoCallDialog = ({
                   size="lg"
                   variant="destructive"
                   className="rounded-full w-16 h-16"
-                  onClick={endCall}
+                  onClick={handleClose}
                   title="Aramayı Sonlandır"
                 >
                   <PhoneOff className="w-6 h-6" />

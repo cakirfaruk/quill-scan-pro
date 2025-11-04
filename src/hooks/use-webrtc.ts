@@ -268,6 +268,7 @@ export const useWebRTC = ({ callId, receiverId, onRemoteStream, onCallEnd }: Use
   };
 
   const endCall = () => {
+    console.log('Ending call and cleaning up...');
     cleanup();
     if (onCallEnd) onCallEnd();
   };

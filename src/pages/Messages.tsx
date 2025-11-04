@@ -107,8 +107,23 @@ const Messages = () => {
   const [callType, setCallType] = useState<"audio" | "video">("audio");
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [activeCallId, setActiveCallId] = useState<string | null>(null);
-  const [incomingCall, setIncomingCall] = useState<any>(null);
-  const [ringtone, setRingtone] = useState<any>(null);
+  const [incomingCall, setIncomingCall] = useState<{
+    id: string;
+    callId: string;
+    callerId: string;
+    callerName: string;
+    callerPhoto?: string;
+    callType: "audio" | "video";
+  } | null>(null);
+  const [acceptedCall, setAcceptedCall] = useState<{
+    id: string;
+    callId: string;
+    callerId: string;
+    callerName: string;
+    callerPhoto?: string;
+    callType: "audio" | "video";
+  } | null>(null);
+  const [ringtone, setRingtone] = useState<{ stop: () => void } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -208,6 +223,7 @@ const Messages = () => {
               );
               
               setIncomingCall({
+                id: call.id,
                 callId: call.call_id,
                 callerId: call.caller_id,
                 callerName: callerProfile.full_name || callerProfile.username,
@@ -220,10 +236,52 @@ const Messages = () => {
       )
       .subscribe();
 
+    // Listen for call status updates (when user accepts)
+    const callStatusChannel = supabase
+      .channel(`call-status-${currentUserId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "call_logs",
+          filter: `receiver_id=eq.${currentUserId}`,
+        },
+        async (payload) => {
+          const call = payload.new;
+          
+          console.log("Call status updated:", call);
+          
+          if (call.status === "accepted" && incomingCall?.callId === call.call_id) {
+            // Stop ringtone
+            if (ringtone) {
+              ringtone.stop();
+              setRingtone(null);
+            }
+            
+            // Close incoming call dialog
+            const currentIncomingCall = incomingCall;
+            setIncomingCall(null);
+            
+            // Open video call dialog
+            setAcceptedCall({
+              id: call.id,
+              callId: call.call_id,
+              callerId: call.caller_id,
+              callerName: currentIncomingCall.callerName,
+              callerPhoto: currentIncomingCall.callerPhoto,
+              callType: call.call_type,
+            });
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(messagesChannel);
       supabase.removeChannel(groupMessagesChannel);
       supabase.removeChannel(incomingCallsChannel);
+      supabase.removeChannel(callStatusChannel);
     };
   }, [selectedFriend, currentUserId]);
 
@@ -2178,6 +2236,22 @@ const Messages = () => {
             callerName={incomingCall.callerName}
             callerPhoto={incomingCall.callerPhoto}
             callType={incomingCall.callType}
+          />
+        )}
+
+        {/* Accepted Call Dialog */}
+        {acceptedCall && (
+          <VideoCallDialog
+            isOpen={true}
+            onClose={() => {
+              setAcceptedCall(null);
+            }}
+            callId={acceptedCall.callId}
+            friendId={acceptedCall.callerId}
+            friendName={acceptedCall.callerName}
+            friendPhoto={acceptedCall.callerPhoto}
+            callType={acceptedCall.callType}
+            isIncoming={true}
           />
         )}
       </main>
