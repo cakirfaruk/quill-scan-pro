@@ -867,6 +867,8 @@ const Profile = () => {
             sender_id: currentUserId,
             receiver_id: selectedFriendForShare,
             content: messageContent,
+            analysis_id: selectedAnalysis.id,
+            analysis_type: selectedAnalysis.analysis_type,
           });
 
         if (error) throw error;

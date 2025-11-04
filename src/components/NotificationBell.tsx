@@ -141,16 +141,22 @@ export const NotificationBell = () => {
         .update({ status: "accepted" })
         .eq("id", friendRequestId);
 
-      // Mark notification as read
-      await markAsRead(notificationId, null, 'friend_request');
+      // Mark notification as read and remove reference_id to hide buttons
+      await supabase
+        .from("notifications")
+        .update({ read: true, reference_id: null })
+        .eq("id", notificationId);
+
+      // Update local state
+      setNotifications(prev =>
+        prev.map(n => n.id === notificationId ? { ...n, read: true, reference_id: null } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
 
       toast({
         title: "Arkadaşlık isteği kabul edildi",
         description: "Artık arkadaş listesinde görüneceksiniz",
       });
-
-      // Reload notifications
-      await loadNotifications();
     } catch (error) {
       console.error("Error accepting friend request:", error);
       toast({
@@ -171,16 +177,22 @@ export const NotificationBell = () => {
         .delete()
         .eq("id", friendRequestId);
 
-      // Mark notification as read
-      await markAsRead(notificationId, null, 'friend_request');
+      // Mark notification as read and remove reference_id to hide buttons
+      await supabase
+        .from("notifications")
+        .update({ read: true, reference_id: null })
+        .eq("id", notificationId);
+
+      // Update local state
+      setNotifications(prev =>
+        prev.map(n => n.id === notificationId ? { ...n, read: true, reference_id: null } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
 
       toast({
         title: "Arkadaşlık isteği reddedildi",
         description: "İstek başarıyla reddedildi",
       });
-
-      // Reload notifications
-      await loadNotifications();
     } catch (error) {
       console.error("Error rejecting friend request:", error);
       toast({
