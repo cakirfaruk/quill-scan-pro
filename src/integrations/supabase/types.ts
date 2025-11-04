@@ -751,6 +751,8 @@ export type Database = {
           id: string
           media_type: string | null
           media_url: string | null
+          pinned_at: string | null
+          pinned_by: string | null
           reply_to: string | null
           sender_id: string
         }
@@ -762,6 +764,8 @@ export type Database = {
           id?: string
           media_type?: string | null
           media_url?: string | null
+          pinned_at?: string | null
+          pinned_by?: string | null
           reply_to?: string | null
           sender_id: string
         }
@@ -773,6 +777,8 @@ export type Database = {
           id?: string
           media_type?: string | null
           media_url?: string | null
+          pinned_at?: string | null
+          pinned_by?: string | null
           reply_to?: string | null
           sender_id?: string
         }

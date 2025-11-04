@@ -224,3 +224,18 @@ All colors MUST be HSL.
     padding-top: max(0.875rem, env(safe-area-inset-top));
   }
 }
+
+/* Highlight message animation */
+@keyframes highlight {
+  0%, 100% {
+    background-color: transparent;
+  }
+  50% {
+    background-color: hsl(var(--primary) / 0.15);
+  }
+}
+
+.highlight-message {
+  animation: highlight 2s ease-in-out;
+  border-radius: 0.5rem;
+}

@@ -9,7 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Send, Users, Settings, Smile, Loader2, UserPlus, BarChart3, Megaphone, Image as ImageIcon, Paperclip, Reply, X, TrendingUp, Search, CalendarDays } from "lucide-react";
+import { ArrowLeft, Send, Users, Settings, Smile, Loader2, UserPlus, BarChart3, Megaphone, Image as ImageIcon, Paperclip, Reply, X, TrendingUp, Search, CalendarDays, Pin } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -26,6 +26,7 @@ import { GroupEventCard } from "@/components/GroupEventCard";
 import { CreateGroupEventDialog } from "@/components/CreateGroupEventDialog";
 import { GroupFileCard } from "@/components/GroupFileCard";
 import { CreateGroupFileDialog } from "@/components/CreateGroupFileDialog";
+import { PinnedMessages } from "@/components/PinnedMessages";
 
 const messageSchema = z.object({
   content: z.string()
@@ -80,6 +81,7 @@ const GroupChat = () => {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [files, setFiles] = useState<any[]>([]);
+  const [pinnedMessages, setPinnedMessages] = useState<GroupMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -106,6 +108,7 @@ const GroupChat = () => {
     loadAnnouncements();
     loadEvents();
     loadFiles();
+    loadPinnedMessages();
     
     // Subscribe to new messages
     const messagesChannel = supabase
@@ -419,6 +422,43 @@ const GroupChat = () => {
     }
   };
 
+  const loadPinnedMessages = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("group_messages")
+        .select("id, content, media_url, media_type, created_at, sender_id")
+        .eq("group_id", groupId)
+        .not("pinned_at", "is", null)
+        .order("pinned_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Get sender profiles
+      const senderIds = [...new Set((data || []).map((msg: any) => msg.sender_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, username, full_name, profile_photo")
+        .in("user_id", senderIds);
+
+      const profileMap = new Map(
+        (profiles || []).map((p: any) => [p.user_id, p])
+      );
+
+      setPinnedMessages(
+        (data || []).map((msg: any) => ({
+          ...msg,
+          sender: profileMap.get(msg.sender_id) || {
+            username: "Bilinmeyen",
+            full_name: null,
+            profile_photo: null,
+          },
+        }))
+      );
+    } catch (error: any) {
+      console.error("Error loading pinned messages:", error);
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || sending) return;
@@ -563,6 +603,71 @@ const GroupChat = () => {
     }
   };
 
+  const handlePinMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from("group_messages")
+        .update({
+          pinned_at: new Date().toISOString(),
+          pinned_by: currentUserId,
+        })
+        .eq("id", messageId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Başarılı",
+        description: "Mesaj sabitlendi",
+      });
+
+      loadPinnedMessages();
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: "Mesaj sabitlenemedi",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUnpinMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from("group_messages")
+        .update({
+          pinned_at: null,
+          pinned_by: null,
+        })
+        .eq("id", messageId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Başarılı",
+        description: "Sabitleme kaldırıldı",
+      });
+
+      loadPinnedMessages();
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: "Sabitleme kaldırılamadı",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const scrollToMessage = (messageId: string) => {
+    const element = document.getElementById(`message-${messageId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      element.classList.add("highlight-message");
+      setTimeout(() => {
+        element.classList.remove("highlight-message");
+      }, 2000);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-subtle">
@@ -686,6 +791,14 @@ const GroupChat = () => {
         </div>
       </Card>
 
+      {/* Pinned Messages */}
+      <PinnedMessages
+        messages={pinnedMessages}
+        isAdmin={isAdmin}
+        onUnpin={handleUnpinMessage}
+        onMessageClick={scrollToMessage}
+      />
+
       {/* Messages Area */}
       <Card className="flex-1 mx-4 my-4 flex flex-col">
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
@@ -736,8 +849,9 @@ const GroupChat = () => {
             {/* Messages */}
             {messages.map((msg) => (
               <div
+                id={`message-${msg.id}`}
                 key={msg.id}
-                className={`flex gap-3 ${
+                className={`flex gap-3 transition-all ${
                   msg.sender_id === currentUserId ? "flex-row-reverse" : ""
                 }`}
               >
@@ -823,9 +937,25 @@ const GroupChat = () => {
                         msg.sender_id === currentUserId ? "left-0" : "right-0"
                       }`}
                       onClick={() => setReplyingTo(msg)}
+                      title="Yanıtla"
                     >
                       <Reply className="w-3 h-3" />
                     </Button>
+                    
+                    {/* Pin Button (Admin Only) */}
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`absolute -top-2 opacity-0 group-hover:opacity-100 transition-opacity ${
+                          msg.sender_id === currentUserId ? "left-10" : "right-10"
+                        }`}
+                        onClick={() => handlePinMessage(msg.id)}
+                        title="Sabitle"
+                      >
+                        <Pin className="w-3 h-3" />
+                      </Button>
+                    )}
                   </div>
 
                   <p className="text-[10px] text-muted-foreground mt-1">
