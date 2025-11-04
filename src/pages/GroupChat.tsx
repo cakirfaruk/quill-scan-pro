@@ -24,6 +24,8 @@ import { GroupStats } from "@/components/GroupStats";
 import { GroupSearch } from "@/components/GroupSearch";
 import { GroupEventCard } from "@/components/GroupEventCard";
 import { CreateGroupEventDialog } from "@/components/CreateGroupEventDialog";
+import { GroupFileCard } from "@/components/GroupFileCard";
+import { CreateGroupFileDialog } from "@/components/CreateGroupFileDialog";
 
 const messageSchema = z.object({
   content: z.string()
@@ -77,6 +79,7 @@ const GroupChat = () => {
   const [polls, setPolls] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
+  const [files, setFiles] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -91,6 +94,7 @@ const GroupChat = () => {
   const [statsOpen, setStatsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [createEventDialogOpen, setCreateEventDialogOpen] = useState(false);
+  const [uploadFileDialogOpen, setUploadFileDialogOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState<GroupMessage | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -101,6 +105,7 @@ const GroupChat = () => {
     loadPolls();
     loadAnnouncements();
     loadEvents();
+    loadFiles();
     
     // Subscribe to new messages
     const messagesChannel = supabase
@@ -170,11 +175,29 @@ const GroupChat = () => {
       )
       .subscribe();
 
+    // Subscribe to files
+    const filesChannel = supabase
+      .channel(`group-files-${groupId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "group_files",
+          filter: `group_id=eq.${groupId}`,
+        },
+        () => {
+          loadFiles();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(messagesChannel);
       supabase.removeChannel(pollsChannel);
       supabase.removeChannel(announcementsChannel);
       supabase.removeChannel(eventsChannel);
+      supabase.removeChannel(filesChannel);
     };
   }, [groupId]);
 
@@ -361,6 +384,38 @@ const GroupChat = () => {
       setEvents(data || []);
     } catch (error: any) {
       console.error("Error loading events:", error);
+    }
+  };
+
+  const loadFiles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("group_files")
+        .select("*")
+        .eq("group_id", groupId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Get uploader profiles
+      const uploaderIds = [...new Set((data || []).map((file: any) => file.uploaded_by))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, username, avatar_url")
+        .in("user_id", uploaderIds);
+
+      const profileMap = new Map(
+        (profiles || []).map((p: any) => [p.user_id, p])
+      );
+
+      setFiles(
+        (data || []).map((file: any) => ({
+          ...file,
+          uploader: profileMap.get(file.uploaded_by),
+        }))
+      );
+    } catch (error: any) {
+      console.error("Error loading files:", error);
     }
   };
 
@@ -575,6 +630,14 @@ const GroupChat = () => {
             >
               <ImageIcon className="w-5 h-5" />
             </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setUploadFileDialogOpen(true)}
+              title="Dosya Paylaş"
+            >
+              <Paperclip className="w-5 h-5" />
+            </Button>
             {isAdmin && (
               <>
                 <Button
@@ -645,6 +708,17 @@ const GroupChat = () => {
                 event={event}
                 currentUserId={currentUserId}
                 onDelete={loadEvents}
+              />
+            ))}
+
+            {/* Files */}
+            {files.map((file) => (
+              <GroupFileCard
+                key={file.id}
+                file={file}
+                currentUserId={currentUserId}
+                isAdmin={isAdmin}
+                onDelete={loadFiles}
               />
             ))}
 
@@ -942,6 +1016,14 @@ const GroupChat = () => {
         onOpenChange={setCreateEventDialogOpen}
         groupId={groupId!}
         onEventCreated={loadEvents}
+      />
+
+      {/* Upload File Dialog */}
+      <CreateGroupFileDialog
+        open={uploadFileDialogOpen}
+        onOpenChange={setUploadFileDialogOpen}
+        groupId={groupId!}
+        onFileUploaded={loadFiles}
       />
     </div>
   );
