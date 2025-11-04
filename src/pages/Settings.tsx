@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX, LogOut, Phone } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { requestNotificationPermission } from "@/utils/notifications";
+import { subscribeToPushNotifications } from "@/utils/pushNotifications";
 import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
 import { AutoResponseSettings } from "@/components/AutoResponseSettings";
 
@@ -278,11 +279,15 @@ const Settings = () => {
     if (!notificationsEnabled) {
       const granted = await requestNotificationPermission();
       if (granted) {
-        setNotificationsEnabled(true);
-        toast({
-          title: "Bildirimler Aktif",
-          description: "Artık önemli güncellemelerden haberdar olacaksınız.",
-        });
+        // Subscribe to push notifications
+        const subscribed = await subscribeToPushNotifications();
+        if (subscribed) {
+          setNotificationsEnabled(true);
+          toast({
+            title: "Bildirimler Aktif",
+            description: "Artık önemli güncellemelerden haberdar olacaksınız.",
+          });
+        }
       } else {
         // Show instructions for different browsers
         const isChrome = /Chrome/.test(navigator.userAgent);
@@ -308,6 +313,54 @@ const Settings = () => {
       toast({
         title: "Bildirimler Aktif",
         description: "Bildirimleri kapatmak için tarayıcı ayarlarından izni kaldırabilirsiniz.",
+      });
+    }
+  };
+
+  const handleTestPushNotification = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Hata",
+          description: "Oturum açmanız gerekiyor.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if notifications are enabled
+      if (!notificationsEnabled || Notification.permission !== 'granted') {
+        toast({
+          title: "Bildirimler Kapalı",
+          description: "Önce bildirimleri aktif etmeniz gerekiyor.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Test Bildirimi Gönderiliyor",
+        description: "Birkaç saniye içinde bir test bildirimi alacaksınız...",
+      });
+
+      // Send test notification
+      const { error } = await supabase.functions.invoke('test-push-notification', {
+        body: { userId: user.id }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Test Başarılı",
+        description: "Test bildirimi gönderildi!",
+      });
+    } catch (error: any) {
+      console.error('Test notification error:', error);
+      toast({
+        title: "Hata",
+        description: "Test bildirimi gönderilemedi: " + error.message,
+        variant: "destructive",
       });
     }
   };
@@ -753,6 +806,19 @@ const Settings = () => {
                       onCheckedChange={toggleNotifications}
                     />
                   </div>
+
+                  {notificationsEnabled && (
+                    <div className="pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={handleTestPushNotification}
+                        className="w-full gap-2"
+                      >
+                        <Bell className="w-4 h-4" />
+                        Test Push Bildirimi Gönder
+                      </Button>
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between pt-4 border-t">
                     <div className="space-y-0.5">

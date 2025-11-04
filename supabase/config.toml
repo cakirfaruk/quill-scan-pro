@@ -1,5 +1,8 @@
 project_id = "ekkymypfvixlysrgtabz"
 
+[functions.test-push-notification]
+verify_jwt = false
+
 [functions.analyze-handwriting]
 verify_jwt = true
 
