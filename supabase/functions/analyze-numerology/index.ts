@@ -115,6 +115,21 @@ JSON formatında yanıt ver, her konu için ayrı alan oluştur.`;
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    // Create dynamic tool schema based on selected topics
+    const topicProperties: Record<string, any> = {};
+    selectedTopics.forEach((topic: string) => {
+      topicProperties[topic] = {
+        type: "object",
+        properties: {
+          calculation: { type: "string", description: "Hesaplama adımları" },
+          meaning: { type: "string", description: "Rakamların ezoterik anlamları" },
+          personal_interpretation: { type: "string", description: "Kişiye özel yorumlar" },
+          references: { type: "string", description: "Mitoloji ve felsefe referansları" }
+        },
+        required: ["calculation", "meaning", "personal_interpretation", "references"]
+      };
+    });
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -127,7 +142,32 @@ JSON formatında yanıt ver, her konu için ayrı alan oluştur.`;
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        response_format: { type: "json_object" },
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "provide_numerology_analysis",
+              description: "Detaylı numeroloji analizi sonuçlarını döndür",
+              parameters: {
+                type: "object",
+                properties: {
+                  overall_summary: { 
+                    type: "string", 
+                    description: "Genel özet ve başlangıç yorumu" 
+                  },
+                  topics: {
+                    type: "object",
+                    properties: topicProperties,
+                    required: selectedTopics
+                  }
+                },
+                required: ["overall_summary", "topics"],
+                additionalProperties: false
+              }
+            }
+          }
+        ],
+        tool_choice: { type: "function", function: { name: "provide_numerology_analysis" } }
       }),
     });
 
@@ -138,7 +178,14 @@ JSON formatında yanıt ver, her konu için ayrı alan oluştur.`;
     }
 
     const aiData = await response.json();
-    const analysisResult = JSON.parse(aiData.choices[0].message.content);
+    console.log("AI Response:", JSON.stringify(aiData, null, 2));
+    
+    const toolCall = aiData.choices[0].message.tool_calls?.[0];
+    if (!toolCall) {
+      throw new Error("No tool call in AI response");
+    }
+    
+    const analysisResult = JSON.parse(toolCall.function.arguments);
 
     await supabaseClient
       .from("profiles")
