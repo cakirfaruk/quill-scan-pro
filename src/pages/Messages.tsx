@@ -962,15 +962,19 @@ const Messages = () => {
 
   // Debounce search
   useEffect(() => {
-    if (searchMode === "messages") {
-      const timer = setTimeout(() => {
-        searchInMessages(searchQuery);
-      }, 300);
-      
-      return () => clearTimeout(timer);
-    } else {
-      setMessageSearchResults([]);
-    }
+    const doSearch = async () => {
+      if (searchMode === "messages" && searchQuery.trim() && currentUserId) {
+        await searchInMessages(searchQuery);
+      } else {
+        setMessageSearchResults([]);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      doSearch();
+    }, 300);
+    
+    return () => clearTimeout(timer);
   }, [searchQuery, searchMode, currentUserId]);
 
   const handlePinConversation = async (conv: Conversation) => {
