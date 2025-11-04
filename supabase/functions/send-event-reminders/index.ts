@@ -6,52 +6,13 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface Database {
-  public: {
-    Tables: {
-      group_events: {
-        Row: {
-          id: string;
-          group_id: string;
-          title: string;
-          event_date: string;
-          location: string | null;
-        };
-      };
-      event_participants: {
-        Row: {
-          event_id: string;
-          user_id: string;
-          status: string;
-        };
-      };
-      profiles: {
-        Row: {
-          user_id: string;
-          username: string;
-        };
-      };
-      notifications: {
-        Insert: {
-          user_id: string;
-          type: string;
-          title: string;
-          message: string;
-          link?: string;
-          reference_id?: string;
-        };
-      };
-    };
-  };
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseClient = createClient<Database>(
+    const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       {
@@ -142,10 +103,10 @@ Deno.serve(async (req) => {
         status: 200,
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in send-event-reminders:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error?.message || "Unknown error" }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
