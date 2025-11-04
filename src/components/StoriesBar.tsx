@@ -69,8 +69,8 @@ export const StoriesBar = ({ currentUserId }: StoriesBarProps) => {
 
   const loadStories = async () => {
     try {
-      // **PARALEL YÜKLEME** - Kendi hikayeler ve profil
-      const [ownStoriesData, profileData, allViewsData] = await Promise.all([
+      // **STEP 1: PARALEL** - Own stories, profile, friends
+      const [ownStoriesResult, ownProfileResult, friendsResult] = await Promise.all([
         supabase
           .from("stories")
           .select("*")
@@ -85,24 +85,39 @@ export const StoriesBar = ({ currentUserId }: StoriesBarProps) => {
           .single(),
         
         supabase
-          .from("story_views")
-          .select("story_id")
+          .from("friends")
+          .select(`
+            user_id,
+            friend_id,
+            user_profile:profiles!friends_user_id_fkey(user_id, username, full_name, profile_photo),
+            friend_profile:profiles!friends_friend_id_fkey(user_id, username, full_name, profile_photo)
+          `)
+          .or(`user_id.eq.${currentUserId},friend_id.eq.${currentUserId}`)
+          .eq("status", "accepted")
       ]);
 
-      if (ownStoriesData.data && ownStoriesData.data.length > 0) {
-        // View sayılarını grupla
+      // Process own stories
+      if (ownStoriesResult.data && ownStoriesResult.data.length > 0) {
+        const ownStoryIds = ownStoriesResult.data.map(s => s.id);
+        
+        // Get view counts for own stories
+        const { data: ownViewsData } = await supabase
+          .from("story_views")
+          .select("story_id")
+          .in("story_id", ownStoryIds);
+
         const viewCountsMap = new Map<string, number>();
-        (allViewsData.data || []).forEach((view: any) => {
+        (ownViewsData || []).forEach((view: any) => {
           viewCountsMap.set(view.story_id, (viewCountsMap.get(view.story_id) || 0) + 1);
         });
 
-        const storiesWithViews = ownStoriesData.data.map((story: any) => ({
+        const storiesWithViews = ownStoriesResult.data.map((story: any) => ({
           id: story.id,
           user_id: story.user_id,
           media_url: story.media_url,
           media_type: story.media_type as "photo" | "video",
           created_at: story.created_at,
-          profile: profileData.data || { username: "", full_name: null, profile_photo: null },
+          profile: ownProfileResult.data || { username: "", full_name: null, profile_photo: null },
           views_count: viewCountsMap.get(story.id) || 0,
           has_viewed: false,
         }));
@@ -110,24 +125,13 @@ export const StoriesBar = ({ currentUserId }: StoriesBarProps) => {
         setOwnStories(storiesWithViews);
       }
 
-      // Load friends' stories
-      const { data: friendsData } = await supabase
-        .from("friends")
-        .select(`
-          user_id,
-          friend_id,
-          user_profile:profiles!friends_user_id_fkey(user_id, username, full_name, profile_photo),
-          friend_profile:profiles!friends_friend_id_fkey(user_id, username, full_name, profile_photo)
-        `)
-        .or(`user_id.eq.${currentUserId},friend_id.eq.${currentUserId}`)
-        .eq("status", "accepted");
-
-      if (!friendsData || friendsData.length === 0) {
+      // Process friends' stories
+      if (!friendsResult.data || friendsResult.data.length === 0) {
         setLoading(false);
         return;
       }
 
-      const friendIds = friendsData.map((f: any) => {
+      const friendIds = friendsResult.data.map((f: any) => {
         const isSender = f.user_id === currentUserId;
         return isSender ? f.friend_id : f.user_id;
       });
@@ -137,48 +141,43 @@ export const StoriesBar = ({ currentUserId }: StoriesBarProps) => {
         return;
       }
 
-      const { data: friendsStoriesData } = await supabase
-        .from("stories")
-        .select("*")
-        .in("user_id", friendIds)
-        .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: false });
-
-      if (friendsStoriesData && friendsStoriesData.length > 0) {
-        // Get all unique user IDs
-        const uniqueUserIds = [...new Set(friendsStoriesData.map((s: any) => s.user_id))];
-        const storyIds = friendsStoriesData.map((s: any) => s.id);
+      // **STEP 2: PARALEL** - Friends stories, profiles, view data
+      const [friendsStoriesResult, profilesResult, viewsResult, allViewsResult] = await Promise.all([
+        supabase
+          .from("stories")
+          .select("*")
+          .in("user_id", friendIds)
+          .gt("expires_at", new Date().toISOString())
+          .order("created_at", { ascending: false }),
         
-        // Get profiles for all users
-        const { data: profilesData } = await supabase
+        supabase
           .from("profiles")
           .select("user_id, username, full_name, profile_photo")
-          .in("user_id", uniqueUserIds);
-
-        // Batch fetch all view data for current user
-        const { data: viewsData } = await supabase
+          .in("user_id", friendIds),
+        
+        supabase
           .from("story_views")
           .select("story_id")
-          .in("story_id", storyIds)
-          .eq("viewer_id", currentUserId);
-
-        // Batch fetch all view counts
-        const { data: allViewsData } = await supabase
+          .eq("viewer_id", currentUserId),
+        
+        supabase
           .from("story_views")
-          .select("story_id");
+          .select("story_id")
+      ]);
 
+      if (friendsStoriesResult.data && friendsStoriesResult.data.length > 0) {
         // Create maps for quick lookups
-        const profilesMap = new Map(profilesData?.map((p: any) => [p.user_id, p]) || []);
-        const viewedStoriesSet = new Set(viewsData?.map((v: any) => v.story_id) || []);
+        const profilesMap = new Map(profilesResult.data?.map((p: any) => [p.user_id, p]) || []);
+        const viewedStoriesSet = new Set(viewsResult.data?.map((v: any) => v.story_id) || []);
         const viewCountsMap = new Map<string, number>();
-        allViewsData?.forEach((view: any) => {
+        allViewsResult.data?.forEach((view: any) => {
           viewCountsMap.set(view.story_id, (viewCountsMap.get(view.story_id) || 0) + 1);
         });
 
         // Group stories by user
         const groupedStories: { [key: string]: UserStories } = {};
 
-        for (const story of friendsStoriesData) {
+        for (const story of friendsStoriesResult.data) {
           const profile = profilesMap.get(story.user_id);
           if (!profile) continue;
 
