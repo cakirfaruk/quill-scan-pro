@@ -147,29 +147,17 @@ const Groups = () => {
     try {
       setCreating(true);
 
-      // Create group
-      const { data: groupData, error: groupError } = await supabase
-        .from("groups")
-        .insert({
-          name: newGroupName.trim(),
-          description: newGroupDesc.trim() || null,
-          created_by: currentUserId,
-        })
-        .select()
-        .single();
+      // Use database function to create group with admin atomically
+      const { data, error } = await supabase.rpc("create_group_with_admin", {
+        p_name: newGroupName.trim(),
+        p_description: newGroupDesc.trim() || null,
+        p_created_by: currentUserId,
+        p_photo_url: null,
+      });
 
-      if (groupError) throw groupError;
+      if (error) throw error;
 
-      // Add creator as admin
-      const { error: memberError } = await supabase
-        .from("group_members")
-        .insert({
-          group_id: groupData.id,
-          user_id: currentUserId,
-          role: "admin",
-        });
-
-      if (memberError) throw memberError;
+      const groupId = data;
 
       toast({
         title: "Başarılı",
@@ -180,8 +168,9 @@ const Groups = () => {
       setNewGroupName("");
       setNewGroupDesc("");
       await loadGroups();
-      navigate(`/groups/${groupData.id}`);
+      navigate(`/groups/${groupId}`);
     } catch (error: any) {
+      console.error("Error creating group:", error);
       toast({
         title: "Hata",
         description: error.message || "Grup oluşturulamadı",

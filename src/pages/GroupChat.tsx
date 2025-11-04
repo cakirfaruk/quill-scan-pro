@@ -223,28 +223,47 @@ const GroupChat = () => {
       }
       setCurrentUserId(user.id);
 
+      // First check if user is a member
+      const { data: memberData, error: memberError } = await supabase
+        .from("group_members")
+        .select("role")
+        .eq("group_id", groupId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (memberError) {
+        console.error("Error checking membership:", memberError);
+        throw memberError;
+      }
+
+      if (!memberData) {
+        toast({
+          title: "Erişim Reddedildi",
+          description: "Bu gruba erişim izniniz yok",
+          variant: "destructive",
+        });
+        navigate("/groups");
+        return;
+      }
+
+      setIsAdmin(memberData.role === "admin");
+
       const { data, error } = await supabase
         .from("groups")
         .select("*")
         .eq("id", groupId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error loading group:", error);
+        throw error;
+      }
       setGroup(data);
-
-      // Check if user is admin
-      const { data: memberData } = await supabase
-        .from("group_members")
-        .select("role")
-        .eq("group_id", groupId)
-        .eq("user_id", user.id)
-        .single();
-
-      setIsAdmin(memberData?.role === "admin");
     } catch (error: any) {
+      console.error("Error in loadGroup:", error);
       toast({
         title: "Hata",
-        description: "Grup bilgileri yüklenemedi",
+        description: error.message || "Grup bilgileri yüklenemedi",
         variant: "destructive",
       });
     } finally {

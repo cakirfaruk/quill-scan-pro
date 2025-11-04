@@ -2089,6 +2089,15 @@ export type Database = {
         Args: { p_user1_id: string; p_user2_id: string }
         Returns: boolean
       }
+      create_group_with_admin: {
+        Args: {
+          p_created_by: string
+          p_description: string
+          p_name: string
+          p_photo_url?: string
+        }
+        Returns: string
+      }
       create_notification: {
         Args: {
           p_link?: string
