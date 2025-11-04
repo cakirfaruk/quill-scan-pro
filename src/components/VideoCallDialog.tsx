@@ -1,19 +1,21 @@
 import { useState, useEffect, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Video, VideoOff, Mic, MicOff, PhoneOff, Phone } from "lucide-react";
+import { Video, VideoOff, Mic, MicOff, PhoneOff, Phone, MonitorUp } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useWebRTC } from "@/hooks/use-webrtc";
 
 interface VideoCallDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  callId?: string;
-  friendId?: string;
-  friendName?: string;
+  callId: string;
+  friendId: string;
+  friendName: string;
   friendPhoto?: string;
   isIncoming?: boolean;
+  callType: "audio" | "video";
 }
 
 export const VideoCallDialog = ({
@@ -24,183 +26,113 @@ export const VideoCallDialog = ({
   friendName,
   friendPhoto,
   isIncoming = false,
+  callType,
 }: VideoCallDialogProps) => {
-  const [isConnected, setIsConnected] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
   const [callStatus, setCallStatus] = useState<"connecting" | "active" | "ended">("connecting");
+  const [callDuration, setCallDuration] = useState(0);
+  const [callStartTime] = useState(new Date());
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
 
+  const {
+    localStream,
+    remoteStream,
+    isConnected,
+    isMuted,
+    isVideoOff,
+    isScreenSharing,
+    startCall,
+    answerCall,
+    toggleMute,
+    toggleVideo,
+    startScreenShare,
+    stopScreenShare,
+    endCall,
+  } = useWebRTC({
+    callId,
+    receiverId: friendId,
+    onRemoteStream: (stream) => {
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = stream;
+      }
+    },
+    onCallEnd: handleCallEnd,
+  });
+
   useEffect(() => {
     if (!isOpen) return;
 
-    if (isIncoming && callId) {
-      // Answer incoming call
-      setupVideoCall();
-    } else if (friendId) {
-      // Start outgoing call
-      initiateCall();
+    if (isIncoming) {
+      answerCall(callType === "video");
+    } else {
+      startCall(callType === "video");
     }
+
+    // Update call log
+    updateCallLog("active");
+    
+    const interval = setInterval(() => {
+      const duration = Math.floor((new Date().getTime() - callStartTime.getTime()) / 1000);
+      setCallDuration(duration);
+    }, 1000);
 
     return () => {
-      cleanup();
+      clearInterval(interval);
     };
-  }, [isOpen, callId, friendId]);
+  }, [isOpen]);
 
-  const initiateCall = async () => {
+  useEffect(() => {
+    if (localStream && localVideoRef.current) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream]);
+
+  useEffect(() => {
+    if (isConnected) {
+      setCallStatus("active");
+    }
+  }, [isConnected]);
+
+  const updateCallLog = async (status: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !friendId) return;
-
-      const { data, error } = await supabase
-        .from("video_calls")
-        .insert({
-          caller_id: user.id,
-          receiver_id: friendId,
-          status: "pending",
+      await supabase
+        .from("call_logs")
+        .update({
+          status,
+          ended_at: status === "completed" ? new Date().toISOString() : null,
+          duration: status === "completed" ? callDuration : 0,
+          has_video: callType === "video",
         })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setupVideoCall();
-      
-      // Listen for call status changes
-      const channel = supabase
-        .channel(`call-${data.id}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "video_calls",
-            filter: `id=eq.${data.id}`,
-          },
-          (payload) => {
-            if (payload.new.status === "declined") {
-              toast({
-                title: "Arama Reddedildi",
-                description: "Karşı taraf aramayı reddetti.",
-              });
-              handleEndCall();
-            } else if (payload.new.status === "active") {
-              setIsConnected(true);
-              setCallStatus("active");
-            }
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    } catch (error: any) {
-      console.error("Error initiating call:", error);
-      toast({
-        title: "Arama Başlatılamadı",
-        description: error.message,
-        variant: "destructive",
-      });
+        .eq("id", callId);
+    } catch (error) {
+      console.error("Error updating call log:", error);
     }
   };
 
-  const setupVideoCall = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
-
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
-
-      // Simulate connection (in real app, use WebRTC)
-      setTimeout(() => {
-        setIsConnected(true);
-        setCallStatus("active");
-        
-        if (callId) {
-          supabase
-            .from("video_calls")
-            .update({ status: "active" })
-            .eq("id", callId);
-        }
-      }, 2000);
-    } catch (error: any) {
-      console.error("Error accessing media devices:", error);
-      toast({
-        title: "Kamera/Mikrofon Erişimi Reddedildi",
-        description: "Görüntülü arama için kamera ve mikrofon izni gerekli.",
-        variant: "destructive",
-      });
-      handleEndCall();
-    }
-  };
-
-  const handleEndCall = async () => {
-    try {
-      if (callId) {
-        await supabase
-          .from("video_calls")
-          .update({
-            status: "ended",
-            ended_at: new Date().toISOString(),
-          })
-          .eq("id", callId);
-      }
-
-      cleanup();
-      onClose();
-    } catch (error: any) {
-      console.error("Error ending call:", error);
-    }
-  };
+  async function handleCallEnd() {
+    await updateCallLog("completed");
+    onClose();
+  }
 
   const handleDeclineCall = async () => {
     try {
-      if (callId) {
-        await supabase
-          .from("video_calls")
-          .update({ status: "declined" })
-          .eq("id", callId);
-      }
+      await supabase
+        .from("call_logs")
+        .update({ status: "missed" })
+        .eq("id", callId);
 
-      cleanup();
+      endCall();
       onClose();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error declining call:", error);
     }
   };
 
-  const toggleMute = () => {
-    if (localVideoRef.current?.srcObject) {
-      const stream = localVideoRef.current.srcObject as MediaStream;
-      stream.getAudioTracks().forEach((track) => {
-        track.enabled = isMuted;
-      });
-      setIsMuted(!isMuted);
-    }
-  };
-
-  const toggleVideo = () => {
-    if (localVideoRef.current?.srcObject) {
-      const stream = localVideoRef.current.srcObject as MediaStream;
-      stream.getVideoTracks().forEach((track) => {
-        track.enabled = isVideoOff;
-      });
-      setIsVideoOff(!isVideoOff);
-    }
-  };
-
-  const cleanup = () => {
-    if (localVideoRef.current?.srcObject) {
-      const stream = localVideoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach((track) => track.stop());
-    }
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   return (
@@ -232,15 +164,17 @@ export const VideoCallDialog = ({
           )}
 
           {/* Local Video (Picture in Picture) */}
-          <div className="absolute top-4 right-4 w-48 h-36 rounded-lg overflow-hidden border-2 border-white shadow-lg">
-            <video
-              ref={localVideoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover"
-            />
-          </div>
+          {callType === "video" && !isVideoOff && (
+            <div className="absolute top-4 right-4 w-48 h-36 rounded-lg overflow-hidden border-2 border-white shadow-lg">
+              <video
+                ref={localVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
 
           {/* Call Controls */}
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4">
@@ -250,7 +184,7 @@ export const VideoCallDialog = ({
                   size="lg"
                   variant="default"
                   className="rounded-full w-16 h-16 bg-green-500 hover:bg-green-600"
-                  onClick={setupVideoCall}
+                  onClick={() => answerCall(callType === "video")}
                 >
                   <Phone className="w-6 h-6" />
                 </Button>
@@ -270,35 +204,54 @@ export const VideoCallDialog = ({
                   variant={isMuted ? "destructive" : "secondary"}
                   className="rounded-full w-14 h-14"
                   onClick={toggleMute}
+                  title={isMuted ? "Mikrofonu Aç" : "Mikrofonu Kapat"}
                 >
                   {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
                 </Button>
+
+                {callType === "video" && (
+                  <>
+                    <Button
+                      size="lg"
+                      variant={isVideoOff ? "destructive" : "secondary"}
+                      className="rounded-full w-14 h-14"
+                      onClick={toggleVideo}
+                      title={isVideoOff ? "Kamerayı Aç" : "Kamerayı Kapat"}
+                    >
+                      {isVideoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+                    </Button>
+
+                    <Button
+                      size="lg"
+                      variant={isScreenSharing ? "default" : "secondary"}
+                      className="rounded-full w-14 h-14"
+                      onClick={isScreenSharing ? stopScreenShare : startScreenShare}
+                      title={isScreenSharing ? "Ekran Paylaşımını Durdur" : "Ekran Paylaş"}
+                    >
+                      <MonitorUp className="w-5 h-5" />
+                    </Button>
+                  </>
+                )}
 
                 <Button
                   size="lg"
                   variant="destructive"
                   className="rounded-full w-16 h-16"
-                  onClick={handleEndCall}
+                  onClick={endCall}
+                  title="Aramayı Sonlandır"
                 >
                   <PhoneOff className="w-6 h-6" />
-                </Button>
-
-                <Button
-                  size="lg"
-                  variant={isVideoOff ? "destructive" : "secondary"}
-                  className="rounded-full w-14 h-14"
-                  onClick={toggleVideo}
-                >
-                  {isVideoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
                 </Button>
               </>
             )}
           </div>
 
-          {/* Call Status */}
+          {/* Call Status & Duration */}
           {callStatus === "active" && (
             <div className="absolute top-4 left-4 bg-black/50 backdrop-blur-sm px-4 py-2 rounded-full">
-              <p className="text-white text-sm font-medium">Arama Aktif</p>
+              <p className="text-white text-sm font-medium">
+                Arama Aktif • {formatDuration(callDuration)}
+              </p>
             </div>
           )}
         </div>

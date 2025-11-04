@@ -182,6 +182,8 @@ export type Database = {
           caller_id: string
           duration: number | null
           ended_at: string | null
+          has_screen_share: boolean | null
+          has_video: boolean | null
           id: string
           receiver_id: string
           started_at: string
@@ -192,6 +194,8 @@ export type Database = {
           caller_id: string
           duration?: number | null
           ended_at?: string | null
+          has_screen_share?: boolean | null
+          has_video?: boolean | null
           id?: string
           receiver_id: string
           started_at?: string
@@ -202,12 +206,52 @@ export type Database = {
           caller_id?: string
           duration?: number | null
           ended_at?: string | null
+          has_screen_share?: boolean | null
+          has_video?: boolean | null
           id?: string
           receiver_id?: string
           started_at?: string
           status?: string
         }
         Relationships: []
+      }
+      call_signals: {
+        Row: {
+          call_id: string
+          created_at: string | null
+          from_user_id: string
+          id: string
+          signal_data: Json
+          signal_type: string
+          to_user_id: string
+        }
+        Insert: {
+          call_id: string
+          created_at?: string | null
+          from_user_id: string
+          id?: string
+          signal_data: Json
+          signal_type: string
+          to_user_id: string
+        }
+        Update: {
+          call_id?: string
+          created_at?: string | null
+          from_user_id?: string
+          id?: string
+          signal_data?: Json
+          signal_type?: string
+          to_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_signals_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "call_logs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       coffee_fortune_readings: {
         Row: {
