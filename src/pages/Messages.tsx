@@ -71,6 +71,14 @@ interface Conversation {
   isPinned?: boolean;
 }
 
+interface MessageSearchResult {
+  message: Message;
+  conversationId: string;
+  conversationType: 'direct' | 'group';
+  friend?: Friend;
+  group?: Group;
+}
+
 const Messages = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
@@ -81,6 +89,9 @@ const Messages = () => {
   const [isSending, setIsSending] = useState(false);
   const [currentUserId, setCurrentUserId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchMode, setSearchMode] = useState<"conversations" | "messages">("conversations");
+  const [messageSearchResults, setMessageSearchResults] = useState<MessageSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [selectedAnalysis, setSelectedAnalysis] = useState<any>(null);
   const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -825,6 +836,143 @@ const Messages = () => {
     }
   };
 
+  const searchInMessages = async (query: string) => {
+    if (!query.trim() || !currentUserId) {
+      setMessageSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      // Search in direct messages
+      const { data: directMessages } = await supabase
+        .from("messages")
+        .select("*")
+        .or(`sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`)
+        .ilike("content", `%${query}%`)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      // Search in group messages
+      const { data: groupMemberships } = await supabase
+        .from("group_members")
+        .select("group_id")
+        .eq("user_id", currentUserId);
+
+      const groupIds = groupMemberships?.map(m => m.group_id) || [];
+      
+      let groupMessages: any[] = [];
+      if (groupIds.length > 0) {
+        const { data } = await supabase
+          .from("group_messages")
+          .select("*")
+          .in("group_id", groupIds)
+          .ilike("content", `%${query}%`)
+          .order("created_at", { ascending: false })
+          .limit(50);
+        
+        groupMessages = data || [];
+      }
+
+      // Get user profiles for direct messages
+      const userIds = new Set<string>();
+      (directMessages || []).forEach(msg => {
+        if (msg.sender_id !== currentUserId) userIds.add(msg.sender_id);
+        if (msg.receiver_id !== currentUserId) userIds.add(msg.receiver_id);
+      });
+
+      let profiles: any[] = [];
+      if (userIds.size > 0) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("user_id, username, full_name, profile_photo, is_online, last_seen")
+          .in("user_id", Array.from(userIds));
+        
+        profiles = data || [];
+      }
+
+      // Get group info
+      let groups: any[] = [];
+      if (groupIds.length > 0) {
+        const { data } = await supabase
+          .from("groups")
+          .select("id, name, description, photo_url")
+          .in("id", groupIds);
+        
+        groups = data || [];
+      }
+
+      // Build search results for direct messages
+      const directResults: MessageSearchResult[] = (directMessages || []).map(msg => {
+        const otherUserId = msg.sender_id === currentUserId ? msg.receiver_id : msg.sender_id;
+        const profile = profiles.find(p => p.user_id === otherUserId);
+        
+        return {
+          message: {
+            ...msg,
+            message_category: (msg.message_category || "other") as "friend" | "match" | "other"
+          },
+          conversationId: otherUserId,
+          conversationType: 'direct' as const,
+          friend: profile ? {
+            user_id: profile.user_id,
+            username: profile.username,
+            full_name: profile.full_name,
+            profile_photo: profile.profile_photo,
+            is_online: profile.is_online,
+            last_seen: profile.last_seen,
+          } : undefined,
+        };
+      });
+
+      // Build search results for group messages
+      const groupResults: MessageSearchResult[] = groupMessages.map(msg => {
+        const group = groups.find(g => g.id === msg.group_id);
+        
+        return {
+          message: msg as any,
+          conversationId: msg.group_id,
+          conversationType: 'group' as const,
+          group: group ? {
+            id: group.id,
+            name: group.name,
+            description: group.description,
+            photo_url: group.photo_url,
+          } : undefined,
+        };
+      });
+
+      // Combine and sort by date
+      const allResults = [...directResults, ...groupResults].sort((a, b) => 
+        b.message.created_at.localeCompare(a.message.created_at)
+      );
+
+      setMessageSearchResults(allResults);
+    } catch (error: any) {
+      console.error("Error searching messages:", error);
+      toast({
+        title: "Hata",
+        description: "Arama sırasında bir hata oluştu",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Debounce search
+  useEffect(() => {
+    if (searchMode === "messages") {
+      const timer = setTimeout(() => {
+        searchInMessages(searchQuery);
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    } else {
+      setMessageSearchResults([]);
+    }
+  }, [searchQuery, searchMode, currentUserId]);
+
   const handlePinConversation = async (conv: Conversation) => {
     try {
       if (conv.isPinned) {
@@ -948,6 +1096,68 @@ const Messages = () => {
     );
   };
 
+  // Message Search Result Item Component
+  const MessageSearchResultItem = ({ result }: { result: MessageSearchResult }) => {
+    const isGroup = result.conversationType === 'group';
+    const displayName = isGroup 
+      ? result.group?.name 
+      : (result.friend?.full_name || result.friend?.username);
+    const displayPhoto = isGroup ? result.group?.photo_url : result.friend?.profile_photo;
+    
+    const messageTime = formatDistanceToNow(new Date(result.message.created_at), { 
+      addSuffix: true, 
+      locale: tr 
+    });
+
+    const handleClick = () => {
+      if (isGroup) {
+        navigate(`/groups/${result.conversationId}`);
+      } else if (result.friend) {
+        setSelectedFriend(result.friend);
+        setSelectedCategory(result.message.message_category);
+        loadMessages(result.friend.user_id);
+        setSearchMode("conversations");
+        setSearchQuery("");
+      }
+    };
+
+    // Highlight search query in message content
+    const highlightText = (text: string) => {
+      if (!searchQuery) return text;
+      const parts = text.split(new RegExp(`(${searchQuery})`, 'gi'));
+      return parts.map((part, i) => 
+        part.toLowerCase() === searchQuery.toLowerCase() 
+          ? <mark key={i} className="bg-primary/20">{part}</mark>
+          : part
+      );
+    };
+
+    return (
+      <div
+        className="p-3 rounded-lg cursor-pointer transition-colors hover:bg-accent/50"
+        onClick={handleClick}
+      >
+        <div className="flex items-start gap-3">
+          <Avatar className="w-10 h-10">
+            <AvatarImage src={displayPhoto || undefined} />
+            <AvatarFallback className="bg-gradient-primary text-primary-foreground text-sm">
+              {isGroup ? <Users className="w-5 h-5" /> : displayName?.substring(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-1">
+              <p className="font-medium text-sm truncate">{displayName}</p>
+              <span className="text-xs text-muted-foreground">{messageTime}</span>
+            </div>
+            <p className="text-sm text-foreground/80 line-clamp-2">
+              {highlightText(result.message.content)}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Header />
@@ -962,20 +1172,68 @@ const Messages = () => {
         <div className="grid md:grid-cols-3 gap-4 h-[calc(100vh-220px)]">
           {/* Conversations List */}
           <Card className={`md:col-span-1 p-4 ${isMobile && selectedFriend ? 'hidden' : ''}`}>
-            <div className="mb-4">
+            <div className="mb-4 space-y-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Ara..."
+                  placeholder={searchMode === "conversations" ? "Konuşmalarda ara..." : "Mesajlarda ara..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
                 />
               </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  variant={searchMode === "conversations" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSearchMode("conversations")}
+                  className="flex-1 text-xs"
+                >
+                  Konuşmalar
+                </Button>
+                <Button
+                  variant={searchMode === "messages" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSearchMode("messages")}
+                  className="flex-1 text-xs"
+                >
+                  Mesajlar
+                </Button>
+              </div>
             </div>
 
-            <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 mb-4">
+            {/* Message Search Results */}
+            {searchMode === "messages" && searchQuery && (
+              <ScrollArea className="h-[calc(100vh-380px)]">
+                {isSearching ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  </div>
+                ) : messageSearchResults.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Search className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      "{searchQuery}" için sonuç bulunamadı
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground px-1 mb-2">
+                      {messageSearchResults.length} mesaj bulundu
+                    </p>
+                    {messageSearchResults.map((result, idx) => (
+                      <MessageSearchResultItem key={idx} result={result} />
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            )}
+
+            {/* Conversation Tabs */}
+            {searchMode === "conversations" && (
+              <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="w-full">
+                <TabsList className="grid w-full grid-cols-4 mb-4">
                 <TabsTrigger value="friends" className="text-xs">
                   Arkadaş
                   {friendUnreadCount > 0 && (
@@ -1155,8 +1413,9 @@ const Messages = () => {
                     )}
                   </div>
                 </ScrollArea>
-              </TabsContent>
-            </Tabs>
+                </TabsContent>
+              </Tabs>
+            )}
           </Card>
 
           {/* Messages Panel */}
