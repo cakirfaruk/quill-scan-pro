@@ -25,8 +25,10 @@ import { SwipeableMessage } from "@/components/SwipeableMessage";
 import { useLongPress } from "@/hooks/use-gestures";
 import { VideoCallDialog } from "@/components/VideoCallDialog";
 import { ScheduleMessageDialog } from "@/components/ScheduleMessageDialog";
+import { IncomingCallDialog } from "@/components/IncomingCallDialog";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
+import { playRingtone, vibrate, showBrowserNotification } from "@/utils/callNotifications";
 
 interface Friend {
   user_id: string;
@@ -105,6 +107,8 @@ const Messages = () => {
   const [callType, setCallType] = useState<"audio" | "video">("audio");
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [activeCallId, setActiveCallId] = useState<string | null>(null);
+  const [incomingCall, setIncomingCall] = useState<any>(null);
+  const [ringtone, setRingtone] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -159,9 +163,67 @@ const Messages = () => {
       )
       .subscribe();
 
+    // Listen for incoming calls
+    const incomingCallsChannel = supabase
+      .channel(`incoming-calls-${currentUserId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "call_logs",
+          filter: `receiver_id=eq.${currentUserId}`,
+        },
+        async (payload) => {
+          const call = payload.new;
+          
+          console.log("Incoming call detected:", call);
+          
+          // Only show dialog if status is ringing
+          if (call.status === "ringing") {
+            // Get caller info
+            const { data: callerProfile } = await supabase
+              .from("profiles")
+              .select("username, full_name, profile_photo")
+              .eq("user_id", call.caller_id)
+              .single();
+
+            if (callerProfile) {
+              console.log("Showing incoming call from:", callerProfile);
+              
+              // Play ringtone
+              const audio = playRingtone();
+              setRingtone(audio);
+              
+              // Vibrate
+              vibrate();
+              
+              // Show browser notification
+              showBrowserNotification(
+                `${callerProfile.full_name || callerProfile.username} arıyor`,
+                {
+                  body: call.call_type === "video" ? "Görüntülü arama" : "Sesli arama",
+                  tag: call.call_id,
+                }
+              );
+              
+              setIncomingCall({
+                callId: call.call_id,
+                callerId: call.caller_id,
+                callerName: callerProfile.full_name || callerProfile.username,
+                callerPhoto: callerProfile.profile_photo,
+                callType: call.call_type,
+              });
+            }
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(messagesChannel);
       supabase.removeChannel(groupMessagesChannel);
+      supabase.removeChannel(incomingCallsChannel);
     };
   }, [selectedFriend, currentUserId]);
 
@@ -640,9 +702,14 @@ const Messages = () => {
   };
 
   const startCall = async (type: "audio" | "video") => {
-    if (!selectedFriend || !currentUserId) return;
+    if (!selectedFriend || !currentUserId) {
+      console.error("Cannot start call: missing friend or user ID", { selectedFriend, currentUserId });
+      return;
+    }
 
     try {
+      console.log("Starting call to:", selectedFriend.user_id, "Type:", type);
+      
       // Create call log entry
       const { data: callLog, error } = await supabase
         .from("call_logs")
@@ -656,19 +723,30 @@ const Messages = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error creating call log:", error);
+        throw error;
+      }
+
+      console.log("Call log created successfully:", callLog);
 
       // Set active call
       setActiveCallId(callLog.call_id);
       setCallType(type);
       setShowCallInterface(true);
 
-      console.log("Call initiated:", callLog);
-    } catch (error) {
+      // Show feedback to caller
+      toast({
+        title: "Arama Başlatıldı",
+        description: `${selectedFriend.full_name || selectedFriend.username} aranıyor...`,
+      });
+
+      console.log("Call initiated successfully. Call ID:", callLog.call_id);
+    } catch (error: any) {
       console.error("Error starting call:", error);
       toast({
         title: "Arama Başlatılamadı",
-        description: "Arama başlatılırken bir hata oluştu.",
+        description: error.message || "Arama başlatılırken bir hata oluştu.",
         variant: "destructive",
       });
     }
@@ -2081,6 +2159,25 @@ const Messages = () => {
             onOpenChange={setScheduleDialogOpen}
             receiverId={selectedFriend.user_id}
             receiverName={selectedFriend.full_name || selectedFriend.username}
+          />
+        )}
+
+        {/* Incoming Call Dialog */}
+        {incomingCall && (
+          <IncomingCallDialog
+            isOpen={true}
+            onClose={() => {
+              setIncomingCall(null);
+              if (ringtone) {
+                ringtone.stop();
+                setRingtone(null);
+              }
+            }}
+            callId={incomingCall.callId}
+            callerId={incomingCall.callerId}
+            callerName={incomingCall.callerName}
+            callerPhoto={incomingCall.callerPhoto}
+            callType={incomingCall.callType}
           />
         )}
       </main>

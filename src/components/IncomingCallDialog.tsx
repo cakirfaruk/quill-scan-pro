@@ -2,7 +2,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Phone, PhoneOff, Video } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { VideoCallDialog } from "@/components/VideoCallDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -81,42 +81,65 @@ export const IncomingCallDialog = ({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <div className="flex flex-col items-center justify-center gap-6 py-8">
-          <Avatar className="w-24 h-24">
-            <AvatarImage src={callerPhoto} alt={callerName} />
-            <AvatarFallback>{callerName[0]?.toUpperCase()}</AvatarFallback>
-          </Avatar>
+    <Dialog open={isOpen} onOpenChange={onClose} modal={true}>
+      <DialogContent 
+        className="sm:max-w-lg p-0 border-0 bg-gradient-to-br from-primary/10 to-accent/10 overflow-hidden"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
+        <div className="relative">
+          {/* Animated background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 animate-pulse" />
+          
+          <div className="relative flex flex-col items-center justify-center gap-8 py-12 px-6">
+            {/* Pulsing ring effect */}
+            <div className="relative">
+              <div className="absolute inset-0 w-32 h-32 rounded-full bg-primary/30 animate-ping" />
+              <div className="absolute inset-2 w-28 h-28 rounded-full bg-primary/20 animate-pulse" />
+              <Avatar className="relative w-28 h-28 ring-4 ring-primary/50 shadow-2xl">
+                <AvatarImage src={callerPhoto} alt={callerName} />
+                <AvatarFallback className="text-4xl bg-primary/20">
+                  {callerName[0]?.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </div>
 
-          <div className="text-center">
-            <h3 className="text-xl font-semibold mb-2">{callerName}</h3>
-            <p className="text-muted-foreground">
-              {callType === "video" ? "Görüntülü" : "Sesli"} arama geliyor...
-            </p>
-          </div>
+            <div className="text-center space-y-2">
+              <h2 className="text-3xl font-bold">{callerName}</h2>
+              <p className="text-lg text-muted-foreground animate-pulse">
+                {callType === "video" ? "📹 Görüntülü" : "📞 Sesli"} arama geliyor...
+              </p>
+            </div>
 
-          <div className="flex items-center gap-4">
-            <Button
-              size="lg"
-              variant="destructive"
-              className="rounded-full w-16 h-16"
-              onClick={handleReject}
-            >
-              <PhoneOff className="w-6 h-6" />
-            </Button>
+            {/* Action buttons */}
+            <div className="flex items-center gap-8 mt-4">
+              <div className="flex flex-col items-center gap-2">
+                <Button
+                  size="lg"
+                  variant="destructive"
+                  className="rounded-full w-20 h-20 shadow-lg hover:scale-110 transition-transform"
+                  onClick={handleReject}
+                >
+                  <PhoneOff className="w-8 h-8" />
+                </Button>
+                <span className="text-sm text-muted-foreground">Reddet</span>
+              </div>
 
-            <Button
-              size="lg"
-              className="rounded-full w-16 h-16 bg-green-500 hover:bg-green-600"
-              onClick={handleAccept}
-            >
-              {callType === "video" ? (
-                <Video className="w-6 h-6" />
-              ) : (
-                <Phone className="w-6 h-6" />
-              )}
-            </Button>
+              <div className="flex flex-col items-center gap-2">
+                <Button
+                  size="lg"
+                  className="rounded-full w-20 h-20 bg-green-500 hover:bg-green-600 shadow-lg hover:scale-110 transition-transform animate-bounce"
+                  onClick={handleAccept}
+                >
+                  {callType === "video" ? (
+                    <Video className="w-8 h-8" />
+                  ) : (
+                    <Phone className="w-8 h-8" />
+                  )}
+                </Button>
+                <span className="text-sm text-green-600 font-semibold">Kabul Et</span>
+              </div>
+            </div>
           </div>
         </div>
       </DialogContent>
