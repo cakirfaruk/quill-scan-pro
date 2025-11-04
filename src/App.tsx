@@ -40,6 +40,7 @@ const Groups = lazy(() => import("./pages/Groups"));
 const GroupChat = lazy(() => import("./pages/GroupChat"));
 const GroupSettings = lazy(() => import("./pages/GroupSettings"));
 const Discovery = lazy(() => import("./pages/Discovery"));
+const CallHistory = lazy(() => import("./pages/CallHistory"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -149,6 +150,7 @@ const AppRoutes = () => {
           <Route path="/groups/:groupId" element={<GroupChat />} />
           <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
           <Route path="/match" element={<Match />} />
+          <Route path="/call-history" element={<CallHistory />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

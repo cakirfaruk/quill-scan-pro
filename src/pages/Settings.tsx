@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX, LogOut } from "lucide-react";
+import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX, LogOut, Phone } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { requestNotificationPermission } from "@/utils/notifications";
 import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
@@ -773,7 +773,16 @@ const Settings = () => {
                     />
                   </div>
 
-                  <div className="pt-6 border-t">
+                  <div className="pt-6 border-t space-y-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate("/call-history")}
+                      className="w-full gap-2"
+                    >
+                      <Phone className="w-4 h-4" />
+                      Arama Geçmişi
+                    </Button>
+                    
                     <Button
                       variant="destructive"
                       onClick={handleLogout}
