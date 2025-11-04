@@ -631,6 +631,7 @@ export type Database = {
           id: string
           media_type: string | null
           media_url: string | null
+          reply_to: string | null
           sender_id: string
         }
         Insert: {
@@ -641,6 +642,7 @@ export type Database = {
           id?: string
           media_type?: string | null
           media_url?: string | null
+          reply_to?: string | null
           sender_id: string
         }
         Update: {
@@ -651,6 +653,7 @@ export type Database = {
           id?: string
           media_type?: string | null
           media_url?: string | null
+          reply_to?: string | null
           sender_id?: string
         }
         Relationships: [
@@ -659,6 +662,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_messages_reply_to_fkey"
+            columns: ["reply_to"]
+            isOneToOne: false
+            referencedRelation: "group_messages"
             referencedColumns: ["id"]
           },
         ]

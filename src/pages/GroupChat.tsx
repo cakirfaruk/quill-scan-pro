@@ -9,7 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Send, Users, Settings, Smile, Loader2, UserPlus, BarChart3, Megaphone, Image as ImageIcon, Paperclip } from "lucide-react";
+import { ArrowLeft, Send, Users, Settings, Smile, Loader2, UserPlus, BarChart3, Megaphone, Image as ImageIcon, Paperclip, Reply, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -33,6 +33,7 @@ interface GroupMessage {
   content: string;
   media_url?: string | null;
   media_type?: string | null;
+  reply_to?: string | null;
   created_at: string;
   sender_id: string;
   sender: {
@@ -40,6 +41,13 @@ interface GroupMessage {
     full_name: string | null;
     profile_photo: string | null;
   };
+  replied_message?: {
+    content: string;
+    media_url?: string | null;
+    sender: {
+      username: string;
+    };
+  } | null;
 }
 
 interface GroupMember {
@@ -75,6 +83,7 @@ const GroupChat = () => {
   const [createPollDialogOpen, setCreatePollDialogOpen] = useState(false);
   const [createAnnouncementDialogOpen, setCreateAnnouncementDialogOpen] = useState(false);
   const [mediaGalleryOpen, setMediaGalleryOpen] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<GroupMessage | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -191,14 +200,14 @@ const GroupChat = () => {
     try {
       const { data, error } = await supabase
         .from("group_messages")
-        .select("id, content, media_url, media_type, created_at, sender_id")
+        .select("id, content, media_url, media_type, reply_to, created_at, sender_id")
         .eq("group_id", groupId)
         .order("created_at", { ascending: true })
         .limit(100);
 
       if (error) throw error;
 
-      // Get sender profiles separately
+      // Get sender profiles
       const senderIds = [...new Set((data || []).map((msg: any) => msg.sender_id))];
       const { data: profiles } = await supabase
         .from("profiles")
@@ -209,6 +218,29 @@ const GroupChat = () => {
         (profiles || []).map((p: any) => [p.user_id, p])
       );
 
+      // Get replied messages
+      const replyIds = (data || [])
+        .filter((msg: any) => msg.reply_to)
+        .map((msg: any) => msg.reply_to);
+      
+      const { data: repliedMessages } = replyIds.length > 0
+        ? await supabase
+            .from("group_messages")
+            .select("id, content, media_url, sender_id")
+            .in("id", replyIds)
+        : { data: [] };
+
+      const repliedMessageMap = new Map(
+        (repliedMessages || []).map((msg: any) => [
+          msg.id,
+          {
+            content: msg.content,
+            media_url: msg.media_url,
+            sender: profileMap.get(msg.sender_id) || { username: "Bilinmeyen" },
+          },
+        ])
+      );
+
       setMessages(
         (data || []).map((msg: any) => ({
           ...msg,
@@ -217,6 +249,7 @@ const GroupChat = () => {
             full_name: null,
             profile_photo: null,
           },
+          replied_message: msg.reply_to ? repliedMessageMap.get(msg.reply_to) : null,
         }))
       );
     } catch (error: any) {
@@ -311,11 +344,13 @@ const GroupChat = () => {
         group_id: groupId,
         sender_id: currentUserId,
         content: newMessage.trim(),
+        reply_to: replyingTo?.id || null,
       });
 
       if (error) throw error;
 
       setNewMessage("");
+      setReplyingTo(null);
       setShowEmojiPicker(false);
     } catch (error: any) {
       toast({
@@ -573,38 +608,76 @@ const GroupChat = () => {
                       {msg.sender.full_name || msg.sender.username}
                     </p>
                   )}
-                  <div
-                    className={`rounded-lg overflow-hidden ${
-                      msg.media_url ? "" : "px-4 py-2"
-                    } inline-block ${
-                      msg.sender_id === currentUserId
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    }`}
-                  >
-                    {msg.media_url ? (
-                      <div>
-                        {msg.media_type?.startsWith("image") ? (
-                          <img
-                            src={msg.media_url}
-                            alt="Paylaşılan medya"
-                            className="max-w-[300px] max-h-[300px] object-cover"
-                          />
-                        ) : (
-                          <video
-                            src={msg.media_url}
-                            controls
-                            className="max-w-[300px] max-h-[300px]"
-                          />
-                        )}
-                        {msg.content && (
-                          <p className="text-sm px-4 py-2">{msg.content}</p>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-sm">{msg.content}</p>
-                    )}
+                  <div className="relative group">
+                    <div
+                      className={`rounded-lg overflow-hidden ${
+                        msg.media_url ? "" : "px-4 py-2"
+                      } inline-block ${
+                        msg.sender_id === currentUserId
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted"
+                      }`}
+                    >
+                      {/* Replied Message */}
+                      {msg.replied_message && (
+                        <div
+                          className={`px-3 py-2 mb-2 border-l-2 ${
+                            msg.sender_id === currentUserId
+                              ? "border-primary-foreground/30 bg-primary/20"
+                              : "border-primary/50 bg-accent/50"
+                          }`}
+                        >
+                          <p className="text-xs font-semibold mb-1">
+                            {msg.replied_message.sender.username}
+                          </p>
+                          <p className="text-xs opacity-80 truncate">
+                            {msg.replied_message.media_url
+                              ? msg.replied_message.media_url.includes("image")
+                                ? "📷 Fotoğraf"
+                                : "🎥 Video"
+                              : msg.replied_message.content}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Message Content */}
+                      {msg.media_url ? (
+                        <div>
+                          {msg.media_type?.startsWith("image") ? (
+                            <img
+                              src={msg.media_url}
+                              alt="Paylaşılan medya"
+                              className="max-w-[300px] max-h-[300px] object-cover"
+                            />
+                          ) : (
+                            <video
+                              src={msg.media_url}
+                              controls
+                              className="max-w-[300px] max-h-[300px]"
+                            />
+                          )}
+                          {msg.content && (
+                            <p className="text-sm px-4 py-2">{msg.content}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm">{msg.content}</p>
+                      )}
+                    </div>
+
+                    {/* Reply Button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`absolute -top-2 opacity-0 group-hover:opacity-100 transition-opacity ${
+                        msg.sender_id === currentUserId ? "left-0" : "right-0"
+                      }`}
+                      onClick={() => setReplyingTo(msg)}
+                    >
+                      <Reply className="w-3 h-3" />
+                    </Button>
                   </div>
+
                   <p className="text-[10px] text-muted-foreground mt-1">
                     {formatDistanceToNow(new Date(msg.created_at), {
                       addSuffix: true,
@@ -619,6 +692,35 @@ const GroupChat = () => {
 
         {/* Message Input */}
         <div className="p-4 border-t">
+          {/* Reply Preview */}
+          {replyingTo && (
+            <div className="mb-2 p-2 bg-accent/50 rounded-lg flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <Reply className="w-3 h-3 text-primary" />
+                  <p className="text-xs font-semibold">
+                    {replyingTo.sender.username}
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground truncate">
+                  {replyingTo.media_url
+                    ? replyingTo.media_url.includes("image")
+                      ? "📷 Fotoğraf"
+                      : "🎥 Video"
+                    : replyingTo.content}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setReplyingTo(null)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
+
           <form onSubmit={handleSendMessage} className="flex gap-2">
             <input
               type="file"
@@ -656,7 +758,7 @@ const GroupChat = () => {
             <Input
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Mesaj yaz..."
+              placeholder={replyingTo ? "Yanıt yaz..." : "Mesaj yaz..."}
               disabled={sending || uploading}
               maxLength={2000}
             />
