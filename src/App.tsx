@@ -8,7 +8,9 @@ import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { Tutorial } from "@/components/Tutorial";
 import { MobileNav } from "@/components/MobileNav";
 import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { IncomingCallDialog } from "@/components/IncomingCallDialog";
 import Index from "./pages/Index";
 
 // Lazy load routes for better performance
@@ -46,6 +48,60 @@ const queryClient = new QueryClient();
 const AppRoutes = () => {
   useUpdateOnlineStatus();
   const location = useLocation();
+  const [incomingCall, setIncomingCall] = useState<any>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Get current user
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setCurrentUserId(user.id);
+    });
+  }, []);
+
+  // Listen for incoming calls
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const channel = supabase
+      .channel("incoming-calls")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "call_logs",
+          filter: `receiver_id=eq.${currentUserId}`,
+        },
+        async (payload) => {
+          const call = payload.new;
+          
+          // Only show dialog if status is ringing
+          if (call.status === "ringing") {
+            // Get caller info
+            const { data: callerProfile } = await supabase
+              .from("profiles")
+              .select("username, full_name, profile_photo")
+              .eq("user_id", call.caller_id)
+              .single();
+
+            if (callerProfile) {
+              setIncomingCall({
+                callId: call.call_id,
+                callerId: call.caller_id,
+                callerName: callerProfile.full_name || callerProfile.username,
+                callerPhoto: callerProfile.profile_photo,
+                callType: call.call_type,
+              });
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUserId]);
   
   const showNav = ['/', '/explore', '/reels', '/discovery', '/messages', '/profile', '/match', '/friends'].some(
     path => location.pathname === path || location.pathname.startsWith('/profile/')
@@ -53,6 +109,17 @@ const AppRoutes = () => {
 
   return (
     <>
+      {incomingCall && (
+        <IncomingCallDialog
+          isOpen={true}
+          onClose={() => setIncomingCall(null)}
+          callId={incomingCall.callId}
+          callerId={incomingCall.callerId}
+          callerName={incomingCall.callerName}
+          callerPhoto={incomingCall.callerPhoto}
+          callType={incomingCall.callType}
+        />
+      )}
       <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
         <Routes>
           <Route path="/" element={<Index />} />

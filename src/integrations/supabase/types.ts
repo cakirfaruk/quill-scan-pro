@@ -178,6 +178,7 @@ export type Database = {
       }
       call_logs: {
         Row: {
+          call_id: string | null
           call_type: string
           caller_id: string
           duration: number | null
@@ -190,6 +191,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          call_id?: string | null
           call_type: string
           caller_id: string
           duration?: number | null
@@ -202,6 +204,7 @@ export type Database = {
           status: string
         }
         Update: {
+          call_id?: string | null
           call_type?: string
           caller_id?: string
           duration?: number | null

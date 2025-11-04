@@ -23,7 +23,7 @@ import { GifPicker } from "@/components/GifPicker";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { SwipeableMessage } from "@/components/SwipeableMessage";
 import { useLongPress } from "@/hooks/use-gestures";
-import { CallInterface } from "@/components/CallInterface";
+import { VideoCallDialog } from "@/components/VideoCallDialog";
 import { ScheduleMessageDialog } from "@/components/ScheduleMessageDialog";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -104,6 +104,7 @@ const Messages = () => {
   const [showCallInterface, setShowCallInterface] = useState(false);
   const [callType, setCallType] = useState<"audio" | "video">("audio");
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [activeCallId, setActiveCallId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -636,6 +637,41 @@ const Messages = () => {
   const onEmojiClick = (emojiData: EmojiClickData) => {
     setNewMessage((prev) => prev + emojiData.emoji);
     setShowEmojiPicker(false);
+  };
+
+  const startCall = async (type: "audio" | "video") => {
+    if (!selectedFriend || !currentUserId) return;
+
+    try {
+      // Create call log entry
+      const { data: callLog, error } = await supabase
+        .from("call_logs")
+        .insert({
+          caller_id: currentUserId,
+          receiver_id: selectedFriend.user_id,
+          call_type: type,
+          status: "ringing",
+          started_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Set active call
+      setActiveCallId(callLog.call_id);
+      setCallType(type);
+      setShowCallInterface(true);
+
+      console.log("Call initiated:", callLog);
+    } catch (error) {
+      console.error("Error starting call:", error);
+      toast({
+        title: "Arama Başlatılamadı",
+        description: "Arama başlatılırken bir hata oluştu.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1568,10 +1604,7 @@ const Messages = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => {
-                            setCallType("audio");
-                            setShowCallInterface(true);
-                          }}
+                          onClick={() => startCall("audio")}
                           title="Sesli Arama"
                         >
                           <Phone className="w-5 h-5" />
@@ -1579,10 +1612,7 @@ const Messages = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => {
-                            setCallType("video");
-                            setShowCallInterface(true);
-                          }}
+                          onClick={() => startCall("video")}
                           title="Görüntülü Arama"
                         >
                           <Video className="w-5 h-5" />
@@ -2028,14 +2058,19 @@ const Messages = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Call Interface */}
-        {showCallInterface && selectedFriend && (
-          <CallInterface
-            receiverId={selectedFriend.user_id}
-            receiverName={selectedFriend.full_name || selectedFriend.username}
-            receiverAvatar={selectedFriend.profile_photo}
+        {/* Video Call Dialog */}
+        {showCallInterface && selectedFriend && activeCallId && (
+          <VideoCallDialog
+            isOpen={showCallInterface}
+            onClose={() => {
+              setShowCallInterface(false);
+              setActiveCallId(null);
+            }}
+            callId={activeCallId}
+            friendId={selectedFriend.user_id}
+            friendName={selectedFriend.full_name || selectedFriend.username}
+            friendPhoto={selectedFriend.profile_photo}
             callType={callType}
-            onEnd={() => setShowCallInterface(false)}
           />
         )}
 
