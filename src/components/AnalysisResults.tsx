@@ -63,7 +63,7 @@ export const AnalysisResults = ({ result }: AnalysisResultsProps) => {
             Özet
           </h2>
         </div>
-        <p className="text-xs leading-relaxed text-foreground line-clamp-2">
+        <p className="text-xs leading-relaxed text-foreground">
           {result.overallSummary}
         </p>
       </Card>
@@ -89,7 +89,7 @@ export const AnalysisResults = ({ result }: AnalysisResultsProps) => {
                 <ChevronRight className="w-5 h-5 text-primary" />
               )}
             </div>
-            <h4 className="text-xs font-semibold text-foreground line-clamp-2">{topic.name}</h4>
+            <h4 className="text-xs font-semibold text-foreground">{topic.name}</h4>
           </button>
 
         ))}
