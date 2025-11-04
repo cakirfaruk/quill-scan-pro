@@ -42,6 +42,7 @@ const GroupChat = lazy(() => import("./pages/GroupChat"));
 const GroupSettings = lazy(() => import("./pages/GroupSettings"));
 const Discovery = lazy(() => import("./pages/Discovery"));
 const CallHistory = lazy(() => import("./pages/CallHistory"));
+const VapidKeyGenerator = lazy(() => import("./pages/VapidKeyGenerator"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -222,6 +223,7 @@ const AppRoutes = () => {
           <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
           <Route path="/match" element={<Match />} />
           <Route path="/call-history" element={<CallHistory />} />
+          <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
