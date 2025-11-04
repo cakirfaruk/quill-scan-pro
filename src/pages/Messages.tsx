@@ -353,9 +353,9 @@ const Messages = () => {
       setConversations(allConversations);
 
       const userIdParam = searchParams.get("userId");      
-      if (userIdParam && !selectedFriend) {
+      if (userIdParam) {
         const conv = allConversations.find(c => c.type === 'direct' && c.friend?.user_id === userIdParam);
-        if (conv) {
+        if (conv && conv.friend?.user_id !== selectedFriend?.user_id) {
           setSelectedFriend(conv.friend!);
           setSelectedCategory(conv.category!);
           if (conv.category === "friend") setActiveTab("friends");
@@ -1584,12 +1584,12 @@ const Messages = () => {
                           onSwipeRight={() => handleReplyToMessage(displayContent)}
                           onSwipeLeft={msg.sender_id === currentUserId ? () => handleDeleteMessage(msg.id) : undefined}
                         >
-                          <div
+                           <div
                             className={`flex gap-2 group ${
                               msg.sender_id === currentUserId ? "justify-end" : "justify-start"
                             }`}
                           >
-                          <div className="flex flex-col max-w-[85%]">
+                          <div className="flex flex-col max-w-[85%] min-w-0">
                             {msg.pinned_at && (
                               <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                                 <Pin className="w-3 h-3" />
@@ -1599,7 +1599,7 @@ const Messages = () => {
                             
                             {isAnalysisShare ? (
                             <Card
-                              className={`max-w-[85%] cursor-pointer hover:shadow-lg transition-all border-2 ${
+                              className={`max-w-full cursor-pointer hover:shadow-lg transition-all border-2 ${
                                 msg.sender_id === currentUserId
                                   ? "bg-primary/5 border-primary/30 hover:border-primary/50"
                                   : "bg-accent/5 border-accent/30 hover:border-accent/50"
@@ -1710,7 +1710,7 @@ const Messages = () => {
                             </>
                           ) : (
                             <div
-                              className={`max-w-[70%] rounded-lg overflow-hidden ${
+                              className={`max-w-full rounded-lg overflow-hidden ${
                                 msg.sender_id === currentUserId
                                   ? "bg-primary text-primary-foreground"
                                   : "bg-muted"
@@ -1734,7 +1734,7 @@ const Messages = () => {
                                 </div>
                               )}
                               <div className="px-4 py-2">
-                                <p className="text-sm whitespace-pre-wrap">{displayContent}</p>
+                                <p className="text-sm whitespace-pre-wrap break-words">{displayContent}</p>
                                 <div className="flex items-center gap-2 mt-1">
                                   <p className="text-xs opacity-70">
                                     {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
