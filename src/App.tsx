@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "next-themes";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -49,13 +50,14 @@ const OnlineStatusWrapper = () => {
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <OnlineStatusWrapper />
-        <Toaster />
-        <Sonner />
-        <OfflineIndicator />
-        <Tutorial />
-        <BrowserRouter>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <TooltipProvider>
+          <OnlineStatusWrapper />
+          <Toaster />
+          <Sonner />
+          <OfflineIndicator />
+          <Tutorial />
+          <BrowserRouter>
           <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
             <Routes>
               <Route path="/" element={<Index />} />
@@ -90,7 +92,8 @@ const App = () => {
           </Suspense>
           <MobileNavWrapper />
         </BrowserRouter>
-      </TooltipProvider>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };
