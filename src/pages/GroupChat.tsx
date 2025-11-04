@@ -9,7 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Send, Users, Settings, Smile, Loader2, UserPlus, BarChart3, Megaphone, Image as ImageIcon, Paperclip, Reply, X } from "lucide-react";
+import { ArrowLeft, Send, Users, Settings, Smile, Loader2, UserPlus, BarChart3, Megaphone, Image as ImageIcon, Paperclip, Reply, X, TrendingUp } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -20,6 +20,7 @@ import { CreateGroupPollDialog } from "@/components/CreateGroupPollDialog";
 import { GroupAnnouncementCard } from "@/components/GroupAnnouncementCard";
 import { CreateGroupAnnouncementDialog } from "@/components/CreateGroupAnnouncementDialog";
 import { GroupMediaGallery } from "@/components/GroupMediaGallery";
+import { GroupStats } from "@/components/GroupStats";
 
 const messageSchema = z.object({
   content: z.string()
@@ -83,6 +84,7 @@ const GroupChat = () => {
   const [createPollDialogOpen, setCreatePollDialogOpen] = useState(false);
   const [createAnnouncementDialogOpen, setCreateAnnouncementDialogOpen] = useState(false);
   const [mediaGalleryOpen, setMediaGalleryOpen] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState<GroupMessage | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -512,6 +514,14 @@ const GroupChat = () => {
             <Button
               variant="ghost"
               size="icon"
+              onClick={() => setStatsOpen(true)}
+              title="İstatistikler"
+            >
+              <TrendingUp className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setMediaGalleryOpen(true)}
               title="Medya Galerisi"
             >
@@ -843,6 +853,13 @@ const GroupChat = () => {
       <GroupMediaGallery
         open={mediaGalleryOpen}
         onOpenChange={setMediaGalleryOpen}
+        groupId={groupId!}
+      />
+
+      {/* Group Stats */}
+      <GroupStats
+        open={statsOpen}
+        onOpenChange={setStatsOpen}
         groupId={groupId!}
       />
     </div>
