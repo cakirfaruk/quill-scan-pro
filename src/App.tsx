@@ -46,7 +46,7 @@ const AppContent = () => {
   useUpdateOnlineStatus();
   
   return (
-    <>
+    <TooltipProvider>
       <Toaster />
       <Sonner />
       <OfflineIndicator />
@@ -86,16 +86,14 @@ const AppContent = () => {
         </Suspense>
         <MobileNavWrapper />
       </BrowserRouter>
-    </>
+    </TooltipProvider>
   );
 };
 
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AppContent />
-      </TooltipProvider>
+      <AppContent />
     </QueryClientProvider>
   );
 };
