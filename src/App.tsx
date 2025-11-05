@@ -9,6 +9,7 @@ import { RouteProgressBar } from "@/components/AnimationWrappers";
 import { EnhancedOfflineIndicator } from "@/components/EnhancedOfflineIndicator";
 import { Tutorial } from "@/components/Tutorial";
 import { MobileNav } from "@/components/MobileNav";
+import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -180,6 +181,8 @@ const AppRoutes = () => {
     path => location.pathname === path || location.pathname.startsWith('/profile/')
   );
 
+  const showFAB = location.pathname !== "/" && location.pathname !== "/auth";
+
   // Page transition variants
   const pageTransition = {
     initial: { opacity: 0, y: 10 },
@@ -268,6 +271,7 @@ const AppRoutes = () => {
         </AnimatePresence>
       </Suspense>
       {showNav && <MobileNav />}
+      {showFAB && <FloatingActionButton />}
     </>
   );
 };
