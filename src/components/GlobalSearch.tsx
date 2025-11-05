@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Users, FileText, Hash, UserCircle, Loader2 } from "lucide-react";
+import { Search, Users, FileText, Hash, UserCircle, Loader2, Clock, X } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,12 +17,34 @@ interface SearchResult {
   data?: any;
 }
 
+interface SearchHistoryItem {
+  query: string;
+  timestamp: number;
+  type?: string;
+}
+
+const SEARCH_HISTORY_KEY = "global-search-history";
+const MAX_HISTORY_ITEMS = 10;
+
 export const GlobalSearch = () => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
   const navigate = useNavigate();
+
+  // Load search history from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(SEARCH_HISTORY_KEY);
+    if (saved) {
+      try {
+        setSearchHistory(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse search history:", e);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -52,6 +74,9 @@ export const GlobalSearch = () => {
   const performSearch = async (searchQuery: string) => {
     setIsLoading(true);
     const allResults: SearchResult[] = [];
+
+    // Save to search history
+    saveToHistory(searchQuery);
 
     try {
       // Search users
@@ -148,6 +173,37 @@ export const GlobalSearch = () => {
     }
   };
 
+  const saveToHistory = (searchQuery: string) => {
+    const newItem: SearchHistoryItem = {
+      query: searchQuery,
+      timestamp: Date.now(),
+    };
+
+    const updatedHistory = [
+      newItem,
+      ...searchHistory.filter((item) => item.query.toLowerCase() !== searchQuery.toLowerCase()),
+    ].slice(0, MAX_HISTORY_ITEMS);
+
+    setSearchHistory(updatedHistory);
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updatedHistory));
+  };
+
+  const clearHistory = () => {
+    setSearchHistory([]);
+    localStorage.removeItem(SEARCH_HISTORY_KEY);
+  };
+
+  const removeHistoryItem = (query: string) => {
+    const updatedHistory = searchHistory.filter((item) => item.query !== query);
+    setSearchHistory(updatedHistory);
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updatedHistory));
+  };
+
+  const handleHistoryClick = (historyQuery: string) => {
+    setQuery(historyQuery);
+    performSearch(historyQuery);
+  };
+
   const handleResultClick = (result: SearchResult) => {
     setOpen(false);
     setQuery("");
@@ -225,8 +281,57 @@ export const GlobalSearch = () => {
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
             ) : results.length === 0 ? (
-              <div className="py-8 text-center text-sm text-muted-foreground">
-                {query.trim() ? "Sonuç bulunamadı" : "Aramaya başlayın..."}
+              <div className="p-2">
+                {query.trim() ? (
+                  <div className="py-8 text-center text-sm text-muted-foreground">
+                    Sonuç bulunamadı
+                  </div>
+                ) : searchHistory.length > 0 ? (
+                  <>
+                    <div className="flex items-center justify-between px-2 py-1.5 mb-2">
+                      <div className="text-xs font-semibold text-muted-foreground uppercase">
+                        Son Aramalar
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearHistory}
+                        className="h-6 text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        Temizle
+                      </Button>
+                    </div>
+                    <div className="space-y-1">
+                      {searchHistory.map((item, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-2 px-2 py-2 rounded-md hover:bg-accent group"
+                        >
+                          <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+                          <button
+                            onClick={() => handleHistoryClick(item.query)}
+                            className="flex-1 text-left text-sm truncate"
+                          >
+                            {item.query}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeHistoryItem(item.query);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="py-8 text-center text-sm text-muted-foreground">
+                    Aramaya başlayın...
+                  </div>
+                )}
               </div>
             ) : (
               <div className="p-2">
