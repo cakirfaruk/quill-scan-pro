@@ -18,6 +18,7 @@ import { IncomingCallDialog } from "@/components/IncomingCallDialog";
 import { IncomingGroupCallDialog } from "@/components/IncomingGroupCallDialog";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useErrorAlerts } from "@/hooks/use-error-alerts";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 
 // Lazy load ALL pages including Index for optimal code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -55,6 +56,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const ErrorMonitor = lazy(() => import("./pages/ErrorMonitor"));
 const ErrorAnalytics = lazy(() => import("./pages/ErrorAnalytics"));
 const ErrorDetail = lazy(() => import("./pages/ErrorDetail"));
+const Install = lazy(() => import("./pages/Install"));
 const Feed = lazy(() => import("./pages/Feed"));
 
 const queryClient = new QueryClient();
@@ -274,6 +276,7 @@ const AppRoutes = () => {
               <Route path="/error-monitor" element={<ErrorMonitor />} />
               <Route path="/error-analytics" element={<ErrorAnalytics />} />
               <Route path="/error/:errorId" element={<ErrorDetail />} />
+              <Route path="/install" element={<Install />} />
               <Route path="/feed" element={<Feed />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
@@ -282,6 +285,7 @@ const AppRoutes = () => {
       </Suspense>
       {showNav && <MobileNav />}
       {showFAB && <FloatingActionButton />}
+      <PWAInstallPrompt />
     </>
   );
 };
