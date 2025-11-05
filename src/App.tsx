@@ -6,7 +6,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { RouteProgressBar } from "@/components/AnimationWrappers";
-import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { EnhancedOfflineIndicator } from "@/components/EnhancedOfflineIndicator";
 import { Tutorial } from "@/components/Tutorial";
 import { MobileNav } from "@/components/MobileNav";
 import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
@@ -280,7 +280,7 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <OfflineIndicator />
+            <EnhancedOfflineIndicator />
             <Tutorial />
             <AppRoutes />
           </TooltipProvider>
