@@ -41,8 +41,7 @@ export const SwipeablePostCard = ({
     const deltaY = currentY - touchStart.current.y;
 
     // Only allow horizontal swipe if it's more horizontal than vertical
-    if (Math.abs(deltaX) > Math.abs(deltaY)) {
-      e.preventDefault();
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
       setOffset(deltaX);
       
       // Show icons based on swipe direction and distance
@@ -78,7 +77,7 @@ export const SwipeablePostCard = ({
   };
 
   return (
-    <div className="relative overflow-hidden touch-pan-y">
+    <div className="relative overflow-visible">
       {/* Left swipe indicator (Save) */}
       <div
         className={cn(
