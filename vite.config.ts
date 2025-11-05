@@ -87,4 +87,91 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    // Manual chunk splitting for better caching
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          // Vendor chunks
+          if (id.includes('node_modules')) {
+            // React core
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-vendor';
+            }
+            // Framer Motion (animation library)
+            if (id.includes('framer-motion')) {
+              return 'framer-vendor';
+            }
+            // Radix UI (component library)
+            if (id.includes('@radix-ui')) {
+              return 'radix-vendor';
+            }
+            // Supabase
+            if (id.includes('@supabase')) {
+              return 'supabase-vendor';
+            }
+            // React Query
+            if (id.includes('@tanstack')) {
+              return 'query-vendor';
+            }
+            // Date utilities
+            if (id.includes('date-fns')) {
+              return 'date-vendor';
+            }
+            // Other vendors
+            return 'vendor';
+          }
+          
+          // Page chunks - group by route
+          if (id.includes('src/pages/')) {
+            const pageName = id.split('src/pages/')[1].split('.')[0];
+            // Group smaller pages together
+            const smallPages = ['About', 'FAQ', 'Credits', 'NotFound', 'VapidKeyGenerator'];
+            if (smallPages.some(p => pageName.includes(p))) {
+              return 'pages-misc';
+            }
+            // Group analysis pages
+            const analysisPages = ['Tarot', 'CoffeeFortune', 'Palmistry', 'Handwriting', 'BirthChart', 'Numerology', 'DreamInterpretation', 'DailyHoroscope'];
+            if (analysisPages.some(p => pageName.includes(p))) {
+              return 'pages-analysis';
+            }
+            // Group social pages
+            const socialPages = ['Feed', 'Friends', 'Messages', 'Groups', 'GroupChat', 'Reels', 'Explore', 'Discovery'];
+            if (socialPages.some(p => pageName.includes(p))) {
+              return 'pages-social';
+            }
+            // Keep large pages separate
+            return `page-${pageName.toLowerCase()}`;
+          }
+          
+          // Component chunks
+          if (id.includes('src/components/')) {
+            // UI components
+            if (id.includes('src/components/ui/')) {
+              return 'ui-components';
+            }
+            // Large feature components
+            const largeComponents = ['VideoCallDialog', 'GroupVideoCallDialog', 'CallInterface'];
+            if (largeComponents.some(c => id.includes(c))) {
+              return 'components-video';
+            }
+            // Group smaller components
+            return 'components';
+          }
+        },
+      },
+    },
+    // Increase chunk size warning limit
+    chunkSizeWarningLimit: 1000,
+    // Enable source maps for production debugging (optional)
+    sourcemap: false,
+    // Minify with terser for better compression
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console logs in production
+        drop_debugger: true,
+      },
+    },
+  },
 }));

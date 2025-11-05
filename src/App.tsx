@@ -13,9 +13,12 @@ import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { LoadingFallback } from "@/components/LoadingFallback";
 import { IncomingCallDialog } from "@/components/IncomingCallDialog";
 import { IncomingGroupCallDialog } from "@/components/IncomingGroupCallDialog";
-import Index from "./pages/Index";
+
+// Lazy load ALL pages including Index for optimal code splitting
+const Index = lazy(() => import("./pages/Index"));
 
 // Lazy load routes for better performance
 const Auth = lazy(() => import("./pages/Auth"));
@@ -221,11 +224,7 @@ const AppRoutes = () => {
           callerName={incomingGroupCall.callerName}
         />
       )}
-      <Suspense fallback={
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      }>
+      <Suspense fallback={<LoadingFallback />}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={location.pathname}
