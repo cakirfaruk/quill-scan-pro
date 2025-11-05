@@ -18,6 +18,7 @@ import { subscribeToPushNotifications } from "@/utils/pushNotifications";
 import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
 import { AutoResponseSettings } from "@/components/AutoResponseSettings";
 import { resetOnboarding } from "@/components/OnboardingTour";
+import { ThemeCustomizationPanel } from "@/components/ThemeCustomizationPanel";
 
 const Settings = () => {
   const [profile, setProfile] = useState({
@@ -891,6 +892,8 @@ const Settings = () => {
               </Card>
               
               <AutoResponseSettings />
+              
+              <ThemeCustomizationPanel />
             </div>
           </TabsContent>
         </Tabs>
