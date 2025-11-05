@@ -4,7 +4,6 @@ import App from "./App.tsx";
 import "./index.css";
 import { requestNotificationPermission, registerServiceWorker } from "./utils/notifications";
 import { 
-  removeLoadingSpinner, 
   initPerformanceMonitoring,
   preloadCriticalResources 
 } from "./utils/criticalCss";
@@ -23,12 +22,8 @@ if (import.meta.env.PROD) {
 
 const root = createRoot(document.getElementById("root")!);
 
-// Remove loading spinner AFTER React is ready to render
 root.render(
   <StrictMode>
     <App />
   </StrictMode>
 );
-
-// Remove spinner after first render
-removeLoadingSpinner();

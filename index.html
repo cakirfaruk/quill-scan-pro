@@ -23,10 +23,7 @@
       html{-webkit-text-size-adjust:100%;line-height:1.5;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
       body{min-height:100vh;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background-color:#0a0a0a;color:#fff}
       #root{min-height:100vh;position:relative}
-      .loading-spinner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:48px;height:48px;border:3px solid rgba(155,135,245,.2);border-top-color:#9b87f5;border-radius:50%;animation:spin .8s linear infinite}
-      @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
       .gradient-bg{background:linear-gradient(135deg,#0a0a0a 0%,rgba(155,135,245,.05) 50%,#0a0a0a 100%)}
-      .fade-out{opacity:0;transition:opacity 0.3s}
     </style>
     
     <!-- Font optimization with font-display: swap -->
@@ -66,10 +63,7 @@
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
   </head>
   <body>
-    <div id="root">
-      <!-- Initial loading state -->
-      <div class="loading-spinner"></div>
-    </div>
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
