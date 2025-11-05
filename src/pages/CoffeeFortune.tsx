@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Upload, X, Sparkles } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+import { ShareButton } from "@/components/ShareButton";
 
 const CoffeeFortune = () => {
   const navigate = useNavigate();
@@ -206,8 +207,18 @@ const CoffeeFortune = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>☕ Kahve Falı Sonucu</CardTitle>
-                <CardDescription>Fincanınız yorumlandı</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>☕ Kahve Falı Sonucu</CardTitle>
+                    <CardDescription>Fincanınız yorumlandı</CardDescription>
+                  </div>
+                  <ShareButton
+                    title="Kahve Falım - Astro Social"
+                    text="Kahve falına baktım! ☕ Fincanımdaki semboller yorumlandı. Sonuçlarımı Astro Social'da keşfedin!"
+                    variant="outline"
+                    size="sm"
+                  />
+                </div>
               </CardHeader>
               <CardContent>
                 <AnalysisDetailView result={result} analysisType="coffee_fortune" />

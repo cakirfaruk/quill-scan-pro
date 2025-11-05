@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Upload, X, Sparkles, Hand } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+import { ShareButton } from "@/components/ShareButton";
 
 const Palmistry = () => {
   const navigate = useNavigate();
@@ -185,8 +186,18 @@ const Palmistry = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>🤲 El Okuma Sonucu</CardTitle>
-                <CardDescription>Eliniz yorumlandı</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>🤲 El Okuma Sonucu</CardTitle>
+                    <CardDescription>Eliniz yorumlandı</CardDescription>
+                  </div>
+                  <ShareButton
+                    title="El Okuma Sonucum - Astro Social"
+                    text="El çizgilerim yorumlandı! 🤲 Avuç içi analizi sonuçlarımı Astro Social'da keşfedin!"
+                    variant="outline"
+                    size="sm"
+                  />
+                </div>
               </CardHeader>
               <CardContent>
                 <AnalysisDetailView result={result} analysisType="palmistry" />

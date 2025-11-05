@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Sparkles, Moon } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+import { ShareButton } from "@/components/ShareButton";
 
 const DreamInterpretation = () => {
   const navigate = useNavigate();
@@ -151,8 +152,18 @@ const DreamInterpretation = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>🌙 Rüya Tabiriniz</CardTitle>
-                <CardDescription>Rüyanız yorumlandı</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>🌙 Rüya Tabiriniz</CardTitle>
+                    <CardDescription>Rüyanız yorumlandı</CardDescription>
+                  </div>
+                  <ShareButton
+                    title="Rüya Tabirim - Astro Social"
+                    text="Rüyamı yorumlattım! 🌙 AI ile rüya tabiri sonuçlarımı Astro Social'da keşfedin!"
+                    variant="outline"
+                    size="sm"
+                  />
+                </div>
               </CardHeader>
               <CardContent>
                 <AnalysisDetailView result={result} analysisType="dream" />

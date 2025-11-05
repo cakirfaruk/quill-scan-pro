@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Sparkles, ArrowRight, Shuffle } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+import { ShareButton } from "@/components/ShareButton";
 
 // Import tarot card images
 import cardBackImg from "@/assets/tarot/card-back.png";
@@ -313,8 +314,18 @@ const Tarot = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>🔮 Tarot Okuma Sonucu</CardTitle>
-                <CardDescription>Kartlarınız yorumlandı</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>🔮 Tarot Okuma Sonucu</CardTitle>
+                    <CardDescription>Kartlarınız yorumlandı</CardDescription>
+                  </div>
+                  <ShareButton
+                    title="Tarot Falım - Astro Social"
+                    text={`${selectedSpread?.label} yöntemiyle tarot falına baktım!\n\nSeçilen kartlar: ${selectedCards.map(c => c.name).join(', ')}\n\nSonuçlarımı Astro Social'da keşfedin!`}
+                    variant="outline"
+                    size="sm"
+                  />
+                </div>
               </CardHeader>
               <CardContent>
                 <AnalysisDetailView result={result} analysisType="tarot" />

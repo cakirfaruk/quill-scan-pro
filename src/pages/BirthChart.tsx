@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+import { ShareButton } from "@/components/ShareButton";
 import { getAllPlanets } from "ephemeris";
 import { z } from "zod";
 
@@ -316,10 +317,20 @@ const BirthChart = () => {
         <div className="container mx-auto px-4 py-12 max-w-6xl">
           <Card>
             <CardHeader>
-              <CardTitle className="text-3xl">Doğum Haritası Analiz Sonuçları</CardTitle>
-              <CardDescription>
-                {analysisData.isim || personData.fullName} - {analysisData.dogum_tarihi || personData.birthDate} {analysisData.dogum_saati || personData.birthTime} - {analysisData.dogum_yeri || personData.birthPlace}
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <CardTitle className="text-3xl">Doğum Haritası Analiz Sonuçları</CardTitle>
+                  <CardDescription>
+                    {analysisData.isim || personData.fullName} - {analysisData.dogum_tarihi || personData.birthDate} {analysisData.dogum_saati || personData.birthTime} - {analysisData.dogum_yeri || personData.birthPlace}
+                  </CardDescription>
+                </div>
+                <ShareButton
+                  title="Doğum Haritam - Astro Social"
+                  text={`${analysisData.isim || personData.fullName} için doğum haritası analizi! 🌟 Gezegen konumları ve astrolojik yorum sonuçlarımı Astro Social'da keşfedin!`}
+                  variant="outline"
+                  size="sm"
+                />
+              </div>
             </CardHeader>
             <CardContent>
               <AnalysisDetailView result={analysisData} analysisType="birth_chart" />
