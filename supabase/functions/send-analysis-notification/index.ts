@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { create } from 'https://deno.land/x/djwt@v3.0.2/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -122,13 +123,16 @@ serve(async (req) => {
             },
           };
 
+          // Generate VAPID token
+          const vapidToken = await generateVAPIDToken(subscription.endpoint, vapidPublicKey, vapidPrivateKey);
+          
           // Use Web Push API
           const response = await fetch(subscription.endpoint, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'TTL': '86400', // 24 hours
-              'Authorization': `vapid t=${generateVAPIDToken(subscription.endpoint, vapidPublicKey, vapidPrivateKey)}, k=${vapidPublicKey}`,
+              'Authorization': `vapid t=${vapidToken}, k=${vapidPublicKey}`,
             },
             body: JSON.stringify({
               title: notificationData.title,
@@ -195,16 +199,44 @@ serve(async (req) => {
   }
 });
 
-// Helper function to generate VAPID token (simplified - in production use proper JWT library)
-function generateVAPIDToken(audience: string, publicKey: string, privateKey: string): string {
-  // For simplicity, returning a placeholder
-  // In production, use proper JWT signing with the VAPID private key
-  const header = btoa(JSON.stringify({ typ: 'JWT', alg: 'ES256' }));
-  const payload = btoa(JSON.stringify({
-    aud: new URL(audience).origin,
-    exp: Math.floor(Date.now() / 1000) + 43200, // 12 hours
-    sub: 'mailto:admin@lovable.app'
-  }));
-  
-  return `${header}.${payload}.signature`;
+// Helper function to generate VAPID token with proper ES256 signing
+async function generateVAPIDToken(audience: string, publicKey: string, privateKey: string): Promise<string> {
+  try {
+    // Decode the base64url private key
+    const privateKeyBytes = Uint8Array.from(
+      atob(privateKey.replace(/-/g, '+').replace(/_/g, '/')),
+      c => c.charCodeAt(0)
+    );
+
+    // Import the private key for ES256 signing
+    const cryptoKey = await crypto.subtle.importKey(
+      'pkcs8',
+      privateKeyBytes,
+      {
+        name: 'ECDSA',
+        namedCurve: 'P-256',
+      },
+      false,
+      ['sign']
+    );
+
+    // Create the JWT payload
+    const payload = {
+      aud: new URL(audience).origin,
+      exp: Math.floor(Date.now() / 1000) + 43200, // 12 hours
+      sub: 'mailto:admin@lovable.app'
+    };
+
+    // Sign and create the JWT token using djwt
+    const jwt = await create(
+      { alg: 'ES256', typ: 'JWT' },
+      payload,
+      cryptoKey
+    );
+
+    return jwt;
+  } catch (error) {
+    console.error('Error generating VAPID token:', error);
+    throw new Error('Failed to generate VAPID authentication token');
+  }
 }
