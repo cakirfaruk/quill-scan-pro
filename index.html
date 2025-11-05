@@ -1,40 +1,68 @@
 <!doctype html>
-<html lang="en">
+<html lang="tr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#9b87f5" />
-    <link rel="apple-touch-icon" href="https://storage.googleapis.com/gpt-engineer-file-uploads/DMw3eaESLpeKAzKlfQPVGMQ5a3f1/uploads/1761954894293-pngtree-black-and-white-astro-icon-in-an-orbit-vector-png-image_7075895.png">
     
-    <!-- Preconnect to backend API to reduce latency -->
+    <!-- Preconnect to external domains for faster resource loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin="anonymous">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
     <link rel="dns-prefetch" href="https://ekkymypfvixlysrgtabz.supabase.co">
     <link rel="preconnect" href="https://ekkymypfvixlysrgtabz.supabase.co" crossorigin>
     
-    <title>Astro Social</title>
-    <meta name="description" content="Analizler, Fallar, Kehanetler, Eşleşmeler, Arkadaşlıklar, Paylaşımlar...">
-    <meta name="author" content="El Yazısı Analizi" />
-
+    <!-- Critical CSS - Inlined for instant rendering -->
+    <style>
+      /* Minimal critical styles - Full CSS loads async */
+      *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+      html{-webkit-text-size-adjust:100%;line-height:1.5;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+      body{min-height:100vh;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background-color:#0a0a0a;color:#fff}
+      #root{min-height:100vh;position:relative}
+      .loading-spinner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:48px;height:48px;border:3px solid rgba(155,135,245,.2);border-top-color:#9b87f5;border-radius:50%;animation:spin .8s linear infinite}
+      @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+      .gradient-bg{background:linear-gradient(135deg,#0a0a0a 0%,rgba(155,135,245,.05) 50%,#0a0a0a 100%)}
+      .fade-out{opacity:0;transition:opacity 0.3s}
+    </style>
     
+    <!-- Font optimization with font-display: swap -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    </noscript>
     
+    <!-- Resource hints for better performance -->
+    <link rel="modulepreload" href="/src/main.tsx" />
+    <link rel="modulepreload" href="/src/App.tsx" />
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/x-icon" href="https://storage.googleapis.com/gpt-engineer-file-uploads/DMw3eaESLpeKAzKlfQPVGMQ5a3f1/uploads/1761954894293-pngtree-black-and-white-astro-icon-in-an-orbit-vector-png-image_7075895.png">
+    <link rel="apple-touch-icon" href="https://storage.googleapis.com/gpt-engineer-file-uploads/DMw3eaESLpeKAzKlfQPVGMQ5a3f1/uploads/1761954894293-pngtree-black-and-white-astro-icon-in-an-orbit-vector-png-image_7075895.png">
+    
+    <title>Astro Social - Analizler, Fallar, Kehanetler</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Analizler, Fallar, Kehanetler, Eşleşmeler, Arkadaşlıklar, Paylaşımlar... Tarot, kahve falı, rüya tabiri ve astroloji ile kişisel analiz platformu." />
+    <meta name="keywords" content="tarot, kahve falı, rüya tabiri, astroloji, numeroloji, doğum haritası" />
+    <meta name="author" content="Astro Social" />
+    
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
+    <meta property="og:title" content="Astro Social" />
+    <meta property="og:description" content="Analizler, Fallar, Kehanetler, Eşleşmeler, Arkadaşlıklar, Paylaşımlar..." />
     <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-
+    
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
+    <meta name="twitter:title" content="Astro Social" />
+    <meta name="twitter:description" content="Analizler, Fallar, Kehanetler, Eşleşmeler, Arkadaşlıklar, Paylaşımlar..." />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-    
-  
-  
-  
-  <link rel="icon" type="image/x-icon" href="https://storage.googleapis.com/gpt-engineer-file-uploads/DMw3eaESLpeKAzKlfQPVGMQ5a3f1/uploads/1761954894293-pngtree-black-and-white-astro-icon-in-an-orbit-vector-png-image_7075895.png">
-  <meta property="og:title" content="Astro Social">
-  <meta name="twitter:title" content="Astro Social">
-  <meta property="og:description" content="Analizler, Fallar, Kehanetler, Eşleşmeler, Arkadaşlıklar, Paylaşımlar...">
-  <meta name="twitter:description" content="Analizler, Fallar, Kehanetler, Eşleşmeler, Arkadaşlıklar, Paylaşımlar...">
-</head>
-
+  </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Initial loading state -->
+      <div class="loading-spinner"></div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
