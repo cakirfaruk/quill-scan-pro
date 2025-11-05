@@ -519,6 +519,69 @@ export type Database = {
         }
         Relationships: []
       }
+      error_logs: {
+        Row: {
+          browser_info: Json | null
+          context: Json | null
+          count: number | null
+          created_at: string | null
+          error_message: string
+          error_stack: string | null
+          error_type: string
+          fingerprint: string | null
+          id: string
+          notes: string | null
+          resolved: boolean | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string | null
+          timestamp: string
+          url: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          browser_info?: Json | null
+          context?: Json | null
+          count?: number | null
+          created_at?: string | null
+          error_message: string
+          error_stack?: string | null
+          error_type: string
+          fingerprint?: string | null
+          id?: string
+          notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+          timestamp?: string
+          url: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          browser_info?: Json | null
+          context?: Json | null
+          count?: number | null
+          created_at?: string | null
+          error_message?: string
+          error_stack?: string | null
+          error_type?: string
+          fingerprint?: string | null
+          id?: string
+          notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+          timestamp?: string
+          url?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       event_participants: {
         Row: {
           created_at: string | null
@@ -1207,6 +1270,7 @@ export type Database = {
       }
       notification_preferences: {
         Row: {
+          alert_severity_threshold: string
           created_at: string
           enable_analysis_results: boolean
           enable_email_notifications: boolean
@@ -1220,7 +1284,9 @@ export type Database = {
           enable_post_comments: boolean
           enable_post_likes: boolean
           enable_push_notifications: boolean
+          error_alerts_enabled: boolean
           id: string
+          push_enabled: boolean
           quiet_hours_enabled: boolean
           quiet_hours_end: string | null
           quiet_hours_start: string | null
@@ -1228,6 +1294,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          alert_severity_threshold?: string
           created_at?: string
           enable_analysis_results?: boolean
           enable_email_notifications?: boolean
@@ -1241,7 +1308,9 @@ export type Database = {
           enable_post_comments?: boolean
           enable_post_likes?: boolean
           enable_push_notifications?: boolean
+          error_alerts_enabled?: boolean
           id?: string
+          push_enabled?: boolean
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string | null
           quiet_hours_start?: string | null
@@ -1249,6 +1318,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          alert_severity_threshold?: string
           created_at?: string
           enable_analysis_results?: boolean
           enable_email_notifications?: boolean
@@ -1262,7 +1332,9 @@ export type Database = {
           enable_post_comments?: boolean
           enable_post_likes?: boolean
           enable_push_notifications?: boolean
+          error_alerts_enabled?: boolean
           id?: string
+          push_enabled?: boolean
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string | null
           quiet_hours_start?: string | null
@@ -1364,6 +1436,48 @@ export type Database = {
           id?: string
           interpretation?: Json | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      performance_metrics: {
+        Row: {
+          connection_type: string | null
+          created_at: string | null
+          device_type: string | null
+          id: string
+          metric_name: string
+          metric_value: number
+          rating: string | null
+          timestamp: string | null
+          url: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          connection_type?: string | null
+          created_at?: string | null
+          device_type?: string | null
+          id?: string
+          metric_name: string
+          metric_value: number
+          rating?: string | null
+          timestamp?: string | null
+          url: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          connection_type?: string | null
+          created_at?: string | null
+          device_type?: string | null
+          id?: string
+          metric_name?: string
+          metric_value?: number
+          rating?: string | null
+          timestamp?: string | null
+          url?: string
+          user_agent?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
