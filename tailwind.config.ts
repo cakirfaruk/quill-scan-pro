@@ -248,16 +248,4 @@ export default {
     },
   },
   plugins: [require("tailwindcss-animate")],
-  // Performance optimization
-  corePlugins: {
-    preflight: true, // Keep preflight for critical styles
-  },
-  // Safelist critical utility classes that are used dynamically
-  safelist: [
-    'animate-fade-in',
-    'animate-fade-in-up',
-    'animate-spin',
-    'loading-spinner',
-    'fade-out',
-  ],
 } satisfies Config;

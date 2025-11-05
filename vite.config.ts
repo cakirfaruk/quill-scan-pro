@@ -3,8 +3,6 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
-import { visualizer } from 'rollup-plugin-visualizer';
-import viteCompression from 'vite-plugin-compression';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -15,113 +13,40 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(), 
     mode === "development" && componentTagger(),
-    // Bundle analyzer - run 'npm run build' to see stats.html
-    mode === 'production' && visualizer({
-      filename: './dist/stats.html',
-      open: false,
-      gzipSize: true,
-      brotliSize: true,
-    }),
-    // Gzip and Brotli compression
-    mode === 'production' && viteCompression({
-      algorithm: 'gzip',
-      ext: '.gz',
-      threshold: 1024, // Only compress files larger than 1KB
-      deleteOriginFile: false,
-    }),
-    mode === 'production' && viteCompression({
-      algorithm: 'brotliCompress',
-      ext: '.br',
-      threshold: 1024,
-      deleteOriginFile: false,
-    }),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'script-defer',
-      includeAssets: ['favicon.ico', 'robots.txt', 'icon-*.png', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.ico', 'robots.txt'],
       manifest: {
-        name: 'Astro Social - Analizler, Fallar, Kehanetler',
-        short_name: 'Astro Social',
-        description: 'AI destekli çoklu analiz platformu - Tarot, kahve falı, rüya tabiri, astroloji ve daha fazlası',
+        name: 'Kişisel Analiz Merkezi',
+        short_name: 'Analiz Merkezi',
+        description: 'AI destekli çoklu analiz platformu',
         theme_color: '#9b87f5',
         background_color: '#0a0a0a',
         display: 'standalone',
-        orientation: 'portrait',
         scope: '/',
         start_url: '/',
         icons: [
           {
-            src: '/icon-192.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any'
-          },
-          {
-            src: '/icon-512.png',
+            src: 'https://storage.googleapis.com/gpt-engineer-file-uploads/DMw3eaESLpeKAzKlfQPVGMQ5a3f1/uploads/1761954894293-pngtree-black-and-white-astro-icon-in-an-orbit-vector-png-image_7075895.png',
             sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any'
-          },
-          {
-            src: '/icon-maskable-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable'
+            type: 'image/png'
           }
         ],
-        screenshots: [
-          {
-            src: '/icon-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            form_factor: 'narrow'
-          }
-        ],
-        categories: ['lifestyle', 'entertainment', 'social'],
-        shortcuts: [
-          {
-            name: 'Tarot Falı',
-            short_name: 'Tarot',
-            description: 'Tarot kartları ile fal bak',
-            url: '/tarot',
-            icons: [{ src: '/icon-192.png', sizes: '192x192' }]
-          },
-          {
-            name: 'Kahve Falı',
-            short_name: 'Kahve',
-            description: 'Kahve falı yorumla',
-            url: '/coffee-fortune',
-            icons: [{ src: '/icon-192.png', sizes: '192x192' }]
-          }
-        ]
+        categories: ['lifestyle', 'entertainment']
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-        // Aggressive caching for better performance
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
+            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'supabase-api-cache',
+              cacheName: 'supabase-cache',
               networkTimeoutSeconds: 3,
               expiration: {
-                maxEntries: 200,
-                maxAgeSeconds: 60 * 5 // 5 minutes for API responses
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'supabase-storage-cache',
-              expiration: {
-                maxEntries: 500,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days for storage
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 7
               },
               cacheableResponse: {
                 statuses: [0, 200]
@@ -134,17 +59,9 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: 'images-cache',
               expiration: {
-                maxEntries: 300,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
-              },
-              plugins: [
-                {
-                  cacheWillUpdate: async ({ response }) => {
-                    // Only cache successful responses
-                    return response.status === 200 ? response : null;
-                  }
-                }
-              ]
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24 * 30
+              }
             }
           },
           {
@@ -153,8 +70,8 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: 'google-fonts-cache',
               expiration: {
-                maxEntries: 30,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 365
               }
             }
           }

@@ -60,7 +60,7 @@ export const OnboardingDialog = ({ open, onComplete }: OnboardingDialogProps) =>
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onComplete()}>
+    <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-2xl">{steps[currentStep].title}</DialogTitle>

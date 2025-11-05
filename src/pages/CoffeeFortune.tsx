@@ -7,9 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Upload, X, Sparkles } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
-import { ShareButton } from "@/components/ShareButton";
-import { useOGImage } from "@/hooks/use-og-image";
-import { sendAnalysisNotification } from "@/utils/sendAnalysisNotification";
 
 const CoffeeFortune = () => {
   const navigate = useNavigate();
@@ -17,13 +14,6 @@ const CoffeeFortune = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [userCredits, setUserCredits] = useState(0);
-  
-  // Generate OG image when result is available
-  useOGImage({
-    title: result ? 'Kahve Falı Yorumu' : '',
-    description: result?.interpretation?.overview || '',
-    type: 'coffee'
-  });
 
   useEffect(() => {
     checkAuth();
@@ -92,7 +82,6 @@ const CoffeeFortune = () => {
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const { data: { user } } = await supabase.auth.getUser();
       
       const { data, error } = await supabase.functions.invoke('analyze-coffee-fortune', {
         body: { 
@@ -110,15 +99,6 @@ const CoffeeFortune = () => {
       setResult(data.interpretation);
       setUserCredits(prev => prev - 40);
       toast.success("Kahve falınız hazır!");
-      
-      // Send push notification
-      if (user) {
-        sendAnalysisNotification(
-          user.id,
-          'coffee',
-          'Kahve Falı Yorumlandı'
-        );
-      }
     } catch (error: any) {
       console.error("Error:", error);
       toast.error(error.message || "Analiz sırasında hata oluştu");
@@ -226,18 +206,8 @@ const CoffeeFortune = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>☕ Kahve Falı Sonucu</CardTitle>
-                    <CardDescription>Fincanınız yorumlandı</CardDescription>
-                  </div>
-                  <ShareButton
-                    title="Kahve Falım - Astro Social"
-                    text="Kahve falına baktım! ☕ Fincanımdaki semboller yorumlandı. Sonuçlarımı Astro Social'da keşfedin!"
-                    variant="outline"
-                    size="sm"
-                  />
-                </div>
+                <CardTitle>☕ Kahve Falı Sonucu</CardTitle>
+                <CardDescription>Fincanınız yorumlandı</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalysisDetailView result={result} analysisType="coffee_fortune" />

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Users, CreditCard, History, Loader2, Eye, Trash2, BarChart3, Activity } from "lucide-react";
+import { Shield, Users, CreditCard, History, Loader2, Eye, Trash2 } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { z } from "zod";
 
@@ -284,43 +284,6 @@ const Admin = () => {
               Kullanıcıları yönetin ve kredi ekleyin
             </p>
           </div>
-        </div>
-
-        {/* Admin Tools Navigation */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <Card 
-            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] group"
-            onClick={() => navigate("/error-monitor")}
-          >
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-gradient-primary rounded-lg group-hover:scale-110 transition-transform">
-                <Activity className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold mb-1">Error Monitor</h3>
-                <p className="text-sm text-muted-foreground">
-                  Canlı hata takibi ve performans metrikleri
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card 
-            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] group"
-            onClick={() => navigate("/error-analytics")}
-          >
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-gradient-primary rounded-lg group-hover:scale-110 transition-transform">
-                <BarChart3 className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold mb-1">Error Analytics</h3>
-                <p className="text-sm text-muted-foreground">
-                  Hata trendleri, istatistikler ve detaylı analizler
-                </p>
-              </div>
-            </div>
-          </Card>
         </div>
 
         {isLoading ? (

@@ -1,40 +1,87 @@
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import Feed from "./Feed";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Brain, Target, Sparkles, Heart, Users, MessageCircle, Moon, Coffee, Hand, Star, Calendar, FileText, Zap, Shield, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { OnboardingDialog } from "@/components/OnboardingDialog";
+import { useParallax } from "@/hooks/use-parallax";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  
+  const heroRef = useRef<HTMLElement>(null);
+  const bgLeftRef = useRef<HTMLDivElement>(null);
+  const bgRightRef = useRef<HTMLDivElement>(null);
+  
+  const heroOffset = useParallax(heroRef, { speed: 0.3, direction: "up" });
+  const bgLeftOffset = useParallax(bgLeftRef, { speed: 0.5, direction: "down" });
+  const bgRightOffset = useParallax(bgRightRef, { speed: 0.4, direction: "up" });
 
   useEffect(() => {
-    // Kullanıcı giriş yaptıysa feed'e yönlendir
-    const checkAndRedirect = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          navigate('/feed');
-        }
-      } catch (error) {
-        console.error('Auth check error:', error);
-      }
-    };
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
     
-    checkAndRedirect();
-  }, [navigate]);
+    // Check if user has seen onboarding
+    if (user) {
+      const hasSeenOnboarding = localStorage.getItem(`onboarding_${user.id}`);
+      if (!hasSeenOnboarding) {
+        setShowOnboarding(true);
+      }
+      setIsLoggedIn(true);
+    }
+  };
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    const userId = supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user) {
+        localStorage.setItem(`onboarding_${data.session.user.id}`, 'true');
+      }
+    });
+  };
+
+  // Show feed if logged in
+  if (isLoggedIn) {
+    return (
+      <>
+        <OnboardingDialog open={showOnboarding} onComplete={handleOnboardingComplete} />
+        <Feed />
+      </>
+    );
+  }
+
+  // Show landing page immediately (no blocking while checking auth)
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background overflow-hidden">
       <Header />
       
       <main className="container mx-auto px-4">
         {/* Hero Section */}
-        <section className="text-center py-16 md:py-24 animate-fade-in relative">
+        <section 
+          ref={heroRef}
+          className="text-center py-16 md:py-24 animate-fade-in relative"
+          style={{ transform: `translateY(${heroOffset}px)` }}
+        >
           <div className="absolute inset-0 -z-10 overflow-hidden">
-            <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }}></div>
+            <div 
+              ref={bgLeftRef}
+              className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse transition-transform duration-300"
+              style={{ transform: `translateY(${bgLeftOffset}px)` }}
+            ></div>
+            <div 
+              ref={bgRightRef}
+              className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse transition-transform duration-300" 
+              style={{ animationDelay: "1s", transform: `translateY(${bgRightOffset}px)` }}
+            ></div>
           </div>
           
           <Badge className="mb-6 text-sm px-4 py-2" variant="secondary">

@@ -8,9 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Sparkles, Moon } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
-import { ShareButton } from "@/components/ShareButton";
-import { useOGImage } from "@/hooks/use-og-image";
-import { sendAnalysisNotification } from "@/utils/sendAnalysisNotification";
 
 const DreamInterpretation = () => {
   const navigate = useNavigate();
@@ -18,13 +15,6 @@ const DreamInterpretation = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [userCredits, setUserCredits] = useState(0);
-  
-  // Generate OG image when result is available
-  useOGImage({
-    title: result ? 'Rüya Tabiri' : '',
-    description: result?.interpretation?.overview || '',
-    type: 'dream'
-  });
 
   useEffect(() => {
     checkAuth();
@@ -69,7 +59,6 @@ const DreamInterpretation = () => {
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const { data: { user } } = await supabase.auth.getUser();
       
       const { data, error } = await supabase.functions.invoke('interpret-dream', {
         body: { dreamDescription },
@@ -83,15 +72,6 @@ const DreamInterpretation = () => {
       setResult(data.interpretation);
       setUserCredits(prev => prev - 20);
       toast.success("Rüya tabiriniz hazır!");
-      
-      // Send push notification
-      if (user) {
-        sendAnalysisNotification(
-          user.id,
-          'dream',
-          'Rüya Tabiriniz Hazır'
-        );
-      }
     } catch (error: any) {
       console.error("Error:", error);
       toast.error(error.message || "Analiz sırasında hata oluştu");
@@ -171,18 +151,8 @@ const DreamInterpretation = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>🌙 Rüya Tabiriniz</CardTitle>
-                    <CardDescription>Rüyanız yorumlandı</CardDescription>
-                  </div>
-                  <ShareButton
-                    title="Rüya Tabirim - Astro Social"
-                    text="Rüyamı yorumlattım! 🌙 AI ile rüya tabiri sonuçlarımı Astro Social'da keşfedin!"
-                    variant="outline"
-                    size="sm"
-                  />
-                </div>
+                <CardTitle>🌙 Rüya Tabiriniz</CardTitle>
+                <CardDescription>Rüyanız yorumlandı</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalysisDetailView result={result} analysisType="dream" />

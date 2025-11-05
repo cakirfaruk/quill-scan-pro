@@ -12,7 +12,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
-import { ShareButton } from "@/components/ShareButton";
 import { z } from "zod";
 
 const numerologySchema = z.object({
@@ -178,20 +177,10 @@ export default function Numerology() {
         <main className="container mx-auto px-4 py-8 mt-20">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <CardTitle className="text-3xl">Numeroloji Analiz Sonuçları</CardTitle>
-                  <CardDescription>
-                    {analysisData.isim || personData.fullName} - {analysisData.dogum_tarihi ? new Date(analysisData.dogum_tarihi).toLocaleDateString("tr-TR") : (personData.birthDate ? new Date(personData.birthDate).toLocaleDateString("tr-TR") : "")}
-                  </CardDescription>
-                </div>
-                <ShareButton
-                  title="Numeroloji Analizim - Astro Social"
-                  text={`${analysisData.isim || personData.fullName} için numeroloji analizi! 🔢 Hayat yolu sayıları ve kişilik analizi sonuçlarımı Astro Social'da keşfedin!`}
-                  variant="outline"
-                  size="sm"
-                />
-              </div>
+              <CardTitle className="text-3xl">Numeroloji Analiz Sonuçları</CardTitle>
+              <CardDescription>
+                {analysisData.isim || personData.fullName} - {analysisData.dogum_tarihi ? new Date(analysisData.dogum_tarihi).toLocaleDateString("tr-TR") : (personData.birthDate ? new Date(personData.birthDate).toLocaleDateString("tr-TR") : "")}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <AnalysisDetailView result={analysisData} analysisType="numerology" />
