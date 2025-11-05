@@ -218,7 +218,11 @@ const ErrorMonitor = () => {
                 <p className="text-center text-muted-foreground py-8">Yükleniyor...</p>
               ) : errors && errors.length > 0 ? (
                 errors.map((error) => (
-                  <Card key={error.id} className="p-4 space-y-3">
+                  <Card 
+                    key={error.id} 
+                    className="p-4 space-y-3 cursor-pointer hover:shadow-lg transition-all group"
+                    onClick={() => window.location.href = `/error/${error.id}`}
+                  >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-start gap-3 flex-1">
                         <div className={`p-2 rounded-lg border ${getSeverityColor(error.severity)}`}>
@@ -226,7 +230,9 @@ const ErrorMonitor = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold truncate">{error.error_type}</h3>
+                            <h3 className="font-semibold truncate group-hover:text-primary transition-colors">
+                              {error.error_type}
+                            </h3>
                             {error.count > 1 && (
                               <Badge variant="secondary">{error.count}x</Badge>
                             )}

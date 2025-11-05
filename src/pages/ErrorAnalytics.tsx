@@ -9,6 +9,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from "recharts";
 import { format, subDays, startOfDay } from "date-fns";
 import { tr } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 
 interface ErrorLog {
   id: string;
@@ -22,6 +23,7 @@ interface ErrorLog {
 }
 
 export default function ErrorAnalytics() {
+  const navigate = useNavigate();
   const { data: errorLogs = [], isLoading } = useQuery({
     queryKey: ['error-analytics'],
     queryFn: async () => {
@@ -65,14 +67,19 @@ export default function ErrorAnalytics() {
   const errorCounts = errorLogs.reduce((acc, err) => {
     const key = err.fingerprint || err.error_type;
     if (!acc[key]) {
-      acc[key] = { count: 0, type: err.error_type, severity: err.severity };
+      acc[key] = { count: 0, type: err.error_type, severity: err.severity, sampleId: err.id };
     }
     acc[key].count++;
     return acc;
-  }, {} as Record<string, { count: number; type: string; severity: string }>);
+  }, {} as Record<string, { count: number; type: string; severity: string; sampleId: string }>);
 
   const topErrors = Object.entries(errorCounts)
-    .map(([key, value]) => ({ error: value.type, count: value.count, severity: value.severity }))
+    .map(([key, value]) => ({ 
+      error: value.type, 
+      count: value.count, 
+      severity: value.severity,
+      sampleId: value.sampleId 
+    }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
 
@@ -257,9 +264,15 @@ export default function ErrorAnalytics() {
               <ScrollArea className="h-[300px] mt-4">
                 <div className="space-y-2">
                   {topErrors.map((error, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div 
+                      key={i} 
+                      className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors group"
+                      onClick={() => navigate(`/error/${error.sampleId}`)}
+                    >
                       <div className="flex-1">
-                        <div className="font-medium text-sm">{error.error}</div>
+                        <div className="font-medium text-sm group-hover:text-primary transition-colors">
+                          {error.error}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant={getSeverityColor(error.severity)}>
