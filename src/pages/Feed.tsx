@@ -26,6 +26,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { CreatePostDialog } from "@/components/CreatePostDialog";
 import { NoFriendsIllustration, NoPostsIllustration } from "@/components/EmptyStateIllustrations";
 import { ScrollReveal } from "@/components/ScrollReveal";
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 interface Post {
   id: string;
@@ -81,6 +83,10 @@ const Feed = () => {
   const [loading, setLoading] = useState(true);
   const [friendsPosts, setFriendsPosts] = useState<Post[]>([]);
   const [allPosts, setAllPosts] = useState<Post[]>([]);
+  const [friendsPage, setFriendsPage] = useState(1);
+  const [allPostsPage, setAllPostsPage] = useState(1);
+  const [hasMoreFriendsPosts, setHasMoreFriendsPosts] = useState(true);
+  const [hasMoreAllPosts, setHasMoreAllPosts] = useState(true);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -99,7 +105,11 @@ const Feed = () => {
   const handleRefresh = useCallback(async () => {
     soundEffects.playClick();
     if (userId) {
-      await loadPosts(userId);
+      setFriendsPage(1);
+      setAllPostsPage(1);
+      setHasMoreFriendsPosts(true);
+      setHasMoreAllPosts(true);
+      await loadPosts(userId, 1, true);
     }
   }, [userId]);
 
@@ -124,7 +134,7 @@ const Feed = () => {
     // **PARALEL YÜKLEME** - Arkadaşlar ve postlar aynı anda
     await Promise.all([
       loadFriends(user.id),
-      loadPosts(user.id)
+      loadPosts(user.id, 1, true)
     ]);
   };
 
@@ -160,11 +170,14 @@ const Feed = () => {
     }
   };
 
-  const loadPosts = async (currentUserId: string) => {
+  const loadPosts = async (currentUserId: string, page: number = 1, reset: boolean = false) => {
     try {
+      const POSTS_PER_PAGE = 20;
+      const offset = (page - 1) * POSTS_PER_PAGE;
+
       // **PARALEL SORGULAR** - Tek seferde tüm verileri al
       const [postsResult, friendsResult, likesResult, commentsCountResult, userLikesResult, userSavesResult] = await Promise.all([
-      // 1. Postları çek - SADECE 20 TANE!
+      // 1. Postları çek - Sayfalama ile
         supabase
           .from("posts")
           .select(`
@@ -176,7 +189,7 @@ const Feed = () => {
             )
           `)
           .order("created_at", { ascending: false })
-          .limit(20),
+          .range(offset, offset + POSTS_PER_PAGE - 1),
         
         // 2. Arkadaşları çek
         supabase
@@ -246,8 +259,19 @@ const Feed = () => {
         friendIds.has(post.user_id) || post.user_id === currentUserId
       );
 
-      setFriendsPosts(friendsPosts);
-      setAllPosts(postsWithData);
+      // Check if there are more posts
+      const hasMore = postsWithData.length === 20;
+      
+      if (reset) {
+        setFriendsPosts(friendsPosts);
+        setAllPosts(postsWithData);
+      } else {
+        setFriendsPosts(prev => [...prev, ...friendsPosts]);
+        setAllPosts(prev => [...prev, ...postsWithData]);
+      }
+      
+      setHasMoreFriendsPosts(hasMore && friendsPosts.length > 0);
+      setHasMoreAllPosts(hasMore);
     } catch (error: any) {
       console.error("Error loading posts:", error);
       toast({
@@ -268,7 +292,10 @@ const Feed = () => {
         soundEffects.playLike();
         await supabase.from("post_likes").insert({ post_id: postId, user_id: userId });
       }
-      await loadPosts(userId);
+      // Refresh current view
+      setFriendsPage(1);
+      setAllPostsPage(1);
+      await loadPosts(userId, 1, true);
     } catch (error: any) {
       soundEffects.playError();
       toast({ title: "Hata", description: "İşlem gerçekleştirilemedi", variant: "destructive" });
@@ -280,7 +307,9 @@ const Feed = () => {
       try {
         await supabase.from("saved_posts").delete().eq("post_id", postId).eq("user_id", userId);
         toast({ title: "Kaydedildi", description: "Gönderi kaydedilenlerden kaldırıldı" });
-        await loadPosts(userId);
+        setFriendsPage(1);
+        setAllPostsPage(1);
+        await loadPosts(userId, 1, true);
       } catch (error: any) {
         soundEffects.playError();
         toast({ title: "Hata", description: "İşlem gerçekleştirilemedi", variant: "destructive" });
@@ -311,7 +340,9 @@ const Feed = () => {
           ? "Gönderi koleksiyona kaydedildi"
           : "Gönderi başarıyla kaydedildi"
       });
-      await loadPosts(userId);
+      setFriendsPage(1);
+      setAllPostsPage(1);
+      await loadPosts(userId, 1, true);
       setSaveDialogOpen(false);
       setPostToSave(null);
       setSelectedCollection("");
@@ -421,7 +452,9 @@ const Feed = () => {
       setNewComment("");
       setReplyingTo(null);
       await loadComments(selectedPost.id);
-      await loadPosts(userId);
+      setFriendsPage(1);
+      setAllPostsPage(1);
+      await loadPosts(userId, 1, true);
     } catch (error: any) {
       soundEffects.playError();
       toast({ title: "Hata", description: "Yorum eklenemedi", variant: "destructive" });
@@ -474,7 +507,9 @@ const Feed = () => {
       });
 
       setShareDialogOpen(false);
-      await loadPosts(userId);
+      setFriendsPage(1);
+      setAllPostsPage(1);
+      await loadPosts(userId, 1, true);
     } catch (error: any) {
       toast({ title: "Hata", description: "Gönderi paylaşılamadı", variant: "destructive" });
     }
@@ -489,6 +524,36 @@ const Feed = () => {
     }
     setSelectedFriends(newSelection);
   };
+
+  const handleLoadMoreFriends = useCallback(async () => {
+    if (!userId || !hasMoreFriendsPosts) return;
+    const nextPage = friendsPage + 1;
+    setFriendsPage(nextPage);
+    await loadPosts(userId, nextPage, false);
+  }, [userId, friendsPage, hasMoreFriendsPosts]);
+
+  const handleLoadMoreAll = useCallback(async () => {
+    if (!userId || !hasMoreAllPosts) return;
+    const nextPage = allPostsPage + 1;
+    setAllPostsPage(nextPage);
+    await loadPosts(userId, nextPage, false);
+  }, [userId, allPostsPage, hasMoreAllPosts]);
+
+  const friendsInfiniteScroll = useInfiniteScroll({
+    onLoadMore: handleLoadMoreFriends,
+    hasMore: hasMoreFriendsPosts,
+    isLoading: loading,
+    threshold: 0.5,
+    rootMargin: "200px",
+  });
+
+  const allPostsInfiniteScroll = useInfiniteScroll({
+    onLoadMore: handleLoadMoreAll,
+    hasMore: hasMoreAllPosts,
+    isLoading: loading,
+    threshold: 0.5,
+    rootMargin: "200px",
+  });
 
   const renderComment = (comment: Comment, isReply: boolean = false) => (
     <div key={comment.id} className={`${isReply ? 'ml-8 mt-2' : 'mt-4'} animate-fade-in`}>
@@ -741,7 +806,15 @@ const Feed = () => {
                 variant="gradient"
               />
             ) : (
-              friendsPosts.map(renderPost)
+              <>
+                {friendsPosts.map(renderPost)}
+                <div ref={friendsInfiniteScroll.sentinelRef} className="h-10" />
+                {friendsInfiniteScroll.isLoadingMore && (
+                  <div className="py-8">
+                    <LoadingSpinner size="md" text="Daha fazla gönderi yükleniyor..." />
+                  </div>
+                )}
+              </>
             )}
           </TabsContent>
           
@@ -757,7 +830,15 @@ const Feed = () => {
                 variant="gradient"
               />
             ) : (
-              allPosts.map(renderPost)
+              <>
+                {allPosts.map(renderPost)}
+                <div ref={allPostsInfiniteScroll.sentinelRef} className="h-10" />
+                {allPostsInfiniteScroll.isLoadingMore && (
+                  <div className="py-8">
+                    <LoadingSpinner size="md" text="Daha fazla gönderi yükleniyor..." />
+                  </div>
+                )}
+              </>
             )}
           </TabsContent>
         </Tabs>
