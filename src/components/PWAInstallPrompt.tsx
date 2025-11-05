@@ -7,11 +7,26 @@ import { useNavigate } from "react-router-dom";
 
 export const PWAInstallPrompt = () => {
   const { canInstall, isInstalled, isIOS, promptInstall } = usePWAInstall();
-  const [isDismissed, setIsDismissed] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(() => {
+    // Check if dismissed in last 7 days
+    const dismissed = localStorage.getItem('pwa-install-dismissed');
+    if (dismissed) {
+      const dismissedDate = new Date(dismissed);
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return dismissedDate > weekAgo;
+    }
+    return false;
+  });
   const navigate = useNavigate();
 
-  // Don't show if already installed or dismissed
+  // Don't show if already installed or dismissed recently
   if (isInstalled || isDismissed) return null;
+
+  const handleDismiss = () => {
+    localStorage.setItem('pwa-install-dismissed', new Date().toISOString());
+    setIsDismissed(true);
+  };
 
   // Show different UI for iOS vs Android
   if (isIOS && !canInstall) {
@@ -37,7 +52,7 @@ export const PWAInstallPrompt = () => {
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => setIsDismissed(true)}
+                onClick={handleDismiss}
               >
                 Daha Sonra
               </Button>
@@ -47,7 +62,7 @@ export const PWAInstallPrompt = () => {
             size="icon"
             variant="ghost"
             className="shrink-0"
-            onClick={() => setIsDismissed(true)}
+            onClick={handleDismiss}
           >
             <X className="w-4 h-4" />
           </Button>
@@ -81,7 +96,7 @@ export const PWAInstallPrompt = () => {
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => setIsDismissed(true)}
+                onClick={handleDismiss}
               >
                 Daha Sonra
               </Button>
@@ -91,7 +106,7 @@ export const PWAInstallPrompt = () => {
             size="icon"
             variant="ghost"
             className="shrink-0"
-            onClick={() => setIsDismissed(true)}
+            onClick={handleDismiss}
           >
             <X className="w-4 h-4" />
           </Button>
