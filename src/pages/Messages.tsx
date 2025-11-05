@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Search, ArrowLeft, FileText, Smile, Paperclip, Ban, Check, CheckCheck, Mic, Image as ImageIcon, Pin, Forward, MoreVertical, Users, Phone, Video, Clock } from "lucide-react";
+import { Loader2, Send, Search, ArrowLeft, FileText, Smile, Paperclip, Ban, Check, CheckCheck, Mic, Image as ImageIcon, Pin, Forward, MoreVertical, Users, Phone, Video, Clock, MessageSquare, UserPlus, Heart } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { useIsMobile } from "@/hooks/use-mobile";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
@@ -30,6 +30,7 @@ import { tr } from "date-fns/locale";
 import { playRingtone, vibrate, showBrowserNotification } from "@/utils/callNotifications";
 import { requestNotificationPermission, subscribeToPushNotifications, checkNotificationPermission } from "@/utils/pushNotifications";
 import { SkeletonConversationList } from "@/components/SkeletonConversation";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface Friend {
   user_id: string;
@@ -1674,9 +1675,15 @@ const Messages = () => {
                   <ScrollArea className="h-[calc(100vh-380px)]">
                     <div className="space-y-2">
                       {friendConversations.length === 0 ? (
-                        <p className="text-center text-muted-foreground py-8 text-sm">
-                          Henüz arkadaş mesajınız yok
-                        </p>
+                        <div className="py-8 px-4">
+                          <EmptyState
+                            icon={UserPlus}
+                            title="Mesaj yok"
+                            description="Henüz arkadaşlarınızdan mesaj almadınız. Yeni arkadaşlar bulun ve sohbete başlayın!"
+                            actionLabel="Arkadaş Bul"
+                            onAction={() => navigate("/discovery")}
+                          />
+                        </div>
                       ) : (
                         friendConversations.map((conv) => (
                           <div key={conv.id} className="relative group">
@@ -1711,9 +1718,15 @@ const Messages = () => {
                   <ScrollArea className="h-[calc(100vh-380px)]">
                     <div className="space-y-2">
                       {matchConversations.length === 0 ? (
-                        <p className="text-center text-muted-foreground py-8 text-sm">
-                          Henüz eşleşme mesajınız yok
-                        </p>
+                        <div className="py-8 px-4">
+                          <EmptyState
+                            icon={Heart}
+                            title="Eşleşme yok"
+                            description="Henüz eşleşmenizden mesaj almadınız. Match bölümünden yeni insanlarla eşleşin!"
+                            actionLabel="Eşleşmeleri Gör"
+                            onAction={() => navigate("/match")}
+                          />
+                        </div>
                       ) : (
                         matchConversations.map((conv) => (
                           <div key={conv.id} className="relative group">
@@ -1748,14 +1761,14 @@ const Messages = () => {
                   <ScrollArea className="h-[calc(100vh-380px)]">
                     <div className="space-y-2">
                       {groupConversations.length === 0 ? (
-                        <div className="text-center py-8">
-                          <p className="text-muted-foreground text-sm mb-4">
-                            Henüz grubunuz yok
-                          </p>
-                          <Button onClick={() => navigate("/groups")}>
-                            <Users className="w-4 h-4 mr-2" />
-                            Grup Oluştur
-                          </Button>
+                        <div className="py-8 px-4">
+                          <EmptyState
+                            icon={Users}
+                            title="Grup yok"
+                            description="Henüz hiçbir gruba üye değilsiniz. Grup oluşturun veya gruplara katılın!"
+                            actionLabel="Gruplara Git"
+                            onAction={() => navigate("/groups")}
+                          />
                         </div>
                       ) : (
                         groupConversations.map((conv) => (
@@ -1787,9 +1800,13 @@ const Messages = () => {
                   <ScrollArea className="h-[calc(100vh-380px)]">
                     <div className="space-y-2">
                       {otherConversations.length === 0 ? (
-                        <p className="text-center text-muted-foreground py-8 text-sm">
-                          Henüz başka mesajınız yok
-                        </p>
+                        <div className="py-8 px-4">
+                          <EmptyState
+                            icon={MessageSquare}
+                            title="Mesaj yok"
+                            description="Henüz diğer mesajlarınız yok."
+                          />
+                        </div>
                       ) : (
                         otherConversations.map((conv) => (
                           <div key={conv.id} className="relative group">
@@ -2323,12 +2340,14 @@ const Messages = () => {
                 )}
               </>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                <Users className="w-16 h-16 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Bir konuşma seçin</h3>
-                <p className="text-sm text-muted-foreground">
-                  Mesajlaşmaya başlamak için sol taraftan bir kişi veya grup seçin
-                </p>
+              <div className="flex items-center justify-center h-full p-8">
+                <EmptyState
+                  icon={MessageSquare}
+                  title="Bir konuşma seçin"
+                  description="Mesajlaşmaya başlamak için sol taraftan bir kişi veya grup seçin. Yeni arkadaşlar edinmek için keşfet bölümünü ziyaret edebilirsiniz."
+                  actionLabel="Arkadaş Bul"
+                  onAction={() => navigate("/discovery")}
+                />
               </div>
             )}
           </Card>

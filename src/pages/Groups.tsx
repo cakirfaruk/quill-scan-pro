@@ -10,7 +10,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Plus, MessageCircle, Loader2 } from "lucide-react";
+import { Users, Plus, MessageCircle, Loader2, UserPlus } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { SkeletonGroupList } from "@/components/SkeletonGroup";
@@ -250,17 +251,13 @@ const Groups = () => {
         </div>
 
         {groups.length === 0 ? (
-          <Card className="p-12 text-center">
-            <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-medium mb-2">Henüz grup yok</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Arkadaşlarınızla grup sohbetleri başlatın
-            </p>
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              İlk Grubunuzu Oluşturun
-            </Button>
-          </Card>
+          <EmptyState
+            icon={Users}
+            title="Henüz grubunuz yok"
+            description="Arkadaşlarınızla grup sohbetleri başlatın, fotoğraf ve mesaj paylaşın, birlikte vakit geçirin!"
+            actionLabel="İlk Grubunuzu Oluşturun"
+            onAction={() => setCreateDialogOpen(true)}
+          />
         ) : (
           <div className="grid gap-4">
             {groups.map((group) => (

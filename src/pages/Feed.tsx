@@ -15,12 +15,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Reply, Loader2, RefreshCw, Bookmark, Folder, FolderPlus } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Reply, Loader2, RefreshCw, Bookmark, Folder, FolderPlus, Rss, Users } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { soundEffects } from "@/utils/soundEffects";
 import { StoriesBar } from "@/components/StoriesBar";
 import { SkeletonPost } from "@/components/ui/enhanced-skeleton";
 import { ParsedText } from "@/components/ParsedText";
+import { EmptyState } from "@/components/ui/empty-state";
+import { CreatePostDialog } from "@/components/CreatePostDialog";
 
 interface Post {
   id: string;
@@ -693,15 +695,13 @@ const Feed = () => {
           
           <TabsContent value="friends" className="mt-0">
             {friendsPosts.length === 0 ? (
-              <Card className="p-12 text-center">
-                <MessageCircle className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                <p className="text-muted-foreground text-lg">
-                  Henüz arkadaşlarınızdan paylaşım yok
-                </p>
-                <p className="text-muted-foreground text-sm mt-2">
-                  Keşfet sekmesinden yeni arkadaşlar bulun
-                </p>
-              </Card>
+              <EmptyState
+                icon={Users}
+                title="Henüz arkadaşınızın paylaşımı yok"
+                description="Arkadaşlarınızın paylaşımlarını görmek için keşfet sekmesinden yeni insanlarla tanışın ve arkadaş olun."
+                actionLabel="Arkadaş Bul"
+                onAction={() => navigate("/discovery")}
+              />
             ) : (
               friendsPosts.map(renderPost)
             )}
@@ -709,11 +709,13 @@ const Feed = () => {
           
           <TabsContent value="discover" className="mt-0">
             {allPosts.length === 0 ? (
-              <Card className="p-12 text-center">
-                <p className="text-muted-foreground">
-                  Henüz paylaşım yok
-                </p>
-              </Card>
+              <EmptyState
+                icon={Rss}
+                title="Henüz paylaşım yok"
+                description="İlk paylaşımı siz yapın! Fotoğraf, video veya düşüncelerinizi paylaşarak topluluğa katılın."
+                actionLabel="İlk Paylaşımı Yap"
+                onAction={() => navigate("/profile")}
+              />
             ) : (
               allPosts.map(renderPost)
             )}
