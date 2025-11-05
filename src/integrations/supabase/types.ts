@@ -1270,6 +1270,7 @@ export type Database = {
       }
       notification_preferences: {
         Row: {
+          alert_severity_threshold: string
           created_at: string
           enable_analysis_results: boolean
           enable_email_notifications: boolean
@@ -1283,7 +1284,9 @@ export type Database = {
           enable_post_comments: boolean
           enable_post_likes: boolean
           enable_push_notifications: boolean
+          error_alerts_enabled: boolean
           id: string
+          push_enabled: boolean
           quiet_hours_enabled: boolean
           quiet_hours_end: string | null
           quiet_hours_start: string | null
@@ -1291,6 +1294,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          alert_severity_threshold?: string
           created_at?: string
           enable_analysis_results?: boolean
           enable_email_notifications?: boolean
@@ -1304,7 +1308,9 @@ export type Database = {
           enable_post_comments?: boolean
           enable_post_likes?: boolean
           enable_push_notifications?: boolean
+          error_alerts_enabled?: boolean
           id?: string
+          push_enabled?: boolean
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string | null
           quiet_hours_start?: string | null
@@ -1312,6 +1318,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          alert_severity_threshold?: string
           created_at?: string
           enable_analysis_results?: boolean
           enable_email_notifications?: boolean
@@ -1325,7 +1332,9 @@ export type Database = {
           enable_post_comments?: boolean
           enable_post_likes?: boolean
           enable_push_notifications?: boolean
+          error_alerts_enabled?: boolean
           id?: string
+          push_enabled?: boolean
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string | null
           quiet_hours_start?: string | null
