@@ -383,6 +383,10 @@ const Profile = () => {
 
       setCurrentUserId(user.id);
 
+      // Get userId from URL query params if present
+      const searchParams = new URLSearchParams(window.location.search);
+      const userIdParam = searchParams.get('userId');
+
       // If no username in URL, show current user's profile by user_id
       let profileData;
       let profileError;
@@ -393,6 +397,15 @@ const Profile = () => {
           .from("profiles")
           .select("*")
           .eq("username", username)
+          .maybeSingle();
+        profileData = result.data;
+        profileError = result.error;
+      } else if (userIdParam) {
+        // Looking at another user's profile - search by userId from query param
+        const result = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", userIdParam)
           .maybeSingle();
         profileData = result.data;
         profileError = result.error;
