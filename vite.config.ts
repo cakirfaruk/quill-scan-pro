@@ -92,17 +92,21 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // Vendor chunks
+          // CRITICAL: Keep React and React-DOM together to avoid dispatcher issues
           if (id.includes('node_modules')) {
-            // React core
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'react-vendor';
+            // React ecosystem - MUST be in same chunk
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-is') || id.includes('scheduler')) {
+              return 'react-core';
+            }
+            // React Router
+            if (id.includes('react-router')) {
+              return 'react-router';
             }
             // Framer Motion (animation library)
             if (id.includes('framer-motion')) {
               return 'framer-vendor';
             }
-            // Radix UI (component library)
+            // Radix UI (component library) - group together
             if (id.includes('@radix-ui')) {
               return 'radix-vendor';
             }
@@ -111,7 +115,7 @@ export default defineConfig(({ mode }) => ({
               return 'supabase-vendor';
             }
             // React Query
-            if (id.includes('@tanstack')) {
+            if (id.includes('@tanstack/react-query')) {
               return 'query-vendor';
             }
             // Date utilities
@@ -122,41 +126,25 @@ export default defineConfig(({ mode }) => ({
             return 'vendor';
           }
           
-          // Page chunks - group by route
+          // Page chunks - only split large pages
           if (id.includes('src/pages/')) {
-            const pageName = id.split('src/pages/')[1].split('.')[0];
-            // Group smaller pages together
+            const pageName = id.split('src/pages/')[1]?.split('.')[0];
+            if (!pageName) return undefined;
+            
+            // Keep smaller pages in main bundle
             const smallPages = ['About', 'FAQ', 'Credits', 'NotFound', 'VapidKeyGenerator'];
             if (smallPages.some(p => pageName.includes(p))) {
-              return 'pages-misc';
+              return undefined; // Include in main bundle
             }
-            // Group analysis pages
-            const analysisPages = ['Tarot', 'CoffeeFortune', 'Palmistry', 'Handwriting', 'BirthChart', 'Numerology', 'DreamInterpretation', 'DailyHoroscope'];
-            if (analysisPages.some(p => pageName.includes(p))) {
-              return 'pages-analysis';
+            
+            // Large pages get their own chunks
+            const largePages = ['Feed', 'Messages', 'Groups', 'Match', 'Profile'];
+            if (largePages.some(p => pageName.includes(p))) {
+              return `page-${pageName.toLowerCase()}`;
             }
-            // Group social pages
-            const socialPages = ['Feed', 'Friends', 'Messages', 'Groups', 'GroupChat', 'Reels', 'Explore', 'Discovery'];
-            if (socialPages.some(p => pageName.includes(p))) {
-              return 'pages-social';
-            }
-            // Keep large pages separate
-            return `page-${pageName.toLowerCase()}`;
-          }
-          
-          // Component chunks
-          if (id.includes('src/components/')) {
-            // UI components
-            if (id.includes('src/components/ui/')) {
-              return 'ui-components';
-            }
-            // Large feature components
-            const largeComponents = ['VideoCallDialog', 'GroupVideoCallDialog', 'CallInterface'];
-            if (largeComponents.some(c => id.includes(c))) {
-              return 'components-video';
-            }
-            // Group smaller components
-            return 'components';
+            
+            // Group medium pages
+            return 'pages-medium';
           }
         },
       },
