@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   AlertCircle,
   AlertTriangle,
@@ -46,6 +47,7 @@ interface PerformanceMetric {
 }
 
 const ErrorMonitor = () => {
+  const isMobile = useIsMobile();
   const [selectedSeverity, setSelectedSeverity] = useState<ErrorSeverity | 'all'>('all');
 
   // Fetch error logs
@@ -142,41 +144,41 @@ const ErrorMonitor = () => {
   };
 
   return (
-    <div className="container max-w-7xl mx-auto p-4 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Error Monitoring & Performance</h1>
+    <div className="container max-w-7xl mx-auto p-2 sm:p-4 space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h1 className="text-2xl sm:text-3xl font-bold">Error Monitoring & Performance</h1>
         <Badge variant="outline">Live</Badge>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-blue-500 mb-2">
-            <Info className="h-5 w-5" />
-            <span className="font-semibold">Info</span>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center gap-2 text-blue-500 mb-1 sm:mb-2">
+            <Info className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="font-semibold text-sm sm:text-base">Info</span>
           </div>
-          <p className="text-3xl font-bold">{errorStats?.info || 0}</p>
+          <p className="text-2xl sm:text-3xl font-bold">{errorStats?.info || 0}</p>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-yellow-500 mb-2">
-            <AlertTriangle className="h-5 w-5" />
-            <span className="font-semibold">Warnings</span>
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center gap-2 text-yellow-500 mb-1 sm:mb-2">
+            <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="font-semibold text-sm sm:text-base">Warnings</span>
           </div>
-          <p className="text-3xl font-bold">{errorStats?.warning || 0}</p>
+          <p className="text-2xl sm:text-3xl font-bold">{errorStats?.warning || 0}</p>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-red-500 mb-2">
-            <AlertCircle className="h-5 w-5" />
-            <span className="font-semibold">Errors</span>
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center gap-2 text-red-500 mb-1 sm:mb-2">
+            <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="font-semibold text-sm sm:text-base">Errors</span>
           </div>
-          <p className="text-3xl font-bold">{errorStats?.error || 0}</p>
+          <p className="text-2xl sm:text-3xl font-bold">{errorStats?.error || 0}</p>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-purple-500 mb-2">
-            <Skull className="h-5 w-5" />
-            <span className="font-semibold">Fatal</span>
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center gap-2 text-purple-500 mb-1 sm:mb-2">
+            <Skull className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="font-semibold text-sm sm:text-base">Fatal</span>
           </div>
-          <p className="text-3xl font-bold">{errorStats?.fatal || 0}</p>
+          <p className="text-2xl sm:text-3xl font-bold">{errorStats?.fatal || 0}</p>
         </Card>
       </div>
 
@@ -188,10 +190,10 @@ const ErrorMonitor = () => {
 
         <TabsContent value="errors" className="space-y-4">
           {/* Severity Filter */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap overflow-x-auto">
             <Button
               variant={selectedSeverity === 'all' ? 'default' : 'outline'}
-              size="sm"
+              size={isMobile ? 'sm' : 'default'}
               onClick={() => setSelectedSeverity('all')}
             >
               All
@@ -200,7 +202,7 @@ const ErrorMonitor = () => {
               <Button
                 key={severity}
                 variant={selectedSeverity === severity ? 'default' : 'outline'}
-                size="sm"
+                size={isMobile ? 'sm' : 'default'}
                 onClick={() => setSelectedSeverity(severity)}
                 className="capitalize"
               >
@@ -210,7 +212,7 @@ const ErrorMonitor = () => {
           </div>
 
           {/* Error List */}
-          <ScrollArea className="h-[600px]">
+          <ScrollArea className={isMobile ? 'h-[500px]' : 'h-[600px]'}>
             <div className="space-y-3">
               {errorsLoading ? (
                 <p className="text-center text-muted-foreground py-8">Yükleniyor...</p>
@@ -271,15 +273,15 @@ const ErrorMonitor = () => {
 
         <TabsContent value="performance" className="space-y-4">
           {/* Performance Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
             {Object.entries(perfStats || {}).map(([metric, ratings]) => {
               const total = ratings.good + ratings['needs-improvement'] + ratings.poor;
               const goodPercentage = ((ratings.good / total) * 100).toFixed(0);
 
               return (
-                <Card key={metric} className="p-4">
-                  <div className="text-sm font-semibold mb-2">{metric}</div>
-                  <div className="text-2xl font-bold mb-2">{goodPercentage}%</div>
+                <Card key={metric} className="p-3 sm:p-4">
+                  <div className="text-xs sm:text-sm font-semibold mb-1 sm:mb-2">{metric}</div>
+                  <div className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">{goodPercentage}%</div>
                   <div className="flex gap-1">
                     <div
                       className="h-2 bg-green-500 rounded"
@@ -300,7 +302,7 @@ const ErrorMonitor = () => {
           </div>
 
           {/* Metrics List */}
-          <ScrollArea className="h-[600px]">
+          <ScrollArea className={isMobile ? 'h-[500px]' : 'h-[600px]'}>
             <div className="space-y-2">
               {metricsLoading ? (
                 <p className="text-center text-muted-foreground py-8">Yükleniyor...</p>
