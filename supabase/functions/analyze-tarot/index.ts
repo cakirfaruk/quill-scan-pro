@@ -179,7 +179,7 @@ JSON formatında şu yapıda cevap ver:
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'Sen uzman bir tarot okuyucususun. Kartları derinlemesine ve mistik bir şekilde yorumlarsın.' },
+          { role: 'system', content: 'Sen uzman bir tarot okuyucususun. Kartları derinlemesine ve mistik bir şekilde yorumlarsın. TAMAMEN TÜRKÇE yanıt verirsin, hiçbir İngilizce kelime kullanmazsın.' },
           { role: 'user', content: prompt }
         ],
         response_format: { type: "json_object" },

@@ -115,14 +115,14 @@ serve(async (req) => {
       });
     }
 
-    const prompt = `Sen deneyimli bir el falı (palmistry) uzmanısın. Bu avuç içi fotoğrafını detaylı analiz et ve Türkçe yorum yap.
+    const prompt = `Sen deneyimli bir el okuma uzmanısın. Bu avuç içi fotoğrafını detaylı analiz et ve TAMAMEN TÜRKÇE yorum yap.
 
-El falında analiz edilmesi gerekenler:
+El okumada analiz edilmesi gerekenler:
 1. Ana Çizgiler:
-   - Hayat çizgisi (Life line) - 2-3 paragraf analiz
-   - Akıl çizgisi (Head line) - 2-3 paragraf analiz
-   - Kalp çizgisi (Heart line) - 2-3 paragraf analiz
-   - Kader çizgisi (Fate line) - 2-3 paragraf analiz
+   - Hayat çizgisi - 2-3 paragraf analiz
+   - Akıl çizgisi - 2-3 paragraf analiz
+   - Kalp çizgisi - 2-3 paragraf analiz
+   - Kader çizgisi - 2-3 paragraf analiz
 
 2. İkincil Çizgiler ve İşaretler (2-3 paragraf)
 
@@ -135,13 +135,14 @@ Her çizgi için:
 - Kesintiler, dallanmalar, işaretler yorumla
 - Kişilik, sağlık, kariyer, ilişkiler açısından anlam belirt
 - Yaklaşık 200-300 kelime kullan
+- TAMAMEN TÜRKÇE yaz, hiçbir İngilizce kelime kullanma
 
 Her alan için (kişilik, sağlık, kariyer, ilişkiler, gelecek):
 - 3-4 paragraf detaylı analiz yap
 - Eldeki işaretlere göre kişiye özel yorumlar sun
-- Mistik ve geleneksel palmistry bilgilerini birleştir
+- Mistik ve geleneksel el okuma bilgilerini birleştir
 
-ÖNEMLİ: Analizin detaylı olmalı. Elde gördüğün önemli detayları yorumla.
+ÖNEMLİ: Analizin detaylı olmalı. Elde gördüğün önemli detayları yorumla. Cevabın TAMAMEN TÜRKÇE olmalı.
 
 JSON formatında şu yapıda cevap ver:
 {
@@ -171,7 +172,7 @@ JSON formatında şu yapıda cevap ver:
         messages: [
           { 
             role: 'system', 
-            content: 'Sen el falı (palmistry) konusunda uzman bir yorumcusun. Avuç çizgilerini ve işaretlerini okursun.' 
+            content: 'Sen el okuma konusunda uzman bir yorumcusun. Avuç çizgilerini ve işaretlerini okursun. TAMAMEN TÜRKÇE yanıt verirsin, hiçbir İngilizce kelime kullanmazsın.' 
           },
           { 
             role: 'user', 

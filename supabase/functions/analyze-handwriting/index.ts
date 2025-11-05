@@ -115,7 +115,7 @@ serve(async (req) => {
 
     console.log("Starting handwriting analysis...");
 
-    const systemPrompt = `Sen profesyonel bir grafoloji uzmanısın. El yazısı analizi konusunda derin bilgiye sahipsin. 
+    const systemPrompt = `Sen profesyonel bir grafoloji uzmanısın. El yazısı analizi konusunda derin bilgiye sahipsin. TAMAMEN TÜRKÇE yanıt verirsin, hiçbir İngilizce kelime kullanmazsın. 
     
 Görevin, verilen el yazısı görselini DETAYLI şekilde analiz etmek ve şu başlıklar altında değerlendirmek:
 

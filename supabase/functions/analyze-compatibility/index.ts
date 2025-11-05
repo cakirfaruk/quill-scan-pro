@@ -127,7 +127,7 @@ serve(async (req) => {
 
     console.log(`Analyzing compatibility with types: ${analysisTypes.join(", ")}...`);
 
-    let systemPrompt = `Sen profesyonel bir ilişki danışmanı ve uyum analistisin. İki kişi arasındaki uyumu ÇOK DETAYLI ve KAPSAMLI bir şekilde değerlendiriyorsun.
+    let systemPrompt = `Sen profesyonel bir ilişki danışmanı ve uyum analistisin. İki kişi arasındaki uyumu ÇOK DETAYLI ve KAPSAMLI bir şekilde değerlendiriyorsun. TAMAMEN TÜRKÇE yanıt verirsin, hiçbir İngilizce kelime kullanmazsın.
 
 📋 KİŞİ BİLGİLERİ:
 Kişi 1: ${name1 || gender1} (${gender1 === "male" ? "Erkek" : "Kadın"})

@@ -150,7 +150,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: 'google/gemini-2.5-flash',
           messages: [
-            { role: 'system', content: 'Sen bir analiz özetleme asistanısın. Kullanıcıya yararlı, kısa ve öz özetler sağlarsın.' },
+            { role: 'system', content: 'Sen bir analiz özetleme asistanısın. Kullanıcıya yararlı, kısa ve öz özetler sağlarsın. TAMAMEN TÜRKÇE yanıt verirsin, hiçbir İngilizce kelime kullanmazsın.' },
             { role: 'user', content: summaryPrompt }
           ],
         }),
@@ -187,7 +187,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: 'google/gemini-2.5-flash',
           messages: [
-            { role: 'system', content: 'Sen bir analiz harmanlama asistanısın. Birden fazla analiz özetini tutarlı şekilde birleştirirsin.' },
+            { role: 'system', content: 'Sen bir analiz harmanlama asistanısın. Birden fazla analiz özetini tutarlı şekilde birleştirirsin. TAMAMEN TÜRKÇE yanıt verirsin, hiçbir İngilizce kelime kullanmazsın.' },
             { role: 'user', content: harmonizePrompt }
           ],
         }),

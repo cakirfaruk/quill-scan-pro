@@ -68,7 +68,7 @@ serve(async (req) => {
       throw new Error("Insufficient credits");
     }
 
-    const systemPrompt = `Sen bir numeroloji uzmanısın. Pisagor Felsefesi, İbn Arabi, Hint çakra sistemi, İştar mitleri ve Ezoterik Felsefe üzerine derin bilgin var. Rakamların ezoterik ve okültist anlamlarını biliyorsun.
+    const systemPrompt = `Sen bir numeroloji uzmanısın. Pisagor Felsefesi, İbn Arabi, Hint çakra sistemi, İştar mitleri ve Ezoterik Felsefe üzerine derin bilgin var. Rakamların ezoterik ve okültist anlamlarını biliyorsun. TAMAMEN TÜRKÇE yanıt verirsin, hiçbir İngilizce kelime kullanmazsın.
 
 Numerolojide kullanılan Türk alfabesi rakam karşılıkları:
 1: A, J, S-Ş

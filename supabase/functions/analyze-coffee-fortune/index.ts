@@ -118,7 +118,7 @@ serve(async (req) => {
       });
     }
 
-    const prompt = `Sen uzman bir falcısın. Bu 3 farklı açıdan çekilmiş kahve fincanı fotoğraflarını detaylı analiz et ve Türkçe fal yorumu yap.
+    const prompt = `Sen uzman bir falcısın. Bu 3 farklı açıdan çekilmiş kahve fincanı fotoğraflarını detaylı analiz et ve TAMAMEN TÜRKÇE fal yorumu yap.
 
 İlk fotoğraf: Fincanın ana görünümü
 İkinci fotoğraf: Farklı açıdan görünüm
@@ -137,8 +137,9 @@ Her bölümde:
 - Mistik ve anlayışlı ol
 - Kişiye özel yorumlar yap
 - Yaklaşık 200-300 kelime kullan
+- TAMAMEN TÜRKÇE yaz, hiçbir İngilizce kelime kullanma
 
-ÖNEMLİ: Fotoğraflardaki detayları incele ve yorumla.
+ÖNEMLİ: Fotoğraflardaki detayları incele ve yorumla. Cevabın TAMAMEN TÜRKÇE olmalı.
 
 JSON formatında şu yapıda cevap ver:
 {
@@ -164,7 +165,7 @@ JSON formatında şu yapıda cevap ver:
         messages: [
           { 
             role: 'system', 
-            content: 'Sen deneyimli bir kahve falı uzmanısın. Fotoğraflardaki kahve telve şekillerini yorumlarsın.' 
+            content: 'Sen deneyimli bir kahve falı uzmanısın. Fotoğraflardaki kahve telve şekillerini yorumlarsın. TAMAMEN TÜRKÇE yanıt verirsin, hiçbir İngilizce kelime kullanmazsın.' 
           },
           { 
             role: 'user', 
