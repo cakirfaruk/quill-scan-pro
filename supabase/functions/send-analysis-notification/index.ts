@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,11 +21,29 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { userId, analysisType, title } = await req.json();
+    // Validate input
+    const requestSchema = z.object({
+      userId: z.string().uuid('Invalid user ID format'),
+      analysisType: z.enum(['tarot', 'coffee', 'dream', 'palmistry', 'horoscope', 'birthchart', 'numerology'], {
+        errorMap: () => ({ message: 'Invalid analysis type' })
+      }),
+      title: z.string().min(1).max(200, 'Title too long').trim()
+    });
 
-    if (!userId || !analysisType || !title) {
-      throw new Error('Missing required fields: userId, analysisType, title');
+    const validation = requestSchema.safeParse(await req.json());
+    
+    if (!validation.success) {
+      console.error('Validation error:', validation.error);
+      return new Response(
+        JSON.stringify({ error: 'Geçersiz istek verisi' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      );
     }
+
+    const { userId, analysisType, title } = validation.data;
 
     console.log(`Sending notification to user ${userId} for ${analysisType}`);
 

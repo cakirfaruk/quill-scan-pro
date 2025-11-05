@@ -50,8 +50,13 @@ export async function subscribeToPushNotifications(): Promise<boolean> {
     let subscription = await registration.pushManager.getSubscription();
 
     if (!subscription) {
-      // VAPID public key
-      const vapidPublicKey = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEq5JAhzneEPYGQVoNY9D7bk2YDbrGRKumsNFitz4Awsd3cq10USM0i3pUCYmuFEnw42Q9sgB9783DEEMhYydjGQ';
+      // VAPID public key from environment
+      const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+
+      if (!vapidPublicKey) {
+        console.error('VAPID public key not configured');
+        return false;
+      }
 
       const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
 
