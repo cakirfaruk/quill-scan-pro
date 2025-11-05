@@ -196,13 +196,13 @@ const AppRoutes = () => {
 
   const showFAB = location.pathname !== "/" && location.pathname !== "/auth";
 
-  // Page transition variants
+  // Simplified page transition for mobile performance
   const pageTransition = {
-    initial: { opacity: 0, y: 10 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -10 },
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0 },
     transition: { 
-      duration: 0.3, 
+      duration: 0.2, 
       ease: "easeInOut" as const
     }
   };
@@ -234,17 +234,8 @@ const AppRoutes = () => {
           callerName={incomingGroupCall.callerName}
         />
       )}
-      <Suspense fallback={<LoadingFallback />}>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={location.pathname}
-            initial={pageTransition.initial}
-            animate={pageTransition.animate}
-            exit={pageTransition.exit}
-            transition={pageTransition.transition}
-            className="w-full"
-          >
-            <Routes location={location}>
+      <Suspense fallback={<LoadingFallback fullScreen={true} size="lg" />}>
+        <Routes location={location}>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/profile/:username?" element={<Profile />} />
@@ -280,9 +271,7 @@ const AppRoutes = () => {
               <Route path="/install" element={<Install />} />
               <Route path="/feed" element={<Feed />} />
               <Route path="*" element={<NotFound />} />
-            </Routes>
-          </motion.div>
-        </AnimatePresence>
+        </Routes>
       </Suspense>
       {showNav && <MobileNav />}
       {showFAB && <FloatingActionButton />}

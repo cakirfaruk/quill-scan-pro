@@ -29,30 +29,28 @@ const Index = () => {
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     
-    // Check if user has seen onboarding
     if (user) {
+      // Check if user has seen onboarding
       const hasSeenOnboarding = localStorage.getItem(`onboarding_${user.id}`);
       if (!hasSeenOnboarding) {
         setShowOnboarding(true);
+        setIsLoggedIn(true);
+      } else {
+        // User has seen onboarding, redirect immediately
+        navigate("/feed");
       }
-      setIsLoggedIn(true);
     }
   };
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
-    const userId = supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data }) => {
       if (data.session?.user) {
         localStorage.setItem(`onboarding_${data.session.user.id}`, 'true');
+        navigate("/feed");
       }
     });
   };
-
-  useEffect(() => {
-    if (isLoggedIn && !showOnboarding) {
-      navigate("/feed");
-    }
-  }, [isLoggedIn, showOnboarding, navigate]);
 
   // Show landing page
   return (

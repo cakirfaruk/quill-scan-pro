@@ -28,8 +28,6 @@ import { NoFriendsIllustration, NoPostsIllustration } from "@/components/EmptySt
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { OnboardingTour } from "@/components/OnboardingTour";
-import { useOnboarding } from "@/hooks/use-onboarding";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
 import { WidgetDashboard } from "@/components/WidgetDashboard";
@@ -88,7 +86,6 @@ interface Collection {
 const Feed = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { shouldShowOnboarding, markOnboardingComplete } = useOnboarding();
   const [loading, setLoading] = useState(true);
   const [friendsPosts, setFriendsPosts] = useState<Post[]>([]);
   const [allPosts, setAllPosts] = useState<Post[]>([]);
@@ -128,55 +125,6 @@ const Feed = () => {
     },
     onShowHelp: () => setShortcutsHelpOpen(true),
   });
-
-  const onboardingSteps = [
-    {
-      id: "welcome",
-      title: "KAM'a Hoş Geldin! 🎉",
-      description: "Kendini keşfet, ruhunu tanı ve eşini bul! Sana platformu tanıtalım.",
-      icon: <Sparkles className="w-5 h-5 text-primary" />,
-      position: "center" as const,
-    },
-    {
-      id: "search",
-      title: "Global Arama",
-      description: "⌘K veya Ctrl+K ile her yerden aramayı açabilirsin. Kullanıcılar, gönderiler, gruplar ve özellikler arasında hızlıca arama yapabilirsin.",
-      targetSelector: 'button[class*="w-8 sm:w-9"]',
-      position: "bottom" as const,
-      icon: <Search className="w-5 h-5 text-primary" />,
-    },
-    {
-      id: "home",
-      title: "Ana Sayfa Sekmeler",
-      description: "Arkadaşların veya tüm kullanıcıların gönderilerini görebilirsin. İstediğin zaman geçiş yapabilirsin.",
-      targetSelector: '[role="tablist"]',
-      position: "bottom" as const,
-      icon: <Home className="w-5 h-5 text-primary" />,
-    },
-    {
-      id: "stories",
-      title: "Hikayeler",
-      description: "Arkadaşlarının hikayelerini görüntüle veya kendi hikayeni paylaş!",
-      targetSelector: '[class*="stories"]',
-      position: "bottom" as const,
-      icon: <Rss className="w-5 h-5 text-primary" />,
-    },
-    {
-      id: "features",
-      title: "Fal ve Analiz Özellikleri",
-      description: "Tarot, kahve falı, numeroloji, doğum haritası ve daha fazlası! Global arama ile hızlıca erişebilirsin.",
-      position: "center" as const,
-      icon: <Sparkles className="w-5 h-5 text-primary" />,
-      action: {
-        label: "Özellikleri Keşfet",
-        onClick: () => {
-          // Open search
-          const searchButton = document.querySelector('button[class*="w-8 sm:w-9"]') as HTMLButtonElement;
-          searchButton?.click();
-        },
-      },
-    },
-  ];
 
   const handleRefresh = useCallback(async () => {
     soundEffects.playClick();
@@ -1174,16 +1122,6 @@ const Feed = () => {
         open={shortcutsHelpOpen}
         onOpenChange={setShortcutsHelpOpen}
       />
-
-      {/* Onboarding Tour */}
-      {shouldShowOnboarding && (
-        <OnboardingTour
-          steps={onboardingSteps}
-          onComplete={markOnboardingComplete}
-          onSkip={markOnboardingComplete}
-          storageKey="feed-tour"
-        />
-      )}
 
       {/* Gesture Indicator */}
       <GestureIndicator show={showGestureHint} type="swipe" />
