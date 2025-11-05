@@ -267,20 +267,20 @@ const Groups = () => {
             {groups.map((group, index) => (
               <ScrollReveal key={group.id} direction="up" delay={index * 0.1}>
                 <Card
-                  className="p-6 cursor-pointer hover:bg-accent/5 transition-colors"
+                  className="p-6 cursor-pointer group hover:shadow-elegant hover:bg-accent/10 transition-all duration-500 hover:-translate-y-1 hover:scale-[1.01] border-border/50 hover:border-primary/20"
                   onClick={() => navigate(`/groups/${group.id}`)}
                 >
                   <div className="flex items-start gap-4">
-                    <Avatar className="w-16 h-16">
+                    <Avatar className="w-16 h-16 transition-all duration-500 group-hover:scale-110 group-hover:ring-2 group-hover:ring-primary">
                       <AvatarImage src={group.photo_url || undefined} />
-                      <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xl">
+                      <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xl group-hover:from-primary group-hover:to-accent transition-all duration-500">
                         {group.name.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-lg">{group.name}</h3>
+                        <h3 className="font-semibold text-lg group-hover:text-primary transition-colors duration-300">{group.name}</h3>
                         {group.is_admin && (
                           <Badge variant="secondary" className="text-xs">
                             Admin

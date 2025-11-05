@@ -610,8 +610,8 @@ const Feed = () => {
 
   const renderPost = (post: Post) => (
     <ScrollReveal key={post.id} direction="up" delay={0}>
-      <Card className="mb-4 sm:mb-6 overflow-hidden shadow-card hover:shadow-xl transition-all duration-300 animate-fade-in">
-      <div className="flex items-center gap-3 p-3 sm:p-4">
+      <Card className="mb-4 sm:mb-6 overflow-hidden group hover:shadow-elegant transition-all duration-500 hover:-translate-y-1 hover:scale-[1.01] animate-fade-in border-border/50 hover:border-primary/20">
+      <div className="flex items-center gap-3 p-3 sm:p-4 bg-gradient-to-r from-transparent to-transparent group-hover:from-primary/5 group-hover:to-transparent transition-all duration-500">
         <Avatar 
           className="w-10 h-10 sm:w-12 sm:h-12 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
           onClick={() => navigate(`/profile/${post.profile.username}`)}
@@ -660,12 +660,12 @@ const Feed = () => {
       )}
 
       {post.media_url && (
-        <div className="relative">
+        <div className="relative overflow-hidden group/media">
           {post.media_type === "image" ? (
             <img 
               src={post.media_url} 
               alt="Post" 
-              className="w-full object-cover max-h-96 sm:max-h-[500px]"
+              className="w-full object-cover max-h-96 sm:max-h-[500px] transition-transform duration-700 group-hover/media:scale-105"
             />
           ) : post.media_type === "video" ? (
             <video 
@@ -701,40 +701,40 @@ const Feed = () => {
           <Button
             variant="ghost"
             size="sm"
-            className={`flex-1 gap-2 transition-colors press-effect ${post.hasLiked ? "text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950" : "hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950"}`}
+            className={`flex-1 gap-2 transition-all duration-300 hover:scale-105 active:scale-95 ${post.hasLiked ? "text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950" : "hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950"}`}
             onClick={() => handleLike(post.id, post.hasLiked)}
           >
-            <Heart className={`w-5 h-5 transition-all ${post.hasLiked ? "fill-red-500 animate-bounce-in" : ""}`} />
+            <Heart className={`w-5 h-5 transition-all duration-300 ${post.hasLiked ? "fill-red-500 animate-bounce-in" : "group-hover:scale-110"}`} />
             Beğen
           </Button>
 
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 gap-2 hover:bg-blue-50 hover:text-blue-500 transition-colors press-effect dark:hover:bg-blue-950"
+            className="flex-1 gap-2 hover:bg-blue-50 hover:text-blue-500 transition-all duration-300 hover:scale-105 active:scale-95 dark:hover:bg-blue-950"
             onClick={() => handleOpenComments(post)}
           >
-            <MessageCircle className="w-5 h-5" />
+            <MessageCircle className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
             Yorum
           </Button>
 
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 gap-2 hover:bg-green-50 hover:text-green-500 transition-colors press-effect"
+            className="flex-1 gap-2 hover:bg-green-50 hover:text-green-500 transition-all duration-300 hover:scale-105 active:scale-95 dark:hover:bg-green-950"
             onClick={() => handleOpenShareDialog(post)}
           >
-            <Share2 className="w-5 h-5" />
+            <Share2 className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
             Paylaş
           </Button>
 
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 gap-2 hover:bg-yellow-50 hover:text-yellow-600 transition-colors press-effect"
+            className="flex-1 gap-2 hover:bg-yellow-50 hover:text-yellow-600 transition-all duration-300 hover:scale-105 active:scale-95 dark:hover:bg-yellow-950"
             onClick={() => handleSave(post.id, post.hasSaved)}
           >
-            <Bookmark className={`w-5 h-5 transition-transform hover:scale-110 ${post.hasSaved ? "fill-yellow-600 text-yellow-600 animate-bounce-in" : ""}`} />
+            <Bookmark className={`w-5 h-5 transition-all duration-300 ${post.hasSaved ? "fill-yellow-600 text-yellow-600 animate-bounce-in" : "group-hover:scale-110"}`} />
             Kaydet
           </Button>
         </div>
