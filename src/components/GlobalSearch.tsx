@@ -1,12 +1,19 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Users, FileText, Hash, UserCircle, Loader2, Clock, X } from "lucide-react";
+import { Search, Users, FileText, Hash, UserCircle, Loader2, Clock, X, SlidersHorizontal } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface SearchResult {
   type: "user" | "post" | "group" | "hashtag";
@@ -26,12 +33,17 @@ interface SearchHistoryItem {
 const SEARCH_HISTORY_KEY = "global-search-history";
 const MAX_HISTORY_ITEMS = 10;
 
+type SearchType = "all" | "user" | "post" | "group" | "hashtag";
+type SortBy = "relevance" | "date" | "popular";
+
 export const GlobalSearch = () => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
+  const [filterType, setFilterType] = useState<SearchType>("all");
+  const [sortBy, setSortBy] = useState<SortBy>("relevance");
   const navigate = useNavigate();
 
   // Load search history from localStorage
@@ -79,97 +91,146 @@ export const GlobalSearch = () => {
     saveToHistory(searchQuery);
 
     try {
-      // Search users
-      const { data: users } = await supabase
-        .from("profiles")
-        .select("user_id, username, full_name, profile_photo")
-        .or(`username.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`)
-        .limit(5);
+      // Search users (if filter allows)
+      if (filterType === "all" || filterType === "user") {
+        const { data: users } = await supabase
+          .from("profiles")
+          .select("user_id, username, full_name, profile_photo, created_at")
+          .or(`username.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`)
+          .limit(20);
 
-      if (users) {
-        allResults.push(
-          ...users.map((user) => ({
-            type: "user" as const,
-            id: user.user_id,
-            title: user.username,
-            subtitle: user.full_name || undefined,
-            imageUrl: user.profile_photo || undefined,
-            data: user,
-          }))
-        );
+        if (users) {
+          allResults.push(
+            ...users.map((user) => ({
+              type: "user" as const,
+              id: user.user_id,
+              title: user.username,
+              subtitle: user.full_name || undefined,
+              imageUrl: user.profile_photo || undefined,
+              data: { ...user, created_at: user.created_at || new Date().toISOString() },
+            }))
+          );
+        }
       }
 
-      // Search posts
-      const { data: posts } = await supabase
-        .from("posts")
-        .select(`
-          id,
-          content,
-          created_at,
-          profiles:user_id (username, profile_photo)
-        `)
-        .ilike("content", `%${searchQuery}%`)
-        .order("created_at", { ascending: false })
-        .limit(5);
+      // Search posts (if filter allows)
+      if (filterType === "all" || filterType === "post") {
+        const { data: posts } = await supabase
+          .from("posts")
+          .select(`
+            id,
+            content,
+            created_at,
+            likes:post_likes(count),
+            comments:post_comments(count),
+            profiles:user_id (username, profile_photo)
+          `)
+          .ilike("content", `%${searchQuery}%`)
+          .order("created_at", { ascending: false })
+          .limit(20);
 
-      if (posts) {
-        allResults.push(
-          ...posts.map((post: any) => ({
-            type: "post" as const,
-            id: post.id,
-            title: post.content.substring(0, 60) + (post.content.length > 60 ? "..." : ""),
-            subtitle: `@${post.profiles?.username || "kullanıcı"}`,
-            imageUrl: post.profiles?.profile_photo || undefined,
-            data: post,
-          }))
-        );
+        if (posts) {
+          allResults.push(
+            ...posts.map((post: any) => ({
+              type: "post" as const,
+              id: post.id,
+              title: post.content.substring(0, 60) + (post.content.length > 60 ? "..." : ""),
+              subtitle: `@${post.profiles?.username || "kullanıcı"}`,
+              imageUrl: post.profiles?.profile_photo || undefined,
+              data: {
+                ...post,
+                popularity: (post.likes?.[0]?.count || 0) + (post.comments?.[0]?.count || 0),
+              },
+            }))
+          );
+        }
       }
 
-      // Search groups
-      const { data: groups } = await supabase
-        .from("groups")
-        .select("id, name, description, photo_url")
-        .ilike("name", `%${searchQuery}%`)
-        .limit(5);
+      // Search groups (if filter allows)
+      if (filterType === "all" || filterType === "group") {
+        const { data: groups } = await supabase
+          .from("groups")
+          .select(`
+            id,
+            name,
+            description,
+            photo_url,
+            created_at,
+            members:group_members(count)
+          `)
+          .ilike("name", `%${searchQuery}%`)
+          .limit(20);
 
-      if (groups) {
-        allResults.push(
-          ...groups.map((group) => ({
-            type: "group" as const,
-            id: group.id,
-            title: group.name,
-            subtitle: group.description || undefined,
-            imageUrl: group.photo_url || undefined,
-            data: group,
-          }))
-        );
+        if (groups) {
+          allResults.push(
+            ...groups.map((group: any) => ({
+              type: "group" as const,
+              id: group.id,
+              title: group.name,
+              subtitle: group.description || `${group.members?.[0]?.count || 0} üye`,
+              imageUrl: group.photo_url || undefined,
+              data: {
+                ...group,
+                popularity: group.members?.[0]?.count || 0,
+              },
+            }))
+          );
+        }
       }
 
-      // Search hashtags
-      const { data: hashtags } = await supabase
-        .from("hashtags")
-        .select("id, tag, usage_count")
-        .ilike("tag", `%${searchQuery}%`)
-        .order("usage_count", { ascending: false })
-        .limit(5);
+      // Search hashtags (if filter allows)
+      if (filterType === "all" || filterType === "hashtag") {
+        const { data: hashtags } = await supabase
+          .from("hashtags")
+          .select("id, tag, usage_count, created_at")
+          .ilike("tag", `%${searchQuery}%`)
+          .order("usage_count", { ascending: false })
+          .limit(20);
 
-      if (hashtags) {
-        allResults.push(
-          ...hashtags.map((hashtag) => ({
-            type: "hashtag" as const,
-            id: hashtag.id,
-            title: `#${hashtag.tag}`,
-            subtitle: `${hashtag.usage_count} gönderi`,
-            data: hashtag,
-          }))
-        );
+        if (hashtags) {
+          allResults.push(
+            ...hashtags.map((hashtag) => ({
+              type: "hashtag" as const,
+              id: hashtag.id,
+              title: `#${hashtag.tag}`,
+              subtitle: `${hashtag.usage_count} gönderi`,
+              data: {
+                ...hashtag,
+                popularity: hashtag.usage_count,
+                created_at: hashtag.created_at || new Date().toISOString(),
+              },
+            }))
+          );
+        }
       }
 
-      setResults(allResults);
+      // Apply sorting
+      const sortedResults = sortResults(allResults, sortBy);
+      setResults(sortedResults);
     } catch (error) {
       console.error("Search error:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const sortResults = (results: SearchResult[], sortType: SortBy): SearchResult[] => {
+    switch (sortType) {
+      case "date":
+        return [...results].sort((a, b) => {
+          const dateA = new Date(a.data?.created_at || 0).getTime();
+          const dateB = new Date(b.data?.created_at || 0).getTime();
+          return dateB - dateA;
+        });
+      case "popular":
+        return [...results].sort((a, b) => {
+          const popA = a.data?.popularity || 0;
+          const popB = b.data?.popularity || 0;
+          return popB - popA;
+        });
+      case "relevance":
+      default:
+        return results;
     }
   };
 
@@ -273,6 +334,55 @@ export const GlobalSearch = () => {
               className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12"
               autoFocus
             />
+          </div>
+
+          {/* Filters */}
+          <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
+            <Tabs value={filterType} onValueChange={(v) => setFilterType(v as SearchType)} className="flex-1">
+              <TabsList className="h-8">
+                <TabsTrigger value="all" className="text-xs h-7">Tümü</TabsTrigger>
+                <TabsTrigger value="user" className="text-xs h-7">
+                  <Users className="w-3 h-3 mr-1" />
+                  Kullanıcı
+                </TabsTrigger>
+                <TabsTrigger value="post" className="text-xs h-7">
+                  <FileText className="w-3 h-3 mr-1" />
+                  Gönderi
+                </TabsTrigger>
+                <TabsTrigger value="group" className="text-xs h-7">
+                  <Users className="w-3 h-3 mr-1" />
+                  Grup
+                </TabsTrigger>
+                <TabsTrigger value="hashtag" className="text-xs h-7">
+                  <Hash className="w-3 h-3 mr-1" />
+                  Hashtag
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 gap-1">
+                  <SlidersHorizontal className="w-3 h-3" />
+                  <span className="text-xs">
+                    {sortBy === "relevance" && "İlgililik"}
+                    {sortBy === "date" && "Tarih"}
+                    {sortBy === "popular" && "Popüler"}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setSortBy("relevance")}>
+                  İlgililik
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy("date")}>
+                  En Yeni
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy("popular")}>
+                  En Popüler
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <ScrollArea className="max-h-[400px]">
