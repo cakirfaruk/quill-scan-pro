@@ -7,6 +7,7 @@ import { UserPlus, X, RefreshCw, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
+import { EnhancedSkeleton } from "@/components/ui/enhanced-skeleton";
 
 interface FriendSuggestion {
   id: string;
@@ -166,8 +167,21 @@ export const FriendSuggestions = () => {
             Arkadaş Önerileri
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">Yükleniyor...</p>
+        <CardContent className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-start gap-3 p-3 rounded-lg border animate-fade-in">
+              <EnhancedSkeleton variant="circular" width={48} height={48} />
+              <div className="flex-1 space-y-2">
+                <EnhancedSkeleton variant="text" width="60%" />
+                <EnhancedSkeleton variant="text" width="80%" />
+                <EnhancedSkeleton variant="rectangular" height={4} />
+                <div className="flex gap-2">
+                  <EnhancedSkeleton variant="rounded" width={100} height={32} />
+                  <EnhancedSkeleton variant="rounded" width={32} height={32} />
+                </div>
+              </div>
+            </div>
+          ))}
         </CardContent>
       </Card>
     );

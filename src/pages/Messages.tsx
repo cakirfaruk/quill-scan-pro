@@ -29,6 +29,7 @@ import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { playRingtone, vibrate, showBrowserNotification } from "@/utils/callNotifications";
 import { requestNotificationPermission, subscribeToPushNotifications, checkNotificationPermission } from "@/utils/pushNotifications";
+import { SkeletonConversationList } from "@/components/SkeletonConversation";
 
 interface Friend {
   user_id: string;
@@ -1424,9 +1425,21 @@ const Messages = () => {
     return (
       <div className="min-h-screen bg-gradient-subtle">
         <Header />
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-12 h-12 animate-spin text-primary" />
-        </div>
+        <main className="container mx-auto px-4 py-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-6">
+            Mesajlar
+          </h1>
+          <div className="grid md:grid-cols-3 gap-4">
+            <Card className="md:col-span-1 p-4">
+              <SkeletonConversationList count={8} />
+            </Card>
+            <Card className="md:col-span-2 p-4">
+              <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground">Yükleniyor...</p>
+              </div>
+            </Card>
+          </div>
+        </main>
       </div>
     );
   }

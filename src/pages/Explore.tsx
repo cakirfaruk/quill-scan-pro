@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, TrendingUp, Hash, Loader2, Users } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ParsedText } from "@/components/ParsedText";
+import { SkeletonHashtagList, SkeletonSearchResult } from "@/components/SkeletonHashtag";
 
 interface Hashtag {
   id: string;
@@ -252,9 +253,12 @@ const Explore = () => {
                 Trend Hashtagler
               </h2>
               
-              <ScrollArea className="h-[600px]">
-                <div className="space-y-3">
-                  {trendingHashtags.map((hashtag, index) => (
+              {isLoading ? (
+                <SkeletonHashtagList count={10} />
+              ) : (
+                <ScrollArea className="h-[600px]">
+                  <div className="space-y-3">
+                    {trendingHashtags.map((hashtag, index) => (
                     <button
                       key={hashtag.id}
                       onClick={() => handleHashtagClick(hashtag.tag)}
@@ -277,24 +281,38 @@ const Explore = () => {
                         <Hash className="w-5 h-5 text-accent opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     </button>
-                  ))}
+                    ))}
 
-                  {trendingHashtags.length === 0 && (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <Hash className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p>Henüz trend hashtag yok</p>
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
+                    {trendingHashtags.length === 0 && (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Hash className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                        <p>Henüz trend hashtag yok</p>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              )}
             </Card>
           </TabsContent>
 
           <TabsContent value="search">
-            <div className="space-y-4">
-              {searchType === "users" ? (
-                <>
-                  {userSearchResults.length > 0 && (
+            {isLoading ? (
+              <div className="space-y-4">
+                {searchType === "users" ? (
+                  <SkeletonHashtagList count={5} />
+                ) : (
+                  <>
+                    <SkeletonSearchResult />
+                    <SkeletonSearchResult />
+                    <SkeletonSearchResult />
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {searchType === "users" ? (
+                  <>
+                    {userSearchResults.length > 0 && (
                     <p className="text-sm text-muted-foreground">
                       {userSearchResults.length} kullanıcı bulundu
                     </p>
@@ -408,15 +426,16 @@ const Explore = () => {
                 </>
               )}
 
-              {!searchQuery && (
-                <Card className="p-12 text-center">
-                  <Search className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-                  <p className="text-muted-foreground">
-                    Hashtag veya kullanıcı arayarak keşfedin
-                  </p>
-                </Card>
-              )}
-            </div>
+                {!searchQuery && (
+                  <Card className="p-12 text-center">
+                    <Search className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                    <p className="text-muted-foreground">
+                      Hashtag veya kullanıcı arayarak keşfedin
+                    </p>
+                  </Card>
+                )}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </main>

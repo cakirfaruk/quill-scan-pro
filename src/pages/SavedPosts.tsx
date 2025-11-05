@@ -8,13 +8,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Bookmark, FolderPlus, Folder, Trash2, Edit, Plus } from "lucide-react";
+import { SkeletonPost } from "@/components/ui/enhanced-skeleton";
 
 interface SavedPost {
   id: string;
@@ -326,13 +326,9 @@ const SavedPosts = () => {
 
             {loading ? (
               <div className="space-y-4">
-                {[1, 2, 3].map(i => (
-                  <Card key={i}>
-                    <CardContent className="p-6">
-                      <Skeleton className="h-32 w-full" />
-                    </CardContent>
-                  </Card>
-                ))}
+                <SkeletonPost />
+                <SkeletonPost />
+                <SkeletonPost />
               </div>
             ) : filteredPosts.length === 0 ? (
               <Card>

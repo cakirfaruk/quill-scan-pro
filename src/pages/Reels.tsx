@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useSwipe } from "@/hooks/use-gestures";
 import { Heart, MessageCircle, Share2, MoreVertical, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SkeletonReel } from "@/components/SkeletonReel";
 
 interface Reel {
   id: string;
@@ -169,9 +170,7 @@ const Reels = () => {
     return (
       <div className="min-h-screen bg-black">
         <Header />
-        <div className="flex items-center justify-center h-[calc(100vh-64px)]">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        </div>
+        <SkeletonReel />
       </div>
     );
   }

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
+import { SkeletonCallHistoryGroup } from "@/components/SkeletonCallHistory";
 
 interface CallLog {
   id: string;
@@ -212,11 +213,7 @@ const CallHistory = () => {
           </div>
 
           {isLoading ? (
-            <Card className="p-8">
-              <div className="flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              </div>
-            </Card>
+            <SkeletonCallHistoryGroup count={4} />
           ) : calls.length === 0 ? (
             <Card className="p-8">
               <div className="text-center">

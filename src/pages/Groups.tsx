@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Users, Plus, MessageCircle, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
+import { SkeletonGroupList } from "@/components/SkeletonGroup";
 
 interface Group {
   id: string;
@@ -185,9 +186,14 @@ const Groups = () => {
     return (
       <div className="min-h-screen bg-gradient-subtle">
         <Header />
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-12 h-12 animate-spin text-primary" />
-        </div>
+        <main className="container mx-auto px-4 py-8 max-w-4xl">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Gruplar
+            </h1>
+          </div>
+          <SkeletonGroupList count={4} />
+        </main>
       </div>
     );
   }

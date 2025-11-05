@@ -12,6 +12,7 @@ import { Users, UserPlus, Loader2, Search, Check, X, User, Send } from "lucide-r
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { OnlineStatusBadge } from "@/components/OnlineStatusBadge";
 import { FriendSuggestions } from "@/components/FriendSuggestions";
+import { SkeletonList } from "@/components/ui/enhanced-skeleton";
 
 interface Profile {
   user_id: string;
@@ -250,13 +251,19 @@ const Friends = () => {
     return (
       <div className="min-h-screen bg-gradient-subtle pb-20 lg:pb-0">
         <Header />
-        <div className="flex flex-col items-center justify-center py-20 px-4">
-          <div className="relative">
-            <Loader2 className="w-12 h-12 animate-spin text-primary" />
-            <div className="absolute inset-0 blur-xl bg-primary/20 animate-pulse" />
+        <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 lg:py-12 max-w-5xl">
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Arkadaşlarım
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-2">
+              Arkadaş ekleyin ve arkadaşlarınızla analiz yapın
+            </p>
           </div>
-          <p className="mt-4 text-sm text-muted-foreground animate-pulse">Yükleniyor...</p>
-        </div>
+          <Card className="p-4 sm:p-6">
+            <SkeletonList count={6} />
+          </Card>
+        </main>
       </div>
     );
   }
