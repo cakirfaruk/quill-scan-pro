@@ -9,6 +9,7 @@ import { Upload, X, Sparkles } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { ShareButton } from "@/components/ShareButton";
 import { useOGImage } from "@/hooks/use-og-image";
+import { sendAnalysisNotification } from "@/utils/sendAnalysisNotification";
 
 const CoffeeFortune = () => {
   const navigate = useNavigate();
@@ -91,6 +92,7 @@ const CoffeeFortune = () => {
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const { data: { user } } = await supabase.auth.getUser();
       
       const { data, error } = await supabase.functions.invoke('analyze-coffee-fortune', {
         body: { 
@@ -108,6 +110,15 @@ const CoffeeFortune = () => {
       setResult(data.interpretation);
       setUserCredits(prev => prev - 40);
       toast.success("Kahve falınız hazır!");
+      
+      // Send push notification
+      if (user) {
+        sendAnalysisNotification(
+          user.id,
+          'coffee',
+          'Kahve Falı Yorumlandı'
+        );
+      }
     } catch (error: any) {
       console.error("Error:", error);
       toast.error(error.message || "Analiz sırasında hata oluştu");

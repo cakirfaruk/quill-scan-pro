@@ -19,6 +19,7 @@ import { IncomingGroupCallDialog } from "@/components/IncomingGroupCallDialog";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useErrorAlerts } from "@/hooks/use-error-alerts";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
 
 // Lazy load ALL pages including Index for optimal code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -301,6 +302,7 @@ const App = () => {
               <Sonner />
               <EnhancedOfflineIndicator />
               <Tutorial />
+              <PushNotificationPrompt />
               <AppRoutes />
             </TooltipProvider>
           </ThemeProvider>

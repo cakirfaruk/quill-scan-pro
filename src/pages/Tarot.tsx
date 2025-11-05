@@ -11,6 +11,7 @@ import { Sparkles, ArrowRight, Shuffle } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { ShareButton } from "@/components/ShareButton";
 import { useOGImage } from "@/hooks/use-og-image";
+import { sendAnalysisNotification } from "@/utils/sendAnalysisNotification";
 
 // Import tarot card images
 import cardBackImg from "@/assets/tarot/card-back.png";
@@ -153,6 +154,7 @@ const Tarot = () => {
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const { data: { user } } = await supabase.auth.getUser();
       
       const { data, error } = await supabase.functions.invoke('analyze-tarot', {
         body: { 
@@ -170,6 +172,15 @@ const Tarot = () => {
       setResult(data.interpretation);
       setUserCredits(prev => prev - 30);
       toast.success("Tarot okuma tamamlandı!");
+      
+      // Send push notification
+      if (user) {
+        sendAnalysisNotification(
+          user.id,
+          'tarot',
+          question || 'Tarot Falı Tamamlandı'
+        );
+      }
     } catch (error: any) {
       console.error("Error:", error);
       toast.error(error.message || "Analiz sırasında hata oluştu");

@@ -10,6 +10,7 @@ import { Sparkles, Moon } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { ShareButton } from "@/components/ShareButton";
 import { useOGImage } from "@/hooks/use-og-image";
+import { sendAnalysisNotification } from "@/utils/sendAnalysisNotification";
 
 const DreamInterpretation = () => {
   const navigate = useNavigate();
@@ -68,6 +69,7 @@ const DreamInterpretation = () => {
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const { data: { user } } = await supabase.auth.getUser();
       
       const { data, error } = await supabase.functions.invoke('interpret-dream', {
         body: { dreamDescription },
@@ -81,6 +83,15 @@ const DreamInterpretation = () => {
       setResult(data.interpretation);
       setUserCredits(prev => prev - 20);
       toast.success("Rüya tabiriniz hazır!");
+      
+      // Send push notification
+      if (user) {
+        sendAnalysisNotification(
+          user.id,
+          'dream',
+          'Rüya Tabiriniz Hazır'
+        );
+      }
     } catch (error: any) {
       console.error("Error:", error);
       toast.error(error.message || "Analiz sırasında hata oluştu");
