@@ -30,6 +30,8 @@ import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { useOnboarding } from "@/hooks/use-onboarding";
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
+import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
 
 interface Post {
   id: string;
@@ -104,6 +106,23 @@ const Feed = () => {
   const [postToSave, setPostToSave] = useState<Post | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
+  const [createPostOpen, setCreatePostOpen] = useState(false);
+  const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
+  const [username, setUsername] = useState("");
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onNewPost: () => {
+      if (userId) setCreatePostOpen(true);
+    },
+    onSearch: () => {
+      // Trigger global search (already exists in Header)
+      const searchButton = document.querySelector('button[class*="w-8 sm:w-9"]') as HTMLButtonElement;
+      searchButton?.click();
+    },
+    onShowHelp: () => setShortcutsHelpOpen(true),
+  });
 
   const onboardingSteps = [
     {
@@ -182,6 +201,18 @@ const Feed = () => {
     }
     
     setUserId(user.id);
+    
+    // Load user profile
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("username, profile_photo")
+      .eq("user_id", user.id)
+      .single();
+    
+    if (profile) {
+      setUsername(profile.username);
+      setProfilePhoto(profile.profile_photo);
+    }
     
     // **PARALEL YÜKLEME** - Arkadaşlar ve postlar aynı anda
     await Promise.all([
@@ -1105,6 +1136,27 @@ const Feed = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Create Post Dialog */}
+      {userId && username && (
+        <CreatePostDialog
+          open={createPostOpen}
+          onOpenChange={setCreatePostOpen}
+          userId={userId}
+          username={username}
+          profilePhoto={profilePhoto}
+          onPostCreated={() => {
+            setCreatePostOpen(false);
+            handleRefresh();
+          }}
+        />
+      )}
+
+      {/* Keyboard Shortcuts Help */}
+      <KeyboardShortcutsHelp
+        open={shortcutsHelpOpen}
+        onOpenChange={setShortcutsHelpOpen}
+      />
 
       {/* Onboarding Tour */}
       {shouldShowOnboarding && (
