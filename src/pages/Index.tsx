@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import Feed from "./Feed";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -49,20 +48,19 @@ const Index = () => {
     });
   };
 
-  // Show feed if logged in
-  if (isLoggedIn) {
-    return (
-      <>
-        <OnboardingDialog open={showOnboarding} onComplete={handleOnboardingComplete} />
-        <Feed />
-      </>
-    );
-  }
+  // Redirect to feed if logged in
+  useEffect(() => {
+    if (isLoggedIn && !showOnboarding) {
+      navigate("/feed");
+    }
+  }, [isLoggedIn, showOnboarding, navigate]);
 
-  // Show landing page immediately (no blocking while checking auth)
+  // Show landing page
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background overflow-hidden">
-      <Header />
+    <>
+      <OnboardingDialog open={showOnboarding} onComplete={handleOnboardingComplete} />
+      <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background overflow-hidden">
+        <Header />
       
       <main className="container mx-auto px-4">
         {/* Hero Section */}
@@ -411,6 +409,7 @@ const Index = () => {
         </div>
       </footer>
     </div>
+    </>
   );
 };
 
