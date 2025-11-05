@@ -1205,6 +1205,72 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          enable_analysis_results: boolean
+          enable_email_notifications: boolean
+          enable_friend_accepted: boolean
+          enable_friend_requests: boolean
+          enable_group_invites: boolean
+          enable_group_messages: boolean
+          enable_match_notifications: boolean
+          enable_mentions: boolean
+          enable_new_messages: boolean
+          enable_post_comments: boolean
+          enable_post_likes: boolean
+          enable_push_notifications: boolean
+          id: string
+          quiet_hours_enabled: boolean
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enable_analysis_results?: boolean
+          enable_email_notifications?: boolean
+          enable_friend_accepted?: boolean
+          enable_friend_requests?: boolean
+          enable_group_invites?: boolean
+          enable_group_messages?: boolean
+          enable_match_notifications?: boolean
+          enable_mentions?: boolean
+          enable_new_messages?: boolean
+          enable_post_comments?: boolean
+          enable_post_likes?: boolean
+          enable_push_notifications?: boolean
+          id?: string
+          quiet_hours_enabled?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enable_analysis_results?: boolean
+          enable_email_notifications?: boolean
+          enable_friend_accepted?: boolean
+          enable_friend_requests?: boolean
+          enable_group_invites?: boolean
+          enable_group_messages?: boolean
+          enable_match_notifications?: boolean
+          enable_mentions?: boolean
+          enable_new_messages?: boolean
+          enable_post_comments?: boolean
+          enable_post_likes?: boolean
+          enable_push_notifications?: boolean
+          id?: string
+          quiet_hours_enabled?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
