@@ -4,33 +4,51 @@ import { useLocation } from "react-router-dom";
 
 interface PageTransitionProps {
   children: ReactNode;
-  variant?: "fade" | "slide" | "slideUp" | "scale";
+  variant?: "fade" | "slide" | "slideUp" | "scale" | "spring" | "depth";
 }
+
+const spring = {
+  type: "spring" as const,
+  stiffness: 300,
+  damping: 30
+};
 
 const transitions = {
   fade: {
     initial: { opacity: 0 },
     animate: { opacity: 1 },
     exit: { opacity: 0 },
-    transition: { duration: 0.3, ease: "easeInOut" as const }
+    transition: { duration: 0.4, ease: "easeOut" as const }
   },
   slide: {
-    initial: { opacity: 0, x: 20 },
+    initial: { opacity: 0, x: 40 },
     animate: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: -20 },
-    transition: { duration: 0.3, ease: "easeInOut" as const }
+    exit: { opacity: 0, x: -40 },
+    transition: { duration: 0.4, ease: "easeOut" as const }
   },
   slideUp: {
-    initial: { opacity: 0, y: 20 },
+    initial: { opacity: 0, y: 40 },
     animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -20 },
-    transition: { duration: 0.3, ease: "easeInOut" as const }
+    exit: { opacity: 0, y: -40 },
+    transition: { duration: 0.4, ease: "easeOut" as const }
   },
   scale: {
-    initial: { opacity: 0, scale: 0.95 },
+    initial: { opacity: 0, scale: 0.9 },
     animate: { opacity: 1, scale: 1 },
-    exit: { opacity: 0, scale: 1.05 },
-    transition: { duration: 0.3, ease: "easeInOut" as const }
+    exit: { opacity: 0, scale: 1.1 },
+    transition: { duration: 0.4, ease: "easeOut" as const }
+  },
+  spring: {
+    initial: { opacity: 0, scale: 0.9, y: 20 },
+    animate: { opacity: 1, scale: 1, y: 0 },
+    exit: { opacity: 0, scale: 0.95, y: -10 },
+    transition: spring
+  },
+  depth: {
+    initial: { opacity: 0, scale: 0.95, rotateX: -10 },
+    animate: { opacity: 1, scale: 1, rotateX: 0 },
+    exit: { opacity: 0, scale: 1.05, rotateX: 10 },
+    transition: { duration: 0.5, ease: "easeOut" as const }
   }
 };
 
