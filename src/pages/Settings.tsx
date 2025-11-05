@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX, LogOut, Phone, RotateCcw, Shield, Eye, Palette, FileText } from "lucide-react";
+import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX, LogOut, Phone, RotateCcw, Shield, Eye, Palette, FileText, ShieldCheck } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { requestNotificationPermission } from "@/utils/notifications";
 import { subscribeToPushNotifications } from "@/utils/pushNotifications";
@@ -46,12 +46,14 @@ const Settings = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
   const [isLoadingBlocked, setIsLoadingBlocked] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
     loadSettings();
     loadBlockedUsers();
+    checkAdminStatus();
     
     // Check for dark mode preference
     const isDark = document.documentElement.classList.contains('dark');
@@ -62,6 +64,24 @@ const Settings = () => {
       setNotificationsEnabled(Notification.permission === 'granted');
     }
   }, []);
+
+  const checkAdminStatus = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      setIsAdmin(!!roles);
+    } catch (error) {
+      console.error("Error checking admin status:", error);
+    }
+  };
 
   const loadSettings = async () => {
     try {
@@ -471,7 +491,7 @@ const Settings = () => {
         </h1>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-7 gap-1">
+          <TabsList className={`grid w-full gap-1 ${isAdmin ? 'grid-cols-8' : 'grid-cols-7'}`}>
             <TabsTrigger value="profile" className="flex flex-col gap-1 h-auto py-2">
               <User className="w-4 h-4" />
               <span className="text-[10px] hidden sm:inline">Profil</span>
@@ -500,6 +520,12 @@ const Settings = () => {
               <Palette className="w-4 h-4" />
               <span className="text-[10px] hidden sm:inline">Görünüm</span>
             </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="admin" className="flex flex-col gap-1 h-auto py-2">
+                <ShieldCheck className="w-4 h-4" />
+                <span className="text-[10px] hidden sm:inline">Admin</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="profile">
@@ -942,6 +968,31 @@ const Settings = () => {
               <ThemeCustomizationPanel />
             </div>
           </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="admin">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5" />
+                    Admin Panel
+                  </CardTitle>
+                  <CardDescription>
+                    Kullanıcıları ve sistemi yönetin
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    onClick={() => navigate("/admin")}
+                    className="w-full bg-gradient-primary hover:opacity-90 gap-2"
+                  >
+                    <Shield className="w-4 h-4" />
+                    Admin Paneline Git
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>

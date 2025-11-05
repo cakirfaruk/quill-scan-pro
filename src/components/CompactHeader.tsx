@@ -284,21 +284,23 @@ export const CompactHeader = () => {
                 )} />
               </Button>
 
-              {/* Main Menu - Desktop only for admin */}
+              {/* Admin Panel - Desktop */}
               {isAdmin && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 sm:h-9 w-8 sm:w-9 hidden lg:flex">
-                      <Menu className="w-5 h-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuItem onClick={() => navigate("/admin")}>
-                      <Shield className="w-4 h-4 mr-2" />
-                      Admin Panel
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate("/admin")}
+                  className={cn(
+                    "transition-all duration-300 hidden lg:flex",
+                    isMiniMode ? "h-7 w-7 sm:h-8 sm:w-8" : "h-8 w-8 sm:h-9 sm:w-9"
+                  )}
+                  title="Admin Panel"
+                >
+                  <Shield className={cn(
+                    "transition-all duration-300",
+                    isMiniMode ? "w-4 h-4" : "w-5 h-5"
+                  )} />
+                </Button>
               )}
 
               {/* Profile Avatar with double-click for match */}
