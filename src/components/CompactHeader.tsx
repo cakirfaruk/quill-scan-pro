@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
 import { CreatePostDialog } from "@/components/CreatePostDialog";
+import { GlobalSearch } from "@/components/GlobalSearch";
 
 export const CompactHeader = () => {
   const [credits, setCredits] = useState(0);
@@ -101,6 +102,13 @@ export const CompactHeader = () => {
           </span>
         </Link>
 
+        {/* Global Search - Centered */}
+        {isLoggedIn && (
+          <div className="flex-1 max-w-md mx-4 hidden md:block">
+            <GlobalSearch />
+          </div>
+        )}
+
         {/* Desktop Navigation - Hidden on mobile */}
         {isLoggedIn && (
           <nav className="hidden lg:flex items-center gap-1">
@@ -180,6 +188,11 @@ export const CompactHeader = () => {
                 <Coins className="w-4 h-4 text-primary" />
                 <span className="font-semibold text-primary text-sm">{credits}</span>
               </Button>
+
+              {/* Search - Mobile Only */}
+              <div className="md:hidden">
+                <GlobalSearch />
+              </div>
 
               {/* Notifications */}
               <NotificationBell />
