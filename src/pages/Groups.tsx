@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Users, Plus, MessageCircle, Loader2, UserPlus } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { NoGroupsIllustration } from "@/components/EmptyStateIllustrations";
+import { ScrollReveal } from "@/components/ScrollReveal";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { SkeletonGroupList } from "@/components/SkeletonGroup";
@@ -263,62 +264,63 @@ const Groups = () => {
           />
         ) : (
           <div className="grid gap-4">
-            {groups.map((group) => (
-              <Card
-                key={group.id}
-                className="p-6 cursor-pointer hover:bg-accent/5 transition-colors"
-                onClick={() => navigate(`/groups/${group.id}`)}
-              >
-                <div className="flex items-start gap-4">
-                  <Avatar className="w-16 h-16">
-                    <AvatarImage src={group.photo_url || undefined} />
-                    <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xl">
-                      {group.name.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+            {groups.map((group, index) => (
+              <ScrollReveal key={group.id} direction="up" delay={index * 0.1}>
+                <Card
+                  className="p-6 cursor-pointer hover:bg-accent/5 transition-colors"
+                  onClick={() => navigate(`/groups/${group.id}`)}
+                >
+                  <div className="flex items-start gap-4">
+                    <Avatar className="w-16 h-16">
+                      <AvatarImage src={group.photo_url || undefined} />
+                      <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xl">
+                        {group.name.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-lg">{group.name}</h3>
-                      {group.is_admin && (
-                        <Badge variant="secondary" className="text-xs">
-                          Admin
-                        </Badge>
-                      )}
-                    </div>
-
-                    {group.description && (
-                      <p className="text-sm text-muted-foreground mb-2 line-clamp-1">
-                        {group.description}
-                      </p>
-                    )}
-
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Users className="w-3 h-3" />
-                        {group.member_count} üye
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-lg">{group.name}</h3>
+                        {group.is_admin && (
+                          <Badge variant="secondary" className="text-xs">
+                            Admin
+                          </Badge>
+                        )}
                       </div>
-                      {group.last_message && (
-                        <>
-                          <div className="flex items-center gap-1">
-                            <MessageCircle className="w-3 h-3" />
-                            <span className="truncate max-w-[200px]">
-                              {group.last_message.sender_name}:{" "}
-                              {group.last_message.content}
-                            </span>
-                          </div>
-                          <span>
-                            {formatDistanceToNow(
-                              new Date(group.last_message.created_at),
-                              { addSuffix: true, locale: tr }
-                            )}
-                          </span>
-                        </>
+
+                      {group.description && (
+                        <p className="text-sm text-muted-foreground mb-2 line-clamp-1">
+                          {group.description}
+                        </p>
                       )}
+
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          {group.member_count} üye
+                        </div>
+                        {group.last_message && (
+                          <>
+                            <div className="flex items-center gap-1">
+                              <MessageCircle className="w-3 h-3" />
+                              <span className="truncate max-w-[200px]">
+                                {group.last_message.sender_name}:{" "}
+                                {group.last_message.content}
+                              </span>
+                            </div>
+                            <span>
+                              {formatDistanceToNow(
+                                new Date(group.last_message.created_at),
+                                { addSuffix: true, locale: tr }
+                              )}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Card>
+                </Card>
+              </ScrollReveal>
             ))}
           </div>
         )}

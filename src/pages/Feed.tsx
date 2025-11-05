@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -24,6 +25,7 @@ import { ParsedText } from "@/components/ParsedText";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CreatePostDialog } from "@/components/CreatePostDialog";
 import { NoFriendsIllustration, NoPostsIllustration } from "@/components/EmptyStateIllustrations";
+import { ScrollReveal } from "@/components/ScrollReveal";
 
 interface Post {
   id: string;
@@ -542,79 +544,109 @@ const Feed = () => {
   );
 
   const renderPost = (post: Post) => (
-    <Card key={post.id} className="mb-6 overflow-hidden card-hover animate-fade-in-up border-border/50">
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div
-            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+    <ScrollReveal key={post.id} direction="up" delay={0}>
+      <Card className="mb-4 sm:mb-6 overflow-hidden shadow-card hover:shadow-xl transition-all duration-300 animate-fade-in">
+      <div className="flex items-center gap-3 p-3 sm:p-4">
+        <Avatar 
+          className="w-10 h-10 sm:w-12 sm:h-12 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+          onClick={() => navigate(`/profile/${post.profile.username}`)}
+        >
+          <AvatarImage src={post.profile.profile_photo || undefined} />
+          <AvatarFallback className="bg-gradient-primary text-primary-foreground text-sm">
+            {post.profile.username.substring(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <div 
+            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate(`/profile/${post.profile.username}`)}
           >
-            <Avatar className="ring-2 ring-border hover-scale">
-              <AvatarImage src={post.profile.profile_photo || undefined} />
-              <AvatarFallback className="bg-gradient-primary text-primary-foreground">
-                {post.profile.full_name?.[0] || post.profile.username[0].toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-semibold text-sm">{post.profile.full_name || post.profile.username}</p>
-              <p className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: tr })}
-              </p>
-            </div>
+            <p className="font-semibold text-sm sm:text-base truncate">
+              {post.profile.full_name || post.profile.username}
+            </p>
           </div>
-          <Button variant="ghost" size="icon" className="rounded-full interactive">
-            <MoreHorizontal className="w-4 h-4" />
-          </Button>
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: tr })}
+          </p>
         </div>
-
-        {post.content && (
-          <div className="text-foreground whitespace-pre-wrap mb-3 text-sm leading-relaxed">
-            <ParsedText text={post.content} />
-          </div>
-        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleSave(post.id, post.hasSaved)}>
+              <Bookmark className="w-4 h-4 mr-2" />
+              {post.hasSaved ? "Kaydedilenlerden Kaldır" : "Kaydet"}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleOpenShareDialog(post)}>
+              <Share2 className="w-4 h-4 mr-2" />
+              Paylaş
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {post.media_url && (
-        <div className="w-full">
-          {post.media_type === "photo" ? (
-            <img 
-              src={post.media_url} 
-              alt="Post media" 
-              className="w-full max-h-[500px] object-cover"
-            />
-          ) : (
-            <video 
-              src={post.media_url} 
-              controls 
-              className="w-full max-h-[500px]"
-            />
-          )}
+      {post.content && (
+        <div className="px-3 sm:px-4 pb-3">
+          <ParsedText text={post.content} />
         </div>
       )}
 
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-3 text-sm text-muted-foreground">
-          <span>{post.likes} beğeni</span>
-          <span>{post.comments} yorum • {post.shares_count} paylaşım</span>
+      {post.media_url && (
+        <div className="relative">
+          {post.media_type === "image" ? (
+            <img 
+              src={post.media_url} 
+              alt="Post" 
+              className="w-full object-cover max-h-96 sm:max-h-[500px]"
+            />
+          ) : post.media_type === "video" ? (
+            <video 
+              src={post.media_url} 
+              controls 
+              className="w-full max-h-96 sm:max-h-[500px]"
+            />
+          ) : null}
+        </div>
+      )}
+
+      <div className="p-3 sm:p-4 space-y-3">
+        <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1">
+              <Heart className="w-4 h-4" />
+              {post.likes}
+            </span>
+            <span className="flex items-center gap-1">
+              <MessageCircle className="w-4 h-4" />
+              {post.comments}
+            </span>
+          </div>
+          <span className="flex items-center gap-1">
+            <Share2 className="w-4 h-4" />
+            {post.shares_count}
+          </span>
         </div>
 
-        <Separator className="mb-3" />
+        <Separator />
 
-        <div className="flex items-center justify-around">
+        <div className="flex items-center justify-between gap-2">
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 gap-2 hover:bg-red-50 hover:text-red-500 transition-colors press-effect"
+            className={`flex-1 gap-2 transition-colors press-effect ${post.hasLiked ? "text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950" : "hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950"}`}
             onClick={() => handleLike(post.id, post.hasLiked)}
           >
-            <Heart className={`w-5 h-5 transition-transform hover:scale-110 ${post.hasLiked ? "fill-red-500 text-red-500 animate-bounce-in" : ""}`} />
+            <Heart className={`w-5 h-5 transition-all ${post.hasLiked ? "fill-red-500 animate-bounce-in" : ""}`} />
             Beğen
           </Button>
-          
+
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 gap-2 hover:bg-blue-50 hover:text-blue-500 transition-colors press-effect"
+            className="flex-1 gap-2 hover:bg-blue-50 hover:text-blue-500 transition-colors press-effect dark:hover:bg-blue-950"
             onClick={() => handleOpenComments(post)}
           >
             <MessageCircle className="w-5 h-5" />
@@ -643,6 +675,7 @@ const Feed = () => {
         </div>
       </div>
     </Card>
+    </ScrollReveal>
   );
 
   if (loading) {
@@ -683,9 +716,11 @@ const Feed = () => {
 
         {/* Stories Bar */}
         {userId && (
-          <Card className="mb-4 sm:mb-6 overflow-hidden">
-            <StoriesBar currentUserId={userId} />
-          </Card>
+          <ScrollReveal direction="down" delay={0.1}>
+            <Card className="mb-4 sm:mb-6 overflow-hidden">
+              <StoriesBar currentUserId={userId} />
+            </Card>
+          </ScrollReveal>
         )}
         
         <Tabs defaultValue="friends" className="w-full space-y-4 sm:space-y-6">
