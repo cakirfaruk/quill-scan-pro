@@ -432,7 +432,12 @@ export const GlobalSearch = () => {
         navigate(result.path || "/");
         break;
       case "user":
-        navigate(`/profile?userId=${result.id}`);
+        // Navigate to user profile by username if available, otherwise by ID
+        if (result.data?.username) {
+          navigate(`/profile/${result.data.username}`);
+        } else {
+          navigate(`/profile?userId=${result.id}`);
+        }
         break;
       case "post":
         navigate(`/feed?postId=${result.id}`);
