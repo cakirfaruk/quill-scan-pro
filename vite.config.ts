@@ -38,24 +38,62 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'script-defer',
-      includeAssets: ['favicon.ico', 'robots.txt'],
+      includeAssets: ['favicon.ico', 'robots.txt', 'icon-*.png', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Kişisel Analiz Merkezi',
-        short_name: 'Analiz Merkezi',
-        description: 'AI destekli çoklu analiz platformu',
+        name: 'Astro Social - Analizler, Fallar, Kehanetler',
+        short_name: 'Astro Social',
+        description: 'AI destekli çoklu analiz platformu - Tarot, kahve falı, rüya tabiri, astroloji ve daha fazlası',
         theme_color: '#9b87f5',
         background_color: '#0a0a0a',
         display: 'standalone',
+        orientation: 'portrait',
         scope: '/',
         start_url: '/',
         icons: [
           {
-            src: 'https://storage.googleapis.com/gpt-engineer-file-uploads/DMw3eaESLpeKAzKlfQPVGMQ5a3f1/uploads/1761954894293-pngtree-black-and-white-astro-icon-in-an-orbit-vector-png-image_7075895.png',
+            src: '/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: '/icon-512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: '/icon-maskable-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ],
-        categories: ['lifestyle', 'entertainment']
+        screenshots: [
+          {
+            src: '/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            form_factor: 'narrow'
+          }
+        ],
+        categories: ['lifestyle', 'entertainment', 'social'],
+        shortcuts: [
+          {
+            name: 'Tarot Falı',
+            short_name: 'Tarot',
+            description: 'Tarot kartları ile fal bak',
+            url: '/tarot',
+            icons: [{ src: '/icon-192.png', sizes: '192x192' }]
+          },
+          {
+            name: 'Kahve Falı',
+            short_name: 'Kahve',
+            description: 'Kahve falı yorumla',
+            url: '/coffee-fortune',
+            icons: [{ src: '/icon-192.png', sizes: '192x192' }]
+          }
+        ]
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
