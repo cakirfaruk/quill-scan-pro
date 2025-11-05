@@ -136,10 +136,12 @@ export const VideoUploader = ({ onUploadComplete, className }: VideoUploaderProp
 
       setUploadProgress(85);
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
+      // Get signed URL (1 year expiry)
+      const { data: signedData, error: signedError } = await supabase.storage
         .from("videos")
-        .getPublicUrl(videoData.path);
+        .createSignedUrl(videoData.path, 31536000); // 365 days
+
+      if (signedError) throw signedError;
 
       setUploadProgress(90);
 
@@ -148,7 +150,7 @@ export const VideoUploader = ({ onUploadComplete, className }: VideoUploaderProp
         .from("user_videos")
         .insert({
           user_id: user.id,
-          video_url: publicUrl,
+          video_url: signedData.signedUrl,
           thumbnail_url: thumbnailBase64,
           title: title || "Başlıksız Video",
           description: description || null,
@@ -165,7 +167,7 @@ export const VideoUploader = ({ onUploadComplete, className }: VideoUploaderProp
         description: "Videonuz başarıyla yüklendi.",
       });
 
-      onUploadComplete?.(publicUrl, thumbnailBase64);
+      onUploadComplete?.(signedData.signedUrl, thumbnailBase64);
       
       // Reset form
       setSelectedVideo(null);

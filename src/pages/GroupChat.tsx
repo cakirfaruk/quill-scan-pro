@@ -621,17 +621,19 @@ const GroupChat = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
+      // Get signed URL (1 year expiry)
+      const { data: signedData, error: signedError } = await supabase.storage
         .from("group-media")
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 31536000); // 365 days
+
+      if (signedError) throw signedError;
 
       // Send message with media
       const { error: messageError } = await supabase.from("group_messages").insert({
         group_id: groupId,
         sender_id: currentUserId,
         content: file.type.startsWith("image") ? "📷 Fotoğraf" : "🎥 Video",
-        media_url: publicUrl,
+        media_url: signedData.signedUrl,
         media_type: file.type,
       });
 

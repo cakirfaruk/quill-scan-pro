@@ -63,12 +63,14 @@ export const uploadToStorage = async (
 
     if (error) throw error;
 
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
+    // Get signed URL (1 year expiry for user content)
+    const { data: signedData, error: signedError } = await supabase.storage
       .from(bucket)
-      .getPublicUrl(data.path);
+      .createSignedUrl(data.path, 31536000); // 365 days
 
-    return publicUrl;
+    if (signedError) throw signedError;
+
+    return signedData.signedUrl;
   } catch (error) {
     console.error('Storage upload error:', error);
     return null;
