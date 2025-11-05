@@ -10,6 +10,8 @@ import { useSwipe } from "@/hooks/use-gestures";
 import { Heart, MessageCircle, Share2, MoreVertical, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SkeletonReel } from "@/components/SkeletonReel";
+import { SwipeableReelCard } from "@/components/SwipeableReelCard";
+import { GestureIndicator } from "@/components/GestureIndicator";
 
 interface Reel {
   id: string;
@@ -33,6 +35,7 @@ const Reels = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [showGestureHint, setShowGestureHint] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -53,6 +56,15 @@ const Reels = () => {
 
   useEffect(() => {
     loadReels();
+    
+    // Check if user has seen gesture hint
+    const hasSeenGesture = localStorage.getItem("reels-gestures-seen");
+    if (!hasSeenGesture) {
+      setTimeout(() => {
+        setShowGestureHint(true);
+        localStorage.setItem("reels-gestures-seen", "true");
+      }, 2000);
+    }
   }, []);
 
   useEffect(() => {
@@ -202,13 +214,26 @@ const Reels = () => {
         {...swipeHandlers}
       >
         {reels.map((reel, index) => (
-          <div
+          <SwipeableReelCard
             key={reel.id}
-            className={cn(
-              "h-full w-full snap-start relative",
-              index === currentIndex ? "block" : "hidden md:block"
-            )}
+            onSwipeUp={() => {
+              if (currentIndex < reels.length - 1) {
+                setCurrentIndex(prev => prev + 1);
+              }
+            }}
+            onSwipeDown={() => {
+              if (currentIndex > 0) {
+                setCurrentIndex(prev => prev - 1);
+              }
+            }}
+            onDoubleTap={() => handleLike(reel.id)}
           >
+            <div
+              className={cn(
+                "h-full w-full snap-start relative",
+                index === currentIndex ? "block" : "hidden md:block"
+              )}
+            >
             <VideoPlayer
               src={reel.video_url}
               thumbnail={reel.thumbnail_url}
@@ -301,8 +326,12 @@ const Reels = () => {
               </div>
             </div>
           </div>
+          </SwipeableReelCard>
         ))}
       </div>
+
+      {/* Gesture Indicator */}
+      <GestureIndicator show={showGestureHint} type="double-tap" />
     </div>
   );
 };

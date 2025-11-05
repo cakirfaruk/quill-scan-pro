@@ -33,6 +33,9 @@ import { useOnboarding } from "@/hooks/use-onboarding";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
 import { WidgetDashboard } from "@/components/WidgetDashboard";
+import { SwipeablePostCard } from "@/components/SwipeablePostCard";
+import { ZoomableImage } from "@/components/ZoomableImage";
+import { GestureIndicator } from "@/components/GestureIndicator";
 
 interface Post {
   id: string;
@@ -98,6 +101,7 @@ const Feed = () => {
   const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+  const [showGestureHint, setShowGestureHint] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [postToShare, setPostToShare] = useState<Post | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -694,7 +698,13 @@ const Feed = () => {
 
   const renderPost = (post: Post) => (
     <ScrollReveal key={post.id} direction="up" delay={0}>
-      <Card className="mb-4 sm:mb-6 overflow-hidden group hover:shadow-elegant transition-all duration-500 hover:-translate-y-1 hover:scale-[1.01] animate-fade-in border-border/50 hover:border-primary/20">
+      <SwipeablePostCard
+        onSwipeLeft={() => handleSave(post.id, post.hasSaved)}
+        onSwipeRight={() => handleLike(post.id, post.hasLiked)}
+        isLiked={post.hasLiked}
+        isSaved={post.hasSaved}
+      >
+        <Card className="mb-4 sm:mb-6 overflow-hidden group hover:shadow-elegant transition-all duration-500 hover:-translate-y-1 hover:scale-[1.01] animate-fade-in border-border/50 hover:border-primary/20">
       <div className="flex items-center gap-3 p-3 sm:p-4 bg-gradient-to-r from-transparent to-transparent group-hover:from-primary/5 group-hover:to-transparent transition-all duration-500">
         <Avatar 
           className="w-10 h-10 sm:w-12 sm:h-12 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
@@ -746,7 +756,7 @@ const Feed = () => {
       {post.media_url && (
         <div className="relative overflow-hidden group/media">
           {post.media_type === "image" ? (
-            <img 
+            <ZoomableImage 
               src={post.media_url} 
               alt="Post" 
               className="w-full object-cover max-h-96 sm:max-h-[500px] transition-transform duration-700 group-hover/media:scale-105"
@@ -824,6 +834,7 @@ const Feed = () => {
         </div>
       </div>
     </Card>
+    </SwipeablePostCard>
     </ScrollReveal>
   );
 
@@ -1173,6 +1184,9 @@ const Feed = () => {
           storageKey="feed-tour"
         />
       )}
+
+      {/* Gesture Indicator */}
+      <GestureIndicator show={showGestureHint} type="swipe" />
     </div>
   );
 };
