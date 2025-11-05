@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { LoadingFallback } from "@/components/LoadingFallback";
 import { IncomingCallDialog } from "@/components/IncomingCallDialog";
 import { IncomingGroupCallDialog } from "@/components/IncomingGroupCallDialog";
+import { PermissionManager } from "@/components/PermissionManager";
 
 // Lazy load ALL pages including Index for optimal code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -281,6 +282,7 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            <PermissionManager />
             <EnhancedOfflineIndicator />
             <Tutorial />
             <AppRoutes />
