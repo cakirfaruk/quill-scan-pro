@@ -36,6 +36,20 @@ import {
   Palette,
   Plus,
   Trash2,
+  Heart,
+  Star,
+  Moon,
+  Cloud,
+  Zap,
+  Music,
+  Coffee,
+  Gift,
+  Flame,
+  Snowflake,
+  Umbrella,
+  Crown,
+  Rocket,
+  Camera as CameraIcon,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -94,9 +108,39 @@ export const PhotoCaptureEditor = ({
   const [textColor, setTextColor] = useState("#ffffff");
   const [textFont, setTextFont] = useState("Arial");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showStickerPicker, setShowStickerPicker] = useState(false);
+  const [stickerCategory, setStickerCategory] = useState("love");
   const [draggingTextId, setDraggingTextId] = useState<string | null>(null);
   
   const cropContainerRef = useRef<HTMLDivElement>(null);
+
+  // Sticker library
+  const stickerLibrary = {
+    love: [
+      { icon: Heart, label: "Kalp", color: "#ef4444" },
+      { icon: Sparkles, label: "Işıltı", color: "#f59e0b" },
+      { icon: Star, label: "Yıldız", color: "#fbbf24" },
+      { icon: Crown, label: "Taç", color: "#fbbf24" },
+    ],
+    nature: [
+      { icon: Sun, label: "Güneş", color: "#fbbf24" },
+      { icon: Moon, label: "Ay", color: "#94a3b8" },
+      { icon: Cloud, label: "Bulut", color: "#cbd5e1" },
+      { icon: Snowflake, label: "Kar Tanesi", color: "#3b82f6" },
+    ],
+    fun: [
+      { icon: Zap, label: "Şimşek", color: "#eab308" },
+      { icon: Flame, label: "Ateş", color: "#f97316" },
+      { icon: Music, label: "Müzik", color: "#8b5cf6" },
+      { icon: Rocket, label: "Roket", color: "#06b6d4" },
+    ],
+    items: [
+      { icon: Coffee, label: "Kahve", color: "#92400e" },
+      { icon: Gift, label: "Hediye", color: "#db2777" },
+      { icon: Umbrella, label: "Şemsiye", color: "#0ea5e9" },
+      { icon: CameraIcon, label: "Kamera", color: "#64748b" },
+    ],
+  };
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -377,6 +421,29 @@ export const PhotoCaptureEditor = ({
     });
   };
 
+  const addStickerOverlay = (sticker: { icon: any; label: string; color: string }) => {
+    const StickerIcon = sticker.icon;
+    const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="${sticker.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>`;
+    
+    const newOverlay: TextOverlay = {
+      id: Math.random().toString(36).substr(2, 9),
+      text: `[STICKER:${sticker.label}]`,
+      x: 50,
+      y: 50,
+      fontSize: 64,
+      color: sticker.color,
+      fontFamily: sticker.label,
+    };
+    
+    setTextOverlays([...textOverlays, newOverlay]);
+    setShowStickerPicker(false);
+    
+    toast({
+      title: "Sticker Eklendi",
+      description: "Sticker'ı sürükleyerek konumlandırabilirsiniz",
+    });
+  };
+
   const deleteTextOverlay = (id: string) => {
     setTextOverlays(textOverlays.filter(t => t.id !== id));
     setSelectedTextId(null);
@@ -529,21 +596,85 @@ export const PhotoCaptureEditor = ({
         // Draw text overlays
         textOverlays.forEach(overlay => {
           context.save();
-          context.font = `${overlay.fontSize * (canvas.width / 100)}px ${overlay.fontFamily}`;
-          context.fillStyle = overlay.color;
-          context.textAlign = "center";
-          context.textBaseline = "middle";
-          
-          // Add text shadow for better readability
-          context.shadowColor = "rgba(0, 0, 0, 0.8)";
-          context.shadowBlur = 4;
-          context.shadowOffsetX = 2;
-          context.shadowOffsetY = 2;
           
           const x = (overlay.x / 100) * canvas.width;
           const y = (overlay.y / 100) * canvas.height;
+          const size = overlay.fontSize * (canvas.width / 100);
           
-          context.fillText(overlay.text, x, y);
+          // Check if it's a sticker
+          if (overlay.text.startsWith("[STICKER:")) {
+            const stickerName = overlay.fontFamily;
+            let stickerIcon = null;
+            
+            // Find the sticker from library
+            Object.values(stickerLibrary).forEach(category => {
+              const found = category.find(s => s.label === stickerName);
+              if (found) stickerIcon = found;
+            });
+            
+            if (stickerIcon) {
+              const StickerComponent = stickerIcon.icon;
+              
+              // Create a temporary SVG element
+              const tempCanvas = document.createElement("canvas");
+              const tempCtx = tempCanvas.getContext("2d");
+              tempCanvas.width = size;
+              tempCanvas.height = size;
+              
+              if (tempCtx) {
+                // Draw icon using canvas (simplified icon representation)
+                tempCtx.strokeStyle = overlay.color;
+                tempCtx.fillStyle = overlay.color;
+                tempCtx.lineWidth = 3;
+                
+                // Draw icon based on type (simplified representations)
+                if (stickerName === "Kalp") {
+                  tempCtx.beginPath();
+                  tempCtx.moveTo(size / 2, size * 0.3);
+                  tempCtx.bezierCurveTo(size * 0.2, size * 0.1, size * 0.1, size * 0.3, size / 2, size * 0.8);
+                  tempCtx.bezierCurveTo(size * 0.9, size * 0.3, size * 0.8, size * 0.1, size / 2, size * 0.3);
+                  tempCtx.fill();
+                } else if (stickerName === "Yıldız") {
+                  const spikes = 5;
+                  const outerRadius = size / 2;
+                  const innerRadius = size / 4;
+                  tempCtx.beginPath();
+                  for (let i = 0; i < spikes * 2; i++) {
+                    const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                    const angle = (i * Math.PI) / spikes;
+                    const px = size / 2 + Math.cos(angle - Math.PI / 2) * radius;
+                    const py = size / 2 + Math.sin(angle - Math.PI / 2) * radius;
+                    if (i === 0) tempCtx.moveTo(px, py);
+                    else tempCtx.lineTo(px, py);
+                  }
+                  tempCtx.closePath();
+                  tempCtx.fill();
+                } else {
+                  // Generic circle for other stickers
+                  tempCtx.beginPath();
+                  tempCtx.arc(size / 2, size / 2, size / 3, 0, Math.PI * 2);
+                  tempCtx.fill();
+                }
+                
+                context.drawImage(tempCanvas, x - size / 2, y - size / 2);
+              }
+            }
+          } else {
+            // Regular text
+            context.font = `${size}px ${overlay.fontFamily}`;
+            context.fillStyle = overlay.color;
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+            
+            // Add text shadow for better readability
+            context.shadowColor = "rgba(0, 0, 0, 0.8)";
+            context.shadowBlur = 4;
+            context.shadowOffsetX = 2;
+            context.shadowOffsetY = 2;
+            
+            context.fillText(overlay.text, x, y);
+          }
+          
           context.restore();
         });
 
@@ -725,39 +856,62 @@ export const PhotoCaptureEditor = ({
                   </div>
                 )}
                 
-                {/* Text Overlays */}
-                {textOverlays.map((overlay) => (
-                  <div
-                    key={overlay.id}
-                    className={cn(
-                      "absolute cursor-move select-none transition-shadow",
-                      selectedTextId === overlay.id && "ring-2 ring-primary shadow-lg"
-                    )}
-                    style={{
-                      left: `${overlay.x}%`,
-                      top: `${overlay.y}%`,
-                      transform: "translate(-50%, -50%)",
-                      fontSize: `${overlay.fontSize}px`,
-                      color: overlay.color,
-                      fontFamily: overlay.fontFamily,
-                      textShadow: "2px 2px 4px rgba(0, 0, 0, 0.8)",
-                    }}
-                    onMouseDown={(e) => handleTextMouseDown(e, overlay.id)}
-                  >
-                    {overlay.text}
-                    {selectedTextId === overlay.id && (
-                      <button
-                        className="absolute -top-3 -right-3 bg-destructive text-white rounded-full p-1 hover:scale-110 transition-transform"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteTextOverlay(overlay.id);
-                        }}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                ))}
+                {/* Text and Sticker Overlays */}
+                {textOverlays.map((overlay) => {
+                  // Check if it's a sticker
+                  const isSticker = overlay.text.startsWith("[STICKER:");
+                  let StickerIcon = null;
+                  
+                  if (isSticker) {
+                    const stickerName = overlay.fontFamily;
+                    Object.values(stickerLibrary).forEach(category => {
+                      const found = category.find(s => s.label === stickerName);
+                      if (found) StickerIcon = found.icon;
+                    });
+                  }
+                  
+                  return (
+                    <div
+                      key={overlay.id}
+                      className={cn(
+                        "absolute cursor-move select-none transition-shadow",
+                        selectedTextId === overlay.id && "ring-2 ring-primary shadow-lg rounded-lg"
+                      )}
+                      style={{
+                        left: `${overlay.x}%`,
+                        top: `${overlay.y}%`,
+                        transform: "translate(-50%, -50%)",
+                        fontSize: `${overlay.fontSize}px`,
+                        color: overlay.color,
+                        fontFamily: overlay.fontFamily,
+                        textShadow: !isSticker ? "2px 2px 4px rgba(0, 0, 0, 0.8)" : "none",
+                      }}
+                      onMouseDown={(e) => handleTextMouseDown(e, overlay.id)}
+                    >
+                      {isSticker && StickerIcon ? (
+                        <StickerIcon 
+                          size={overlay.fontSize} 
+                          color={overlay.color}
+                          fill={overlay.color}
+                          strokeWidth={2}
+                        />
+                      ) : (
+                        overlay.text
+                      )}
+                      {selectedTextId === overlay.id && (
+                        <button
+                          className="absolute -top-3 -right-3 bg-destructive text-white rounded-full p-1 hover:scale-110 transition-transform z-10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteTextOverlay(overlay.id);
+                          }}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -779,11 +933,69 @@ export const PhotoCaptureEditor = ({
                     <PopoverTrigger asChild>
                       <Button variant="outline" size="sm" className="gap-2">
                         <Smile className="w-4 h-4" />
-                        Emoji Ekle
+                        Emoji
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <EmojiPicker onEmojiClick={addEmojiOverlay} />
+                    </PopoverContent>
+                  </Popover>
+
+                  <Popover open={showStickerPicker} onOpenChange={setShowStickerPicker}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Sparkles className="w-4 h-4" />
+                        Sticker
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 p-4" align="start">
+                      <div className="space-y-4">
+                        <div className="flex gap-2 border-b pb-2">
+                          <Button
+                            variant={stickerCategory === "love" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setStickerCategory("love")}
+                          >
+                            <Heart className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant={stickerCategory === "nature" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setStickerCategory("nature")}
+                          >
+                            <Sun className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant={stickerCategory === "fun" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setStickerCategory("fun")}
+                          >
+                            <Zap className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant={stickerCategory === "items" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setStickerCategory("items")}
+                          >
+                            <Coffee className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-4 gap-2">
+                          {stickerLibrary[stickerCategory as keyof typeof stickerLibrary].map((sticker, idx) => {
+                            const StickerIcon = sticker.icon;
+                            return (
+                              <button
+                                key={idx}
+                                onClick={() => addStickerOverlay(sticker)}
+                                className="p-3 rounded-lg border hover:border-primary hover:bg-accent transition-all flex flex-col items-center gap-1"
+                              >
+                                <StickerIcon size={32} color={sticker.color} strokeWidth={2} />
+                                <span className="text-xs text-muted-foreground">{sticker.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </PopoverContent>
                   </Popover>
                 </div>
