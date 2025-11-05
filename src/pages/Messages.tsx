@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Search, ArrowLeft, FileText, Smile, Paperclip, Ban, Check, CheckCheck, Mic, Image as ImageIcon, Pin, Forward, MoreVertical, Users, Phone, Video, Clock, MessageSquare, UserPlus, Heart } from "lucide-react";
+import { useDraft } from "@/hooks/use-draft";
+import { Loader2, Send, Search, ArrowLeft, FileText, Smile, Paperclip, Ban, Check, CheckCheck, Mic, Image as ImageIcon, Pin, Forward, MoreVertical, Users, Phone, Video, Clock, MessageSquare, UserPlus, Heart, Save } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { useIsMobile } from "@/hooks/use-mobile";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
@@ -125,6 +126,40 @@ const Messages = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
+
+  // Draft management - unique key for each conversation
+  const draftKey = selectedFriend 
+    ? `message_${currentUserId}_${selectedFriend.user_id}`
+    : selectedCategory
+    ? `message_${currentUserId}_${selectedCategory}`
+    : `message_${currentUserId}_general`;
+
+  const draft = useDraft({
+    key: draftKey,
+    maxLength: 2000,
+    autoSaveDelay: 1500,
+    onRestore: (draftContent) => setNewMessage(draftContent),
+  });
+
+  // Auto-save draft when message changes
+  useEffect(() => {
+    if (!newMessage.trim() || !selectedFriend) return;
+    
+    const cleanup = draft.autoSave(newMessage);
+    return cleanup;
+  }, [newMessage, selectedFriend]);
+
+  // Load draft when conversation changes
+  useEffect(() => {
+    if (selectedFriend && draft.hasDraft) {
+      const restored = draft.loadDraft();
+      if (restored) {
+        setNewMessage(restored);
+      }
+    } else {
+      setNewMessage("");
+    }
+  }, [selectedFriend?.user_id, selectedCategory]);
 
   useEffect(() => {
     loadConversations();
@@ -1215,6 +1250,9 @@ const Messages = () => {
 
       if (error) throw error;
 
+      // Clear draft after successful send
+      draft.clearDraft();
+
       setNewMessage("");
       removeAttachment();
       loadMessages(selectedFriend.user_id);
@@ -2246,7 +2284,20 @@ const Messages = () => {
                           </div>
                         )}
                         
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 items-center">
+                          {/* Draft indicator */}
+                          {draft.hasDraft && draft.lastSaved && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground mr-2">
+                              <Save className="w-3 h-3" />
+                              <span>
+                                {new Date(draft.lastSaved).toLocaleTimeString('tr-TR', { 
+                                  hour: '2-digit', 
+                                  minute: '2-digit' 
+                                })}
+                              </span>
+                            </div>
+                          )}
+                          
                           {/* Emoji Picker */}
                           <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
                             <PopoverTrigger asChild>

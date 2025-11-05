@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useDraft } from "@/hooks/use-draft";
 import { extractMentions, extractHashtags } from "@/utils/textParsing";
 import { 
   Image, 
@@ -23,7 +24,8 @@ import {
   X, 
   Loader2, 
   AtSign,
-  Smile
+  Smile,
+  Save
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
@@ -81,6 +83,32 @@ export const CreatePostDialog = ({
   const [searchQuery, setSearchQuery] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Draft management
+  const draft = useDraft({
+    key: `post_${userId}`,
+    maxLength: 5000,
+    autoSaveDelay: 2000,
+    onRestore: (draftContent) => setContent(draftContent),
+  });
+
+  // Auto-save draft when content changes
+  useEffect(() => {
+    if (!open || !content.trim()) return;
+    
+    const cleanup = draft.autoSave(content);
+    return cleanup;
+  }, [content, open]);
+
+  // Restore draft when dialog opens
+  useEffect(() => {
+    if (open && !prefilledContent?.content && draft.hasDraft) {
+      const restored = draft.restoreDraft();
+      if (restored) {
+        setContent(restored);
+      }
+    }
+  }, [open]);
 
   // Load friends when tag picker opens
   const loadFriends = async () => {
@@ -289,6 +317,9 @@ export const CreatePostDialog = ({
         description: "Gönderi oluşturuldu",
       });
 
+      // Clear draft after successful post
+      draft.clearDraft();
+
       // Reset form
       setContent("");
       setMediaFile(null);
@@ -317,10 +348,25 @@ export const CreatePostDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[95vh] sm:max-h-[90vh] p-0 gap-0">
         <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
-          <DialogTitle className="text-xl sm:text-2xl">Yeni Gönderi Oluştur</DialogTitle>
-          <DialogDescription className="text-xs sm:text-sm">
-            Fotoğraf, video veya reels paylaşın ve arkadaşlarınızı etiketleyin
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-xl sm:text-2xl">Yeni Gönderi Oluştur</DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm">
+                Fotoğraf, video veya reels paylaşın ve arkadaşlarınızı etiketleyin
+              </DialogDescription>
+            </div>
+            {draft.hasDraft && draft.lastSaved && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Save className="w-3 h-3" />
+                <span>
+                  {new Date(draft.lastSaved).toLocaleTimeString('tr-TR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </span>
+              </div>
+            )}
+          </div>
         </DialogHeader>
 
         <Tabs value={postType} onValueChange={(v: any) => setPostType(v)} className="px-4 sm:px-6">
