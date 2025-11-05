@@ -4,7 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
 import { RouteProgressBar } from "@/components/AnimationWrappers";
 import { EnhancedOfflineIndicator } from "@/components/EnhancedOfflineIndicator";
 import { Tutorial } from "@/components/Tutorial";
@@ -13,7 +12,6 @@ import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { LoadingFallback } from "@/components/LoadingFallback";
 import { IncomingCallDialog } from "@/components/IncomingCallDialog";
 import { IncomingGroupCallDialog } from "@/components/IncomingGroupCallDialog";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -196,16 +194,6 @@ const AppRoutes = () => {
 
   const showFAB = location.pathname !== "/" && location.pathname !== "/auth";
 
-  // Page transition variants
-  const pageTransition = {
-    initial: { opacity: 0, y: 10 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -10 },
-    transition: { 
-      duration: 0.3, 
-      ease: "easeInOut" as const
-    }
-  };
 
   return (
     <>
@@ -234,55 +222,44 @@ const AppRoutes = () => {
           callerName={incomingGroupCall.callerName}
         />
       )}
-      <Suspense fallback={<LoadingFallback />}>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={location.pathname}
-            initial={pageTransition.initial}
-            animate={pageTransition.animate}
-            exit={pageTransition.exit}
-            transition={pageTransition.transition}
-            className="w-full"
-          >
-            <Routes location={location}>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/profile/:username?" element={<Profile />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/faq" element={<FAQ />} />
-              <Route path="/credits" element={<Credits />} />
-              <Route path="/messages" element={<Messages />} />
-              <Route path="/friends" element={<Friends />} />
-              <Route path="/saved" element={<SavedPosts />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/tarot" element={<Tarot />} />
-              <Route path="/coffee-fortune" element={<CoffeeFortune />} />
-              <Route path="/palmistry" element={<Palmistry />} />
-              <Route path="/handwriting" element={<Handwriting />} />
-              <Route path="/birth-chart" element={<BirthChart />} />
-              <Route path="/numerology" element={<Numerology />} />
-              <Route path="/compatibility" element={<Compatibility />} />
-              <Route path="/daily-horoscope" element={<DailyHoroscope />} />
-              <Route path="/dream" element={<DreamInterpretation />} />
-              <Route path="/reels" element={<Reels />} />
-              <Route path="/explore" element={<Explore />} />
-              <Route path="/discovery" element={<Discovery />} />
-              <Route path="/groups" element={<Groups />} />
-              <Route path="/groups/:groupId" element={<GroupChat />} />
-              <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
-              <Route path="/match" element={<Match />} />
-              <Route path="/call-history" element={<CallHistory />} />
-              <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
-              <Route path="/error-monitor" element={<ErrorMonitor />} />
-              <Route path="/error-analytics" element={<ErrorAnalytics />} />
-              <Route path="/error/:errorId" element={<ErrorDetail />} />
-              <Route path="/install" element={<Install />} />
-              <Route path="/feed" element={<Feed />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </motion.div>
-        </AnimatePresence>
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+        <Routes location={location}>
+          <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/profile/:username?" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/credits" element={<Credits />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/friends" element={<Friends />} />
+          <Route path="/saved" element={<SavedPosts />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/tarot" element={<Tarot />} />
+          <Route path="/coffee-fortune" element={<CoffeeFortune />} />
+          <Route path="/palmistry" element={<Palmistry />} />
+          <Route path="/handwriting" element={<Handwriting />} />
+          <Route path="/birth-chart" element={<BirthChart />} />
+          <Route path="/numerology" element={<Numerology />} />
+          <Route path="/compatibility" element={<Compatibility />} />
+          <Route path="/daily-horoscope" element={<DailyHoroscope />} />
+          <Route path="/dream" element={<DreamInterpretation />} />
+          <Route path="/reels" element={<Reels />} />
+          <Route path="/explore" element={<Explore />} />
+          <Route path="/discovery" element={<Discovery />} />
+          <Route path="/groups" element={<Groups />} />
+          <Route path="/groups/:groupId" element={<GroupChat />} />
+          <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
+          <Route path="/match" element={<Match />} />
+          <Route path="/call-history" element={<CallHistory />} />
+          <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
+          <Route path="/error-monitor" element={<ErrorMonitor />} />
+          <Route path="/error-analytics" element={<ErrorAnalytics />} />
+          <Route path="/error/:errorId" element={<ErrorDetail />} />
+          <Route path="/install" element={<Install />} />
+          <Route path="/feed" element={<Feed />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </Suspense>
       {showNav && <MobileNav />}
       {showFAB && <FloatingActionButton />}
