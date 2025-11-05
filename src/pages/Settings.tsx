@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX, LogOut, Phone, RotateCcw, Shield } from "lucide-react";
+import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX, LogOut, Phone, RotateCcw, Shield, Eye, Palette, FileText } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { requestNotificationPermission } from "@/utils/notifications";
 import { subscribeToPushNotifications } from "@/utils/pushNotifications";
@@ -472,16 +472,34 @@ const Settings = () => {
 
         <Tabs defaultValue="profile" className="w-full">
           <TabsList className="grid w-full grid-cols-7 gap-1">
-            <TabsTrigger value="profile" className="text-xs sm:text-sm">Profil</TabsTrigger>
-            <TabsTrigger value="account" className="text-xs sm:text-sm">Hesap</TabsTrigger>
-            <TabsTrigger value="notifications" className="text-xs sm:text-sm">Bildirimler</TabsTrigger>
-            <TabsTrigger value="permissions" className="text-xs sm:text-sm">
-              <Shield className="w-4 h-4 sm:mr-1" />
-              <span className="hidden sm:inline">İzinler</span>
+            <TabsTrigger value="profile" className="flex flex-col gap-1 h-auto py-2">
+              <User className="w-4 h-4" />
+              <span className="text-[10px] hidden sm:inline">Profil</span>
             </TabsTrigger>
-            <TabsTrigger value="security" className="text-xs sm:text-sm">Güvenlik</TabsTrigger>
-            <TabsTrigger value="blocked" className="text-xs sm:text-sm">Engelli</TabsTrigger>
-            <TabsTrigger value="appearance" className="text-xs sm:text-sm">Görünüm</TabsTrigger>
+            <TabsTrigger value="account" className="flex flex-col gap-1 h-auto py-2">
+              <FileText className="w-4 h-4" />
+              <span className="text-[10px] hidden sm:inline">Hesap</span>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex flex-col gap-1 h-auto py-2">
+              <Bell className="w-4 h-4" />
+              <span className="text-[10px] hidden sm:inline">Bildirim</span>
+            </TabsTrigger>
+            <TabsTrigger value="permissions" className="flex flex-col gap-1 h-auto py-2">
+              <Shield className="w-4 h-4" />
+              <span className="text-[10px] hidden sm:inline">İzinler</span>
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex flex-col gap-1 h-auto py-2">
+              <Lock className="w-4 h-4" />
+              <span className="text-[10px] hidden sm:inline">Güvenlik</span>
+            </TabsTrigger>
+            <TabsTrigger value="blocked" className="flex flex-col gap-1 h-auto py-2">
+              <UserX className="w-4 h-4" />
+              <span className="text-[10px] hidden sm:inline">Engelli</span>
+            </TabsTrigger>
+            <TabsTrigger value="appearance" className="flex flex-col gap-1 h-auto py-2">
+              <Palette className="w-4 h-4" />
+              <span className="text-[10px] hidden sm:inline">Görünüm</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile">
