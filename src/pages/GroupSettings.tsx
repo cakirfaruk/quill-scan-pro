@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Save, Trash2, UserPlus, UserMinus, Loader2, Shield } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Breadcrumb } from "@/components/Breadcrumb";
 
 interface GroupMember {
   id: string;
@@ -354,6 +355,14 @@ const GroupSettings = () => {
       <Header />
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
+        <Breadcrumb
+          items={[
+            { label: "Gruplar", path: "/groups" },
+            { label: group?.name || "Grup", path: `/groups/${groupId}` },
+            { label: "Ayarlar", path: `/groups/${groupId}/settings` },
+          ]}
+        />
+        
         <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" size="icon" onClick={() => navigate(`/groups/${groupId}`)}>
             <ArrowLeft className="w-5 h-5" />

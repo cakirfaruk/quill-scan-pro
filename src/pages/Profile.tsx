@@ -24,6 +24,7 @@ import { MutualFriends } from "@/components/MutualFriends";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { soundEffects } from "@/utils/soundEffects";
 import { OnlineStatusBadge } from "@/components/OnlineStatusBadge";
+import { Breadcrumb } from "@/components/Breadcrumb";
 
 interface UserPhoto {
   id: string;
@@ -1256,6 +1257,15 @@ const Profile = () => {
       <Header />
 
       <main ref={containerRef} className="container mx-auto px-4 py-8 max-w-6xl relative">
+        {/* Breadcrumb */}
+        {!isOwnProfile && profile && (
+          <Breadcrumb
+            items={[
+              { label: profile.full_name || profile.username, path: `/profile/${profile.username}` },
+            ]}
+          />
+        )}
+        
         {/* Pull to Refresh Indicator */}
         {(isPulling || isRefreshing) && (
           <div 

@@ -15,6 +15,7 @@ import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Bookmark, FolderPlus, Folder, Trash2, Edit, Plus } from "lucide-react";
 import { SkeletonPost } from "@/components/ui/enhanced-skeleton";
+import { Breadcrumb } from "@/components/Breadcrumb";
 
 interface SavedPost {
   id: string;
@@ -252,6 +253,8 @@ const SavedPosts = () => {
       <Header />
 
       <main className="container mx-auto px-4 py-8">
+        <Breadcrumb />
+        
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Kaydedilenler

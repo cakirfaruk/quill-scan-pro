@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Send, Users, Settings, Smile, Loader2, UserPlus, BarChart3, Megaphone, Image as ImageIcon, Paperclip, Reply, X, TrendingUp, Search, CalendarDays, Pin, Phone, Video } from "lucide-react";
+import { Breadcrumb } from "@/components/Breadcrumb";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -769,8 +770,17 @@ const GroupChat = () => {
     <div className="min-h-screen bg-gradient-subtle flex flex-col">
       <Header />
 
+      <div className="mx-4 mt-4">
+        <Breadcrumb
+          items={[
+            { label: "Gruplar", path: "/groups" },
+            { label: group.name, path: `/groups/${groupId}` },
+          ]}
+        />
+      </div>
+
       {/* Group Header */}
-      <Card className="mx-4 mt-4">
+      <Card className="mx-4 mt-2">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate("/groups")}>
