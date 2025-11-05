@@ -17,6 +17,7 @@ import { LoadingFallback } from "@/components/LoadingFallback";
 import { IncomingCallDialog } from "@/components/IncomingCallDialog";
 import { IncomingGroupCallDialog } from "@/components/IncomingGroupCallDialog";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useErrorAlerts } from "@/hooks/use-error-alerts";
 
 // Lazy load ALL pages including Index for optimal code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -59,6 +60,7 @@ const queryClient = new QueryClient();
 // Component that uses hooks - must be inside providers
 const AppRoutes = () => {
   useUpdateOnlineStatus();
+  useErrorAlerts(); // Real-time error alerting
   const location = useLocation();
   const [incomingCall, setIncomingCall] = useState<any>(null);
   const [incomingGroupCall, setIncomingGroupCall] = useState<any>(null);

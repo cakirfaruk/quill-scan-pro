@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationBell } from "@/components/NotificationBell";
+import { ErrorAlertIndicator } from "@/components/ErrorAlertIndicator";
 import { PageHistory } from "@/components/PageHistory";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -263,6 +264,9 @@ export const CompactHeader = () => {
 
               {/* Notifications */}
               <NotificationBell />
+
+              {/* Error Alerts */}
+              <ErrorAlertIndicator />
 
               {/* Page History */}
               <PageHistory />

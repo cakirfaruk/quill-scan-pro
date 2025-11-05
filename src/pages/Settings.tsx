@@ -20,6 +20,7 @@ import { AutoResponseSettings } from "@/components/AutoResponseSettings";
 import { resetOnboarding } from "@/components/OnboardingTour";
 import { ThemeCustomizationPanel } from "@/components/ThemeCustomizationPanel";
 import { NotificationPreferences } from "@/components/NotificationPreferences";
+import { ErrorAlertSettings } from "@/components/ErrorAlertSettings";
 
 const Settings = () => {
   const [profile, setProfile] = useState({
@@ -712,20 +713,24 @@ const Settings = () => {
           </TabsContent>
 
           <TabsContent value="notifications">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="w-5 h-5" />
-                  Bildirim Tercihleri
-                </CardTitle>
-                <CardDescription>
-                  Almak istediğiniz bildirim türlerini yönetin
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <NotificationPreferences />
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bell className="w-5 h-5" />
+                    Bildirim Tercihleri
+                  </CardTitle>
+                  <CardDescription>
+                    Almak istediğiniz bildirim türlerini yönetin
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <NotificationPreferences />
+                </CardContent>
+              </Card>
+              
+              <ErrorAlertSettings />
+            </div>
           </TabsContent>
 
           <TabsContent value="blocked">
