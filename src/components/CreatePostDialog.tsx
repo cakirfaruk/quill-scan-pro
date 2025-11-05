@@ -2,14 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -20,16 +16,20 @@ import { extractMentions, extractHashtags } from "@/utils/textParsing";
 import { 
   Image, 
   Video, 
-  Sparkles, 
   X, 
   Loader2, 
   AtSign,
   Smile,
-  Save
+  Save,
+  ArrowLeft,
+  Check,
+  Camera,
+  ImageIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { PhotoCaptureEditor } from "@/components/PhotoCaptureEditor";
 import { z } from "zod";
 
 const postSchema = z.object({
@@ -69,6 +69,7 @@ export const CreatePostDialog = ({
   onPostCreated,
   prefilledContent,
 }: CreatePostDialogProps) => {
+  const [step, setStep] = useState<"select" | "capture" | "edit" | "share">("select");
   const [postType, setPostType] = useState<"photo" | "video" | "reels">("photo");
   const [content, setContent] = useState(prefilledContent?.content || "");
   const [mediaFile, setMediaFile] = useState<File | null>(null);
@@ -81,6 +82,7 @@ export const CreatePostDialog = ({
   const [friends, setFriends] = useState<Friend[]>([]);
   const [taggedFriends, setTaggedFriends] = useState<Friend[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showPhotoEditor, setShowPhotoEditor] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -338,6 +340,25 @@ export const CreatePostDialog = ({
     }
   };
 
+  // Reset step when dialog opens/closes
+  useEffect(() => {
+    if (open) {
+      if (prefilledContent?.mediaUrl) {
+        setStep("share");
+      } else {
+        setStep("select");
+      }
+    } else {
+      setStep("select");
+    }
+  }, [open]);
+
+  const handlePhotoCapture = (imageData: string) => {
+    setMediaPreview(imageData);
+    setShowPhotoEditor(false);
+    setStep("share");
+  };
+
   const filteredFriends = friends.filter(
     (f) =>
       f.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -345,240 +366,262 @@ export const CreatePostDialog = ({
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[95vh] sm:max-h-[90vh] p-0 gap-0">
-        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-xl sm:text-2xl">Yeni Gönderi Oluştur</DialogTitle>
-              <DialogDescription className="text-xs sm:text-sm">
-                Fotoğraf, video veya reels paylaşın ve arkadaşlarınızı etiketleyin
-              </DialogDescription>
-            </div>
-            {draft.hasDraft && draft.lastSaved && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Save className="w-3 h-3" />
-                <span>
-                  {new Date(draft.lastSaved).toLocaleTimeString('tr-TR', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </span>
-              </div>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[95vh] sm:max-h-[90vh] p-0 gap-0 overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b">
+            {step !== "select" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (step === "share") setStep("select");
+                }}
+                className="gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Geri
+              </Button>
             )}
+            <h2 className="font-semibold text-lg flex-1 text-center">
+              {step === "select" && "Yeni Gönderi"}
+              {step === "share" && "Gönderi Oluştur"}
+            </h2>
+            {step === "share" && (
+              <Button
+                onClick={handleCreatePost}
+                disabled={isLoading || (!content.trim() && !mediaPreview)}
+                className="gap-2"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4" />
+                )}
+                Paylaş
+              </Button>
+            )}
+            {step === "select" && <div className="w-20" />}
           </div>
-        </DialogHeader>
 
-        <Tabs value={postType} onValueChange={(v: any) => setPostType(v)} className="px-4 sm:px-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="photo" className="gap-1 sm:gap-2 text-xs sm:text-sm">
-              <Image className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Fotoğraf</span>
-            </TabsTrigger>
-            <TabsTrigger value="video" className="gap-1 sm:gap-2 text-xs sm:text-sm">
-              <Video className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Video</span>
-            </TabsTrigger>
-            <TabsTrigger value="reels" className="gap-1 sm:gap-2 text-xs sm:text-sm">
-              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Reels</span>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
 
-        <ScrollArea className="max-h-[calc(95vh-200px)] sm:max-h-[calc(90vh-220px)] px-4 sm:px-6">
-          <div className="space-y-4 pb-4">
-            {/* User Info */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Avatar className="w-9 h-9 sm:w-10 sm:h-10">
-                <AvatarImage src={profilePhoto || undefined} />
-                <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs sm:text-sm">
-                  {username.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-semibold text-sm sm:text-base">{username}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">
-                  {postType === "reels" ? "Reels" : postType === "video" ? "Video" : "Fotoğraf"} paylaşımı
-                </p>
-              </div>
-            </div>
-
-            {/* Media Upload/Preview */}
-            <div className="space-y-2">
-              {!mediaPreview ? (
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-border rounded-lg p-8 sm:p-12 text-center cursor-pointer hover:border-primary transition-colors"
+          {/* Content */}
+          <div className="flex-1 overflow-hidden">
+            <AnimatePresence mode="wait">
+              {/* Step 1: Selection */}
+              {step === "select" && (
+                <motion.div
+                  key="select"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="h-full"
                 >
-                  {postType === "photo" ? (
-                    <Image className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 text-muted-foreground" />
-                  ) : (
-                    <Video className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 text-muted-foreground" />
-                  )}
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    {postType === "photo"
-                      ? "Fotoğraf yüklemek için tıklayın"
-                      : "Video yüklemek için tıklayın"}
-                  </p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
-                    Maksimum 50MB
-                  </p>
-                </div>
-              ) : (
-                <div className="relative rounded-lg overflow-hidden">
-                  {postType === "photo" ? (
-                    <img
-                      src={mediaPreview}
-                      alt="Preview"
-                      className="w-full max-h-96 object-cover rounded-lg"
-                    />
-                  ) : (
-                    <video
-                      src={mediaPreview}
-                      controls
-                      className="w-full max-h-96 rounded-lg"
-                    />
-                  )}
-                  <Button
-                    size="icon"
-                    variant="destructive"
-                    className="absolute top-2 right-2 rounded-full"
-                    onClick={handleRemoveMedia}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
+                  <div className="grid grid-cols-2 gap-4 p-6 h-full">
+                    <button
+                      onClick={() => setShowPhotoEditor(true)}
+                      className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg border-2 hover:border-primary hover:bg-accent transition-all group"
+                    >
+                      <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Camera className="w-10 h-10 text-primary" />
+                      </div>
+                      <div className="text-center">
+                        <h3 className="font-semibold text-lg mb-1">Kamera</h3>
+                        <p className="text-sm text-muted-foreground">Fotoğraf çek ve düzenle</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg border-2 hover:border-primary hover:bg-accent transition-all group"
+                    >
+                      <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <ImageIcon className="w-10 h-10 text-primary" />
+                      </div>
+                      <div className="text-center">
+                        <h3 className="font-semibold text-lg mb-1">Galeri</h3>
+                        <p className="text-sm text-muted-foreground">Fotoğraf/Video seç</p>
+                      </div>
+                    </button>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      handleFileSelect(e);
+                      if (e.target.files?.[0]) {
+                        setStep("share");
+                      }
+                    }}
+                  />
+                </motion.div>
               )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={postType === "photo" ? "image/*" : "video/*"}
-                className="hidden"
-                onChange={handleFileSelect}
-              />
-            </div>
 
-            {/* Caption */}
-            <div className="space-y-2">
-              <Label>Açıklama</Label>
-              <div className="relative">
-                <Textarea
-                  placeholder="Bir şeyler yazın..."
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  rows={4}
-                  className="resize-none"
-                  maxLength={5000}
-                />
-                <div className="absolute bottom-2 right-2 flex gap-1">
-                  <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
-                    <PopoverTrigger asChild>
-                      <Button size="icon" variant="ghost" className="h-8 w-8">
-                        <Smile className="w-4 h-4" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0 border-0" align="end">
-                      <EmojiPicker onEmojiClick={handleEmojiClick} />
-                    </PopoverContent>
-                  </Popover>
+              {/* Step 2: Share */}
+              {step === "share" && (
+                <motion.div
+                  key="share"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="h-full"
+                >
+                  <ScrollArea className="h-[calc(95vh-120px)]">
+                    <div className="p-6 space-y-4">
+                      {/* User Info */}
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={profilePhoto || undefined} />
+                          <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                            {username.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-semibold">{username}</p>
+                        </div>
+                      </div>
 
-                  <Popover open={showTagPicker} onOpenChange={(open) => {
-                    setShowTagPicker(open);
-                    if (open) loadFriends();
-                  }}>
-                    <PopoverTrigger asChild>
-                      <Button size="icon" variant="ghost" className="h-8 w-8">
-                        <AtSign className="w-4 h-4" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80" align="end">
-                      <div className="space-y-3">
-                        <input
-                          type="text"
-                          placeholder="Arkadaş ara..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full px-3 py-2 border rounded-md"
-                        />
-                        <ScrollArea className="h-64">
-                          <div className="space-y-2">
-                            {filteredFriends.map((friend) => (
-                              <button
-                                key={friend.user_id}
-                                onClick={() => handleTagFriend(friend)}
-                                className="w-full flex items-center gap-3 p-2 hover:bg-muted rounded-lg transition-colors"
-                              >
-                                <Avatar className="w-8 h-8">
-                                  <AvatarImage src={friend.profile_photo || undefined} />
-                                  <AvatarFallback>
-                                    {friend.username.substring(0, 2).toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 text-left">
-                                  <p className="text-sm font-medium">
-                                    {friend.full_name || friend.username}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    @{friend.username}
-                                  </p>
+                      {/* Media Preview */}
+                      {mediaPreview && (
+                        <div className="relative rounded-lg overflow-hidden bg-black">
+                          <img
+                            src={mediaPreview}
+                            alt="Preview"
+                            className="w-full max-h-96 object-contain"
+                          />
+                          <Button
+                            size="icon"
+                            variant="secondary"
+                            className="absolute top-2 right-2 rounded-full"
+                            onClick={handleRemoveMedia}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Caption */}
+                      <div className="space-y-2">
+                        <Label>Açıklama Ekle</Label>
+                        <div className="relative">
+                          <Textarea
+                            placeholder="Bir şeyler yazın..."
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            rows={4}
+                            className="resize-none pr-20"
+                            maxLength={5000}
+                          />
+                          <div className="absolute bottom-2 right-2 flex gap-1">
+                            <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                              <PopoverTrigger asChild>
+                                <Button size="icon" variant="ghost" className="h-8 w-8">
+                                  <Smile className="w-4 h-4" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-full p-0 border-0" align="end">
+                                <EmojiPicker onEmojiClick={handleEmojiClick} />
+                              </PopoverContent>
+                            </Popover>
+
+                            <Popover open={showTagPicker} onOpenChange={(open) => {
+                              setShowTagPicker(open);
+                              if (open) loadFriends();
+                            }}>
+                              <PopoverTrigger asChild>
+                                <Button size="icon" variant="ghost" className="h-8 w-8">
+                                  <AtSign className="w-4 h-4" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-80" align="end">
+                                <div className="space-y-3">
+                                  <input
+                                    type="text"
+                                    placeholder="Arkadaş ara..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full px-3 py-2 border rounded-md text-sm"
+                                  />
+                                  <ScrollArea className="h-48">
+                                    <div className="space-y-2">
+                                      {filteredFriends.map((friend) => (
+                                        <button
+                                          key={friend.user_id}
+                                          onClick={() => handleTagFriend(friend)}
+                                          className="w-full flex items-center gap-2 p-2 hover:bg-accent rounded-md transition-colors"
+                                        >
+                                          <Avatar className="w-8 h-8">
+                                            <AvatarImage src={friend.profile_photo || undefined} />
+                                            <AvatarFallback>
+                                              {friend.username.substring(0, 2).toUpperCase()}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                          <div className="text-left flex-1">
+                                            <p className="text-sm font-medium">{friend.username}</p>
+                                            {friend.full_name && (
+                                              <p className="text-xs text-muted-foreground">
+                                                {friend.full_name}
+                                              </p>
+                                            )}
+                                          </div>
+                                        </button>
+                                      ))}
+                                      {filteredFriends.length === 0 && (
+                                        <p className="text-sm text-muted-foreground text-center py-4">
+                                          Arkadaş bulunamadı
+                                        </p>
+                                      )}
+                                    </div>
+                                  </ScrollArea>
                                 </div>
-                              </button>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {content.length}/5000
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tagged Friends */}
+                      {taggedFriends.length > 0 && (
+                        <div className="space-y-2">
+                          <Label className="text-sm">Etiketlenen Kişiler</Label>
+                          <div className="flex flex-wrap gap-2">
+                            {taggedFriends.map((friend) => (
+                              <Badge key={friend.user_id} variant="secondary" className="gap-1">
+                                @{friend.username}
+                                <button
+                                  onClick={() => handleRemoveTag(friend.user_id)}
+                                  className="ml-1 hover:text-destructive"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </Badge>
                             ))}
                           </div>
-                        </ScrollArea>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-            </div>
-
-            {/* Tagged Friends */}
-            {taggedFriends.length > 0 && (
-              <div className="space-y-2">
-                <Label>Etiketlenenler</Label>
-                <div className="flex flex-wrap gap-2">
-                  {taggedFriends.map((friend) => (
-                    <Badge
-                      key={friend.user_id}
-                      variant="secondary"
-                      className="gap-2 pr-1"
-                    >
-                      @{friend.username}
-                      <button
-                        onClick={() => handleRemoveTag(friend.user_id)}
-                        className="hover:bg-destructive/20 rounded-full p-0.5"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        </ScrollArea>
+        </DialogContent>
+      </Dialog>
 
-        <div className="px-4 sm:px-6 pb-4 sm:pb-6 pt-3 sm:pt-4 border-t flex gap-2 sm:gap-3">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className="flex-1 text-xs sm:text-sm"
-            disabled={isLoading}
-          >
-            İptal
-          </Button>
-          <Button
-            onClick={handleCreatePost}
-            className="flex-1 gap-1 sm:gap-2 text-xs sm:text-sm"
-            disabled={isLoading || (!content.trim() && !mediaPreview)}
-          >
-            {isLoading && <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />}
-            Paylaş
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+      {/* Photo Capture Editor */}
+      <PhotoCaptureEditor
+        open={showPhotoEditor}
+        onOpenChange={setShowPhotoEditor}
+        onCapture={handlePhotoCapture}
+        title="Fotoğraf Çek"
+        description="Kamera ile fotoğraf çekin veya galeriden seçin"
+      />
+    </>
   );
 };
