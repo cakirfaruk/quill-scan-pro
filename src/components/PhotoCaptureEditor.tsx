@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Camera,
   Image as ImageIcon,
@@ -28,6 +31,11 @@ import {
   Crop,
   Frame,
   Move,
+  Type,
+  Smile,
+  Palette,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -66,6 +74,27 @@ export const PhotoCaptureEditor = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  
+  // Text and emoji overlays
+  interface TextOverlay {
+    id: string;
+    text: string;
+    x: number;
+    y: number;
+    fontSize: number;
+    color: string;
+    fontFamily: string;
+  }
+  
+  const [textOverlays, setTextOverlays] = useState<TextOverlay[]>([]);
+  const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
+  const [isAddingText, setIsAddingText] = useState(false);
+  const [newText, setNewText] = useState("");
+  const [textFontSize, setTextFontSize] = useState(32);
+  const [textColor, setTextColor] = useState("#ffffff");
+  const [textFont, setTextFont] = useState("Arial");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [draggingTextId, setDraggingTextId] = useState<string | null>(null);
   
   const cropContainerRef = useRef<HTMLDivElement>(null);
 
@@ -305,6 +334,85 @@ export const PhotoCaptureEditor = ({
     };
   };
 
+  const addTextOverlay = () => {
+    if (!newText.trim()) return;
+    
+    const newOverlay: TextOverlay = {
+      id: Math.random().toString(36).substr(2, 9),
+      text: newText,
+      x: 50,
+      y: 50,
+      fontSize: textFontSize,
+      color: textColor,
+      fontFamily: textFont,
+    };
+    
+    setTextOverlays([...textOverlays, newOverlay]);
+    setNewText("");
+    setIsAddingText(false);
+    
+    toast({
+      title: "Metin Eklendi",
+      description: "Metni sürükleyerek konumlandırabilirsiniz",
+    });
+  };
+
+  const addEmojiOverlay = (emojiData: EmojiClickData) => {
+    const newOverlay: TextOverlay = {
+      id: Math.random().toString(36).substr(2, 9),
+      text: emojiData.emoji,
+      x: 50,
+      y: 50,
+      fontSize: 48,
+      color: "#000000",
+      fontFamily: "Arial",
+    };
+    
+    setTextOverlays([...textOverlays, newOverlay]);
+    setShowEmojiPicker(false);
+    
+    toast({
+      title: "Emoji Eklendi",
+      description: "Emoji'yi sürükleyerek konumlandırabilirsiniz",
+    });
+  };
+
+  const deleteTextOverlay = (id: string) => {
+    setTextOverlays(textOverlays.filter(t => t.id !== id));
+    setSelectedTextId(null);
+  };
+
+  const handleTextMouseDown = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setDraggingTextId(id);
+    setSelectedTextId(id);
+    setDragStart({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleTextMouseMove = (e: React.MouseEvent) => {
+    if (!draggingTextId || !cropContainerRef.current) return;
+    
+    const rect = cropContainerRef.current.getBoundingClientRect();
+    const deltaX = ((e.clientX - dragStart.x) / rect.width) * 100;
+    const deltaY = ((e.clientY - dragStart.y) / rect.height) * 100;
+
+    setTextOverlays(prev => prev.map(overlay => 
+      overlay.id === draggingTextId
+        ? {
+            ...overlay,
+            x: Math.max(0, Math.min(100, overlay.x + deltaX)),
+            y: Math.max(0, Math.min(100, overlay.y + deltaY))
+          }
+        : overlay
+    ));
+    
+    setDragStart({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleTextMouseUp = () => {
+    setDraggingTextId(null);
+  };
+
   const applyFilters = () => {
     if (!capturedImage || !canvasRef.current) return capturedImage;
 
@@ -418,6 +526,27 @@ export const PhotoCaptureEditor = ({
         
         context.restore();
 
+        // Draw text overlays
+        textOverlays.forEach(overlay => {
+          context.save();
+          context.font = `${overlay.fontSize * (canvas.width / 100)}px ${overlay.fontFamily}`;
+          context.fillStyle = overlay.color;
+          context.textAlign = "center";
+          context.textBaseline = "middle";
+          
+          // Add text shadow for better readability
+          context.shadowColor = "rgba(0, 0, 0, 0.8)";
+          context.shadowBlur = 4;
+          context.shadowOffsetX = 2;
+          context.shadowOffsetY = 2;
+          
+          const x = (overlay.x / 100) * canvas.width;
+          const y = (overlay.y / 100) * canvas.height;
+          
+          context.fillText(overlay.text, x, y);
+          context.restore();
+        });
+
         resolve(canvas.toDataURL("image/jpeg", 0.95));
       };
     });
@@ -445,6 +574,10 @@ export const PhotoCaptureEditor = ({
     setAspectRatio(null);
     setIsDragging(false);
     setIsResizing(null);
+    setTextOverlays([]);
+    setSelectedTextId(null);
+    setIsAddingText(false);
+    setNewText("");
     if (activeTab === "camera") {
       startCamera();
     }
@@ -525,9 +658,18 @@ export const PhotoCaptureEditor = ({
               <div 
                 ref={cropContainerRef}
                 className="relative w-full h-full select-none"
-                onMouseMove={handleCropMouseMove}
-                onMouseUp={handleCropMouseUp}
-                onMouseLeave={handleCropMouseUp}
+                onMouseMove={(e) => {
+                  handleCropMouseMove(e);
+                  handleTextMouseMove(e);
+                }}
+                onMouseUp={() => {
+                  handleCropMouseUp();
+                  handleTextMouseUp();
+                }}
+                onMouseLeave={() => {
+                  handleCropMouseUp();
+                  handleTextMouseUp();
+                }}
               >
                 <img
                   src={capturedImage || ""}
@@ -582,8 +724,148 @@ export const PhotoCaptureEditor = ({
                     </div>
                   </div>
                 )}
+                
+                {/* Text Overlays */}
+                {textOverlays.map((overlay) => (
+                  <div
+                    key={overlay.id}
+                    className={cn(
+                      "absolute cursor-move select-none transition-shadow",
+                      selectedTextId === overlay.id && "ring-2 ring-primary shadow-lg"
+                    )}
+                    style={{
+                      left: `${overlay.x}%`,
+                      top: `${overlay.y}%`,
+                      transform: "translate(-50%, -50%)",
+                      fontSize: `${overlay.fontSize}px`,
+                      color: overlay.color,
+                      fontFamily: overlay.fontFamily,
+                      textShadow: "2px 2px 4px rgba(0, 0, 0, 0.8)",
+                    }}
+                    onMouseDown={(e) => handleTextMouseDown(e, overlay.id)}
+                  >
+                    {overlay.text}
+                    {selectedTextId === overlay.id && (
+                      <button
+                        className="absolute -top-3 -right-3 bg-destructive text-white rounded-full p-1 hover:scale-110 transition-transform"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteTextOverlay(overlay.id);
+                        }}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
+
+            {/* Text Controls */}
+            {!isCropping && (
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <Button
+                    variant={isAddingText ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setIsAddingText(!isAddingText)}
+                    className="gap-2"
+                  >
+                    <Type className="w-4 h-4" />
+                    Metin Ekle
+                  </Button>
+
+                  <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Smile className="w-4 h-4" />
+                        Emoji Ekle
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <EmojiPicker onEmojiClick={addEmojiOverlay} />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {isAddingText && (
+                  <div className="space-y-3 p-4 border rounded-lg bg-card">
+                    <div className="space-y-2">
+                      <Label>Metin</Label>
+                      <Input
+                        value={newText}
+                        onChange={(e) => setNewText(e.target.value)}
+                        placeholder="Metninizi yazın..."
+                        onKeyDown={(e) => e.key === "Enter" && addTextOverlay()}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label>Font</Label>
+                        <select
+                          value={textFont}
+                          onChange={(e) => setTextFont(e.target.value)}
+                          className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                        >
+                          <option value="Arial">Arial</option>
+                          <option value="Georgia">Georgia</option>
+                          <option value="Times New Roman">Times New Roman</option>
+                          <option value="Courier New">Courier New</option>
+                          <option value="Verdana">Verdana</option>
+                          <option value="Comic Sans MS">Comic Sans MS</option>
+                          <option value="Impact">Impact</option>
+                          <option value="Playfair Display">Playfair Display</option>
+                          <option value="Roboto">Roboto</option>
+                          <option value="Montserrat">Montserrat</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Boyut: {textFontSize}px</Label>
+                        <Slider
+                          value={[textFontSize]}
+                          onValueChange={(v) => setTextFontSize(v[0])}
+                          min={16}
+                          max={120}
+                          step={2}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Palette className="w-4 h-4" />
+                        Renk
+                      </Label>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="color"
+                          value={textColor}
+                          onChange={(e) => setTextColor(e.target.value)}
+                          className="w-12 h-9 rounded cursor-pointer"
+                        />
+                        <Input
+                          value={textColor}
+                          onChange={(e) => setTextColor(e.target.value)}
+                          placeholder="#ffffff"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={addTextOverlay}
+                      className="w-full gap-2 bg-gradient-primary"
+                      disabled={!newText.trim()}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Metni Ekle
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Edit Controls */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
