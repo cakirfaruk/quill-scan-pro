@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -13,6 +14,13 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(), 
     mode === "development" && componentTagger(),
+    // Bundle analyzer - run 'npm run build' to see stats.html
+    mode === 'production' && visualizer({
+      filename: './dist/stats.html',
+      open: false,
+      gzipSize: true,
+      brotliSize: true,
+    }),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'script-defer',
@@ -37,16 +45,31 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        // Aggressive caching for better performance
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'supabase-cache',
+              cacheName: 'supabase-api-cache',
               networkTimeoutSeconds: 3,
               expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 7
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 5 // 5 minutes for API responses
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'supabase-storage-cache',
+              expiration: {
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days for storage
               },
               cacheableResponse: {
                 statuses: [0, 200]
@@ -59,9 +82,17 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: 'images-cache',
               expiration: {
-                maxEntries: 200,
-                maxAgeSeconds: 60 * 60 * 24 * 30
-              }
+                maxEntries: 300,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              },
+              plugins: [
+                {
+                  cacheWillUpdate: async ({ response }) => {
+                    // Only cache successful responses
+                    return response.status === 200 ? response : null;
+                  }
+                }
+              ]
             }
           },
           {
@@ -70,8 +101,8 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: 'google-fonts-cache',
               expiration: {
-                maxEntries: 20,
-                maxAgeSeconds: 60 * 60 * 24 * 365
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
               }
             }
           }
