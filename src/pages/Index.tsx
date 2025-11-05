@@ -48,7 +48,6 @@ const Index = () => {
     });
   };
 
-  // Redirect to feed if logged in
   useEffect(() => {
     if (isLoggedIn && !showOnboarding) {
       navigate("/feed");
@@ -62,7 +61,7 @@ const Index = () => {
       <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background overflow-hidden">
         <Header />
       
-      <main className="container mx-auto px-4">
+        <main className="container mx-auto px-4">
         {/* Hero Section */}
         <section 
           ref={heroRef}
