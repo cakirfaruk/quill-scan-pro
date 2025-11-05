@@ -32,6 +32,7 @@ import { OnboardingTour } from "@/components/OnboardingTour";
 import { useOnboarding } from "@/hooks/use-onboarding";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
+import { WidgetDashboard } from "@/components/WidgetDashboard";
 
 interface Post {
   id: string;
@@ -870,6 +871,11 @@ const Feed = () => {
             </Card>
           </ScrollReveal>
         )}
+
+        {/* Widget Dashboard */}
+        <ScrollReveal direction="up" delay={0.2}>
+          <WidgetDashboard />
+        </ScrollReveal>
         
         <Tabs defaultValue="friends" className="w-full space-y-4 sm:space-y-6">
           <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6">
