@@ -168,7 +168,7 @@ const Reels = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black">
+      <div className="page-container-mobile bg-black">
         <Header />
         <SkeletonReel />
       </div>
@@ -177,9 +177,9 @@ const Reels = () => {
 
   if (reels.length === 0) {
     return (
-      <div className="min-h-screen bg-black">
+      <div className="page-container-mobile bg-black">
         <Header />
-        <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] text-white p-8">
+        <div className="flex flex-col items-center justify-center py-12 text-white p-8">
           <Music className="w-16 h-16 mb-4 opacity-50" />
           <h2 className="text-2xl font-bold mb-2">Henüz Video Yok</h2>
           <p className="text-muted-foreground text-center">
@@ -193,7 +193,7 @@ const Reels = () => {
   const currentReel = reels[currentIndex];
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="page-container-mobile bg-black">
       <Header />
       
       <div

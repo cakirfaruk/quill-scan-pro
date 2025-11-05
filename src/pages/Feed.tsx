@@ -829,7 +829,7 @@ const Feed = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-subtle pb-20 lg:pb-0">
+      <div className="page-container-mobile bg-gradient-subtle">
         <Header />
         <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-2xl space-y-4 sm:space-y-6">
           {[1, 2, 3].map((i) => (
@@ -841,7 +841,7 @@ const Feed = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle pb-20 lg:pb-0">
+    <div className="page-container-mobile bg-gradient-subtle">
       <Header />
       <div ref={containerRef} className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 lg:py-8 max-w-2xl relative">
         {/* Pull to Refresh Indicator */}

@@ -1243,9 +1243,9 @@ const Profile = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-subtle">
+      <div className="page-container-mobile bg-gradient-subtle">
         <Header />
-        <div className="flex items-center justify-center py-20">
+        <div className="flex items-center justify-center py-12">
           <Loader2 className="w-12 h-12 animate-spin text-primary" />
         </div>
       </div>
@@ -1253,10 +1253,10 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="page-container-mobile bg-gradient-subtle">
       <Header />
 
-      <main ref={containerRef} className="container mx-auto px-4 py-8 max-w-6xl relative">
+      <main ref={containerRef} className="container mx-auto px-4 py-4 max-w-6xl relative">
         {/* Breadcrumb */}
         {!isOwnProfile && profile && (
           <Breadcrumb

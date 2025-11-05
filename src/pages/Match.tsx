@@ -862,9 +862,9 @@ const Match = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="page-container-mobile bg-background">
         <Header />
-        <div className="container mx-auto px-4 py-8 max-w-md">
+        <div className="container mx-auto px-4 py-4 max-w-md">
           <div className="space-y-4 animate-fade-in">
             <SkeletonCard />
           </div>
@@ -875,9 +875,9 @@ const Match = () => {
 
   if (!currentProfile) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="page-container-mobile bg-background">
         <Header />
-        <div className="container mx-auto px-4 py-8 max-w-md">
+        <div className="container mx-auto px-4 py-4 max-w-md">
           <Card className="p-8 text-center card-hover animate-scale-in">
             <Sparkles className="w-16 h-16 mx-auto mb-4 text-primary animate-pulse-glow" />
             <h2 className="text-2xl font-bold mb-2 gradient-text">Profil Kalmadı</h2>
@@ -891,9 +891,9 @@ const Match = () => {
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="page-container-mobile bg-background flex flex-col overflow-hidden">
       <Header />
-      <div className="flex-1 flex flex-col px-4 pt-2 pb-20 md:py-8 max-w-md mx-auto w-full">
+      <div className="flex-1 flex flex-col px-4 py-2 max-w-md mx-auto w-full">
         <div 
           className="flex-1 overflow-hidden card-hover animate-scale-in shadow-elegant relative select-none touch-none max-h-[calc(100vh-200px)] md:max-h-none"
           {...cardGestures}

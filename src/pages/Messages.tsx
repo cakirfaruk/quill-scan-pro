@@ -1606,7 +1606,7 @@ const Messages = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="page-container-mobile bg-gradient-subtle">
       <Header />
 
       <main className="container mx-auto px-4 py-8">

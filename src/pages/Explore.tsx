@@ -196,10 +196,10 @@ const Explore = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="page-container-mobile bg-gradient-subtle">
       <Header />
 
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+      <main className="container mx-auto px-4 py-4 max-w-4xl">
         <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
           Keşfet
         </h1>

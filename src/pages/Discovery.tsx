@@ -77,10 +77,10 @@ const Discovery = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-subtle pb-20">
+    <div className="page-container-mobile bg-gradient-subtle">
       <Header />
       
-      <main className="container mx-auto px-4 py-6 max-w-6xl">
+      <main className="container mx-auto px-4 py-4 max-w-6xl">
         {/* Hero Section */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center p-3 bg-gradient-primary rounded-full mb-4 shadow-glow">

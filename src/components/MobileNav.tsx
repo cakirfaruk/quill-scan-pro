@@ -49,17 +49,17 @@ export const MobileNav = () => {
   const isActive = (path: string) => location.pathname === path;
 
   const navItems = [
-    { icon: Search, label: "Arama", path: "/explore" },
     { icon: Heart, label: "Eşleşme", path: "/match" },
-    { icon: Plus, label: "Oluştur", action: handleCreatePost },
     { icon: Video, label: "Reels", path: "/reels" },
+    { icon: Plus, label: "Oluştur", action: handleCreatePost },
     { icon: Sparkles, label: "Analizler", path: "/discovery" },
+    { icon: Search, label: "Keşfet", path: "/explore" },
   ];
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border shadow-lg z-50 lg:hidden safe-area-bottom">
-        <div className="flex items-center justify-around px-1 py-1.5">
+      <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border shadow-lg z-50 lg:hidden pb-safe-bottom">
+        <div className="flex items-center justify-around px-2 py-2">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = item.path ? isActive(item.path) : false;

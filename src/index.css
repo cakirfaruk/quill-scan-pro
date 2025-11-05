@@ -419,6 +419,24 @@ All colors MUST be HSL.
   }
 }
 
+/* Page container with proper spacing for header and mobile nav */
+.page-container {
+  min-height: 100vh;
+  padding-top: 3.5rem; /* 56px header height */
+}
+
+.page-container-mobile {
+  min-height: 100vh;
+  padding-top: 3.5rem; /* 56px header height */
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px)); /* 64px mobile nav + safe area */
+}
+
+@media (min-width: 1024px) {
+  .page-container-mobile {
+    padding-bottom: 0;
+  }
+}
+
 /* Highlight message animation */
 @keyframes highlight {
   0%, 100% {

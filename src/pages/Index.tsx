@@ -29,10 +29,10 @@ const Index = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background overflow-hidden">
+    <div className="page-container bg-gradient-to-b from-background via-primary/5 to-background overflow-hidden">
       <Header />
       
-      <main className="container mx-auto px-4">
+      <main className="container mx-auto px-4 py-4">
         {/* Hero Section */}
         <section 
           ref={heroRef}
