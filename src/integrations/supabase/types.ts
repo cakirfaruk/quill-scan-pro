@@ -519,6 +519,69 @@ export type Database = {
         }
         Relationships: []
       }
+      error_logs: {
+        Row: {
+          browser_info: Json | null
+          context: Json | null
+          count: number | null
+          created_at: string | null
+          error_message: string
+          error_stack: string | null
+          error_type: string
+          fingerprint: string | null
+          id: string
+          notes: string | null
+          resolved: boolean | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string | null
+          timestamp: string
+          url: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          browser_info?: Json | null
+          context?: Json | null
+          count?: number | null
+          created_at?: string | null
+          error_message: string
+          error_stack?: string | null
+          error_type: string
+          fingerprint?: string | null
+          id?: string
+          notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+          timestamp?: string
+          url: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          browser_info?: Json | null
+          context?: Json | null
+          count?: number | null
+          created_at?: string | null
+          error_message?: string
+          error_stack?: string | null
+          error_type?: string
+          fingerprint?: string | null
+          id?: string
+          notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+          timestamp?: string
+          url?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       event_participants: {
         Row: {
           created_at: string | null
@@ -1364,6 +1427,48 @@ export type Database = {
           id?: string
           interpretation?: Json | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      performance_metrics: {
+        Row: {
+          connection_type: string | null
+          created_at: string | null
+          device_type: string | null
+          id: string
+          metric_name: string
+          metric_value: number
+          rating: string | null
+          timestamp: string | null
+          url: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          connection_type?: string | null
+          created_at?: string | null
+          device_type?: string | null
+          id?: string
+          metric_name: string
+          metric_value: number
+          rating?: string | null
+          timestamp?: string | null
+          url: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          connection_type?: string | null
+          created_at?: string | null
+          device_type?: string | null
+          id?: string
+          metric_name?: string
+          metric_value?: number
+          rating?: string | null
+          timestamp?: string | null
+          url?: string
+          user_agent?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

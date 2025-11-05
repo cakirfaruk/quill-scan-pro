@@ -3,6 +3,9 @@
  * Helper functions for managing critical CSS and performance
  */
 
+import { initializePerformanceMonitoring } from './performanceMonitoring';
+import { errorTracker } from './errorTracking';
+
 /**
  * Preload critical resources
  * Call this early in app initialization
@@ -185,6 +188,12 @@ export function measureCLS() {
  * Initialize all performance measurements
  */
 export function initPerformanceMonitoring() {
+  // Initialize error tracking
+  errorTracker.initialize();
+  
+  // Initialize Web Vitals monitoring
+  initializePerformanceMonitoring();
+  
   // Wait for page to be fully interactive
   if (document.readyState === 'complete') {
     measureFCP();

@@ -519,9 +519,93 @@ GitHub Actions çalışması için şu secret'ları ekleyin:
 
 ---
 
+## 🐛 Error Tracking & Monitoring
+
+### Otomatik Error Tracking
+
+Uygulama tüm hataları otomatik olarak yakalar ve kaydeder:
+
+**Yakalanan Hatalar:**
+- ✅ Runtime errors (window.onerror)
+- ✅ Unhandled promise rejections
+- ✅ React component errors (ErrorBoundary)
+- ✅ Manual error logging
+
+### Kullanım
+
+```tsx
+import { captureError, captureMessage, addBreadcrumb } from '@/utils/errorTracking';
+
+// Hata yakala
+try {
+  dangerousOperation();
+} catch (error) {
+  captureError(error, {
+    severity: 'error',
+    context: { userId: currentUser.id }
+  });
+}
+
+// Manuel mesaj
+captureMessage('İşlem başarılı', {
+  severity: 'info',
+  context: { action: 'profile_update' }
+});
+
+// Breadcrumb ekle (debug için context)
+addBreadcrumb('User clicked submit button', 'user-action');
+```
+
+### Error Boundary
+
+React error'larını yakalar:
+
+```tsx
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+
+<ErrorBoundary fallback={<CustomErrorPage />}>
+  <MyComponent />
+</ErrorBoundary>
+```
+
+### Monitoring Dashboard
+
+Error ve performance metriklerini `/error-monitor` sayfasından görüntüleyin:
+
+**Error Logs:**
+- Severity filtreleme (info, warning, error, fatal)
+- Stack trace görüntüleme
+- Fingerprint ile gruplama
+- Çözüm durumu tracking
+
+**Performance Metrics:**
+- Web Vitals (FCP, LCP, CLS, TTFB, INP)
+- Rating breakdown (good/needs-improvement/poor)
+- URL bazlı filtreleme
+- Gerçek zamanlı tracking
+
+### Database Yapısı
+
+**error_logs** tablosu:
+- Error details (type, message, stack)
+- User context
+- Browser info
+- Fingerprint (benzer hataları gruplama)
+- Resolution status
+
+**performance_metrics** tablosu:
+- Metric name (FCP, LCP, etc.)
+- Metric value
+- Rating (good/needs-improvement/poor)
+- Device & connection info
+
+---
+
 ## 📚 Ek Kaynaklar
 
 - [React Performance](https://react.dev/learn/render-and-commit)
 - [Web Vitals](https://web.dev/vitals/)
 - [Vite Performance](https://vitejs.dev/guide/performance.html)
 - [React Query Caching](https://tanstack.com/query/latest/docs/react/guides/caching)
+- [Error Monitoring Best Practices](https://sentry.io/resources/error-monitoring/)
+- [Core Web Vitals Guide](https://web.dev/vitals/)

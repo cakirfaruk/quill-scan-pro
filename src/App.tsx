@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { LoadingFallback } from "@/components/LoadingFallback";
 import { IncomingCallDialog } from "@/components/IncomingCallDialog";
 import { IncomingGroupCallDialog } from "@/components/IncomingGroupCallDialog";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Lazy load ALL pages including Index for optimal code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -50,6 +51,8 @@ const Discovery = lazy(() => import("./pages/Discovery"));
 const CallHistory = lazy(() => import("./pages/CallHistory"));
 const VapidKeyGenerator = lazy(() => import("./pages/VapidKeyGenerator"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const ErrorMonitor = lazy(() => import("./pages/ErrorMonitor"));
+const Feed = lazy(() => import("./pages/Feed"));
 
 const queryClient = new QueryClient();
 
@@ -264,6 +267,8 @@ const AppRoutes = () => {
               <Route path="/match" element={<Match />} />
               <Route path="/call-history" element={<CallHistory />} />
               <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
+              <Route path="/error-monitor" element={<ErrorMonitor />} />
+              <Route path="/feed" element={<Feed />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </motion.div>
@@ -277,19 +282,21 @@ const AppRoutes = () => {
 
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <EnhancedOfflineIndicator />
-            <Tutorial />
-            <AppRoutes />
-          </TooltipProvider>
-        </ThemeProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <EnhancedOfflineIndicator />
+              <Tutorial />
+              <AppRoutes />
+            </TooltipProvider>
+          </ThemeProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 
