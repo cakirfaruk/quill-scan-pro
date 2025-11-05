@@ -376,10 +376,146 @@ npm run build
 - [x] Edge function cache
 
 ### Monitoring
-- [ ] Bundle size tracking
-- [ ] Performance metrics (Web Vitals)
+- [x] Bundle size tracking (GitHub Actions)
+- [x] Performance metrics (Lighthouse CI)
 - [ ] Error tracking
 - [ ] Cache hit rates
+
+---
+
+## 🔍 Lighthouse CI & Automated Performance Testing
+
+### Configuration (`.lighthouserc.json`)
+
+Lighthouse CI otomatik performans testleri yapar:
+
+**Test Edilen Sayfalar:**
+- Ana sayfa (`/`)
+- Feed (`/feed`)
+- Mesajlar (`/messages`)
+- Profil (`/profile`)
+
+**Performans Bütçeleri:**
+| Metrik | Hedef | Seviye |
+|--------|-------|--------|
+| Performance Score | ≥85% | Error |
+| Accessibility | ≥90% | Error |
+| Best Practices | ≥90% | Error |
+| SEO | ≥90% | Error |
+| First Contentful Paint | ≤2000ms | Error |
+| Largest Contentful Paint | ≤3000ms | Error |
+| Cumulative Layout Shift | ≤0.1 | Error |
+| Total Blocking Time | ≤300ms | Error |
+| Speed Index | ≤3500ms | Error |
+| Time to Interactive | ≤4000ms | Error |
+| DOM Size | ≤1500 nodes | Warning |
+| Total Bundle Size | ≤2MB | Warning |
+
+### GitHub Actions Workflows
+
+#### 1. Lighthouse CI (`.github/workflows/lighthouse-ci.yml`)
+
+**Tetiklenme:**
+- Her main branch push'unda
+- Tüm pull request'lerde
+
+**Özellikler:**
+- ✅ Projeyi build eder
+- ✅ 3 ayrı test çalıştırır (tutarlılık için)
+- ✅ Sonuçları artifact olarak saklar (30 gün)
+- ✅ PR'a detaylı performans raporu yazar
+- ✅ Core Web Vitals özeti gösterir
+
+**PR Comment Örneği:**
+```
+## 🔍 Lighthouse CI Results
+
+| Category | Score |
+|----------|-------|
+| ⚡ Performance | 92 |
+| ♿ Accessibility | 95 |
+| 🎯 Best Practices | 91 |
+| 🔍 SEO | 98 |
+
+### Core Web Vitals
+- FCP: 1,234ms
+- LCP: 2,567ms
+- TBT: 89ms
+- CLS: 0.045
+- SI: 2,890ms
+```
+
+#### 2. Performance Budget Check (`.github/workflows/performance-budget.yml`)
+
+**Tetiklenme:**
+- Tüm pull request'lerde
+
+**Bundle Size Bütçeleri:**
+- **Total:** ≤2MB
+- **JavaScript:** ≤1.5MB
+- **CSS:** ≤200KB
+
+**Özellikler:**
+- ✅ Build sonrası bundle boyutlarını analiz eder
+- ✅ Bütçe aşımlarını tespit eder
+- ✅ PR'a bundle size raporu yazar
+- ✅ Bütçe %20'den fazla aşılırsa build fail olur
+- ✅ Optimizasyon önerileri sunar
+
+**PR Comment Örneği:**
+```
+## 📊 Bundle Size Analysis
+
+| Asset Type | Size | Budget | Status |
+|------------|------|--------|--------|
+| Total | 1.85MB | 2.00MB | ✅ |
+| JavaScript | 1.42MB | 1.50MB | ✅ |
+| CSS | 175KB | 200KB | ✅ |
+
+✅ All assets are within budget!
+```
+
+### Local Testing
+
+Lighthouse CI'ı lokal olarak çalıştır:
+
+```bash
+# Lighthouse CI'ı global yükle
+npm install -g @lhci/cli
+
+# Projeyi build et
+npm run build
+
+# Lighthouse testlerini çalıştır
+lhci autorun
+```
+
+Sonuçlar `.lighthouseci/` klasörüne kaydedilir.
+
+### CI/CD Gereksinimleri
+
+GitHub Actions çalışması için şu secret'ları ekleyin:
+
+**Repository Settings > Secrets and variables > Actions:**
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_SUPABASE_PROJECT_ID`
+- `LHCI_GITHUB_APP_TOKEN` (opsiyonel, kalıcı depolama için)
+
+### Monitoring & Alerts
+
+**Otomatik Tespit:**
+- ✅ Performance regression (gerileme) tespiti
+- ✅ Bundle size artışı tracking
+- ✅ PR'larda otomatik performans raporları
+- ✅ Ciddi bütçe aşımlarında build failure
+- ✅ 30 günlük geçmiş verisi (artifacts)
+
+**Öneriler:**
+- Lighthouse score 85'in altına düşerse nedenini araştır
+- Bundle size trend'ine dikkat et
+- Core Web Vitals metriklerini yakından takip et
+- Her PR'da performans etkisini değerlendir
 
 ---
 
