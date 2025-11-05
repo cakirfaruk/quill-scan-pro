@@ -99,7 +99,7 @@ const Index = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" onClick={() => navigate("/auth")} className="group text-lg px-8 py-6">
+            <Button size="lg" onClick={() => navigate("/auth")} variant="gradient" className="group text-lg px-8 py-6">
               Ücretsiz Başla
               <Zap className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Button>
@@ -355,7 +355,7 @@ const Index = () => {
                 Binlerce kişi zaten kendini keşfetti ve ideal eşini buldu. Şimdi senin sıran!
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" onClick={() => navigate("/auth")} className="text-lg px-8 py-6">
+                <Button size="lg" onClick={() => navigate("/auth")} variant="gradient" className="text-lg px-8 py-6">
                   Ücretsiz Hesap Oluştur
                 </Button>
                 <Button size="lg" variant="outline" onClick={() => navigate("/faq")} className="text-lg px-8 py-6">

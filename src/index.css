@@ -142,10 +142,10 @@ All colors MUST be HSL.
   .ripple {
     position: absolute;
     border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.6);
     transform: scale(0);
-    animation: ripple-animation 0.6s ease-out;
+    animation: ripple-animation 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
+    z-index: 10;
   }
 
   .dark .ripple {
@@ -157,6 +157,34 @@ All colors MUST be HSL.
       transform: scale(4);
       opacity: 0;
     }
+  }
+
+  /* Gradient Hover Links */
+  .gradient-link {
+    @apply relative inline-block;
+    background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--accent)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 200% auto;
+    transition: background-position 0.5s ease;
+  }
+
+  .gradient-link:hover {
+    background-position: right center;
+  }
+
+  .gradient-link::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-primary to-accent;
+    transform: scaleX(0);
+    transform-origin: bottom right;
+    transition: transform 0.3s ease;
+  }
+
+  .gradient-link:hover::after {
+    transform: scaleX(1);
+    transform-origin: bottom left;
   }
 
   /* Hover Scale Animation */
@@ -189,11 +217,16 @@ All colors MUST be HSL.
 
   /* Interactive Elements */
   .interactive {
-    @apply transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer;
+    @apply transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer;
   }
 
   .interactive-card {
-    @apply transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/10 active:scale-[0.98] cursor-pointer;
+    @apply transition-all duration-500 hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/10 active:scale-[0.98] cursor-pointer;
+  }
+
+  /* Magnetic Button */
+  .magnetic {
+    @apply transition-transform duration-200 ease-out will-change-transform;
   }
 
   /* Shimmer Effect for Skeleton */
