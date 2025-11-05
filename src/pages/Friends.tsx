@@ -135,22 +135,47 @@ const Friends = () => {
     }
   };
 
-  const sendFriendRequest = async (friendId: string) => {
+  const sendFriendRequest = async (friendId: string, friendName: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { error } = await supabase.from("friends").insert({
+      const { data: requestData, error } = await supabase.from("friends").insert({
         user_id: user.id,
         friend_id: friendId,
         status: "pending",
-      });
+      }).select().single();
 
       if (error) throw error;
 
       toast({
-        title: "Başarılı",
-        description: "Arkadaşlık isteği gönderildi.",
+        title: "İstek gönderildi",
+        description: `${friendName} kullanıcısına arkadaşlık isteği gönderildi`,
+        action: (
+          <button
+            onClick={async () => {
+              try {
+                if (requestData?.id) {
+                  await supabase.from("friends").delete().eq("id", requestData.id);
+                  await loadData();
+                  toast({
+                    title: "Geri alındı",
+                    description: "Arkadaşlık isteği iptal edildi",
+                  });
+                }
+              } catch (error) {
+                toast({
+                  title: "Hata",
+                  description: "İşlem geri alınamadı",
+                  variant: "destructive",
+                });
+              }
+            }}
+            className="px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+          >
+            Geri Al
+          </button>
+        ),
       });
 
       loadData();
@@ -203,8 +228,11 @@ const Friends = () => {
     }
   };
 
-  const removeFriend = async (friendshipId: string) => {
+  const removeFriend = async (friendshipId: string, friendName: string) => {
     try {
+      // Store friend data for undo
+      const friendData = friends.find(f => f.id === friendshipId);
+      
       const { error } = await supabase
         .from("friends")
         .delete()
@@ -212,12 +240,43 @@ const Friends = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Başarılı",
-        description: "Arkadaş silindi.",
-      });
+      // Optimistic update
+      setFriends(prev => prev.filter(f => f.id !== friendshipId));
 
-      loadData();
+      toast({
+        title: "Arkadaş silindi",
+        description: `${friendName} arkadaş listenizden kaldırıldı`,
+        action: (
+          <button
+            onClick={async () => {
+              try {
+                // Restore friendship
+                if (friendData) {
+                  await supabase.from("friends").insert({
+                    user_id: friendData.user_id,
+                    friend_id: friendData.friend_id,
+                    status: "accepted",
+                  });
+                  await loadData();
+                  toast({
+                    title: "Geri alındı",
+                    description: "Arkadaş geri eklendi",
+                  });
+                }
+              } catch (error) {
+                toast({
+                  title: "Hata",
+                  description: "İşlem geri alınamadı",
+                  variant: "destructive",
+                });
+              }
+            }}
+            className="px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+          >
+            Geri Al
+          </button>
+        ),
+      });
     } catch (error: any) {
       toast({
         title: "Hata",
@@ -350,7 +409,7 @@ const Friends = () => {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              removeFriend(friend.id);
+                              removeFriend(friend.id, profile?.full_name || profile?.username || "");
                             }}
                           >
                             Sil
@@ -464,7 +523,7 @@ const Friends = () => {
                           <ProfileAvatar profile={profile} />
                           <Button
                             size="sm"
-                            onClick={() => sendFriendRequest(profile.user_id)}
+                            onClick={() => sendFriendRequest(profile.user_id, profile.full_name || profile.username)}
                           >
                             <UserPlus className="w-4 h-4 mr-2" />
                             Ekle
