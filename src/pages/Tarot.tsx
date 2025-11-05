@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Sparkles, ArrowRight, Shuffle } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { ShareButton } from "@/components/ShareButton";
+import { useOGImage } from "@/hooks/use-og-image";
 
 // Import tarot card images
 import cardBackImg from "@/assets/tarot/card-back.png";
@@ -80,6 +81,13 @@ const Tarot = () => {
   const [userCredits, setUserCredits] = useState(0);
 
   const selectedSpread = SPREAD_TYPES.find(s => s.value === spreadType);
+  
+  // Generate OG image when result is available
+  useOGImage({
+    title: result ? `Tarot Falı - ${question || 'Kişisel Analiz'}` : '',
+    description: result?.interpretation?.overview || '',
+    type: 'tarot'
+  });
 
   useEffect(() => {
     checkAuth();

@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Sparkles, Moon } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { ShareButton } from "@/components/ShareButton";
+import { useOGImage } from "@/hooks/use-og-image";
 
 const DreamInterpretation = () => {
   const navigate = useNavigate();
@@ -16,6 +17,13 @@ const DreamInterpretation = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [userCredits, setUserCredits] = useState(0);
+  
+  // Generate OG image when result is available
+  useOGImage({
+    title: result ? 'Rüya Tabiri' : '',
+    description: result?.interpretation?.overview || '',
+    type: 'dream'
+  });
 
   useEffect(() => {
     checkAuth();

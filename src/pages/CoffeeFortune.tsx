@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Upload, X, Sparkles } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { ShareButton } from "@/components/ShareButton";
+import { useOGImage } from "@/hooks/use-og-image";
 
 const CoffeeFortune = () => {
   const navigate = useNavigate();
@@ -15,6 +16,13 @@ const CoffeeFortune = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [userCredits, setUserCredits] = useState(0);
+  
+  // Generate OG image when result is available
+  useOGImage({
+    title: result ? 'Kahve Falı Yorumu' : '',
+    description: result?.interpretation?.overview || '',
+    type: 'coffee'
+  });
 
   useEffect(() => {
     checkAuth();
