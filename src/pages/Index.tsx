@@ -1,72 +1,30 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import Feed from "./Feed";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Brain, Target, Sparkles, Heart, Users, MessageCircle, Moon, Coffee, Hand, Star, Calendar, FileText, Zap, Shield, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { OnboardingDialog } from "@/components/OnboardingDialog";
 
 const Index = () => {
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null); // null = loading
-  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        // Check if user has seen onboarding
-        const hasSeenOnboarding = localStorage.getItem(`onboarding_${user.id}`);
-        if (!hasSeenOnboarding) {
-          setShowOnboarding(true);
+    // Kullanıcı giriş yaptıysa feed'e yönlendir
+    const checkAndRedirect = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          navigate('/feed');
         }
-        setIsLoggedIn(true);
-      } else {
-        setIsLoggedIn(false);
+      } catch (error) {
+        console.error('Auth check error:', error);
       }
-    } catch (error) {
-      console.error('Auth check error:', error);
-      setIsLoggedIn(false);
-    }
-  };
-
-  const handleOnboardingComplete = () => {
-    setShowOnboarding(false);
-    const userId = supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user) {
-        localStorage.setItem(`onboarding_${data.session.user.id}`, 'true');
-      }
-    });
-  };
-
-  // Loading durumu - beyaz ekran yerine loading göster
-  if (isLoggedIn === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  // Show feed if logged in
-  if (isLoggedIn) {
-    return (
-      <>
-        <OnboardingDialog open={showOnboarding} onComplete={handleOnboardingComplete} />
-        <Feed />
-      </>
-    );
-  }
-
-  // Show landing page immediately (no blocking while checking auth)
+    };
+    
+    checkAndRedirect();
+  }, [navigate]);
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background overflow-hidden">
       <Header />

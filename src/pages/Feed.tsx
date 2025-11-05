@@ -33,6 +33,7 @@ import { useOnboarding } from "@/hooks/use-onboarding";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
 import { WidgetDashboard } from "@/components/WidgetDashboard";
+import { OnboardingDialog } from "@/components/OnboardingDialog";
 
 interface Post {
   id: string;
@@ -111,6 +112,7 @@ const Feed = () => {
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
   const [username, setUsername] = useState("");
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Keyboard shortcuts
   useKeyboardShortcuts({
@@ -215,11 +217,24 @@ const Feed = () => {
       setProfilePhoto(profile.profile_photo);
     }
     
+    // Check onboarding
+    const hasSeenOnboarding = localStorage.getItem(`onboarding_${user.id}`);
+    if (!hasSeenOnboarding) {
+      setShowOnboarding(true);
+    }
+    
     // **PARALEL YÜKLEME** - Arkadaşlar ve postlar aynı anda
     await Promise.all([
       loadFriends(user.id),
       loadPosts(user.id, 1, true)
     ]);
+  };
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    if (userId) {
+      localStorage.setItem(`onboarding_${userId}`, 'true');
+    }
   };
 
   const loadFriends = async (currentUserId: string) => {
@@ -841,7 +856,9 @@ const Feed = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle pb-20 lg:pb-0">
+    <>
+      <OnboardingDialog open={showOnboarding} onComplete={handleOnboardingComplete} />
+      <div className="min-h-screen bg-gradient-subtle pb-20 lg:pb-0">
       <Header />
       <div ref={containerRef} className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 lg:py-8 max-w-2xl relative">
         {/* Pull to Refresh Indicator */}
@@ -1174,6 +1191,7 @@ const Feed = () => {
         />
       )}
     </div>
+    </>
   );
 };
 
