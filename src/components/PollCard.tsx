@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo, useMemo, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -24,7 +24,7 @@ interface PollCardProps {
   currentUserId: string;
 }
 
-export const PollCard = ({
+export const PollCard = memo(({
   pollId,
   question,
   options: initialOptions,
@@ -39,12 +39,7 @@ export const PollCard = ({
   const [isVoting, setIsVoting] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    checkIfVoted();
-    loadVotes();
-  }, [pollId]);
-
-  const checkIfVoted = async () => {
+  const checkIfVoted = useCallback(async () => {
     const { data } = await supabase
       .from("poll_votes")
       .select("option_ids")
@@ -56,9 +51,9 @@ export const PollCard = ({
       setHasVoted(true);
       setSelectedOptions(data.option_ids);
     }
-  };
+  }, [pollId, currentUserId]);
 
-  const loadVotes = async () => {
+  const loadVotes = useCallback(async () => {
     const { data } = await supabase
       .from("poll_votes")
       .select("option_ids")
@@ -79,9 +74,14 @@ export const PollCard = ({
         }))
       );
     }
-  };
+  }, [pollId]);
 
-  const handleVote = async () => {
+  useEffect(() => {
+    checkIfVoted();
+    loadVotes();
+  }, [checkIfVoted, loadVotes]);
+
+  const handleVote = useCallback(async () => {
     if (selectedOptions.length === 0) {
       toast({
         title: "Seçim Yapın",
@@ -119,9 +119,9 @@ export const PollCard = ({
     } finally {
       setIsVoting(false);
     }
-  };
+  }, [selectedOptions, pollId, currentUserId, loadVotes, toast]);
 
-  const toggleOption = (optionId: string) => {
+  const toggleOption = useCallback((optionId: string) => {
     if (hasVoted) return;
 
     if (multipleChoice) {
@@ -133,10 +133,18 @@ export const PollCard = ({
     } else {
       setSelectedOptions([optionId]);
     }
-  };
+  }, [hasVoted, multipleChoice]);
 
-  const totalVotes = options.reduce((sum, opt) => sum + opt.votes, 0);
-  const isExpired = new Date(expiresAt) < new Date();
+  // Memoize expensive calculations
+  const totalVotes = useMemo(() => 
+    options.reduce((sum, opt) => sum + opt.votes, 0), 
+    [options]
+  );
+  
+  const isExpired = useMemo(() => 
+    new Date(expiresAt) < new Date(), 
+    [expiresAt]
+  );
 
   return (
     <Card className="p-6">
@@ -200,4 +208,4 @@ export const PollCard = ({
       )}
     </Card>
   );
-};
+});

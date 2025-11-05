@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo, useMemo, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -26,7 +26,7 @@ interface GroupPollCardProps {
   onDelete?: () => void;
 }
 
-export const GroupPollCard = ({ poll, currentUserId, isAdmin, onDelete }: GroupPollCardProps) => {
+export const GroupPollCard = memo(({ poll, currentUserId, isAdmin, onDelete }: GroupPollCardProps) => {
   const { toast } = useToast();
   const [votes, setVotes] = useState<any[]>([]);
   const [userVote, setUserVote] = useState<string[]>([]);
@@ -35,13 +35,13 @@ export const GroupPollCard = ({ poll, currentUserId, isAdmin, onDelete }: GroupP
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
 
-  const isExpired = new Date(poll.expires_at) < new Date();
+  // Memoize expensive date calculation
+  const isExpired = useMemo(() => 
+    new Date(poll.expires_at) < new Date(), 
+    [poll.expires_at]
+  );
 
-  useEffect(() => {
-    loadVotes();
-  }, [poll.id]);
-
-  const loadVotes = async () => {
+  const loadVotes = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("group_poll_votes")
@@ -63,9 +63,13 @@ export const GroupPollCard = ({ poll, currentUserId, isAdmin, onDelete }: GroupP
     } finally {
       setLoading(false);
     }
-  };
+  }, [poll.id, currentUserId]);
 
-  const handleVote = async () => {
+  useEffect(() => {
+    loadVotes();
+  }, [loadVotes]);
+
+  const handleVote = useCallback(async () => {
     if (selectedOptions.length === 0) {
       toast({
         title: "Uyarı",
@@ -115,9 +119,9 @@ export const GroupPollCard = ({ poll, currentUserId, isAdmin, onDelete }: GroupP
     } finally {
       setVoting(false);
     }
-  };
+  }, [selectedOptions, userVote, poll.id, currentUserId, loadVotes, toast]);
 
-  const handleDeletePoll = async () => {
+  const handleDeletePoll = useCallback(async () => {
     if (!confirm("Anketi silmek istediğinizden emin misiniz?")) return;
 
     try {
@@ -145,18 +149,20 @@ export const GroupPollCard = ({ poll, currentUserId, isAdmin, onDelete }: GroupP
     } finally {
       setDeleting(false);
     }
-  };
+  }, [poll.id, onDelete, toast]);
 
-  const getVoteCount = (optionId: string) => {
+  // Memoize vote calculations
+  const getVoteCount = useCallback((optionId: string) => {
     return votes.filter((v) => v.option_ids.includes(optionId)).length;
-  };
+  }, [votes]);
 
-  const totalVotes = votes.length;
+  const totalVotes = useMemo(() => votes.length, [votes]);
 
-  const getVotePercentage = (optionId: string) => {
+  const getVotePercentage = useCallback((optionId: string) => {
     if (totalVotes === 0) return 0;
-    return Math.round((getVoteCount(optionId) / totalVotes) * 100);
-  };
+    const count = getVoteCount(optionId);
+    return Math.round((count / totalVotes) * 100);
+  }, [totalVotes, getVoteCount]);
 
   if (loading) {
     return (
@@ -299,4 +305,4 @@ export const GroupPollCard = ({ poll, currentUserId, isAdmin, onDelete }: GroupP
       </div>
     </Card>
   );
-};
+});

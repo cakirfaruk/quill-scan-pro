@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, memo } from "react";
 import { cn } from "@/lib/utils";
 
 interface AnimatedDivProps {
@@ -7,41 +7,41 @@ interface AnimatedDivProps {
   delay?: number;
 }
 
-export const FadeIn = ({ children, className, delay = 0 }: AnimatedDivProps) => (
+export const FadeIn = memo(({ children, className, delay = 0 }: AnimatedDivProps) => (
   <div
     className={cn("animate-fade-in", className)}
     style={{ animationDelay: `${delay}ms` }}
   >
     {children}
   </div>
-);
+));
 
-export const FadeInUp = ({ children, className, delay = 0 }: AnimatedDivProps) => (
+export const FadeInUp = memo(({ children, className, delay = 0 }: AnimatedDivProps) => (
   <div
     className={cn("animate-fade-in-up", className)}
     style={{ animationDelay: `${delay}ms` }}
   >
     {children}
   </div>
-);
+));
 
-export const FadeInDown = ({ children, className, delay = 0 }: AnimatedDivProps) => (
+export const FadeInDown = memo(({ children, className, delay = 0 }: AnimatedDivProps) => (
   <div
     className={cn("animate-fade-in-down", className)}
     style={{ animationDelay: `${delay}ms` }}
   >
     {children}
   </div>
-);
+));
 
-export const ScaleIn = ({ children, className, delay = 0 }: AnimatedDivProps) => (
+export const ScaleIn = memo(({ children, className, delay = 0 }: AnimatedDivProps) => (
   <div
     className={cn("animate-scale-in", className)}
     style={{ animationDelay: `${delay}ms` }}
   >
     {children}
   </div>
-);
+));
 
 export const BounceIn = ({ children, className, delay = 0 }: AnimatedDivProps) => (
   <div

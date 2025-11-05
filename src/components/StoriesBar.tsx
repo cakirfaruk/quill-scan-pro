@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Plus } from "lucide-react";
@@ -34,7 +34,7 @@ interface StoriesBarProps {
   currentUserId: string;
 }
 
-export const StoriesBar = ({ currentUserId }: StoriesBarProps) => {
+export const StoriesBar = memo(({ currentUserId }: StoriesBarProps) => {
   const [userStories, setUserStories] = useState<UserStories[]>([]);
   const [ownStories, setOwnStories] = useState<Story[]>([]);
   const [selectedStories, setSelectedStories] = useState<Story[]>([]);
@@ -43,31 +43,7 @@ export const StoriesBar = ({ currentUserId }: StoriesBarProps) => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadStories();
-
-    // Subscribe to realtime updates
-    const channel = supabase
-      .channel("stories-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "stories",
-        },
-        () => {
-          loadStories();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [currentUserId]);
-
-  const loadStories = async () => {
+  const loadStories = useCallback(async () => {
     try {
       // **STEP 1: PARALEL** - Own stories, profile, friends
       const [ownStoriesResult, ownProfileResult, friendsResult] = await Promise.all([
@@ -216,13 +192,37 @@ export const StoriesBar = ({ currentUserId }: StoriesBarProps) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUserId]);
 
-  const handleStoryClick = (stories: Story[], index: number = 0) => {
+  useEffect(() => {
+    loadStories();
+
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel("stories-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "stories",
+        },
+        () => {
+          loadStories();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [loadStories]);
+
+  const handleStoryClick = useCallback((stories: Story[], index: number = 0) => {
     setSelectedStories(stories);
     setSelectedIndex(index);
     setViewerOpen(true);
-  };
+  }, []);
 
   if (loading) return null;
 
@@ -299,4 +299,4 @@ export const StoriesBar = ({ currentUserId }: StoriesBarProps) => {
       />
     </>
   );
-};
+});

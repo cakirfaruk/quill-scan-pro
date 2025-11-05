@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, memo } from "react";
 import { Bell, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,18 +26,13 @@ interface Notification {
   reference_id: string | null;
 }
 
-export const NotificationBell = () => {
+export const NotificationBell = memo(() => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadNotifications();
-    setupRealtimeSubscription();
-  }, []);
-
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -55,9 +50,20 @@ export const NotificationBell = () => {
 
     setNotifications(data || []);
     setUnreadCount((data || []).filter(n => !n.read).length);
-  };
+  }, []);
 
-  const setupRealtimeSubscription = () => {
+  const showBrowserNotification = useCallback((notification: Notification) => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(notification.title, {
+        body: notification.message,
+        icon: '/favicon.ico',
+        badge: '/favicon.ico',
+        tag: notification.id,
+      });
+    }
+  }, []);
+
+  const setupRealtimeSubscription = useCallback(() => {
     const channel = supabase
       .channel('notifications-changes')
       .on(
@@ -89,20 +95,15 @@ export const NotificationBell = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  };
+  }, [showBrowserNotification, toast]);
 
-  const showBrowserNotification = (notification: Notification) => {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(notification.title, {
-        body: notification.message,
-        icon: '/favicon.ico',
-        badge: '/favicon.ico',
-        tag: notification.id,
-      });
-    }
-  };
+  useEffect(() => {
+    loadNotifications();
+    const cleanup = setupRealtimeSubscription();
+    return cleanup;
+  }, [loadNotifications, setupRealtimeSubscription]);
 
-  const requestNotificationPermission = async () => {
+  const requestNotificationPermission = useCallback(async () => {
     if ('Notification' in window && Notification.permission === 'default') {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
@@ -112,9 +113,9 @@ export const NotificationBell = () => {
         });
       }
     }
-  };
+  }, [toast]);
 
-  const markAsRead = async (notificationId: string, link: string | null, notificationType?: string) => {
+  const markAsRead = useCallback(async (notificationId: string, link: string | null, notificationType?: string) => {
     await supabase
       .from("notifications")
       .update({ read: true })
@@ -129,9 +130,9 @@ export const NotificationBell = () => {
     if (link && notificationType !== 'friend_request') {
       navigate(link);
     }
-  };
+  }, [navigate]);
 
-  const handleAcceptFriendRequest = async (e: React.MouseEvent, notificationId: string, friendRequestId: string) => {
+  const handleAcceptFriendRequest = useCallback(async (e: React.MouseEvent, notificationId: string, friendRequestId: string) => {
     e.stopPropagation();
     
     try {
@@ -165,9 +166,9 @@ export const NotificationBell = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
-  const handleRejectFriendRequest = async (e: React.MouseEvent, notificationId: string, friendRequestId: string) => {
+  const handleRejectFriendRequest = useCallback(async (e: React.MouseEvent, notificationId: string, friendRequestId: string) => {
     e.stopPropagation();
     
     try {
@@ -201,9 +202,9 @@ export const NotificationBell = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
-  const markAllAsRead = async () => {
+  const markAllAsRead = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -215,9 +216,9 @@ export const NotificationBell = () => {
 
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     setUnreadCount(0);
-  };
+  }, []);
 
-  const getTimeAgo = (dateString: string) => {
+  const getTimeAgo = useCallback((dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
@@ -227,7 +228,7 @@ export const NotificationBell = () => {
     if (seconds < 86400) return `${Math.floor(seconds / 3600)} saat önce`;
     if (seconds < 604800) return `${Math.floor(seconds / 86400)} gün önce`;
     return date.toLocaleDateString('tr-TR');
-  };
+  }, []);
 
   return (
     <DropdownMenu>
@@ -326,4 +327,4 @@ export const NotificationBell = () => {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-};
+});

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo, useMemo, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ interface MatchCardProps {
   onShowCompatibility: () => void;
 }
 
-export const MatchCard = ({
+export const MatchCard = memo(({
   profile,
   compatibilityScore,
   onLike,
@@ -38,31 +38,35 @@ export const MatchCard = ({
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [direction, setDirection] = useState(0);
 
-  const photos = [
+  // Memoize photos array to prevent recalculation
+  const photos = useMemo(() => [
     profile.profile_photo,
     ...profile.photos.map(p => p.photo_url)
-  ].filter(Boolean);
+  ].filter(Boolean), [profile.profile_photo, profile.photos]);
 
-  const nextPhoto = () => {
+  // Memoize callbacks to prevent re-renders
+  const nextPhoto = useCallback(() => {
     setDirection(1);
     setCurrentPhotoIndex((prev) => (prev + 1) % photos.length);
-  };
+  }, [photos.length]);
 
-  const prevPhoto = () => {
+  const prevPhoto = useCallback(() => {
     setDirection(-1);
     setCurrentPhotoIndex((prev) => (prev - 1 + photos.length) % photos.length);
-  };
+  }, [photos.length]);
 
-  const calculateAge = (birthDate: string) => {
+  // Memoize age calculation
+  const age = useMemo(() => {
+    if (!profile.birth_date) return null;
     const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
+    const birth = new Date(profile.birth_date);
+    let calculatedAge = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--;
+      calculatedAge--;
     }
-    return age;
-  };
+    return calculatedAge;
+  }, [profile.birth_date]);
 
   return (
     <motion.div
@@ -135,9 +139,9 @@ export const MatchCard = ({
           <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
             <h2 className="text-3xl font-bold mb-1">
               {profile.full_name || profile.username}
-              {profile.birth_date && (
+              {age && (
                 <span className="text-xl font-normal ml-2">
-                  {calculateAge(profile.birth_date)}
+                  {age}
                 </span>
               )}
             </h2>
@@ -220,4 +224,4 @@ export const MatchCard = ({
       </Card>
     </motion.div>
   );
-};
+});
