@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX, LogOut, Phone, RotateCcw } from "lucide-react";
+import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX, LogOut, Phone, RotateCcw, Shield } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { requestNotificationPermission } from "@/utils/notifications";
 import { subscribeToPushNotifications } from "@/utils/pushNotifications";
@@ -20,6 +20,7 @@ import { AutoResponseSettings } from "@/components/AutoResponseSettings";
 import { resetOnboarding } from "@/components/OnboardingTour";
 import { ThemeCustomizationPanel } from "@/components/ThemeCustomizationPanel";
 import { NotificationPreferences } from "@/components/NotificationPreferences";
+import { PermissionSettings } from "@/components/PermissionSettings";
 
 const Settings = () => {
   const [profile, setProfile] = useState({
@@ -470,10 +471,14 @@ const Settings = () => {
         </h1>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 gap-1">
+          <TabsList className="grid w-full grid-cols-7 gap-1">
             <TabsTrigger value="profile" className="text-xs sm:text-sm">Profil</TabsTrigger>
             <TabsTrigger value="account" className="text-xs sm:text-sm">Hesap</TabsTrigger>
             <TabsTrigger value="notifications" className="text-xs sm:text-sm">Bildirimler</TabsTrigger>
+            <TabsTrigger value="permissions" className="text-xs sm:text-sm">
+              <Shield className="w-4 h-4 sm:mr-1" />
+              <span className="hidden sm:inline">İzinler</span>
+            </TabsTrigger>
             <TabsTrigger value="security" className="text-xs sm:text-sm">Güvenlik</TabsTrigger>
             <TabsTrigger value="blocked" className="text-xs sm:text-sm">Engelli</TabsTrigger>
             <TabsTrigger value="appearance" className="text-xs sm:text-sm">Görünüm</TabsTrigger>
@@ -726,6 +731,10 @@ const Settings = () => {
                 <NotificationPreferences />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="permissions">
+            <PermissionSettings />
           </TabsContent>
 
           <TabsContent value="blocked">
