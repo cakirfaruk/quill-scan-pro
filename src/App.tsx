@@ -53,6 +53,7 @@ const CallHistory = lazy(() => import("./pages/CallHistory"));
 const VapidKeyGenerator = lazy(() => import("./pages/VapidKeyGenerator"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ErrorMonitor = lazy(() => import("./pages/ErrorMonitor"));
+const ErrorAnalytics = lazy(() => import("./pages/ErrorAnalytics"));
 const Feed = lazy(() => import("./pages/Feed"));
 
 const queryClient = new QueryClient();
@@ -270,6 +271,7 @@ const AppRoutes = () => {
               <Route path="/call-history" element={<CallHistory />} />
               <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
               <Route path="/error-monitor" element={<ErrorMonitor />} />
+              <Route path="/error-analytics" element={<ErrorAnalytics />} />
               <Route path="/feed" element={<Feed />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
