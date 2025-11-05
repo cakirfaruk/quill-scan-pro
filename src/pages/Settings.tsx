@@ -11,12 +11,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX, LogOut, Phone } from "lucide-react";
+import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX, LogOut, Phone, RotateCcw } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { requestNotificationPermission } from "@/utils/notifications";
 import { subscribeToPushNotifications } from "@/utils/pushNotifications";
 import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
 import { AutoResponseSettings } from "@/components/AutoResponseSettings";
+import { resetOnboarding } from "@/components/OnboardingTour";
 
 const Settings = () => {
   const [profile, setProfile] = useState({
@@ -808,6 +809,31 @@ const Settings = () => {
                       checked={notificationsEnabled}
                       onCheckedChange={toggleNotifications}
                     />
+                  </div>
+
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <div className="space-y-0.5">
+                      <Label className="text-base flex items-center gap-2">
+                        <RotateCcw className="w-4 h-4" />
+                        Tanıtım Turunu Sıfırla
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Platformun özelliklerini tanıtan turu tekrar görüntüle
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        resetOnboarding("feed-tour");
+                        toast({
+                          title: "Tur Sıfırlandı",
+                          description: "Ana sayfayı yenilediğinizde tur tekrar başlayacak.",
+                        });
+                      }}
+                    >
+                      Sıfırla
+                    </Button>
                   </div>
 
                   {notificationsEnabled && (

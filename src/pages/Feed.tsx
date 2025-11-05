@@ -16,7 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Reply, Loader2, RefreshCw, Bookmark, Folder, FolderPlus, Rss, Users } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Reply, Loader2, RefreshCw, Bookmark, Folder, FolderPlus, Rss, Users, Sparkles, Search, Home } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { soundEffects } from "@/utils/soundEffects";
 import { StoriesBar } from "@/components/StoriesBar";
@@ -28,6 +28,8 @@ import { NoFriendsIllustration, NoPostsIllustration } from "@/components/EmptySt
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { OnboardingTour } from "@/components/OnboardingTour";
+import { useOnboarding } from "@/hooks/use-onboarding";
 
 interface Post {
   id: string;
@@ -80,6 +82,7 @@ interface Collection {
 const Feed = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { shouldShowOnboarding, markOnboardingComplete } = useOnboarding();
   const [loading, setLoading] = useState(true);
   const [friendsPosts, setFriendsPosts] = useState<Post[]>([]);
   const [allPosts, setAllPosts] = useState<Post[]>([]);
@@ -101,6 +104,55 @@ const Feed = () => {
   const [postToSave, setPostToSave] = useState<Post | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
+
+  const onboardingSteps = [
+    {
+      id: "welcome",
+      title: "KAM'a Hoş Geldin! 🎉",
+      description: "Kendini keşfet, ruhunu tanı ve eşini bul! Sana platformu tanıtalım.",
+      icon: <Sparkles className="w-5 h-5 text-primary" />,
+      position: "center" as const,
+    },
+    {
+      id: "search",
+      title: "Global Arama",
+      description: "⌘K veya Ctrl+K ile her yerden aramayı açabilirsin. Kullanıcılar, gönderiler, gruplar ve özellikler arasında hızlıca arama yapabilirsin.",
+      targetSelector: 'button[class*="w-8 sm:w-9"]',
+      position: "bottom" as const,
+      icon: <Search className="w-5 h-5 text-primary" />,
+    },
+    {
+      id: "home",
+      title: "Ana Sayfa Sekmeler",
+      description: "Arkadaşların veya tüm kullanıcıların gönderilerini görebilirsin. İstediğin zaman geçiş yapabilirsin.",
+      targetSelector: '[role="tablist"]',
+      position: "bottom" as const,
+      icon: <Home className="w-5 h-5 text-primary" />,
+    },
+    {
+      id: "stories",
+      title: "Hikayeler",
+      description: "Arkadaşlarının hikayelerini görüntüle veya kendi hikayeni paylaş!",
+      targetSelector: '[class*="stories"]',
+      position: "bottom" as const,
+      icon: <Rss className="w-5 h-5 text-primary" />,
+    },
+    {
+      id: "features",
+      title: "Fal ve Analiz Özellikleri",
+      description: "Tarot, kahve falı, numeroloji, doğum haritası ve daha fazlası! Global arama ile hızlıca erişebilirsin.",
+      position: "center" as const,
+      icon: <Sparkles className="w-5 h-5 text-primary" />,
+      action: {
+        label: "Özellikleri Keşfet",
+        onClick: () => {
+          // Open search
+          const searchButton = document.querySelector('button[class*="w-8 sm:w-9"]') as HTMLButtonElement;
+          searchButton?.click();
+        },
+      },
+    },
+  ];
 
   const handleRefresh = useCallback(async () => {
     soundEffects.playClick();
@@ -1053,6 +1105,16 @@ const Feed = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Onboarding Tour */}
+      {shouldShowOnboarding && (
+        <OnboardingTour
+          steps={onboardingSteps}
+          onComplete={markOnboardingComplete}
+          onSkip={markOnboardingComplete}
+          storageKey="feed-tour"
+        />
+      )}
     </div>
   );
 };
