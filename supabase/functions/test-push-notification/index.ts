@@ -16,10 +16,38 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Get authenticated user from Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Yetkisiz erişim' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      console.error('Authentication failed:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Yetkisiz erişim' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
     const { userId } = await req.json();
 
     if (!userId) {
       throw new Error('User ID is required');
+    }
+
+    // Validate user can only test their own notifications
+    if (userId !== user.id) {
+      return new Response(
+        JSON.stringify({ error: 'Sadece kendi bildirimlerinizi test edebilirsiniz' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      );
     }
 
     console.log('Sending test push notification to user:', userId);
@@ -74,7 +102,7 @@ serve(async (req) => {
         };
 
         // Create JWT for VAPID
-        const jwt = createJWT(vapidPrivateKey, pushSubscription.endpoint);
+        const jwt = await createJWT(vapidPrivateKey, pushSubscription.endpoint);
 
         // Send push notification
         const response = await fetch(pushSubscription.endpoint, {
@@ -126,19 +154,69 @@ serve(async (req) => {
   }
 });
 
-// Helper function to create JWT for VAPID
-function createJWT(privateKey: string, audience: string): string {
-  // This is a simplified version. In production, you should use a proper JWT library
-  // For now, we'll return a placeholder
-  const header = btoa(JSON.stringify({ typ: 'JWT', alg: 'ES256' }));
-  const payload = btoa(JSON.stringify({
-    aud: new URL(audience).origin,
-    exp: Math.floor(Date.now() / 1000) + 12 * 60 * 60, // 12 hours
-    sub: 'mailto:admin@example.com'
-  }));
+// Base64 URL encoding helper
+function base64UrlEncode(input: string | Uint8Array): string {
+  let base64: string;
+  if (typeof input === 'string') {
+    base64 = btoa(input);
+  } else {
+    base64 = btoa(String.fromCharCode(...input));
+  }
+  return base64
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+}
+
+// Helper function to create JWT for VAPID with proper ES256 signing
+async function createJWT(privateKeyJwk: string, audience: string): Promise<string> {
+  const url = new URL(audience);
+  const aud = `${url.protocol}//${url.host}`;
   
-  // Note: This is a placeholder signature. In production, you need to properly sign this with the private key
-  const signature = 'placeholder-signature';
+  const header = {
+    typ: 'JWT',
+    alg: 'ES256',
+  };
   
-  return `${header}.${payload}.${signature}`;
+  const payload = {
+    aud,
+    exp: Math.floor(Date.now() / 1000) + 43200, // 12 hours
+    sub: 'mailto:support@example.com',
+  };
+  
+  const encodedHeader = base64UrlEncode(JSON.stringify(header));
+  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+  const unsignedToken = `${encodedHeader}.${encodedPayload}`;
+  
+  try {
+    // Import the private key
+    const keyData = JSON.parse(privateKeyJwk);
+    const key = await crypto.subtle.importKey(
+      'jwk',
+      keyData,
+      {
+        name: 'ECDSA',
+        namedCurve: 'P-256',
+      },
+      false,
+      ['sign']
+    );
+    
+    // Sign the token
+    const signature = await crypto.subtle.sign(
+      {
+        name: 'ECDSA',
+        hash: 'SHA-256',
+      },
+      key,
+      new TextEncoder().encode(unsignedToken)
+    );
+    
+    const encodedSignature = base64UrlEncode(new Uint8Array(signature));
+    return `${unsignedToken}.${encodedSignature}`;
+  } catch (error) {
+    console.error('Error signing JWT:', error);
+    // Fallback to unsigned token (will likely fail but won't crash)
+    return `${unsignedToken}.unsigned`;
+  }
 }
