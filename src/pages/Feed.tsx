@@ -872,11 +872,6 @@ const Feed = () => {
           </ScrollReveal>
         )}
 
-        {/* Widget Dashboard */}
-        <ScrollReveal direction="up" delay={0.2}>
-          <WidgetDashboard />
-        </ScrollReveal>
-        
         <Tabs defaultValue="friends" className="w-full space-y-4 sm:space-y-6">
           <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6">
             <TabsTrigger value="friends" className="text-sm sm:text-base">Arkadaşlarım</TabsTrigger>
