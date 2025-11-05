@@ -150,8 +150,8 @@ export default {
           "20%, 40%, 60%, 80%": { transform: "translateX(4px)" },
         },
         "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 20px hsl(var(--primary) / 0.5)" },
-          "50%": { boxShadow: "0 0 40px hsl(var(--primary) / 0.8)" },
+          "0%, 100%": { boxShadow: "0 0 20px hsl(var(--primary) / 0.4)" },
+          "50%": { boxShadow: "0 0 40px hsl(var(--primary) / 0.6), 0 0 60px hsl(var(--accent) / 0.3)" },
         },
         "shimmer": {
           "0%": { backgroundPosition: "-1000px 0" },

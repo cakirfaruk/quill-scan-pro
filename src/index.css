@@ -308,6 +308,24 @@ All colors MUST be HSL.
     box-shadow: var(--shadow-glow);
   }
 
+  /* Avatar Animations */
+  .avatar-glow {
+    @apply transition-all duration-300 hover:shadow-lg hover:shadow-primary/40 hover:scale-110;
+  }
+
+  .avatar-pulse {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  .avatar-ring {
+    @apply ring-2 ring-primary/20 ring-offset-2 ring-offset-background hover:ring-primary/60 transition-all duration-300;
+  }
+
+  /* Profile Card Hover */
+  .profile-card-hover {
+    @apply transition-all duration-500 hover:shadow-elegant hover:border-primary/30 hover:-translate-y-1 hover:scale-[1.02];
+  }
+
   /* Elegant Shadow */
   .shadow-elegant {
     box-shadow: var(--shadow-elegant);
