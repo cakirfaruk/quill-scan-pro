@@ -11,7 +11,7 @@ import { OnboardingDialog } from "@/components/OnboardingDialog";
 
 const Index = () => {
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null); // null = loading
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
@@ -19,15 +19,22 @@ const Index = () => {
   }, []);
 
   const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    // Check if user has seen onboarding
-    if (user) {
-      const hasSeenOnboarding = localStorage.getItem(`onboarding_${user.id}`);
-      if (!hasSeenOnboarding) {
-        setShowOnboarding(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Check if user has seen onboarding
+        const hasSeenOnboarding = localStorage.getItem(`onboarding_${user.id}`);
+        if (!hasSeenOnboarding) {
+          setShowOnboarding(true);
+        }
+        setIsLoggedIn(true);
+      } else {
+        setIsLoggedIn(false);
       }
-      setIsLoggedIn(true);
+    } catch (error) {
+      console.error('Auth check error:', error);
+      setIsLoggedIn(false);
     }
   };
 
@@ -39,6 +46,15 @@ const Index = () => {
       }
     });
   };
+
+  // Loading durumu - beyaz ekran yerine loading göster
+  if (isLoggedIn === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   // Show feed if logged in
   if (isLoggedIn) {
