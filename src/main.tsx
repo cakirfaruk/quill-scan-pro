@@ -23,11 +23,12 @@ if (import.meta.env.PROD) {
 
 const root = createRoot(document.getElementById("root")!);
 
-// Remove loading spinner before rendering
-removeLoadingSpinner();
-
+// Remove loading spinner AFTER React is ready to render
 root.render(
   <StrictMode>
     <App />
   </StrictMode>
 );
+
+// Remove spinner after first render
+removeLoadingSpinner();

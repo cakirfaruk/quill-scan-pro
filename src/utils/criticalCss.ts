@@ -42,8 +42,8 @@ export function loadNonCriticalCSS(href: string) {
 export function removeLoadingSpinner() {
   const spinner = document.querySelector('.loading-spinner');
   if (spinner) {
-    spinner.classList.add('fade-out');
-    setTimeout(() => spinner.remove(), 300);
+    // Hemen kaldır - React render olunca zaten kendi loading state'ini gösterecek
+    spinner.remove();
   }
 }
 
