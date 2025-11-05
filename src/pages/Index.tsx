@@ -12,7 +12,7 @@ import { useParallax } from "@/hooks/use-parallax";
 
 const Index = () => {
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   
   const heroRef = useRef<HTMLElement>(null);
@@ -37,6 +37,8 @@ const Index = () => {
         setShowOnboarding(true);
       }
       setIsLoggedIn(true);
+    } else {
+      setIsLoggedIn(false);
     }
   };
 
@@ -49,6 +51,18 @@ const Index = () => {
     });
   };
 
+  // Show loading spinner while checking auth
+  if (isLoggedIn === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background via-primary/5 to-background">
+        <div className="text-center">
+          <Sparkles className="w-16 h-16 mx-auto mb-4 text-primary animate-pulse" />
+          <p className="text-lg text-muted-foreground">Yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Show feed if logged in
   if (isLoggedIn) {
     return (
@@ -59,7 +73,7 @@ const Index = () => {
     );
   }
 
-  // Show landing page immediately (no blocking while checking auth)
+  // Show landing page for logged out users
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background overflow-hidden">
       <Header />
