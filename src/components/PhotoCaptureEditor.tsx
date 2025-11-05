@@ -61,7 +61,13 @@ export const PhotoCaptureEditor = ({
   const [filter, setFilter] = useState<string>("none");
   const [frame, setFrame] = useState<string>("none");
   const [isCropping, setIsCropping] = useState(false);
-  const [cropArea, setCropArea] = useState({ x: 0, y: 0, width: 100, height: 100 });
+  const [cropArea, setCropArea] = useState({ x: 10, y: 10, width: 80, height: 80 });
+  const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState<string | null>(null);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  
+  const cropContainerRef = useRef<HTMLDivElement>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -139,6 +145,119 @@ export const PhotoCaptureEditor = ({
     reader.readAsDataURL(file);
   };
 
+  const handleCropMouseDown = (e: React.MouseEvent, action: string) => {
+    e.stopPropagation();
+    if (action === "move") {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX, y: e.clientY });
+    } else {
+      setIsResizing(action);
+      setDragStart({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const handleCropMouseMove = (e: React.MouseEvent) => {
+    if (!cropContainerRef.current) return;
+    
+    const rect = cropContainerRef.current.getBoundingClientRect();
+    const deltaX = ((e.clientX - dragStart.x) / rect.width) * 100;
+    const deltaY = ((e.clientY - dragStart.y) / rect.height) * 100;
+
+    if (isDragging) {
+      setCropArea((prev) => {
+        const newX = Math.max(0, Math.min(100 - prev.width, prev.x + deltaX));
+        const newY = Math.max(0, Math.min(100 - prev.height, prev.y + deltaY));
+        return { ...prev, x: newX, y: newY };
+      });
+      setDragStart({ x: e.clientX, y: e.clientY });
+    } else if (isResizing) {
+      setCropArea((prev) => {
+        let newArea = { ...prev };
+        
+        switch (isResizing) {
+          case "nw":
+            newArea.x = Math.max(0, prev.x + deltaX);
+            newArea.y = Math.max(0, prev.y + deltaY);
+            newArea.width = Math.max(10, prev.width - deltaX);
+            newArea.height = Math.max(10, prev.height - deltaY);
+            break;
+          case "ne":
+            newArea.y = Math.max(0, prev.y + deltaY);
+            newArea.width = Math.min(100 - prev.x, Math.max(10, prev.width + deltaX));
+            newArea.height = Math.max(10, prev.height - deltaY);
+            break;
+          case "sw":
+            newArea.x = Math.max(0, prev.x + deltaX);
+            newArea.width = Math.max(10, prev.width - deltaX);
+            newArea.height = Math.min(100 - prev.y, Math.max(10, prev.height + deltaY));
+            break;
+          case "se":
+            newArea.width = Math.min(100 - prev.x, Math.max(10, prev.width + deltaX));
+            newArea.height = Math.min(100 - prev.y, Math.max(10, prev.height + deltaY));
+            break;
+        }
+
+        // Apply aspect ratio constraint
+        if (aspectRatio) {
+          const currentRatio = newArea.width / newArea.height;
+          if (Math.abs(currentRatio - aspectRatio) > 0.01) {
+            if (isResizing === "se" || isResizing === "ne") {
+              newArea.height = newArea.width / aspectRatio;
+            } else if (isResizing === "sw" || isResizing === "nw") {
+              newArea.width = newArea.height * aspectRatio;
+            }
+          }
+        }
+
+        // Ensure crop area stays within bounds
+        if (newArea.x + newArea.width > 100) {
+          newArea.width = 100 - newArea.x;
+          if (aspectRatio) newArea.height = newArea.width / aspectRatio;
+        }
+        if (newArea.y + newArea.height > 100) {
+          newArea.height = 100 - newArea.y;
+          if (aspectRatio) newArea.width = newArea.height * aspectRatio;
+        }
+
+        return newArea;
+      });
+      setDragStart({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const handleCropMouseUp = () => {
+    setIsDragging(false);
+    setIsResizing(null);
+  };
+
+  const setAspectRatioAndAdjustCrop = (ratio: number | null) => {
+    setAspectRatio(ratio);
+    if (ratio) {
+      setCropArea((prev) => {
+        let newArea = { ...prev };
+        const currentRatio = prev.width / prev.height;
+        
+        if (currentRatio > ratio) {
+          // Too wide, adjust width
+          newArea.width = prev.height * ratio;
+        } else {
+          // Too tall, adjust height
+          newArea.height = prev.width / ratio;
+        }
+
+        // Center if needed
+        if (newArea.x + newArea.width > 100) {
+          newArea.x = 100 - newArea.width;
+        }
+        if (newArea.y + newArea.height > 100) {
+          newArea.y = 100 - newArea.height;
+        }
+
+        return newArea;
+      });
+    }
+  };
+
   const applyCrop = () => {
     if (!capturedImage || !canvasRef.current) return;
 
@@ -176,7 +295,8 @@ export const PhotoCaptureEditor = ({
       const croppedImage = canvas.toDataURL("image/jpeg", 0.95);
       setCapturedImage(croppedImage);
       setIsCropping(false);
-      setCropArea({ x: 0, y: 0, width: 100, height: 100 });
+      setCropArea({ x: 10, y: 10, width: 80, height: 80 });
+      setAspectRatio(null);
       
       toast({
         title: "Kırpma Başarılı",
@@ -321,7 +441,10 @@ export const PhotoCaptureEditor = ({
     setFilter("none");
     setFrame("none");
     setIsCropping(false);
-    setCropArea({ x: 0, y: 0, width: 100, height: 100 });
+    setCropArea({ x: 10, y: 10, width: 80, height: 80 });
+    setAspectRatio(null);
+    setIsDragging(false);
+    setIsResizing(null);
     if (activeTab === "camera") {
       startCamera();
     }
@@ -399,11 +522,17 @@ export const PhotoCaptureEditor = ({
                 ref={canvasRef}
                 className="hidden"
               />
-              <div className="relative w-full h-full">
+              <div 
+                ref={cropContainerRef}
+                className="relative w-full h-full select-none"
+                onMouseMove={handleCropMouseMove}
+                onMouseUp={handleCropMouseUp}
+                onMouseLeave={handleCropMouseUp}
+              >
                 <img
                   src={capturedImage || ""}
                   alt="Preview"
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain pointer-events-none"
                   style={{
                     filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`,
                     transform: `rotate(${rotation}deg) scale(${zoom})`,
@@ -412,18 +541,44 @@ export const PhotoCaptureEditor = ({
                 {isCropping && (
                   <div className="absolute inset-0 bg-black/50">
                     <div
-                      className="absolute border-2 border-white shadow-lg cursor-move"
+                      className="absolute border-2 border-primary shadow-lg backdrop-blur-sm bg-primary/10"
                       style={{
                         left: `${cropArea.x}%`,
                         top: `${cropArea.y}%`,
                         width: `${cropArea.width}%`,
                         height: `${cropArea.height}%`,
                       }}
+                      onMouseDown={(e) => handleCropMouseDown(e, "move")}
                     >
-                      <div className="absolute top-0 left-0 w-3 h-3 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize" />
-                      <div className="absolute top-0 right-0 w-3 h-3 bg-white rounded-full translate-x-1/2 -translate-y-1/2 cursor-nesw-resize" />
-                      <div className="absolute bottom-0 left-0 w-3 h-3 bg-white rounded-full -translate-x-1/2 translate-y-1/2 cursor-nesw-resize" />
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-white rounded-full translate-x-1/2 translate-y-1/2 cursor-nwse-resize" />
+                      {/* Grid lines */}
+                      <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none">
+                        {[...Array(9)].map((_, i) => (
+                          <div key={i} className="border border-white/30" />
+                        ))}
+                      </div>
+                      
+                      {/* Corner handles */}
+                      <div 
+                        className="absolute top-0 left-0 w-4 h-4 bg-primary border-2 border-white rounded-full -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize hover:scale-125 transition-transform"
+                        onMouseDown={(e) => handleCropMouseDown(e, "nw")}
+                      />
+                      <div 
+                        className="absolute top-0 right-0 w-4 h-4 bg-primary border-2 border-white rounded-full translate-x-1/2 -translate-y-1/2 cursor-nesw-resize hover:scale-125 transition-transform"
+                        onMouseDown={(e) => handleCropMouseDown(e, "ne")}
+                      />
+                      <div 
+                        className="absolute bottom-0 left-0 w-4 h-4 bg-primary border-2 border-white rounded-full -translate-x-1/2 translate-y-1/2 cursor-nesw-resize hover:scale-125 transition-transform"
+                        onMouseDown={(e) => handleCropMouseDown(e, "sw")}
+                      />
+                      <div 
+                        className="absolute bottom-0 right-0 w-4 h-4 bg-primary border-2 border-white rounded-full translate-x-1/2 translate-y-1/2 cursor-nwse-resize hover:scale-125 transition-transform"
+                        onMouseDown={(e) => handleCropMouseDown(e, "se")}
+                      />
+                      
+                      {/* Move icon in center */}
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                        <Move className="w-6 h-6 text-white drop-shadow-lg" />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -497,12 +652,58 @@ export const PhotoCaptureEditor = ({
               </div>
             </div>
 
+            {/* Crop Controls */}
+            {isCropping && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Maximize2 className="w-4 h-4" />
+                  En-Boy Oranı
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant={aspectRatio === null ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setAspectRatioAndAdjustCrop(null)}
+                  >
+                    Serbest
+                  </Button>
+                  <Button
+                    variant={aspectRatio === 1 ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setAspectRatioAndAdjustCrop(1)}
+                  >
+                    1:1 (Kare)
+                  </Button>
+                  <Button
+                    variant={aspectRatio === 4/3 ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setAspectRatioAndAdjustCrop(4/3)}
+                  >
+                    4:3
+                  </Button>
+                  <Button
+                    variant={aspectRatio === 16/9 ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setAspectRatioAndAdjustCrop(16/9)}
+                  >
+                    16:9
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-2">
               <Button
                 variant={isCropping ? "default" : "outline"}
                 size="sm"
-                onClick={() => setIsCropping(!isCropping)}
+                onClick={() => {
+                  setIsCropping(!isCropping);
+                  if (!isCropping) {
+                    setCropArea({ x: 10, y: 10, width: 80, height: 80 });
+                    setAspectRatio(null);
+                  }
+                }}
                 className="gap-2"
               >
                 <Crop className="w-4 h-4" />
