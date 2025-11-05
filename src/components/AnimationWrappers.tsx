@@ -30,13 +30,29 @@ interface ProgressBarProps {
 
 export const RouteProgressBar = ({ isAnimating }: ProgressBarProps) => {
   return (
-    <motion.div
-      className="fixed top-0 left-0 right-0 h-1 bg-primary z-50 origin-left"
-      initial={{ scaleX: 0 }}
-      animate={{ scaleX: isAnimating ? [0, 0.3, 0.6, 0.9, 1] : 0 }}
-      transition={{ duration: 0.8, ease: "easeInOut" }}
-      style={{ transformOrigin: "0%" }}
-    />
+    <>
+      {isAnimating && (
+        <motion.div
+          className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent to-primary z-[9999] shadow-lg shadow-primary/50"
+          initial={{ scaleX: 0, opacity: 0 }}
+          animate={{ 
+            scaleX: 1, 
+            opacity: 1,
+            transition: { 
+              duration: 0.3, 
+              ease: "easeOut" as const 
+            }
+          }}
+          exit={{ 
+            opacity: 0,
+            transition: { 
+              duration: 0.2 
+            }
+          }}
+          style={{ transformOrigin: "0%" }}
+        />
+      )}
+    </>
   );
 };
 

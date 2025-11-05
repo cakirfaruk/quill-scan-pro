@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
+import { RouteProgressBar } from "@/components/AnimationWrappers";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { Tutorial } from "@/components/Tutorial";
 import { MobileNav } from "@/components/MobileNav";
@@ -55,6 +56,7 @@ const AppRoutes = () => {
   const [incomingCall, setIncomingCall] = useState<any>(null);
   const [incomingGroupCall, setIncomingGroupCall] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Get current user
   useEffect(() => {
@@ -62,6 +64,16 @@ const AppRoutes = () => {
       if (user) setCurrentUserId(user.id);
     });
   }, []);
+
+  // Track route changes for progress bar
+  useEffect(() => {
+    setIsNavigating(true);
+    const timer = setTimeout(() => {
+      setIsNavigating(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
 
   // Listen for incoming calls
   useEffect(() => {
@@ -181,6 +193,7 @@ const AppRoutes = () => {
 
   return (
     <>
+      <RouteProgressBar isAnimating={isNavigating} />
       {incomingCall && (
         <IncomingCallDialog
           isOpen={true}
