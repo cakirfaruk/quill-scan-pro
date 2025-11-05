@@ -60,32 +60,44 @@ const Auth = () => {
 
     try {
       // Validate inputs
-      const validation = authSchema.safeParse({ username, email, password });
+      const validation = authSchema.safeParse({ 
+        username: username.trim(), 
+        email: email.trim(), 
+        password 
+      });
       if (!validation.success) {
         throw new Error(validation.error.errors[0].message);
       }
 
-      const { error } = await supabase.auth.signUp({
-        email,
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
-            username,
+            username: username.trim(),
           },
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("already registered")) {
+          throw new Error("Bu e-posta adresi zaten kayıtlı. Lütfen giriş yapın veya şifrenizi sıfırlayın.");
+        }
+        throw error;
+      }
+
+      console.log("Signup successful:", data.user?.email);
 
       // Show onboarding for new users
       setShowOnboarding(true);
 
       toast({
         title: "Kayıt başarılı!",
-        description: "Hesabınız oluşturuldu.",
+        description: "Hesabınız oluşturuldu. Hemen giriş yapabilirsiniz.",
       });
     } catch (error: any) {
+      console.error("Signup error:", error.message);
       toast({
         title: "Kayıt hatası",
         description: error.message,
@@ -105,24 +117,35 @@ const Auth = () => {
       const validation = z.object({
         email: z.string().trim().email("Geçerli bir e-posta adresi girin"),
         password: z.string().min(1, "Şifre gerekli"),
-      }).safeParse({ email, password });
+      }).safeParse({ email: email.trim(), password });
       
       if (!validation.success) {
         throw new Error(validation.error.errors[0].message);
       }
 
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        // Provide more specific error messages
+        if (error.message.includes("Invalid login credentials")) {
+          throw new Error("E-posta veya şifre hatalı. Lütfen tekrar deneyin veya şifrenizi sıfırlayın.");
+        } else if (error.message.includes("Email not confirmed")) {
+          throw new Error("E-posta adresiniz henüz onaylanmamış. Lütfen e-postanızı kontrol edin.");
+        }
+        throw error;
+      }
+
+      console.log("Login successful:", data.user?.email);
 
       toast({
         title: "Giriş başarılı!",
         description: "Hoş geldiniz.",
       });
     } catch (error: any) {
+      console.error("Login error:", error.message);
       toast({
         title: "Giriş hatası",
         description: error.message,
