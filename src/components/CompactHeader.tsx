@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
 import { CreatePostDialog } from "@/components/CreatePostDialog";
 import { GlobalSearch } from "@/components/GlobalSearch";
+import { useScrollProgress } from "@/hooks/use-parallax";
 
 export const CompactHeader = () => {
   const [credits, setCredits] = useState(0);
@@ -34,6 +35,8 @@ export const CompactHeader = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  
+  const scrollProgress = useScrollProgress();
 
   useUpdateOnlineStatus();
 
@@ -90,8 +93,27 @@ export const CompactHeader = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border shadow-sm">
-      <div className="container mx-auto px-3 sm:px-4 h-14 flex items-center justify-between">
+    <>
+      {/* Scroll Progress Bar */}
+      <div 
+        className="fixed top-0 left-0 h-1 bg-gradient-to-r from-primary via-accent to-primary z-[60] transition-all duration-300"
+        style={{ width: `${scrollProgress}%` }}
+      />
+      
+      <header 
+        className="sticky top-0 z-50 transition-all duration-300"
+        style={{
+          backgroundColor: scrollProgress > 5 
+            ? `hsl(var(--card) / ${Math.min(0.95 + (scrollProgress / 1000), 0.98)})` 
+            : 'hsl(var(--card) / 0.95)',
+          backdropFilter: scrollProgress > 5 ? 'blur(12px)' : 'blur(8px)',
+          boxShadow: scrollProgress > 10 
+            ? '0 4px 20px hsl(var(--primary) / 0.1)' 
+            : '0 1px 3px hsl(var(--border) / 0.5)',
+        }}
+      >
+        <div className="border-b border-border">
+          <div className="container mx-auto px-3 sm:px-4 h-14 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <div className="p-1.5 bg-gradient-primary rounded-lg shadow-glow">
@@ -245,7 +267,9 @@ export const CompactHeader = () => {
             </Button>
           )}
         </div>
-      </div>
+          </div>
+        </div>
+      </header>
 
       {/* Create Post Dialog */}
       <CreatePostDialog
@@ -262,6 +286,6 @@ export const CompactHeader = () => {
           setCreatePostDialogOpen(false);
         }}
       />
-    </header>
+    </>
   );
 };
