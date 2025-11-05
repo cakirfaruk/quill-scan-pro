@@ -4,9 +4,11 @@ import { Header } from "@/components/Header";
 import { UploadZone } from "@/components/UploadZone";
 import { TopicSelector } from "@/components/TopicSelector";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+import { PhotoCaptureEditor } from "@/components/PhotoCaptureEditor";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Camera } from "lucide-react";
 
 export default function Handwriting() {
   const navigate = useNavigate();
@@ -16,6 +18,7 @@ export default function Handwriting() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [availableCredits, setAvailableCredits] = useState(0);
+  const [showPhotoEditor, setShowPhotoEditor] = useState(false);
 
   useEffect(() => {
     loadCredits();
@@ -40,6 +43,17 @@ export default function Handwriting() {
   const handleFileSelect = (file: File, preview: string) => {
     setSelectedFile(file);
     setPreviewUrl(preview);
+  };
+
+  const handlePhotoCapture = (imageData: string) => {
+    setPreviewUrl(imageData);
+    // Convert base64 to file
+    fetch(imageData)
+      .then(res => res.blob())
+      .then(blob => {
+        const file = new File([blob], "captured-photo.jpg", { type: "image/jpeg" });
+        setSelectedFile(file);
+      });
   };
 
   const handleAnalyze = async (selectedTopics: string[]) => {
@@ -114,6 +128,17 @@ export default function Handwriting() {
             <p className="text-muted-foreground">El yazınızı yükleyin ve detaylı kişilik analizi yapın</p>
           </div>
 
+          <div className="flex gap-2 mb-4">
+            <Button
+              onClick={() => setShowPhotoEditor(true)}
+              className="flex-1 gap-2"
+              variant="default"
+            >
+              <Camera className="w-4 h-4" />
+              Kamera ile Çek
+            </Button>
+          </div>
+
           <UploadZone onFileSelect={handleFileSelect} />
 
           {selectedFile && previewUrl && previewUrl !== "pdf" && (
@@ -131,6 +156,14 @@ export default function Handwriting() {
           )}
         </div>
       </main>
+
+      <PhotoCaptureEditor
+        open={showPhotoEditor}
+        onOpenChange={setShowPhotoEditor}
+        onCapture={handlePhotoCapture}
+        title="El Yazısı Fotoğrafı"
+        description="El yazınızın net bir fotoğrafını çekin"
+      />
     </div>
   );
 }

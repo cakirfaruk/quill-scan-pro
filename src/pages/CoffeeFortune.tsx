@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PhotoCaptureEditor } from "@/components/PhotoCaptureEditor";
 import { toast } from "sonner";
-import { Upload, X, Sparkles } from "lucide-react";
+import { Upload, X, Sparkles, Camera } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 
 const CoffeeFortune = () => {
@@ -14,6 +15,8 @@ const CoffeeFortune = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [userCredits, setUserCredits] = useState(0);
+  const [showPhotoEditor, setShowPhotoEditor] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
 
   useEffect(() => {
     checkAuth();
@@ -58,6 +61,17 @@ const CoffeeFortune = () => {
       setImages(newImages);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handlePhotoCapture = (imageData: string) => {
+    const newImages = [...images];
+    newImages[currentImageIndex] = imageData;
+    setImages(newImages);
+  };
+
+  const openPhotoEditor = (index: number) => {
+    setCurrentImageIndex(index);
+    setShowPhotoEditor(true);
   };
 
   const removeImage = (index: number) => {
@@ -160,16 +174,26 @@ const CoffeeFortune = () => {
                         </Button>
                       </div>
                     ) : (
-                      <label className="flex flex-col items-center justify-center aspect-square border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer">
-                        <Upload className="w-8 h-8 text-muted-foreground mb-2" />
-                        <span className="text-sm text-muted-foreground">Fotoğraf Yükle</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => handleImageUpload(e, index)}
-                        />
-                      </label>
+                      <div className="space-y-2">
+                        <Button
+                          onClick={() => openPhotoEditor(index)}
+                          className="w-full gap-2"
+                          variant="outline"
+                        >
+                          <Camera className="w-4 h-4" />
+                          Kamera ile Çek
+                        </Button>
+                        <label className="flex flex-col items-center justify-center aspect-square border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer">
+                          <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                          <span className="text-sm text-muted-foreground">veya Galeri</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleImageUpload(e, index)}
+                          />
+                        </label>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -220,6 +244,14 @@ const CoffeeFortune = () => {
           </div>
         )}
       </main>
+
+      <PhotoCaptureEditor
+        open={showPhotoEditor}
+        onOpenChange={setShowPhotoEditor}
+        onCapture={handlePhotoCapture}
+        title="Kahve Fincanı Fotoğrafı"
+        description="Fincanınızın net bir fotoğrafını çekin"
+      />
     </div>
   );
 };
