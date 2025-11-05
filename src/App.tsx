@@ -6,7 +6,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { RouteProgressBar } from "@/components/AnimationWrappers";
 import { EnhancedOfflineIndicator } from "@/components/EnhancedOfflineIndicator";
-import { Tutorial } from "@/components/Tutorial";
 import { MobileNav } from "@/components/MobileNav";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
@@ -16,8 +15,6 @@ import { IncomingCallDialog } from "@/components/IncomingCallDialog";
 import { IncomingGroupCallDialog } from "@/components/IncomingGroupCallDialog";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useErrorAlerts } from "@/hooks/use-error-alerts";
-import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
-import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
 
 // Lazy load ALL pages including Index for optimal code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -263,7 +260,6 @@ const AppRoutes = () => {
       </Suspense>
       {showNav && <MobileNav />}
       {showFAB && <FloatingActionButton />}
-      <PWAInstallPrompt />
     </>
   );
 };
@@ -278,8 +274,6 @@ const App = () => {
               <Toaster />
               <Sonner />
               <EnhancedOfflineIndicator />
-              <Tutorial />
-              <PushNotificationPrompt />
               <AppRoutes />
             </TooltipProvider>
           </ThemeProvider>
