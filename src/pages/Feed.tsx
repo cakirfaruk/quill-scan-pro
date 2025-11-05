@@ -23,6 +23,7 @@ import { SkeletonPost } from "@/components/ui/enhanced-skeleton";
 import { ParsedText } from "@/components/ParsedText";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CreatePostDialog } from "@/components/CreatePostDialog";
+import { NoFriendsIllustration, NoPostsIllustration } from "@/components/EmptyStateIllustrations";
 
 interface Post {
   id: string;
@@ -701,6 +702,8 @@ const Feed = () => {
                 description="Arkadaşlarınızın paylaşımlarını görmek için keşfet sekmesinden yeni insanlarla tanışın ve arkadaş olun."
                 actionLabel="Arkadaş Bul"
                 onAction={() => navigate("/discovery")}
+                illustration={<NoFriendsIllustration />}
+                variant="gradient"
               />
             ) : (
               friendsPosts.map(renderPost)
@@ -715,6 +718,8 @@ const Feed = () => {
                 description="İlk paylaşımı siz yapın! Fotoğraf, video veya düşüncelerinizi paylaşarak topluluğa katılın."
                 actionLabel="İlk Paylaşımı Yap"
                 onAction={() => navigate("/profile")}
+                illustration={<NoPostsIllustration />}
+                variant="gradient"
               />
             ) : (
               allPosts.map(renderPost)

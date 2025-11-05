@@ -149,6 +149,14 @@ export default {
             "background-position": "right center",
           },
         },
+        "float": {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-10px)" },
+        },
+        "draw": {
+          "0%": { strokeDashoffset: "1000" },
+          "100%": { strokeDashoffset: "0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -169,6 +177,8 @@ export default {
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
         "shimmer": "shimmer 2s linear infinite",
         gradient: "gradient 8s ease infinite",
+        "float": "float 3s ease-in-out infinite",
+        "draw": "draw 2s ease-in-out infinite",
         "enter": "fade-in 0.3s ease-out, scale-in 0.2s ease-out",
         "exit": "fade-out 0.3s ease-out, scale-out 0.2s ease-out",
       },

@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Users, Plus, MessageCircle, Loader2, UserPlus } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { NoGroupsIllustration } from "@/components/EmptyStateIllustrations";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { SkeletonGroupList } from "@/components/SkeletonGroup";
@@ -257,6 +258,8 @@ const Groups = () => {
             description="Arkadaşlarınızla grup sohbetleri başlatın, fotoğraf ve mesaj paylaşın, birlikte vakit geçirin!"
             actionLabel="İlk Grubunuzu Oluşturun"
             onAction={() => setCreateDialogOpen(true)}
+            illustration={<NoGroupsIllustration />}
+            variant="gradient"
           />
         ) : (
           <div className="grid gap-4">

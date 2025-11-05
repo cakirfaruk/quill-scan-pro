@@ -31,6 +31,7 @@ import { playRingtone, vibrate, showBrowserNotification } from "@/utils/callNoti
 import { requestNotificationPermission, subscribeToPushNotifications, checkNotificationPermission } from "@/utils/pushNotifications";
 import { SkeletonConversationList } from "@/components/SkeletonConversation";
 import { EmptyState } from "@/components/ui/empty-state";
+import { NoMessagesIllustration, NoConversationIllustration } from "@/components/EmptyStateIllustrations";
 
 interface Friend {
   user_id: string;
@@ -1682,6 +1683,8 @@ const Messages = () => {
                             description="Henüz arkadaşlarınızdan mesaj almadınız. Yeni arkadaşlar bulun ve sohbete başlayın!"
                             actionLabel="Arkadaş Bul"
                             onAction={() => navigate("/discovery")}
+                            illustration={<NoMessagesIllustration />}
+                            variant="gradient"
                           />
                         </div>
                       ) : (
@@ -2347,6 +2350,8 @@ const Messages = () => {
                   description="Mesajlaşmaya başlamak için sol taraftan bir kişi veya grup seçin. Yeni arkadaşlar edinmek için keşfet bölümünü ziyaret edebilirsiniz."
                   actionLabel="Arkadaş Bul"
                   onAction={() => navigate("/discovery")}
+                  illustration={<NoConversationIllustration />}
+                  variant="gradient"
                 />
               </div>
             )}
