@@ -2,21 +2,21 @@ import { EnhancedSkeleton } from "@/components/ui/enhanced-skeleton";
 
 export const SkeletonConversation = () => (
   <div className="flex items-center gap-3 p-4 border-b animate-fade-in">
-    <EnhancedSkeleton variant="circular" width={48} height={48} />
+    <EnhancedSkeleton variant="circular" width={48} height={48} animation="shimmer" />
     <div className="flex-1 space-y-2">
-      <EnhancedSkeleton variant="text" width="40%" />
-      <EnhancedSkeleton variant="text" width="60%" />
+      <EnhancedSkeleton variant="text" width="40%" animation="shimmer" />
+      <EnhancedSkeleton variant="text" width="60%" animation="shimmer" />
     </div>
-    <EnhancedSkeleton variant="circular" width={20} height={20} />
+    <EnhancedSkeleton variant="circular" width={20} height={20} animation="shimmer" />
   </div>
 );
 
 export const SkeletonMessage = () => (
   <div className="flex gap-2 mb-4 animate-fade-in">
-    <EnhancedSkeleton variant="circular" width={32} height={32} />
+    <EnhancedSkeleton variant="circular" width={32} height={32} animation="shimmer" />
     <div className="flex-1 space-y-2">
-      <EnhancedSkeleton variant="text" width="30%" />
-      <EnhancedSkeleton variant="rounded" width="70%" height={60} />
+      <EnhancedSkeleton variant="text" width="30%" animation="shimmer" />
+      <EnhancedSkeleton variant="rounded" width="70%" height={60} animation="shimmer" />
     </div>
   </div>
 );

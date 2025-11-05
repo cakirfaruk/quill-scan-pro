@@ -208,6 +208,28 @@ All colors MUST be HSL.
     animation: shimmer 2s linear infinite;
   }
 
+  .shimmer-effect {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--primary) / 0.1) 20%,
+      hsl(var(--primary) / 0.15) 50%,
+      hsl(var(--primary) / 0.1) 80%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer-slide 2s ease-in-out infinite;
+  }
+
+  @keyframes shimmer-slide {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
   /* Glass Effect */
   .glass {
     @apply bg-background/80 backdrop-blur-md border border-border/50;

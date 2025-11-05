@@ -34,12 +34,12 @@ function EnhancedSkeleton({
   const getAnimationClasses = () => {
     switch (animation) {
       case "pulse":
-        return "animate-pulse";
+        return "animate-pulse bg-muted";
       case "wave":
-        return "animate-pulse-glow";
+        return "animate-pulse-glow bg-muted";
       case "shimmer":
       default:
-        return "shimmer";
+        return "bg-muted relative overflow-hidden";
     }
   };
 
@@ -52,14 +52,17 @@ function EnhancedSkeleton({
     <div
       key={i}
       className={cn(
-        "bg-muted",
         getVariantClasses(),
         getAnimationClasses(),
         className
       )}
       style={skeletonStyle}
       {...props}
-    />
+    >
+      {animation === "shimmer" && (
+        <div className="absolute inset-0 shimmer-effect" />
+      )}
+    </div>
   ));
 
   return count > 1 ? <div className="space-y-2">{skeletons}</div> : skeletons[0];
@@ -67,7 +70,7 @@ function EnhancedSkeleton({
 
 // Pre-built skeleton components
 const SkeletonCard = () => (
-  <div className="p-6 space-y-4 border rounded-lg animate-fade-in">
+  <div className="p-6 space-y-4 border rounded-lg animate-fade-in bg-card">
     <div className="flex items-center gap-4">
       <EnhancedSkeleton variant="circular" width={48} height={48} />
       <div className="flex-1 space-y-2">
@@ -84,20 +87,20 @@ const SkeletonCard = () => (
 );
 
 const SkeletonPost = () => (
-  <div className="p-6 space-y-4 border rounded-lg shadow-card animate-fade-in">
+  <div className="p-6 space-y-4 border rounded-lg shadow-card animate-fade-in bg-card">
     <div className="flex items-center gap-3">
-      <EnhancedSkeleton variant="circular" width={40} height={40} />
+      <EnhancedSkeleton variant="circular" width={40} height={40} animation="shimmer" />
       <div className="flex-1 space-y-2">
-        <EnhancedSkeleton variant="text" width="30%" />
-        <EnhancedSkeleton variant="text" width="20%" />
+        <EnhancedSkeleton variant="text" width="30%" animation="shimmer" />
+        <EnhancedSkeleton variant="text" width="20%" animation="shimmer" />
       </div>
     </div>
-    <EnhancedSkeleton variant="text" count={3} />
-    <EnhancedSkeleton variant="rectangular" height={200} className="rounded-lg" />
+    <EnhancedSkeleton variant="text" count={3} animation="shimmer" />
+    <EnhancedSkeleton variant="rectangular" height={200} className="rounded-lg" animation="shimmer" />
     <div className="flex gap-4">
-      <EnhancedSkeleton variant="rounded" width={60} height={28} />
-      <EnhancedSkeleton variant="rounded" width={60} height={28} />
-      <EnhancedSkeleton variant="rounded" width={60} height={28} />
+      <EnhancedSkeleton variant="rounded" width={60} height={28} animation="shimmer" />
+      <EnhancedSkeleton variant="rounded" width={60} height={28} animation="shimmer" />
+      <EnhancedSkeleton variant="rounded" width={60} height={28} animation="shimmer" />
     </div>
   </div>
 );
