@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import Feed from "./Feed";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -29,37 +30,41 @@ const Index = () => {
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     
+    // Check if user has seen onboarding
     if (user) {
-      // Check if user has seen onboarding
       const hasSeenOnboarding = localStorage.getItem(`onboarding_${user.id}`);
       if (!hasSeenOnboarding) {
         setShowOnboarding(true);
-        setIsLoggedIn(true);
-      } else {
-        // User has seen onboarding, redirect immediately
-        navigate("/feed");
       }
+      setIsLoggedIn(true);
     }
   };
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
-    supabase.auth.getSession().then(({ data }) => {
+    const userId = supabase.auth.getSession().then(({ data }) => {
       if (data.session?.user) {
         localStorage.setItem(`onboarding_${data.session.user.id}`, 'true');
-        navigate("/feed");
       }
     });
   };
 
-  // Show landing page
+  // Show feed if logged in
+  if (isLoggedIn) {
+    return (
+      <>
+        <OnboardingDialog open={showOnboarding} onComplete={handleOnboardingComplete} />
+        <Feed />
+      </>
+    );
+  }
+
+  // Show landing page immediately (no blocking while checking auth)
   return (
-    <>
-      <OnboardingDialog open={showOnboarding} onComplete={handleOnboardingComplete} />
-      <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background overflow-hidden">
-        <Header />
+    <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background overflow-hidden">
+      <Header />
       
-        <main className="container mx-auto px-4">
+      <main className="container mx-auto px-4">
         {/* Hero Section */}
         <section 
           ref={heroRef}
@@ -406,7 +411,6 @@ const Index = () => {
         </div>
       </footer>
     </div>
-    </>
   );
 };
 

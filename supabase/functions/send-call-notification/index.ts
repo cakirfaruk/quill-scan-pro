@@ -94,7 +94,7 @@ serve(async (req) => {
           headers: {
             'Content-Type': 'application/octet-stream',
             'TTL': '86400', // 24 hours
-            'Authorization': `vapid t=${await createJWT(vapidPrivateKey, subscription.endpoint)}, k=${vapidPublicKey}`,
+            'Authorization': `vapid t=${createJWT(vapidPrivateKey, subscription.endpoint)}, k=${vapidPublicKey}`,
           },
           body: JSON.stringify(notificationPayload),
         });
@@ -143,69 +143,38 @@ serve(async (req) => {
   }
 });
 
-// Base64 URL encoding helper
-function base64UrlEncode(input: string | Uint8Array): string {
-  let base64: string;
-  if (typeof input === 'string') {
-    base64 = btoa(input);
-  } else {
-    base64 = btoa(String.fromCharCode(...input));
-  }
-  return base64
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
-}
-
-// Helper function to create JWT for VAPID with proper ES256 signing
-async function createJWT(privateKeyJwk: string, audience: string): Promise<string> {
+// Helper function to create JWT for VAPID
+function createJWT(privateKey: string, audience: string): string {
+  // Extract the origin from the endpoint
   const url = new URL(audience);
   const aud = `${url.protocol}//${url.host}`;
   
+  // Create JWT header
   const header = {
     typ: 'JWT',
     alg: 'ES256',
   };
   
+  // Create JWT payload
   const payload = {
     aud,
     exp: Math.floor(Date.now() / 1000) + 43200, // 12 hours
-    sub: 'mailto:support@example.com',
+    sub: 'mailto:support@example.com', // Change this to your support email
   };
   
-  const encodedHeader = base64UrlEncode(JSON.stringify(header));
-  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
-  const unsignedToken = `${encodedHeader}.${encodedPayload}`;
+  // Base64 URL encode
+  const base64UrlEncode = (obj: any) => {
+    const str = JSON.stringify(obj);
+    return btoa(str)
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+  };
   
-  try {
-    // Import the private key
-    const keyData = JSON.parse(privateKeyJwk);
-    const key = await crypto.subtle.importKey(
-      'jwk',
-      keyData,
-      {
-        name: 'ECDSA',
-        namedCurve: 'P-256',
-      },
-      false,
-      ['sign']
-    );
-    
-    // Sign the token
-    const signature = await crypto.subtle.sign(
-      {
-        name: 'ECDSA',
-        hash: 'SHA-256',
-      },
-      key,
-      new TextEncoder().encode(unsignedToken)
-    );
-    
-    const encodedSignature = base64UrlEncode(new Uint8Array(signature));
-    return `${unsignedToken}.${encodedSignature}`;
-  } catch (error) {
-    console.error('Error signing JWT:', error);
-    // Fallback to unsigned token (will likely fail but won't crash)
-    return `${unsignedToken}.unsigned`;
-  }
+  const encodedHeader = base64UrlEncode(header);
+  const encodedPayload = base64UrlEncode(payload);
+  
+  // In a real implementation, you would sign this with the private key
+  // For now, returning a placeholder - you'll need to use web-crypto API
+  return `${encodedHeader}.${encodedPayload}.placeholder-signature`;
 }

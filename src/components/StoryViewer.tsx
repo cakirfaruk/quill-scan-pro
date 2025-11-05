@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,6 @@ import { useNavigate } from "react-router-dom";
 import { X, ChevronLeft, ChevronRight, Eye, Send } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
-import { useSwipe } from "@/hooks/use-gestures";
 
 interface Story {
   id: string;
@@ -53,28 +52,6 @@ export const StoryViewer = ({
   const currentStory = stories[currentStoryIndex];
   const STORY_DURATION = 5000; // 5 seconds per story
 
-  const handleNext = () => {
-    if (currentStoryIndex < stories.length - 1) {
-      setCurrentStoryIndex((prev) => prev + 1);
-      setProgress(0);
-    } else {
-      onOpenChange(false);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentStoryIndex > 0) {
-      setCurrentStoryIndex((prev) => prev - 1);
-      setProgress(0);
-    }
-  };
-
-  const swipeGestures = useSwipe({
-    onSwipeLeft: handleNext,
-    onSwipeRight: handlePrevious,
-    threshold: 50,
-  });
-
   useEffect(() => {
     setCurrentStoryIndex(initialIndex);
     setProgress(0);
@@ -110,6 +87,22 @@ export const StoryViewer = ({
       });
     } catch (error) {
       console.error("Error marking story as viewed:", error);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentStoryIndex < stories.length - 1) {
+      setCurrentStoryIndex((prev) => prev + 1);
+      setProgress(0);
+    } else {
+      onOpenChange(false);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentStoryIndex > 0) {
+      setCurrentStoryIndex((prev) => prev - 1);
+      setProgress(0);
     }
   };
 
@@ -241,9 +234,8 @@ export const StoryViewer = ({
 
         {/* Story content */}
         <div
-          className="relative w-full aspect-[9/16] bg-black flex items-center justify-center touch-pan-y"
+          className="relative w-full aspect-[9/16] bg-black flex items-center justify-center"
           onClick={() => setIsPaused(!isPaused)}
-          {...swipeGestures}
         >
           {currentStory.media_type === "photo" ? (
             <img

@@ -21,13 +21,12 @@ export const LoadingFallback = memo(({
 
   return (
     <div className={cn(
-      "flex flex-col items-center justify-center gap-4",
-      fullScreen && "min-h-screen bg-background",
+      "flex items-center justify-center",
+      fullScreen && "min-h-screen",
       !fullScreen && "py-8",
       className
     )}>
       <Loader2 className={cn("animate-spin text-primary", sizeClasses[size])} />
-      <p className="text-sm text-muted-foreground animate-pulse">Yükleniyor...</p>
     </div>
   );
 });

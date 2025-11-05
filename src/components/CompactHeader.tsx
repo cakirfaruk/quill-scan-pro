@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
-  Home, Search, Plus, Video, Sparkles, Shield, Coins, MessageCircle, Menu, Heart, Settings, User, Download, LogOut
+  Home, Search, Plus, Video, Sparkles, Shield, Coins, MessageCircle, Menu, Heart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -288,66 +288,48 @@ export const CompactHeader = () => {
                 )} />
               </Button>
 
-              {/* Profile Avatar Menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "rounded-full p-0 hover:scale-105 transition-all duration-300",
-                      isMiniMode ? "h-7 w-7 sm:h-8 sm:w-8" : "h-8 w-8 sm:h-9 sm:w-9"
-                    )}
-                  >
-                    <Avatar 
-                      className={cn(
-                        "border-2 border-primary/20 transition-all duration-300",
-                        isMiniMode ? "w-7 h-7 sm:w-8 sm:h-8" : "w-8 h-8 sm:w-9 sm:h-9"
-                      )}
-                    >
-                      <AvatarImage src={profilePhoto} alt={username} />
-                      <AvatarFallback className={cn(
-                        "bg-gradient-primary text-primary-foreground transition-all duration-300",
-                        isMiniMode ? "text-[10px] sm:text-xs" : "text-xs sm:text-sm"
-                      )}>
-                        {username.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-card z-[100]">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">{username}</p>
-                      <p className="text-xs text-muted-foreground">{credits} kredi</p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate("/profile")}>
-                    <User className="w-4 h-4 mr-2" />
-                    Profilim
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/settings")}>
-                    <Settings className="w-4 h-4 mr-2" />
-                    Ayarlar
-                  </DropdownMenuItem>
-                  {isAdmin && (
+              {/* Main Menu - Desktop only for admin */}
+              {isAdmin && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 sm:h-9 w-8 sm:w-9 hidden lg:flex">
+                      <Menu className="w-5 h-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuItem onClick={() => navigate("/admin")}>
                       <Shield className="w-4 h-4 mr-2" />
                       Admin Panel
                     </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+
+              {/* Profile Avatar with double-click for match */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/profile")}
+                className={cn(
+                  "rounded-full p-0 hover:scale-105 transition-all duration-300",
+                  isMiniMode ? "h-7 w-7 sm:h-8 sm:w-8" : "h-8 w-8 sm:h-9 sm:w-9"
+                )}
+              >
+                <Avatar 
+                  className={cn(
+                    "border-2 border-primary/20 transition-all duration-300",
+                    isMiniMode ? "w-7 h-7 sm:w-8 sm:h-8" : "w-8 h-8 sm:w-9 sm:h-9"
                   )}
-                  <DropdownMenuItem onClick={() => navigate("/install")}>
-                    <Download className="w-4 h-4 mr-2" />
-                    Ana Ekrana Ekle
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-500">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Çıkış Yap
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                >
+                  <AvatarImage src={profilePhoto} alt={username} />
+                  <AvatarFallback className={cn(
+                    "bg-gradient-primary text-primary-foreground transition-all duration-300",
+                    isMiniMode ? "text-[10px] sm:text-xs" : "text-xs sm:text-sm"
+                  )}>
+                    {username.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
             </>
           ) : (
             <Button onClick={() => navigate("/auth")} size="sm">
