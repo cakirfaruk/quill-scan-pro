@@ -1,19 +1,15 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import Feed from "./Feed";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Brain, Target, Sparkles, Heart, Users, MessageCircle, Moon, Coffee, Hand, Star, Calendar, FileText, Zap, Shield, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { useParallax } from "@/hooks/use-parallax";
 
 const Index = () => {
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
   
   const heroRef = useRef<HTMLElement>(null);
   const bgLeftRef = useRef<HTMLDivElement>(null);
@@ -24,56 +20,14 @@ const Index = () => {
   const bgRightOffset = useParallax(bgRightRef, { speed: 0.4, direction: "up" });
 
   useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    // Check if user has seen onboarding
-    if (user) {
-      const hasSeenOnboarding = localStorage.getItem(`onboarding_${user.id}`);
-      if (!hasSeenOnboarding) {
-        setShowOnboarding(true);
-      }
-      setIsLoggedIn(true);
-    } else {
-      setIsLoggedIn(false);
-    }
-  };
-
-  const handleOnboardingComplete = () => {
-    setShowOnboarding(false);
-    const userId = supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user) {
-        localStorage.setItem(`onboarding_${data.session.user.id}`, 'true');
+    // Check if user is logged in and redirect to feed
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        navigate("/feed");
       }
     });
-  };
+  }, [navigate]);
 
-  // Show loading spinner while checking auth
-  if (isLoggedIn === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background via-primary/5 to-background">
-        <div className="text-center">
-          <Sparkles className="w-16 h-16 mx-auto mb-4 text-primary animate-pulse" />
-          <p className="text-lg text-muted-foreground">Yükleniyor...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show feed if logged in
-  if (isLoggedIn) {
-    return (
-      <>
-        <OnboardingDialog open={showOnboarding} onComplete={handleOnboardingComplete} />
-        <Feed />
-      </>
-    );
-  }
-
-  // Show landing page for logged out users
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background overflow-hidden">
       <Header />

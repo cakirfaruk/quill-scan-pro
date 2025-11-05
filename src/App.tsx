@@ -19,6 +19,7 @@ import { IncomingGroupCallDialog } from "@/components/IncomingGroupCallDialog";
 
 // Lazy load ALL pages including Index for optimal code splitting
 const Index = lazy(() => import("./pages/Index"));
+const Feed = lazy(() => import("./pages/Feed"));
 
 // Lazy load routes for better performance
 const Auth = lazy(() => import("./pages/Auth"));
@@ -180,7 +181,7 @@ const AppRoutes = () => {
     };
   }, [currentUserId]);
   
-  const showNav = ['/', '/explore', '/reels', '/discovery', '/messages', '/profile', '/match', '/friends'].some(
+  const showNav = ['/feed', '/explore', '/reels', '/discovery', '/messages', '/profile', '/match', '/friends'].some(
     path => location.pathname === path || location.pathname.startsWith('/profile/')
   );
 
@@ -236,6 +237,7 @@ const AppRoutes = () => {
           >
             <Routes location={location}>
               <Route path="/" element={<Index />} />
+              <Route path="/feed" element={<Feed />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/profile/:username?" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
