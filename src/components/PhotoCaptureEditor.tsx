@@ -25,6 +25,9 @@ import {
   X,
   Maximize2,
   RefreshCcw,
+  Crop,
+  Frame,
+  Move,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -56,6 +59,9 @@ export const PhotoCaptureEditor = ({
   const [rotation, setRotation] = useState(0);
   const [zoom, setZoom] = useState(1);
   const [filter, setFilter] = useState<string>("none");
+  const [frame, setFrame] = useState<string>("none");
+  const [isCropping, setIsCropping] = useState(false);
+  const [cropArea, setCropArea] = useState({ x: 0, y: 0, width: 100, height: 100 });
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -133,6 +139,52 @@ export const PhotoCaptureEditor = ({
     reader.readAsDataURL(file);
   };
 
+  const applyCrop = () => {
+    if (!capturedImage || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    const img = new Image();
+    img.src = capturedImage;
+
+    img.onload = () => {
+      const scaleX = img.width / 100;
+      const scaleY = img.height / 100;
+      
+      const cropX = cropArea.x * scaleX;
+      const cropY = cropArea.y * scaleY;
+      const cropWidth = cropArea.width * scaleX;
+      const cropHeight = cropArea.height * scaleY;
+
+      canvas.width = cropWidth;
+      canvas.height = cropHeight;
+
+      context.drawImage(
+        img,
+        cropX,
+        cropY,
+        cropWidth,
+        cropHeight,
+        0,
+        0,
+        cropWidth,
+        cropHeight
+      );
+
+      const croppedImage = canvas.toDataURL("image/jpeg", 0.95);
+      setCapturedImage(croppedImage);
+      setIsCropping(false);
+      setCropArea({ x: 0, y: 0, width: 100, height: 100 });
+      
+      toast({
+        title: "Kırpma Başarılı",
+        description: "Fotoğraf kırpıldı",
+      });
+    };
+  };
+
   const applyFilters = () => {
     if (!capturedImage || !canvasRef.current) return capturedImage;
 
@@ -186,6 +238,64 @@ export const PhotoCaptureEditor = ({
 
         context.filter = filterString;
         context.drawImage(img, 0, 0);
+        
+        // Apply frame
+        if (frame !== "none") {
+          context.filter = "none";
+          const frameWidth = canvas.width;
+          const frameHeight = canvas.height;
+          
+          switch (frame) {
+            case "classic":
+              context.strokeStyle = "#8B4513";
+              context.lineWidth = 20;
+              context.strokeRect(10, 10, frameWidth - 20, frameHeight - 20);
+              context.strokeStyle = "#D2691E";
+              context.lineWidth = 10;
+              context.strokeRect(15, 15, frameWidth - 30, frameHeight - 30);
+              break;
+            case "modern":
+              context.strokeStyle = "#000000";
+              context.lineWidth = 30;
+              context.strokeRect(0, 0, frameWidth, frameHeight);
+              context.strokeStyle = "#FFFFFF";
+              context.lineWidth = 2;
+              context.strokeRect(28, 28, frameWidth - 56, frameHeight - 56);
+              break;
+            case "vintage":
+              const gradient = context.createLinearGradient(0, 0, frameWidth, frameHeight);
+              gradient.addColorStop(0, "#8B7355");
+              gradient.addColorStop(1, "#D2B48C");
+              context.strokeStyle = gradient;
+              context.lineWidth = 40;
+              context.strokeRect(0, 0, frameWidth, frameHeight);
+              context.strokeStyle = "#F5DEB3";
+              context.lineWidth = 5;
+              context.strokeRect(35, 35, frameWidth - 70, frameHeight - 70);
+              break;
+            case "polaroid":
+              context.fillStyle = "#FFFFFF";
+              const borderSize = Math.min(frameWidth, frameHeight) * 0.08;
+              context.fillRect(0, 0, frameWidth, borderSize);
+              context.fillRect(0, 0, borderSize, frameHeight);
+              context.fillRect(frameWidth - borderSize, 0, borderSize, frameHeight);
+              context.fillRect(0, frameHeight - borderSize * 2, frameWidth, borderSize * 2);
+              break;
+            case "gold":
+              const goldGradient = context.createLinearGradient(0, 0, frameWidth, 0);
+              goldGradient.addColorStop(0, "#FFD700");
+              goldGradient.addColorStop(0.5, "#FFA500");
+              goldGradient.addColorStop(1, "#FFD700");
+              context.strokeStyle = goldGradient;
+              context.lineWidth = 25;
+              context.strokeRect(0, 0, frameWidth, frameHeight);
+              context.strokeStyle = "#DAA520";
+              context.lineWidth = 5;
+              context.strokeRect(22, 22, frameWidth - 44, frameHeight - 44);
+              break;
+          }
+        }
+        
         context.restore();
 
         resolve(canvas.toDataURL("image/jpeg", 0.95));
@@ -209,6 +319,9 @@ export const PhotoCaptureEditor = ({
     setRotation(0);
     setZoom(1);
     setFilter("none");
+    setFrame("none");
+    setIsCropping(false);
+    setCropArea({ x: 0, y: 0, width: 100, height: 100 });
     if (activeTab === "camera") {
       startCamera();
     }
@@ -286,15 +399,35 @@ export const PhotoCaptureEditor = ({
                 ref={canvasRef}
                 className="hidden"
               />
-              <img
-                src={capturedImage || ""}
-                alt="Preview"
-                className="w-full h-full object-contain"
-                style={{
-                  filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`,
-                  transform: `rotate(${rotation}deg) scale(${zoom})`,
-                }}
-              />
+              <div className="relative w-full h-full">
+                <img
+                  src={capturedImage || ""}
+                  alt="Preview"
+                  className="w-full h-full object-contain"
+                  style={{
+                    filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`,
+                    transform: `rotate(${rotation}deg) scale(${zoom})`,
+                  }}
+                />
+                {isCropping && (
+                  <div className="absolute inset-0 bg-black/50">
+                    <div
+                      className="absolute border-2 border-white shadow-lg cursor-move"
+                      style={{
+                        left: `${cropArea.x}%`,
+                        top: `${cropArea.y}%`,
+                        width: `${cropArea.width}%`,
+                        height: `${cropArea.height}%`,
+                      }}
+                    >
+                      <div className="absolute top-0 left-0 w-3 h-3 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize" />
+                      <div className="absolute top-0 right-0 w-3 h-3 bg-white rounded-full translate-x-1/2 -translate-y-1/2 cursor-nesw-resize" />
+                      <div className="absolute bottom-0 left-0 w-3 h-3 bg-white rounded-full -translate-x-1/2 translate-y-1/2 cursor-nesw-resize" />
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-white rounded-full translate-x-1/2 translate-y-1/2 cursor-nwse-resize" />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Edit Controls */}
@@ -367,10 +500,33 @@ export const PhotoCaptureEditor = ({
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-2">
               <Button
+                variant={isCropping ? "default" : "outline"}
+                size="sm"
+                onClick={() => setIsCropping(!isCropping)}
+                className="gap-2"
+              >
+                <Crop className="w-4 h-4" />
+                {isCropping ? "Kırpmayı İptal Et" : "Kırp"}
+              </Button>
+
+              {isCropping && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={applyCrop}
+                  className="gap-2 bg-gradient-primary"
+                >
+                  <Check className="w-4 h-4" />
+                  Kırpmayı Uygula
+                </Button>
+              )}
+
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setRotation((r) => (r + 90) % 360)}
                 className="gap-2"
+                disabled={isCropping}
               >
                 <RotateCw className="w-4 h-4" />
                 Döndür
@@ -415,19 +571,78 @@ export const PhotoCaptureEditor = ({
                 variant={filter === "cool" ? "secondary" : "outline"}
                 size="sm"
                 onClick={() => setFilter("cool")}
+                disabled={isCropping}
               >
                 Soğuk
               </Button>
+            </div>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleReset}
-                className="gap-2 ml-auto"
-              >
-                <RefreshCcw className="w-4 h-4" />
-                Sıfırla
-              </Button>
+            {/* Frame Selection */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Frame className="w-4 h-4" />
+                Çerçeve
+              </Label>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={frame === "none" ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => setFrame("none")}
+                  disabled={isCropping}
+                >
+                  Yok
+                </Button>
+                <Button
+                  variant={frame === "classic" ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => setFrame("classic")}
+                  disabled={isCropping}
+                >
+                  Klasik
+                </Button>
+                <Button
+                  variant={frame === "modern" ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => setFrame("modern")}
+                  disabled={isCropping}
+                >
+                  Modern
+                </Button>
+                <Button
+                  variant={frame === "vintage" ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => setFrame("vintage")}
+                  disabled={isCropping}
+                >
+                  Vintage
+                </Button>
+                <Button
+                  variant={frame === "polaroid" ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => setFrame("polaroid")}
+                  disabled={isCropping}
+                >
+                  Polaroid
+                </Button>
+                <Button
+                  variant={frame === "gold" ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => setFrame("gold")}
+                  disabled={isCropping}
+                >
+                  Altın
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReset}
+                  className="gap-2 ml-auto"
+                >
+                  <RefreshCcw className="w-4 h-4" />
+                  Sıfırla
+                </Button>
+              </div>
             </div>
           </div>
         )}
