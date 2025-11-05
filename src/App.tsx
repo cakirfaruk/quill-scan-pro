@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { Tutorial } from "@/components/Tutorial";
 import { MobileNav } from "@/components/MobileNav";
@@ -167,6 +168,17 @@ const AppRoutes = () => {
     path => location.pathname === path || location.pathname.startsWith('/profile/')
   );
 
+  // Page transition variants
+  const pageTransition = {
+    initial: { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -10 },
+    transition: { 
+      duration: 0.3, 
+      ease: "easeInOut" as const
+    }
+  };
+
   return (
     <>
       {incomingCall && (
@@ -193,39 +205,54 @@ const AppRoutes = () => {
           callerName={incomingGroupCall.callerName}
         />
       )}
-      <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/profile/:username?" element={<Profile />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/faq" element={<FAQ />} />
-          <Route path="/credits" element={<Credits />} />
-          <Route path="/messages" element={<Messages />} />
-          <Route path="/friends" element={<Friends />} />
-          <Route path="/saved" element={<SavedPosts />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/tarot" element={<Tarot />} />
-          <Route path="/coffee-fortune" element={<CoffeeFortune />} />
-          <Route path="/palmistry" element={<Palmistry />} />
-          <Route path="/handwriting" element={<Handwriting />} />
-          <Route path="/birth-chart" element={<BirthChart />} />
-          <Route path="/numerology" element={<Numerology />} />
-          <Route path="/compatibility" element={<Compatibility />} />
-          <Route path="/daily-horoscope" element={<DailyHoroscope />} />
-          <Route path="/dream" element={<DreamInterpretation />} />
-          <Route path="/reels" element={<Reels />} />
-          <Route path="/explore" element={<Explore />} />
-          <Route path="/discovery" element={<Discovery />} />
-          <Route path="/groups" element={<Groups />} />
-          <Route path="/groups/:groupId" element={<GroupChat />} />
-          <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
-          <Route path="/match" element={<Match />} />
-          <Route path="/call-history" element={<CallHistory />} />
-          <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+      <Suspense fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      }>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={location.pathname}
+            initial={pageTransition.initial}
+            animate={pageTransition.animate}
+            exit={pageTransition.exit}
+            transition={pageTransition.transition}
+            className="w-full"
+          >
+            <Routes location={location}>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/profile/:username?" element={<Profile />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/credits" element={<Credits />} />
+              <Route path="/messages" element={<Messages />} />
+              <Route path="/friends" element={<Friends />} />
+              <Route path="/saved" element={<SavedPosts />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/tarot" element={<Tarot />} />
+              <Route path="/coffee-fortune" element={<CoffeeFortune />} />
+              <Route path="/palmistry" element={<Palmistry />} />
+              <Route path="/handwriting" element={<Handwriting />} />
+              <Route path="/birth-chart" element={<BirthChart />} />
+              <Route path="/numerology" element={<Numerology />} />
+              <Route path="/compatibility" element={<Compatibility />} />
+              <Route path="/daily-horoscope" element={<DailyHoroscope />} />
+              <Route path="/dream" element={<DreamInterpretation />} />
+              <Route path="/reels" element={<Reels />} />
+              <Route path="/explore" element={<Explore />} />
+              <Route path="/discovery" element={<Discovery />} />
+              <Route path="/groups" element={<Groups />} />
+              <Route path="/groups/:groupId" element={<GroupChat />} />
+              <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
+              <Route path="/match" element={<Match />} />
+              <Route path="/call-history" element={<CallHistory />} />
+              <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </motion.div>
+        </AnimatePresence>
       </Suspense>
       {showNav && <MobileNav />}
     </>
