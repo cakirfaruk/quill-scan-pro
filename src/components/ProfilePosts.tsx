@@ -10,6 +10,7 @@ import { soundEffects } from "@/utils/soundEffects";
 import { DoubleTapLike } from "@/components/DoubleTapLike";
 import { FullScreenMediaViewer } from "@/components/FullScreenMediaViewer";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { PostReactionPicker } from "./PostReactionPicker";
 
 interface Post {
   id: string;
@@ -198,15 +199,11 @@ export const ProfilePosts = ({ posts, loading, isOwnProfile, onLike }: ProfilePo
               <Separator className="mb-2 sm:mb-3" />
 
               <div className="flex items-center justify-around gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex-1 gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4 hover:bg-red-50 hover:text-red-500 transition-colors"
-                  onClick={() => handleLike(post.id, post.hasLiked)}
-                >
-                  <Heart className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform hover:scale-110 ${post.hasLiked ? "fill-red-500 text-red-500" : ""}`} />
-                  <span className="hidden sm:inline">Beğen</span>
-                </Button>
+                <PostReactionPicker
+                  postId={post.id}
+                  currentUserId={post.user_id}
+                  onReactionChange={() => handleLike(post.id, post.hasLiked)}
+                />
                 
                 <Button
                   variant="ghost"
