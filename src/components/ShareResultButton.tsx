@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Share2, Loader2 } from "lucide-react";
+import { Share2, Loader2, CheckSquare, Square } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 
 interface ShareResultButtonProps {
   content: string;
@@ -27,6 +29,7 @@ export const ShareResultButton = ({
 }: ShareResultButtonProps) => {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [friends, setFriends] = useState<any[]>([]);
+  const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const { toast } = useToast();
@@ -75,7 +78,36 @@ export const ShareResultButton = ({
     }
   };
 
-  const handleShare = async (friendId: string) => {
+  const toggleFriendSelection = (friendId: string) => {
+    setSelectedFriends(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(friendId)) {
+        newSet.delete(friendId);
+      } else {
+        newSet.add(friendId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedFriends.size === friends.length) {
+      setSelectedFriends(new Set());
+    } else {
+      setSelectedFriends(new Set(friends.map(f => f.user_id)));
+    }
+  };
+
+  const handleShare = async () => {
+    if (selectedFriends.size === 0) {
+      toast({
+        title: "Uyarı",
+        description: "Lütfen en az bir arkadaş seçin",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSending(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -86,22 +118,27 @@ export const ShareResultButton = ({
         ? `📊 **${title}**\n\n${content}\n\n[Analiz ID: ${analysisId}]\n[Analiz Türü: ${analysisType}]`
         : `📊 **${title}**\n\n${content}`;
 
-      // Send message with analysis result
-      await supabase.from("messages").insert({
+      // Send messages to all selected friends
+      const messages = Array.from(selectedFriends).map(friendId => ({
         sender_id: user.id,
         receiver_id: friendId,
         content: messageContent,
         message_category: "other",
         analysis_id: analysisId || null,
         analysis_type: analysisType || null,
-      });
+      }));
+
+      const { error } = await supabase.from("messages").insert(messages);
+
+      if (error) throw error;
 
       toast({
         title: "Başarılı",
-        description: "Sonuç arkadaşınıza gönderildi",
+        description: `Sonuç ${selectedFriends.size} arkadaşınıza gönderildi`,
       });
 
       setShowShareDialog(false);
+      setSelectedFriends(new Set());
     } catch (error) {
       console.error("Error sharing:", error);
       toast({
@@ -116,6 +153,7 @@ export const ShareResultButton = ({
 
   const handleOpenDialog = () => {
     setShowShareDialog(true);
+    setSelectedFriends(new Set());
     loadFriends();
   };
 
@@ -134,52 +172,120 @@ export const ShareResultButton = ({
       <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Sonucu Paylaş</DialogTitle>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Sonucu Paylaş</span>
+              {selectedFriends.size > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {selectedFriends.size} seçili
+                </Badge>
+              )}
+            </DialogTitle>
             <DialogDescription>
-              Analiz sonucunu arkadaşlarınızla paylaşın
+              Analiz sonucunu birden fazla arkadaşınızla paylaşın
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-2 max-h-[400px] overflow-y-auto">
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-              </div>
-            ) : friends.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">
-                Henüz arkadaşınız yok
-              </p>
-            ) : (
-              friends.map((friend) => (
-                <div
-                  key={friend.user_id}
-                  className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-secondary/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src={friend.profile_photo} />
-                      <AvatarFallback>{friend.username?.[0]?.toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium text-sm">{friend.full_name || friend.username}</p>
-                      <p className="text-xs text-muted-foreground">@{friend.username}</p>
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => handleShare(friend.user_id)}
-                    disabled={sending}
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : friends.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              Henüz arkadaşınız yok
+            </p>
+          ) : (
+            <>
+              {/* Select All / Deselect All */}
+              <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="select-all"
+                    checked={selectedFriends.size === friends.length && friends.length > 0}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                  <label
+                    htmlFor="select-all"
+                    className="text-sm font-medium cursor-pointer"
                   >
-                    {sending ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      "Gönder"
-                    )}
-                  </Button>
+                    {selectedFriends.size === friends.length ? "Tümünü Kaldır" : "Tümünü Seç"}
+                  </label>
                 </div>
-              ))
-            )}
-          </div>
+                <span className="text-xs text-muted-foreground">
+                  {friends.length} arkadaş
+                </span>
+              </div>
+
+              {/* Friends List */}
+              <div className="space-y-2 max-h-[350px] overflow-y-auto">
+                {friends.map((friend) => {
+                  const isSelected = selectedFriends.has(friend.user_id);
+                  return (
+                    <div
+                      key={friend.user_id}
+                      onClick={() => toggleFriendSelection(friend.user_id)}
+                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                        isSelected
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-secondary/50"
+                      }`}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleFriendSelection(friend.user_id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={friend.profile_photo} />
+                        <AvatarFallback>{friend.username?.[0]?.toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">
+                          {friend.full_name || friend.username}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          @{friend.username}
+                        </p>
+                      </div>
+                      {isSelected && (
+                        <CheckSquare className="w-4 h-4 text-primary flex-shrink-0" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Share Button */}
+              <div className="flex gap-2 pt-2 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowShareDialog(false)}
+                  className="flex-1"
+                  disabled={sending}
+                >
+                  İptal
+                </Button>
+                <Button
+                  onClick={handleShare}
+                  disabled={sending || selectedFriends.size === 0}
+                  className="flex-1"
+                >
+                  {sending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Gönderiliyor...
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-4 h-4 mr-2" />
+                      {selectedFriends.size > 0 
+                        ? `${selectedFriends.size} Kişiye Gönder` 
+                        : "Gönder"}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </>
