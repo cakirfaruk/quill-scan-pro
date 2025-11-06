@@ -35,6 +35,8 @@ interface Story {
   background_color?: string;
   has_poll?: boolean;
   has_question?: boolean;
+  filter_name?: string;
+  filter_value?: string;
 }
 
 interface StoryViewerProps {
@@ -375,6 +377,11 @@ export const StoryViewer = ({
                     locale: tr,
                   })}
                 </p>
+                {currentStory.filter_name && currentStory.filter_name !== "Normal" && (
+                  <p className="text-white/70 text-xs flex items-center gap-1">
+                    ✨ {currentStory.filter_name}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -401,7 +408,10 @@ export const StoryViewer = ({
         {/* Story content */}
         <div
           className="relative w-full aspect-[9/16] flex items-center justify-center"
-          style={{ backgroundColor: currentStory.background_color || "#000000" }}
+          style={{ 
+            backgroundColor: currentStory.background_color || "#000000",
+            filter: currentStory.filter_value || "none"
+          }}
           onClick={() => setIsPaused(!isPaused)}
         >
           {currentStory.media_type === "photo" ? (

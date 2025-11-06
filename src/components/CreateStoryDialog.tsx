@@ -93,6 +93,8 @@ export const CreateStoryDialog = ({
           media_url: base64Data,
           media_type: mediaType,
           background_color: backgroundColor,
+          filter_name: selectedFilter.name,
+          filter_value: selectedFilter.value,
         };
 
         // Add music if selected

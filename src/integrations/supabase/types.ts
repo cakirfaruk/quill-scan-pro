@@ -2119,30 +2119,217 @@ export type Database = {
       }
       stories: {
         Row: {
+          background_color: string | null
           created_at: string
           expires_at: string
+          filter_name: string | null
+          filter_value: string | null
+          gifs: Json | null
+          has_poll: boolean | null
+          has_question: boolean | null
           id: string
           media_type: string
           media_url: string
+          music_artist: string | null
+          music_name: string | null
+          music_url: string | null
+          stickers: Json | null
+          text_effects: Json | null
           user_id: string
         }
         Insert: {
+          background_color?: string | null
           created_at?: string
           expires_at?: string
+          filter_name?: string | null
+          filter_value?: string | null
+          gifs?: Json | null
+          has_poll?: boolean | null
+          has_question?: boolean | null
           id?: string
           media_type: string
           media_url: string
+          music_artist?: string | null
+          music_name?: string | null
+          music_url?: string | null
+          stickers?: Json | null
+          text_effects?: Json | null
           user_id: string
         }
         Update: {
+          background_color?: string | null
           created_at?: string
           expires_at?: string
+          filter_name?: string | null
+          filter_value?: string | null
+          gifs?: Json | null
+          has_poll?: boolean | null
+          has_question?: boolean | null
           id?: string
           media_type?: string
           media_url?: string
+          music_artist?: string | null
+          music_name?: string | null
+          music_url?: string | null
+          stickers?: Json | null
+          text_effects?: Json | null
           user_id?: string
         }
         Relationships: []
+      }
+      story_music_plays: {
+        Row: {
+          id: string
+          played_at: string | null
+          story_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          played_at?: string | null
+          story_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          played_at?: string | null
+          story_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_music_plays_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_poll_votes: {
+        Row: {
+          created_at: string | null
+          id: string
+          option_index: number
+          poll_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          option_index: number
+          poll_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          option_index?: number
+          poll_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "story_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_polls: {
+        Row: {
+          created_at: string | null
+          id: string
+          options: Json
+          question: string
+          story_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          options: Json
+          question: string
+          story_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          options?: Json
+          question?: string
+          story_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_polls_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_question_answers: {
+        Row: {
+          answer: string
+          created_at: string | null
+          id: string
+          question_id: string
+          user_id: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string | null
+          id?: string
+          question_id: string
+          user_id: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string | null
+          id?: string
+          question_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_question_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "story_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_questions: {
+        Row: {
+          created_at: string | null
+          id: string
+          question: string
+          story_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          question: string
+          story_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          question?: string
+          story_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_questions_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       story_views: {
         Row: {
