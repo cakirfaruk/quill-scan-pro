@@ -2374,16 +2374,14 @@ const Messages = () => {
                             </Button>
 
                             {/* GIF Picker */}
-                            <Popover open={showGifPicker} onOpenChange={setShowGifPicker}>
-                              <PopoverTrigger asChild>
-                                <Button variant="ghost" size="icon" type="button">
-                                  <ImageIcon className="w-5 h-5" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <GifPicker onSelectGif={handleSendGif} />
-                              </PopoverContent>
-                            </Popover>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              type="button"
+                              onClick={() => setShowGifPicker(true)}
+                            >
+                              <ImageIcon className="w-5 h-5" />
+                            </Button>
                             
                             {/* Schedule Button */}
                             {selectedCategory === "friend" && (
@@ -2476,6 +2474,13 @@ const Messages = () => {
             receiverName={selectedFriend.full_name || selectedFriend.username}
           />
         )}
+
+        {/* GIF Picker Dialog */}
+        <GifPicker
+          open={showGifPicker}
+          onOpenChange={setShowGifPicker}
+          onSelectGif={handleSendGif}
+        />
 
         {/* Incoming/Active Call Dialog */}
         {incomingCall && (

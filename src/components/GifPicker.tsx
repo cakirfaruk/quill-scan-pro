@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2 } from "lucide-react";
+import { Loader2, Smile } from "lucide-react";
 
 interface GifPickerProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onSelectGif: (gifUrl: string) => void;
 }
 
-export const GifPicker = ({ onSelectGif }: GifPickerProps) => {
+export const GifPicker = ({ open, onOpenChange, onSelectGif }: GifPickerProps) => {
   const [search, setSearch] = useState("");
   const [gifs, setGifs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -59,38 +62,58 @@ export const GifPicker = ({ onSelectGif }: GifPickerProps) => {
   };
 
   return (
-    <div className="w-[400px] h-[400px] flex flex-col">
-      <div className="p-3 border-b">
-        <Input
-          placeholder="GIF ara..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
-      
-      {loading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-        </div>
-      ) : (
-        <ScrollArea className="flex-1 p-2">
-          <div className="grid grid-cols-2 gap-2">
-            {gifs.map((gif) => (
-              <button
-                key={gif.id}
-                onClick={() => onSelectGif(gif.media_formats.gif.url)}
-                className="relative aspect-square rounded-lg overflow-hidden hover:ring-2 hover:ring-primary transition-all"
-              >
-                <img
-                  src={gif.media_formats.tinygif.url}
-                  alt={gif.content_description}
-                  className="w-full h-full object-cover"
-                />
-              </button>
-            ))}
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Smile className="w-5 h-5" />
+            GIF Seç
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex flex-col">
+          <div className="p-3 border-b">
+            <Input
+              placeholder="GIF ara..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
-        </ScrollArea>
-      )}
-    </div>
+          
+          {loading ? (
+            <div className="flex-1 flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : (
+            <ScrollArea className="h-[400px] p-2">
+              <div className="grid grid-cols-2 gap-2">
+                {gifs.map((gif) => (
+                  <button
+                    key={gif.id}
+                    onClick={() => {
+                      onSelectGif(gif.media_formats.gif.url);
+                      onOpenChange(false);
+                    }}
+                    className="relative aspect-square rounded-lg overflow-hidden hover:ring-2 hover:ring-primary transition-all"
+                  >
+                    <img
+                      src={gif.media_formats.tinygif.url}
+                      alt={gif.content_description}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+
+              {gifs.length === 0 && !loading && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>GIF bulunamadı</p>
+                </div>
+              )}
+            </ScrollArea>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };

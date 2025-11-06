@@ -11,6 +11,7 @@ import { StoryStickerPicker } from "./StoryStickerPicker";
 import { StoryTextEditor } from "./StoryTextEditor";
 import { StoryPollCreator } from "./StoryPollCreator";
 import { StoryQuestionCreator } from "./StoryQuestionCreator";
+import { StoryCanvas } from "./StoryCanvas";
 
 interface CreateStoryDialogProps {
   open: boolean;
@@ -213,31 +214,33 @@ export const CreateStoryDialog = ({
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="relative aspect-[9/16] max-h-[500px] bg-black rounded-lg overflow-hidden">
-                {mediaType === "photo" ? (
-                  <img
-                    src={preview}
-                    alt="Preview"
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <video
-                    src={preview}
-                    controls
-                    className="w-full h-full object-contain"
-                  />
-                )}
+              <StoryCanvas
+                backgroundImage={preview}
+                mediaType={mediaType}
+                stickers={selectedStickers}
+                gifs={selectedGifs}
+                textElements={textElements}
+                onElementsUpdate={(data) => {
+                  setSelectedStickers(data.stickers);
+                  setSelectedGifs(data.gifs);
+                  setTextElements(data.textElements);
+                }}
+              />
+
+              {/* Clear/Reset button */}
+              <div className="flex gap-2">
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white"
+                  type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={() => {
                     setFile(null);
                     setPreview(null);
                     setMediaType(null);
                   }}
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-4 h-4 mr-1" />
+                  Değiştir
                 </Button>
               </div>
 
@@ -372,6 +375,8 @@ export const CreateStoryDialog = ({
         />
 
         <GifPicker
+          open={showGifPicker}
+          onOpenChange={setShowGifPicker}
           onSelectGif={(url) => {
             setSelectedGifs([...selectedGifs, { url, x: 50, y: 50 }]);
             setShowGifPicker(false);
