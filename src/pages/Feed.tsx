@@ -1,7 +1,9 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useOptimizedFeed } from "@/hooks/use-optimized-feed";
+import { useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -85,14 +87,22 @@ interface Collection {
 const Feed = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { shouldShowOnboarding, markOnboardingComplete } = useOnboarding();
+  const [userId, setUserId] = useState<string>("");
+  
+  // **OPTIMIZED FEED HOOK** - Keyset pagination + batch queries
+  const { 
+    posts: allPosts, 
+    likeCounts, 
+    userLikes, 
+    commentCounts,
+    savedPosts,
+    isLoading: feedLoading, 
+    loadMore 
+  } = useOptimizedFeed(userId);
+  
   const [loading, setLoading] = useState(true);
-  const [friendsPosts, setFriendsPosts] = useState<Post[]>([]);
-  const [allPosts, setAllPosts] = useState<Post[]>([]);
-  const [friendsPage, setFriendsPage] = useState(1);
-  const [allPostsPage, setAllPostsPage] = useState(1);
-  const [hasMoreFriendsPosts, setHasMoreFriendsPosts] = useState(true);
-  const [hasMoreAllPosts, setHasMoreAllPosts] = useState(true);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -106,11 +116,29 @@ const Feed = () => {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [postToSave, setPostToSave] = useState<Post | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<string>("");
-  const [userId, setUserId] = useState<string>("");
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
   const [username, setUsername] = useState("");
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+
+  // **OPTIMIZED & ENRICHED POSTS** - useMemo ile cache'lenir
+  const enrichedPosts = useMemo(() => {
+    return allPosts.map((post: any) => ({
+      ...post,
+      profile: post.profiles || { username: '', full_name: '', profile_photo: null },
+      likes: likeCounts[post.id] || 0,
+      comments: commentCounts[post.id] || 0,
+      hasLiked: userLikes[post.id] || false,
+      hasSaved: savedPosts[post.id] || false,
+      shares_count: post.shares_count || 0
+    }));
+  }, [allPosts, likeCounts, commentCounts, userLikes, savedPosts]);
+
+  // **FRIENDS POSTS** - Arkadaş postları filtrele
+  const friendsPosts = useMemo(() => {
+    const friendIds = new Set(friends.map(f => f.user_id));
+    return enrichedPosts.filter(p => friendIds.has(p.user_id) || p.user_id === userId);
+  }, [enrichedPosts, friends, userId]);
 
   // Keyboard shortcuts
   useKeyboardShortcuts({
@@ -177,13 +205,10 @@ const Feed = () => {
   const handleRefresh = useCallback(async () => {
     soundEffects.playClick();
     if (userId) {
-      setFriendsPage(1);
-      setAllPostsPage(1);
-      setHasMoreFriendsPosts(true);
-      setHasMoreAllPosts(true);
-      await loadPosts(userId, 1, true);
+      // **REACT QUERY CACHE INVALIDATION** - Daha hızlı
+      queryClient.invalidateQueries({ queryKey: ['feed', 'optimized'] });
     }
-  }, [userId]);
+  }, [userId, queryClient]);
 
   const { containerRef, isPulling, pullDistance, isRefreshing, shouldTrigger } = usePullToRefresh({
     onRefresh: handleRefresh,
@@ -215,11 +240,9 @@ const Feed = () => {
       setProfilePhoto(profile.profile_photo);
     }
     
-    // **PARALEL YÜKLEME** - Arkadaşlar ve postlar aynı anda
-    await Promise.all([
-      loadFriends(user.id),
-      loadPosts(user.id, 1, true)
-    ]);
+    // **SADECE ARKADAŞLARI YÜKLEyalım** - Postlar optimized hook ile gelecek
+    await loadFriends(user.id);
+    setLoading(false);
   };
 
   const loadFriends = async (currentUserId: string) => {
@@ -254,159 +277,64 @@ const Feed = () => {
     }
   };
 
-  const loadPosts = async (currentUserId: string, page: number = 1, reset: boolean = false) => {
-    try {
-      const POSTS_PER_PAGE = 20;
-      const offset = (page - 1) * POSTS_PER_PAGE;
+  // **ARTIK GEREK YOK** - Optimized hook kullanıyoruz
+  // loadPosts fonksiyonu kaldırıldı
 
-      // **PARALEL SORGULAR** - Tek seferde tüm verileri al
-      const [postsResult, friendsResult, likesResult, commentsCountResult, userLikesResult, userSavesResult] = await Promise.all([
-      // 1. Postları çek - Sayfalama ile
-        supabase
-          .from("posts")
-          .select(`
-            *,
-            profiles!posts_user_id_fkey (
-              username,
-              full_name,
-              profile_photo
-            )
-          `)
-          .order("created_at", { ascending: false })
-          .range(offset, offset + POSTS_PER_PAGE - 1),
-        
-        // 2. Arkadaşları çek
-        supabase
-          .from("friends")
-          .select("user_id, friend_id")
-          .or(`user_id.eq.${currentUserId},friend_id.eq.${currentUserId}`)
-          .eq("status", "accepted"),
-        
-        // 3. TÜM postların like sayılarını tek sorguda al
-        supabase
-          .from("post_likes")
-          .select("post_id"),
-        
-        // 4. TÜM postların yorum sayılarını tek sorguda al
-        supabase
-          .from("post_comments")
-          .select("post_id"),
-        
-        // 5. Kullanıcının like'larını tek sorguda al
-        supabase
-          .from("post_likes")
-          .select("post_id")
-          .eq("user_id", currentUserId),
-        
-        // 6. Kullanıcının kayıtlarını tek sorguda al
-        supabase
-          .from("saved_posts")
-          .select("post_id")
-          .eq("user_id", currentUserId)
-      ]);
-
-      if (postsResult.error) throw postsResult.error;
-
-      // Like ve comment sayılarını grupla
-      const likesMap = new Map<string, number>();
-      (likesResult.data || []).forEach(like => {
-        likesMap.set(like.post_id, (likesMap.get(like.post_id) || 0) + 1);
-      });
-
-      const commentsMap = new Map<string, number>();
-      (commentsCountResult.data || []).forEach(comment => {
-        commentsMap.set(comment.post_id, (commentsMap.get(comment.post_id) || 0) + 1);
-      });
-
-      const userLikesSet = new Set(userLikesResult.data?.map(l => l.post_id) || []);
-      const userSavesSet = new Set(userSavesResult.data?.map(s => s.post_id) || []);
-
-      // Postları enrich et
-      const postsWithData = (postsResult.data || []).map((post: any) => ({
-        ...post,
-        profile: post.profiles,
-        likes: likesMap.get(post.id) || 0,
-        comments: commentsMap.get(post.id) || 0,
-        hasLiked: userLikesSet.has(post.id),
-        hasSaved: userSavesSet.has(post.id),
-        shares_count: post.shares_count || 0,
-      }));
-
-      // Arkadaş ID'lerini hesapla
-      const friendIds = new Set(
-        (friendsResult.data || []).map(f => 
-          f.user_id === currentUserId ? f.friend_id : f.user_id
-        )
-      );
-
-      const friendsPosts = postsWithData.filter(post => 
-        friendIds.has(post.user_id) || post.user_id === currentUserId
-      );
-
-      // Check if there are more posts
-      const hasMore = postsWithData.length === 20;
-      
-      if (reset) {
-        setFriendsPosts(friendsPosts);
-        setAllPosts(postsWithData);
-      } else {
-        setFriendsPosts(prev => [...prev, ...friendsPosts]);
-        setAllPosts(prev => [...prev, ...postsWithData]);
-      }
-      
-      setHasMoreFriendsPosts(hasMore && friendsPosts.length > 0);
-      setHasMoreAllPosts(hasMore);
-    } catch (error: any) {
-      console.error("Error loading posts:", error);
-      toast({
-        title: "Hata",
-        description: "Paylaşımlar yüklenirken bir hata oluştu",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // **OPTIMISTIC UPDATE** - Anında UI güncelleme, sonra backend
   const handleLike = useCallback(async (postId: string, hasLiked: boolean) => {
     try {
+      // 1. UI'ı hemen güncelle (optimistic)
+      queryClient.setQueryData(['feed', 'optimized'], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          likeCounts: {
+            ...old.likeCounts,
+            [postId]: (old.likeCounts[postId] || 0) + (hasLiked ? -1 : 1)
+          },
+          userLikes: {
+            ...old.userLikes,
+            [postId]: !hasLiked
+          }
+        };
+      });
+
+      // 2. Backend işlemi
       if (hasLiked) {
         await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", userId);
       } else {
         soundEffects.playLike();
         await supabase.from("post_likes").insert({ post_id: postId, user_id: userId });
       }
-      // Refresh current view
-      setFriendsPage(1);
-      setAllPostsPage(1);
-      await loadPosts(userId, 1, true);
+      
+      // 3. Cache'i invalidate et (arka planda güncellensin)
+      queryClient.invalidateQueries({ queryKey: ['feed', 'optimized'] });
     } catch (error: any) {
       soundEffects.playError();
       toast({ title: "Hata", description: "İşlem gerçekleştirilemedi", variant: "destructive" });
+      // Hata durumunda cache'i geri al
+      queryClient.invalidateQueries({ queryKey: ['feed', 'optimized'] });
     }
-  }, [userId]);
+  }, [userId, queryClient]);
 
   const handleSave = useCallback(async (postId: string, hasSaved: boolean) => {
     if (hasSaved) {
       try {
         await supabase.from("saved_posts").delete().eq("post_id", postId).eq("user_id", userId);
         toast({ title: "Kaydedildi", description: "Gönderi kaydedilenlerden kaldırıldı" });
-        setFriendsPage(1);
-        setAllPostsPage(1);
-        await loadPosts(userId, 1, true);
+        queryClient.invalidateQueries({ queryKey: ['feed', 'optimized'] });
       } catch (error: any) {
         soundEffects.playError();
         toast({ title: "Hata", description: "İşlem gerçekleştirilemedi", variant: "destructive" });
       }
     } else {
-      // Open dialog to select collection
-      const post = [...friendsPosts, ...allPosts].find(p => p.id === postId);
+      const post = enrichedPosts.find(p => p.id === postId);
       if (post) {
         setPostToSave(post);
         setSaveDialogOpen(true);
       }
     }
-  }, [userId, friendsPosts, allPosts]);
+  }, [userId, enrichedPosts, queryClient]);
 
   const handleConfirmSave = async () => {
     if (!postToSave) return;
@@ -424,9 +352,8 @@ const Feed = () => {
           ? "Gönderi koleksiyona kaydedildi"
           : "Gönderi başarıyla kaydedildi"
       });
-      setFriendsPage(1);
-      setAllPostsPage(1);
-      await loadPosts(userId, 1, true);
+      // Cache'i invalidate et
+      queryClient.invalidateQueries({ queryKey: ['feed', 'optimized'] });
       setSaveDialogOpen(false);
       setPostToSave(null);
       setSelectedCollection("");
@@ -536,9 +463,8 @@ const Feed = () => {
       setNewComment("");
       setReplyingTo(null);
       await loadComments(selectedPost.id);
-      setFriendsPage(1);
-      setAllPostsPage(1);
-      await loadPosts(userId, 1, true);
+      // Yorum eklendikten sonra cache'i invalidate et
+      queryClient.invalidateQueries({ queryKey: ['feed', 'optimized'] });
     } catch (error: any) {
       soundEffects.playError();
       toast({ title: "Hata", description: "Yorum eklenemedi", variant: "destructive" });
@@ -591,9 +517,8 @@ const Feed = () => {
       });
 
       setShareDialogOpen(false);
-      setFriendsPage(1);
-      setAllPostsPage(1);
-      await loadPosts(userId, 1, true);
+      // Cache'i invalidate et
+      queryClient.invalidateQueries({ queryKey: ['feed', 'optimized'] });
     } catch (error: any) {
       toast({ title: "Hata", description: "Gönderi paylaşılamadı", variant: "destructive" });
     }
@@ -609,32 +534,15 @@ const Feed = () => {
     setSelectedFriends(newSelection);
   };
 
-  const handleLoadMoreFriends = useCallback(async () => {
-    if (!userId || !hasMoreFriendsPosts) return;
-    const nextPage = friendsPage + 1;
-    setFriendsPage(nextPage);
-    await loadPosts(userId, nextPage, false);
-  }, [userId, friendsPage, hasMoreFriendsPosts]);
+  const handleLoadMore = useCallback(async () => {
+    if (!userId || feedLoading) return;
+    loadMore(); // Use optimized hook's loadMore
+  }, [userId, feedLoading, loadMore]);
 
-  const handleLoadMoreAll = useCallback(async () => {
-    if (!userId || !hasMoreAllPosts) return;
-    const nextPage = allPostsPage + 1;
-    setAllPostsPage(nextPage);
-    await loadPosts(userId, nextPage, false);
-  }, [userId, allPostsPage, hasMoreAllPosts]);
-
-  const friendsInfiniteScroll = useInfiniteScroll({
-    onLoadMore: handleLoadMoreFriends,
-    hasMore: hasMoreFriendsPosts,
-    isLoading: loading,
-    threshold: 0.5,
-    rootMargin: "200px",
-  });
-
-  const allPostsInfiniteScroll = useInfiniteScroll({
-    onLoadMore: handleLoadMoreAll,
-    hasMore: hasMoreAllPosts,
-    isLoading: loading,
+  const infiniteScroll = useInfiniteScroll({
+    onLoadMore: handleLoadMore,
+    hasMore: true, // Optimized hook handles hasMore internally
+    isLoading: feedLoading,
     threshold: 0.5,
     rootMargin: "200px",
   });
@@ -892,8 +800,8 @@ const Feed = () => {
             ) : (
               <>
                 {friendsPosts.map(renderPost)}
-                <div ref={friendsInfiniteScroll.sentinelRef} className="h-10" />
-                {friendsInfiniteScroll.isLoadingMore && (
+                <div ref={infiniteScroll.sentinelRef} className="h-10" />
+                {infiniteScroll.isLoadingMore && (
                   <div className="py-8">
                     <LoadingSpinner size="md" text="Daha fazla gönderi yükleniyor..." />
                   </div>
@@ -915,9 +823,9 @@ const Feed = () => {
               />
             ) : (
               <>
-                {allPosts.map(renderPost)}
-                <div ref={allPostsInfiniteScroll.sentinelRef} className="h-10" />
-                {allPostsInfiniteScroll.isLoadingMore && (
+                {enrichedPosts.map(renderPost)}
+                <div ref={infiniteScroll.sentinelRef} className="h-10" />
+                {infiniteScroll.isLoadingMore && (
                   <div className="py-8">
                     <LoadingSpinner size="md" text="Daha fazla gönderi yükleniyor..." />
                   </div>

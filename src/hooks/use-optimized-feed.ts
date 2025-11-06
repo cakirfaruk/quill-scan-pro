@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useOptimizedQuery } from './use-optimized-queries';
 import { fetchPostsKeyset, batchFetchLikeCounts, batchCheckUserLikes } from '@/utils/queryOptimization';
-import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Optimized feed hook that prevents N+1 queries
@@ -14,22 +13,28 @@ export function useOptimizedFeed(userId: string | null) {
   const { data: posts, isLoading, error, refetch } = useOptimizedQuery({
     queryKey: ['feed', 'optimized', lastCreatedAt, lastId],
     queryFn: async () => {
-      const posts = await fetchPostsKeyset(20, lastCreatedAt, lastId);
+      if (!userId) return { posts: [], likeCounts: {}, userLikes: {}, commentCounts: {}, savedPosts: {} };
       
-      if (posts.length === 0) return { posts: [], likeCounts: {}, userLikes: {} };
+      const fetchedPosts = await fetchPostsKeyset(20, lastCreatedAt, lastId);
+      
+      if (fetchedPosts.length === 0) return { posts: [], likeCounts: {}, userLikes: {}, commentCounts: {}, savedPosts: {} };
 
-      const postIds = posts.map(p => p.id);
+      const postIds = fetchedPosts.map(p => p.id);
       
-      // Batch fetch like counts and user likes
-      const [likeCounts, userLikes] = await Promise.all([
+      // **BATCH FETCH** - Like counts, user likes, comment counts, saved posts aynı anda
+      const [likeCounts, userLikes, commentCounts, savedPosts] = await Promise.all([
         batchFetchLikeCounts(postIds),
-        userId ? batchCheckUserLikes(userId, postIds) : Promise.resolve({})
+        batchCheckUserLikes(userId, postIds),
+        batchFetchCommentCounts(postIds),
+        batchCheckSavedPosts(userId, postIds)
       ]);
 
       return {
-        posts,
+        posts: fetchedPosts,
         likeCounts,
-        userLikes
+        userLikes,
+        commentCounts,
+        savedPosts
       };
     },
     enabled: !!userId
@@ -47,9 +52,59 @@ export function useOptimizedFeed(userId: string | null) {
     posts: posts?.posts || [],
     likeCounts: posts?.likeCounts || {},
     userLikes: posts?.userLikes || {},
+    commentCounts: posts?.commentCounts || {},
+    savedPosts: posts?.savedPosts || {},
     isLoading,
     error,
     loadMore,
     refetch
   };
+}
+
+// **BATCH FETCH COMMENT COUNTS**
+async function batchFetchCommentCounts(postIds: string[]) {
+  if (!postIds || postIds.length === 0) return {};
+  
+  const { supabase } = await import('@/integrations/supabase/client');
+  const { data, error } = await supabase
+    .from('post_comments')
+    .select('post_id')
+    .in('post_id', postIds);
+
+  if (error) {
+    console.error('Error fetching comment counts:', error);
+    return {};
+  }
+
+  // Count comments per post
+  const counts: Record<string, number> = {};
+  data?.forEach(comment => {
+    counts[comment.post_id] = (counts[comment.post_id] || 0) + 1;
+  });
+
+  return counts;
+}
+
+// **BATCH CHECK SAVED POSTS**
+async function batchCheckSavedPosts(userId: string, postIds: string[]) {
+  if (!postIds || postIds.length === 0) return {};
+  
+  const { supabase } = await import('@/integrations/supabase/client');
+  const { data, error } = await supabase
+    .from('saved_posts')
+    .select('post_id')
+    .eq('user_id', userId)
+    .in('post_id', postIds);
+
+  if (error) {
+    console.error('Error checking saved posts:', error);
+    return {};
+  }
+
+  const saved: Record<string, boolean> = {};
+  data?.forEach(item => {
+    saved[item.post_id] = true;
+  });
+
+  return saved;
 }
