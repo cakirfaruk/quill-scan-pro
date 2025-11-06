@@ -28,21 +28,11 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
-        // Advanced code splitting for better caching
+        // Simplified chunking - let Vite handle React automatically
         manualChunks: (id) => {
-          // Core React libraries
-          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-            return 'react-vendor';
-          }
-          
-          // UI components
-          if (id.includes('@radix-ui')) {
-            return 'radix-ui';
-          }
-          
-          // Heavy libraries
-          if (id.includes('framer-motion')) {
-            return 'framer-motion';
+          // Only split very heavy libraries
+          if (id.includes('fabric')) {
+            return 'fabric';
           }
           
           if (id.includes('recharts')) {
@@ -53,24 +43,7 @@ export default defineConfig(({ mode }) => ({
             return 'emoji-picker';
           }
           
-          if (id.includes('fabric')) {
-            return 'fabric';
-          }
-          
-          // Supabase
-          if (id.includes('@supabase')) {
-            return 'supabase';
-          }
-          
-          // React Query
-          if (id.includes('@tanstack/react-query')) {
-            return 'react-query';
-          }
-          
-          // Other node_modules
-          if (id.includes('node_modules')) {
-            return 'vendor';
-          }
+          // Let Vite handle everything else including React
         },
       },
     },
@@ -78,11 +51,7 @@ export default defineConfig(({ mode }) => ({
     sourcemap: false,
     minify: 'esbuild',
     cssMinify: true,
-    // Enable tree-shaking
-    target: 'esnext',
-    modulePreload: {
-      polyfill: false,
-    },
+    target: 'es2020',
   },
   // Optimize dependencies
   optimizeDeps: {
