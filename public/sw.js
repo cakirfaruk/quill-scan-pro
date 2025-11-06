@@ -6,7 +6,18 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   console.log('Service Worker activating.');
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== 'lovable-cache-v2') {
+            console.log('Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => clients.claim())
+  );
 });
 
 self.addEventListener('push', (event) => {
@@ -52,7 +63,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // Cache strategies for offline support
-const CACHE_NAME = 'lovable-cache-v1';
+const CACHE_NAME = 'lovable-cache-v2';
 const urlsToCache = [
   '/',
   '/index.html',
