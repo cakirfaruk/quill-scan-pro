@@ -1,11 +1,14 @@
 // IndexedDB wrapper for offline data storage
 const DB_NAME = 'offline-data';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORES = {
   messages: 'messages',
   posts: 'posts',
   profiles: 'profiles',
   analyses: 'analyses',
+  conversations: 'conversations',
+  comments: 'comments',
+  'offline-queue': 'offline-queue',
 };
 
 class OfflineStorage {
@@ -29,6 +32,17 @@ class OfflineStorage {
           if (!db.objectStoreNames.contains(storeName)) {
             const store = db.createObjectStore(storeName, { keyPath: 'id' });
             store.createIndex('timestamp', 'timestamp', { unique: false });
+            
+            // Add additional indexes for specific stores
+            if (storeName === 'posts') {
+              store.createIndex('user_id', 'user_id', { unique: false });
+            }
+            if (storeName === 'messages') {
+              store.createIndex('conversation_key', 'conversation_key', { unique: false });
+            }
+            if (storeName === 'conversations') {
+              store.createIndex('user_id', 'user_id', { unique: false });
+            }
           }
         });
       };
@@ -110,6 +124,52 @@ class OfflineStorage {
       const index = store.index('timestamp');
       const range = IDBKeyRange.upperBound(timestamp);
       const request = index.getAll(range);
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  // Get items by index
+  async getByIndex(storeName: string, indexName: string, value: any): Promise<any[]> {
+    if (!this.db) await this.init();
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([storeName], 'readonly');
+      const store = transaction.objectStore(storeName);
+      const index = store.index(indexName);
+      const request = index.getAll(value);
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  // Save multiple items at once
+  async saveMany(storeName: string, items: any[]): Promise<void> {
+    if (!this.db) await this.init();
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([storeName], 'readwrite');
+      const store = transaction.objectStore(storeName);
+      
+      items.forEach(item => {
+        store.put({ ...item, timestamp: Date.now() });
+      });
+
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+  }
+
+  // Count items in a store
+  async count(storeName: string): Promise<number> {
+    if (!this.db) await this.init();
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([storeName], 'readonly');
+      const store = transaction.objectStore(storeName);
+      const request = store.count();
 
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);

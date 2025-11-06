@@ -38,6 +38,7 @@ import { NoMessagesIllustration, NoConversationIllustration } from "@/components
 import { Suspense } from "react";
 import { useEnhancedOfflineSync } from "@/hooks/use-enhanced-offline-sync";
 import { useNetworkStatus } from "@/hooks/use-network-status";
+import { useOfflineCache } from "@/hooks/use-offline-cache";
 
 interface Friend {
   user_id: string;
@@ -164,6 +165,23 @@ const Messages = () => {
   const isMobile = useIsMobile();
   const isOnline = useNetworkStatus();
   const { addToQueue } = useEnhancedOfflineSync();
+  
+  // Offline cache for conversations and messages
+  const {
+    cachedData: cachedConversations,
+    saveToCache: saveConversations,
+  } = useOfflineCache<Conversation>({
+    storeName: 'conversations',
+    syncInterval: 2 * 60 * 1000, // 2 minutes
+  });
+  
+  const {
+    cachedData: cachedMessages,
+    saveToCache: saveMessages,
+  } = useOfflineCache<Message>({
+    storeName: 'messages',
+    syncInterval: 2 * 60 * 1000, // 2 minutes
+  });
 
   // Draft management - unique key for each conversation
   const draftKey = selectedFriend 
@@ -607,6 +625,17 @@ const Messages = () => {
       }
 
       setCurrentUserId(user.id);
+      
+      // If offline, try to load from cache
+      if (!isOnline && cachedConversations.length > 0) {
+        setConversations(cachedConversations);
+        setIsLoading(false);
+        toast({
+          title: "Çevrimdışı Mod",
+          description: `${cachedConversations.length} önbelleğe alınmış konuşma gösteriliyor`,
+        });
+        return;
+      }
 
       // Load pinned conversations
       const { data: pinnedData } = await supabase
@@ -793,6 +822,11 @@ const Messages = () => {
       });
 
       setConversations(allConversations);
+      
+      // Cache conversations for offline use
+      if (isOnline && allConversations.length > 0) {
+        await saveConversations(allConversations.slice(0, 30)); // Cache first 30
+      }
 
       const userIdParam = searchParams.get("userId");      
       if (userIdParam) {
@@ -927,6 +961,11 @@ const Messages = () => {
 
       const pinnedMsgs = parsedMessages.filter(m => m.pinned_at);
       setPinnedMessages(pinnedMsgs);
+      
+      // Cache messages for offline use
+      if (isOnline && parsedMessages.length > 0) {
+        await saveMessages(parsedMessages.slice(0, 100)); // Cache last 100 messages
+      }
 
       // Auto-translate messages if enabled
       if (autoTranslateEnabled && parsedMessages.length > 0) {

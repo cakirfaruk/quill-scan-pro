@@ -29,6 +29,7 @@ import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import { cn } from "@/lib/utils";
 import { Suspense } from "react";
 import { PWAInstallButton } from "@/components/PWAInstallButton";
+import { OfflineCacheStatus } from "@/components/OfflineCacheStatus";
 
 export const CompactHeader = () => {
   const [credits, setCredits] = useState(0);
@@ -280,6 +281,11 @@ export const CompactHeader = () => {
               {/* PWA Install Button - Hidden on mobile */}
               <div className="hidden sm:block">
                 <PWAInstallButton />
+              </div>
+              
+              {/* Offline Cache Status - Hidden on mobile */}
+              <div className="hidden lg:block">
+                <OfflineCacheStatus />
               </div>
 
               {/* Page History - Hidden on mobile */}

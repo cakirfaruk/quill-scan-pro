@@ -36,6 +36,7 @@ import { Virtuoso } from "react-virtuoso";
 import { Suspense } from "react";
 import { useEnhancedOfflineSync } from "@/hooks/use-enhanced-offline-sync";
 import { useNetworkStatus } from "@/hooks/use-network-status";
+import { useOfflineCache } from "@/hooks/use-offline-cache";
 
 interface Post {
   id: string;
@@ -97,6 +98,18 @@ const Feed = () => {
   const isOnline = useNetworkStatus();
   const { addToQueue } = useEnhancedOfflineSync();
   
+  // Offline cache for posts
+  const {
+    cachedData: cachedPosts,
+    isLoadingCache,
+    saveToCache: savePosts,
+    syncWithOnlineData: syncPosts,
+  } = useOfflineCache<Post>({ 
+    storeName: 'posts',
+    syncInterval: 5 * 60 * 1000, // 5 minutes
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+  
   // **OPTIMIZED FEED HOOK** - Keyset pagination + batch queries
   const { 
     posts: allPosts, 
@@ -132,7 +145,7 @@ const Feed = () => {
 
   // **OPTIMIZED & ENRICHED POSTS** - useMemo ile cache'lenir
   const enrichedPosts = useMemo(() => {
-    return allPosts.map((post: any) => ({
+    const onlinePosts = allPosts.map((post: any) => ({
       ...post,
       profile: post.profiles || { username: '', full_name: '', profile_photo: null },
       likes: likeCounts[post.id] || 0,
@@ -141,13 +154,27 @@ const Feed = () => {
       hasSaved: savedPosts[post.id] || false,
       shares_count: post.shares_count || 0
     }));
-  }, [allPosts, likeCounts, commentCounts, userLikes, savedPosts]);
+    
+    // If offline and no online posts, use cached posts
+    if (!isOnline && onlinePosts.length === 0 && cachedPosts.length > 0) {
+      return cachedPosts;
+    }
+    
+    return onlinePosts;
+  }, [allPosts, likeCounts, commentCounts, userLikes, savedPosts, isOnline, cachedPosts]);
 
   // **FRIENDS POSTS** - Arkadaş postları filtrele
   const friendsPosts = useMemo(() => {
     const friendIds = new Set(friends.map(f => f.user_id));
     return enrichedPosts.filter(p => friendIds.has(p.user_id) || p.user_id === userId);
   }, [enrichedPosts, friends, userId]);
+
+  // Cache posts when online
+  useEffect(() => {
+    if (isOnline && enrichedPosts.length > 0) {
+      savePosts(enrichedPosts.slice(0, 50)); // Cache first 50 posts
+    }
+  }, [enrichedPosts, isOnline, savePosts]);
 
   // Keyboard shortcuts
   useKeyboardShortcuts({
@@ -216,8 +243,13 @@ const Feed = () => {
     if (userId) {
       // **REACT QUERY CACHE INVALIDATION** - Daha hızlı
       queryClient.invalidateQueries({ queryKey: ['feed', 'optimized'] });
+      
+      // Sync cached posts with fresh online data
+      if (isOnline && enrichedPosts.length > 0) {
+        await syncPosts(enrichedPosts);
+      }
     }
-  }, [userId, queryClient]);
+  }, [userId, queryClient, isOnline, enrichedPosts, syncPosts]);
 
   const { containerRef, isPulling, pullDistance, isRefreshing, shouldTrigger } = usePullToRefresh({
     onRefresh: handleRefresh,
@@ -257,11 +289,20 @@ const Feed = () => {
       await loadFriends(currentUserId);
     } catch (error) {
       console.error("Error loading feed:", error);
-      toast({
-        title: "Hata",
-        description: "Sayfa yüklenirken bir hata oluştu",
-        variant: "destructive"
-      });
+      
+      // If offline, show cached content
+      if (!isOnline && cachedPosts.length > 0) {
+        toast({
+          title: "Çevrimdışı Mod",
+          description: `${cachedPosts.length} önbelleğe alınmış gönderi gösteriliyor`,
+        });
+      } else {
+        toast({
+          title: "Hata",
+          description: "Sayfa yüklenirken bir hata oluştu",
+          variant: "destructive"
+        });
+      }
     } finally {
       setLoading(false);
     }

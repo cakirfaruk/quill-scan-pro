@@ -21,6 +21,7 @@ import { resetOnboarding } from "@/components/OnboardingTour";
 import { ThemeCustomizationPanel } from "@/components/ThemeCustomizationPanel";
 import { NotificationPreferences } from "@/components/NotificationPreferences";
 import { PermissionSettings } from "@/components/PermissionSettings";
+import { OfflineCacheStatus } from "@/components/OfflineCacheStatus";
 
 const Settings = () => {
   const [profile, setProfile] = useState({
@@ -827,7 +828,29 @@ const Settings = () => {
           </TabsContent>
 
           <TabsContent value="permissions">
-            <PermissionSettings />
+            <div className="space-y-4">
+              <PermissionSettings />
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    Çevrimdışı Veri Önbelleği
+                  </CardTitle>
+                  <CardDescription>
+                    Çevrimdışıyken içerikleri görüntülemek için önbelleğe alınan verileri yönetin
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      Önbelleğe alınmış veriler, internet bağlantısı olmadan da gönderileri, 
+                      mesajları ve profilleri görüntülemenize olanak tanır.
+                    </p>
+                    <OfflineCacheStatus />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="blocked">
