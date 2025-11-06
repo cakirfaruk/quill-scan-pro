@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { X, ChevronLeft, ChevronRight, Eye, Send } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Eye, Send, Music, Volume2, VolumeX } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 
@@ -24,6 +24,15 @@ interface Story {
   };
   views_count: number;
   has_viewed: boolean;
+  music_url?: string;
+  music_name?: string;
+  music_artist?: string;
+  stickers?: Array<{ emoji: string; x: number; y: number; size: number }>;
+  gifs?: Array<{ url: string; x: number; y: number }>;
+  text_effects?: Array<{ text: string; font: string; color: string; size: number; animation: string; x: number; y: number }>;
+  background_color?: string;
+  has_poll?: boolean;
+  has_question?: boolean;
 }
 
 interface StoryViewerProps {
@@ -46,6 +55,12 @@ export const StoryViewer = ({
   const [isPaused, setIsPaused] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [isSendingReply, setIsSendingReply] = useState(false);
+  const [isMusicPlaying, setIsMusicPlaying] = useState(true);
+  const [pollData, setPollData] = useState<any>(null);
+  const [questionData, setQuestionData] = useState<any>(null);
+  const [selectedPollOptions, setSelectedPollOptions] = useState<number[]>([]);
+  const [questionAnswer, setQuestionAnswer] = useState("");
+  const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -55,7 +70,64 @@ export const StoryViewer = ({
   useEffect(() => {
     setCurrentStoryIndex(initialIndex);
     setProgress(0);
+    loadStoryInteractions();
   }, [initialIndex, open]);
+
+  useEffect(() => {
+    if (currentStory) {
+      loadStoryInteractions();
+      setPollData(null);
+      setQuestionData(null);
+      setSelectedPollOptions([]);
+      setQuestionAnswer("");
+    }
+  }, [currentStoryIndex]);
+
+  const loadStoryInteractions = async () => {
+    if (!currentStory) return;
+
+    // Load poll data
+    if (currentStory.has_poll) {
+      const { data: poll } = await supabase
+        .from("story_polls" as any)
+        .select("*")
+        .eq("story_id", currentStory.id)
+        .single();
+      
+      if (poll) {
+        const { data: userVote } = await supabase
+          .from("story_poll_votes" as any)
+          .select("option_ids")
+          .eq("poll_id", (poll as any).id)
+          .eq("user_id", currentUserId)
+          .single();
+        
+        setPollData(poll);
+        setSelectedPollOptions((userVote as any)?.option_ids || []);
+      }
+    }
+
+    // Load question data
+    if (currentStory.has_question) {
+      const { data: question } = await supabase
+        .from("story_questions" as any)
+        .select("*")
+        .eq("story_id", currentStory.id)
+        .single();
+      
+      if (question) {
+        const { data: userAnswer } = await supabase
+          .from("story_question_answers" as any)
+          .select("answer")
+          .eq("question_id", (question as any).id)
+          .eq("user_id", currentUserId)
+          .single();
+        
+        setQuestionData(question);
+        setQuestionAnswer((userAnswer as any)?.answer || "");
+      }
+    }
+  };
 
   useEffect(() => {
     if (!open || !currentStory || isPaused) return;
@@ -167,6 +239,96 @@ export const StoryViewer = ({
     }
   };
 
+  const handlePollVote = async (optionId: number) => {
+    if (!pollData || currentStory.user_id === currentUserId) return;
+
+    try {
+      const { data: existingVote } = await supabase
+        .from("story_poll_votes" as any)
+        .select("*")
+        .eq("poll_id", (pollData as any).id)
+        .eq("user_id", currentUserId)
+        .single();
+
+      if (existingVote) {
+        await supabase
+          .from("story_poll_votes" as any)
+          .update({ option_ids: [optionId] } as any)
+          .eq("id", (existingVote as any).id);
+      } else {
+        await supabase
+          .from("story_poll_votes" as any)
+          .insert({
+            poll_id: (pollData as any).id,
+            user_id: currentUserId,
+            option_ids: [optionId],
+          } as any);
+      }
+
+      setSelectedPollOptions([optionId]);
+      toast({
+        title: "Başarılı",
+        description: "Oyunuz kaydedildi",
+      });
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Oy kaydedilemedi",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleQuestionSubmit = async () => {
+    if (!questionData || !questionAnswer.trim() || currentStory.user_id === currentUserId) return;
+
+    try {
+      const { data: existingAnswer } = await supabase
+        .from("story_question_answers" as any)
+        .select("*")
+        .eq("question_id", (questionData as any).id)
+        .eq("user_id", currentUserId)
+        .single();
+
+      if (existingAnswer) {
+        await supabase
+          .from("story_question_answers" as any)
+          .update({ answer: questionAnswer } as any)
+          .eq("id", (existingAnswer as any).id);
+      } else {
+        await supabase
+          .from("story_question_answers" as any)
+          .insert({
+            question_id: (questionData as any).id,
+            user_id: currentUserId,
+            answer: questionAnswer,
+          } as any);
+      }
+
+      toast({
+        title: "Başarılı",
+        description: "Yanıtınız gönderildi",
+      });
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Yanıt gönderilemedi",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleMusic = () => {
+    if (audioRef.current) {
+      if (isMusicPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsMusicPlaying(!isMusicPlaying);
+    }
+  };
+
   if (!currentStory) return null;
 
   return (
@@ -234,7 +396,8 @@ export const StoryViewer = ({
 
         {/* Story content */}
         <div
-          className="relative w-full aspect-[9/16] bg-black flex items-center justify-center"
+          className="relative w-full aspect-[9/16] flex items-center justify-center"
+          style={{ backgroundColor: currentStory.background_color || "#000000" }}
           onClick={() => setIsPaused(!isPaused)}
         >
           {currentStory.media_type === "photo" ? (
@@ -252,6 +415,150 @@ export const StoryViewer = ({
               muted={isPaused}
               onEnded={handleNext}
             />
+          )}
+
+          {/* Music player */}
+          {currentStory.music_url && (
+            <>
+              <audio
+                ref={audioRef}
+                src={currentStory.music_url}
+                autoPlay
+                loop
+              />
+              <div className="absolute top-16 right-4 z-40">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="bg-black/30 hover:bg-black/50 text-white rounded-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleMusic();
+                  }}
+                >
+                  {isMusicPlaying ? (
+                    <Volume2 className="w-5 h-5" />
+                  ) : (
+                    <VolumeX className="w-5 h-5" />
+                  )}
+                </Button>
+                {currentStory.music_name && (
+                  <div className="mt-2 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full text-xs text-white">
+                    <Music className="w-3 h-3 inline mr-1" />
+                    {currentStory.music_name}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Stickers */}
+          {currentStory.stickers?.map((sticker, index) => (
+            <div
+              key={index}
+              className="absolute pointer-events-none"
+              style={{
+                left: `${sticker.x}%`,
+                top: `${sticker.y}%`,
+                fontSize: `${sticker.size}px`,
+                transform: "translate(-50%, -50%)",
+              }}
+            >
+              {sticker.emoji}
+            </div>
+          ))}
+
+          {/* GIFs */}
+          {currentStory.gifs?.map((gif, index) => (
+            <img
+              key={index}
+              src={gif.url}
+              alt="GIF"
+              className="absolute pointer-events-none w-32 h-32 object-contain"
+              style={{
+                left: `${gif.x}%`,
+                top: `${gif.y}%`,
+                transform: "translate(-50%, -50%)",
+              }}
+            />
+          ))}
+
+          {/* Text Effects */}
+          {currentStory.text_effects?.map((textEffect, index) => (
+            <div
+              key={index}
+              className="absolute pointer-events-none"
+              style={{
+                left: `${textEffect.x}%`,
+                top: `${textEffect.y}%`,
+                fontFamily: textEffect.font,
+                color: textEffect.color,
+                fontSize: `${textEffect.size}px`,
+                transform: "translate(-50%, -50%)",
+                textShadow: "2px 2px 4px rgba(0,0,0,0.5)",
+              }}
+            >
+              {textEffect.text}
+            </div>
+          ))}
+
+          {/* Poll */}
+          {pollData && currentStory.user_id !== currentUserId && (
+            <div className="absolute bottom-24 left-4 right-4 z-40 bg-black/70 backdrop-blur-sm rounded-xl p-4 space-y-3">
+              <p className="text-white font-semibold text-sm">{pollData.question}</p>
+              <div className="space-y-2">
+                {pollData.options?.map((option: any) => (
+                  <Button
+                    key={option.id}
+                    variant="outline"
+                    className={`w-full justify-start ${
+                      selectedPollOptions.includes(option.id)
+                        ? "bg-primary/20 border-primary text-white"
+                        : "bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePollVote(option.id);
+                    }}
+                  >
+                    {option.text}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Question */}
+          {questionData && currentStory.user_id !== currentUserId && (
+            <div className="absolute bottom-24 left-4 right-4 z-40 bg-black/70 backdrop-blur-sm rounded-xl p-4 space-y-3">
+              <p className="text-white font-semibold text-sm">{questionData.question}</p>
+              <div className="flex gap-2">
+                <Input
+                  value={questionAnswer}
+                  onChange={(e) => setQuestionAnswer(e.target.value)}
+                  placeholder="Yanıtınızı yazın..."
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.stopPropagation();
+                      handleQuestionSubmit();
+                    }
+                  }}
+                />
+                <Button
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleQuestionSubmit();
+                  }}
+                  disabled={!questionAnswer.trim()}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
           )}
 
           {/* Navigation overlays */}
