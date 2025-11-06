@@ -1423,11 +1423,11 @@ const Profile = () => {
 
               <div className="flex gap-6 mb-4 text-sm flex-wrap">
                 <button 
-                  onClick={() => setActiveTab("photos")}
+                  onClick={() => setActiveTab("posts")}
                   className="hover:opacity-70 transition-opacity flex items-center gap-1.5"
                 >
                   <Camera className="w-4 h-4" />
-                  <span className="font-bold">{photos.length}</span> fotoğraf
+                  <span className="font-bold">{userPosts.length}</span> gönderi
                 </button>
                 <button 
                   onClick={() => setActiveTab("analyses")}
