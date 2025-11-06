@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ShareResultButton } from "@/components/ShareResultButton";
-import { Loader2, Search, Calendar, Filter, Sparkles, Coffee, Moon, Hand, Heart, Star, Zap, Eye } from "lucide-react";
+import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+import { Loader2, Search, Calendar, Filter, Sparkles, Coffee, Moon, Hand, Heart, Star, Zap, Eye, X } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 
@@ -42,6 +44,8 @@ export default function AnalysisHistory() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedAnalysis, setSelectedAnalysis] = useState<Analysis | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -267,22 +271,8 @@ export default function AnalysisHistory() {
   };
 
   const handleViewAnalysis = (analysis: Analysis) => {
-    // Navigate to the appropriate analysis page or show details
-    const routes: Record<string, string> = {
-      tarot: "/tarot",
-      coffee_fortune: "/coffee-fortune",
-      dream: "/dream",
-      palmistry: "/palmistry",
-      compatibility: "/compatibility",
-      birth_chart: "/birth-chart",
-      daily_horoscope: "/daily-horoscope",
-      numerology: "/numerology",
-    };
-
-    const route = routes[analysis.type];
-    if (route) {
-      navigate(route);
-    }
+    setSelectedAnalysis(analysis);
+    setDetailModalOpen(true);
   };
 
   const formatAnalysisContent = (analysis: Analysis): string => {
@@ -407,6 +397,74 @@ export default function AnalysisHistory() {
           </div>
         )}
       </main>
+
+      {/* Analysis Detail Modal */}
+      <Dialog open={detailModalOpen} onOpenChange={setDetailModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-3">
+                {selectedAnalysis && (
+                  <>
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      {(() => {
+                        const Icon = selectedAnalysis.icon;
+                        return <Icon className={`w-5 h-5 ${selectedAnalysis.color}`} />;
+                      })()}
+                    </div>
+                    <div>
+                      <span>{selectedAnalysis.title}</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="secondary" className="text-xs">
+                          {selectedAnalysis.credits_used} Kredi
+                        </Badge>
+                        <span className="text-xs text-muted-foreground font-normal">
+                          {format(new Date(selectedAnalysis.created_at), "d MMMM yyyy, HH:mm", { locale: tr })}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </DialogTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setDetailModalOpen(false)}
+                className="h-8 w-8"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-y-auto pr-2">
+            {selectedAnalysis && selectedAnalysis.result && (
+              <AnalysisDetailView
+                analysisType={selectedAnalysis.type}
+                result={selectedAnalysis.result}
+              />
+            )}
+          </div>
+
+          <div className="flex-shrink-0 pt-4 border-t mt-4 flex gap-2">
+            <ShareResultButton
+              content={selectedAnalysis ? formatAnalysisContent(selectedAnalysis) : ""}
+              title={selectedAnalysis?.title || ""}
+              analysisId={selectedAnalysis?.id}
+              analysisType={selectedAnalysis?.type}
+              variant="default"
+              size="default"
+              className="flex-1"
+            />
+            <Button
+              variant="outline"
+              onClick={() => setDetailModalOpen(false)}
+            >
+              Kapat
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
