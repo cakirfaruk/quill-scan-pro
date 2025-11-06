@@ -29,12 +29,14 @@ import {
   ChevronDown,
   Plus,
   Maximize2,
+  MapPin,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { PhotoCaptureEditor } from "@/components/PhotoCaptureEditor";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
 import { z } from "zod";
 
 const postSchema = z.object({
@@ -89,6 +91,9 @@ export const CreatePostDialog = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [showPhotoEditor, setShowPhotoEditor] = useState(false);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
+  const [locationName, setLocationName] = useState("");
+  const [locationLatitude, setLocationLatitude] = useState<number | null>(null);
+  const [locationLongitude, setLocationLongitude] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const carouselApiRef = useRef<any>(null);
   const { toast } = useToast();
@@ -282,7 +287,7 @@ export const CreatePostDialog = ({
       const mentions = extractMentions(content);
       const hashtags = extractHashtags(content);
 
-      // Create post with media arrays
+      // Create post with media arrays and location
       const { data: postData, error: postError } = await supabase
         .from("posts")
         .insert({
@@ -291,6 +296,9 @@ export const CreatePostDialog = ({
           media_urls: mediaPreviews.length > 0 ? mediaPreviews.map(m => m.url) : null,
           media_types: mediaPreviews.length > 0 ? mediaPreviews.map(m => m.type) : null,
           post_type: postType,
+          location_name: locationName || null,
+          location_latitude: locationLatitude,
+          location_longitude: locationLongitude,
         })
         .select()
         .single();
@@ -355,6 +363,9 @@ export const CreatePostDialog = ({
       setMediaFiles([]);
       setMediaPreviews([]);
       setTaggedFriends([]);
+      setLocationName("");
+      setLocationLatitude(null);
+      setLocationLongitude(null);
       onOpenChange(false);
       onPostCreated?.();
     } catch (error: any) {
@@ -807,6 +818,45 @@ export const CreatePostDialog = ({
                           </div>
                         </div>
                       )}
+
+                      {/* Location Selection */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4" />
+                          Konum Ekle
+                        </Label>
+                        <PlaceAutocompleteInput
+                          value={locationName}
+                          onChange={setLocationName}
+                          onPlaceSelect={(place) => {
+                            setLocationName(place.name);
+                            setLocationLatitude(place.latitude);
+                            setLocationLongitude(place.longitude);
+                          }}
+                          placeholder="Konum ara..."
+                          id="postLocation"
+                        />
+                        {locationName && (
+                          <div className="flex items-center justify-between p-2 bg-accent rounded-md">
+                            <div className="flex items-center gap-2 text-sm">
+                              <MapPin className="w-4 h-4 text-primary" />
+                              <span>{locationName}</span>
+                            </div>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-6 w-6"
+                              onClick={() => {
+                                setLocationName("");
+                                setLocationLatitude(null);
+                                setLocationLongitude(null);
+                              }}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </ScrollArea>
                 </motion.div>

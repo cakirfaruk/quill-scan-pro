@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 interface PlaceAutocompleteInputProps {
   value: string;
   onChange: (value: string) => void;
+  onPlaceSelect?: (place: { name: string; latitude: number; longitude: number }) => void;
   placeholder?: string;
   id?: string;
 }
@@ -19,6 +20,7 @@ declare global {
 export const PlaceAutocompleteInput = ({
   value,
   onChange,
+  onPlaceSelect,
   placeholder = "Örn: İstanbul, Türkiye",
   id = "birthPlace"
 }: PlaceAutocompleteInputProps) => {
@@ -74,6 +76,15 @@ export const PlaceAutocompleteInput = ({
       const place = autocompleteRef.current.getPlace();
       if (place.formatted_address) {
         onChange(place.formatted_address);
+        
+        // Callback with place details including coordinates
+        if (onPlaceSelect && place.geometry?.location) {
+          onPlaceSelect({
+            name: place.formatted_address,
+            latitude: place.geometry.location.lat(),
+            longitude: place.geometry.location.lng(),
+          });
+        }
       }
     });
 

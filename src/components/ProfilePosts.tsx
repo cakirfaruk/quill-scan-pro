@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, MessageCircle, Heart, Share2 } from "lucide-react";
+import { Loader2, MessageCircle, Heart, Share2, MapPin } from "lucide-react";
 import { ParsedText } from "@/components/ParsedText";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -21,6 +21,9 @@ interface Post {
   media_type: string | null;
   media_urls: string[] | null;
   media_types: string[] | null;
+  location_name: string | null;
+  location_latitude: number | null;
+  location_longitude: number | null;
   created_at: string;
   profile: {
     username: string;
@@ -111,6 +114,14 @@ export const ProfilePosts = ({ posts, loading, isOwnProfile, onLike }: ProfilePo
             {post.content && (
               <div className="text-foreground whitespace-pre-wrap mb-3 text-xs sm:text-sm leading-relaxed">
                 <ParsedText text={post.content} />
+              </div>
+            )}
+
+            {/* Location */}
+            {post.location_name && (
+              <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground mb-3">
+                <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hover:underline cursor-pointer">{post.location_name}</span>
               </div>
             )}
           </div>
