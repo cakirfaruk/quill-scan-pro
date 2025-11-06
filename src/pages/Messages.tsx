@@ -1250,17 +1250,38 @@ const Messages = () => {
 
     setTranslatingMessageId(messageId);
     try {
+      // Get user's preferred language
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('preferred_language')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const preferredLanguage = profile?.preferred_language || 'tr';
+
       const { data, error } = await supabase.functions.invoke('translate-message', {
-        body: { text, targetLanguage: 'Turkish' }
+        body: { 
+          text, 
+          targetLanguage: preferredLanguage,
+          detectLanguage: true 
+        }
       });
 
       if (error) throw error;
 
-      if (data?.translatedText) {
+      if (data?.translatedText && data?.needsTranslation) {
         setTranslatedMessages(prev => ({
           ...prev,
           [messageId]: data.translatedText
         }));
+      } else if (!data?.needsTranslation) {
+        toast({
+          title: "Çeviri Gereksiz",
+          description: "Mesaj zaten tercih ettiğiniz dilde",
+        });
       }
     } catch (error) {
       console.error('Translation error:', error);

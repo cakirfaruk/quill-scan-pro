@@ -34,6 +34,7 @@ const Settings = () => {
     gender: "",
     email: "",
     show_in_matches: true,
+    preferred_language: "tr",
   });
   const [passwords, setPasswords] = useState({
     currentPassword: "",
@@ -140,6 +141,7 @@ const Settings = () => {
           gender: newData.gender || "",
           email: user.email || "",
           show_in_matches: newData.show_in_matches ?? true,
+          preferred_language: newData.preferred_language || "tr",
         });
       } else {
         setProfile({
@@ -153,6 +155,7 @@ const Settings = () => {
           gender: data.gender || "",
           email: user.email || "",
           show_in_matches: data.show_in_matches ?? true,
+          preferred_language: data.preferred_language || "tr",
         });
       }
     } catch (error: any) {
@@ -645,6 +648,35 @@ const Settings = () => {
                     placeholder="Kendiniz hakkında kısa bir açıklama yazın..."
                     className="mt-2 min-h-[100px]"
                   />
+                </div>
+
+                <div>
+                  <Label htmlFor="preferred_language">Tercih Edilen Dil</Label>
+                  <Select
+                    value={profile.preferred_language}
+                    onValueChange={(value) => setProfile({ ...profile, preferred_language: value })}
+                  >
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Dil seçin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="tr">Türkçe</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="es">Español</SelectItem>
+                      <SelectItem value="fr">Français</SelectItem>
+                      <SelectItem value="de">Deutsch</SelectItem>
+                      <SelectItem value="ar">العربية</SelectItem>
+                      <SelectItem value="zh">中文</SelectItem>
+                      <SelectItem value="ja">日本語</SelectItem>
+                      <SelectItem value="ko">한국어</SelectItem>
+                      <SelectItem value="pt">Português</SelectItem>
+                      <SelectItem value="ru">Русский</SelectItem>
+                      <SelectItem value="it">Italiano</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Farklı dillerdeki mesajlar otomatik olarak tercih ettiğiniz dile çevrilecektir
+                  </p>
                 </div>
 
                 <Button

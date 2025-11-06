@@ -1888,6 +1888,7 @@ export type Database = {
           is_online: boolean | null
           last_seen: string | null
           looking_for: string[] | null
+          preferred_language: string | null
           profile_photo: string | null
           show_in_matches: boolean
           updated_at: string
@@ -1911,6 +1912,7 @@ export type Database = {
           is_online?: boolean | null
           last_seen?: string | null
           looking_for?: string[] | null
+          preferred_language?: string | null
           profile_photo?: string | null
           show_in_matches?: boolean
           updated_at?: string
@@ -1934,6 +1936,7 @@ export type Database = {
           is_online?: boolean | null
           last_seen?: string | null
           looking_for?: string[] | null
+          preferred_language?: string | null
           profile_photo?: string | null
           show_in_matches?: boolean
           updated_at?: string
