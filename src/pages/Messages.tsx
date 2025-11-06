@@ -2450,6 +2450,7 @@ const Messages = () => {
                                   <VoiceMessagePlayer 
                                     audioUrl={voiceMessageUrl} 
                                     preferredLanguage={preferredLanguage}
+                                    autoTranscribe={autoTranslateEnabled}
                                   />
                                   <div className="flex items-center gap-2 justify-end mt-1">
                                     <p className="text-xs opacity-70">

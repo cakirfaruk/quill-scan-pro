@@ -8,9 +8,10 @@ interface VoiceMessagePlayerProps {
   audioUrl: string;
   duration?: number;
   preferredLanguage?: string;
+  autoTranscribe?: boolean;
 }
 
-export const VoiceMessagePlayer = ({ audioUrl, duration, preferredLanguage = 'tr' }: VoiceMessagePlayerProps) => {
+export const VoiceMessagePlayer = ({ audioUrl, duration, preferredLanguage = 'tr', autoTranscribe = false }: VoiceMessagePlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState(duration || 0);
@@ -20,6 +21,13 @@ export const VoiceMessagePlayer = ({ audioUrl, duration, preferredLanguage = 'tr
   const [showTranscript, setShowTranscript] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
+
+  // Auto-transcribe on mount if enabled
+  useEffect(() => {
+    if (autoTranscribe && !transcription && !isTranscribing) {
+      handleTranscribe(true); // Auto-translate as well
+    }
+  }, [autoTranscribe]);
 
   useEffect(() => {
     const audio = audioRef.current;
