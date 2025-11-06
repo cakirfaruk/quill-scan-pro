@@ -374,9 +374,11 @@ const Profile = () => {
   };
 
   const loadProfile = async () => {
+    setIsLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
+        setIsLoading(false);
         navigate("/auth");
         return;
       }
@@ -427,6 +429,7 @@ const Profile = () => {
           description: "Profil yüklenirken bir hata oluştu.",
           variant: "destructive",
         });
+        setIsLoading(false);
         return;
       }
 
@@ -437,6 +440,7 @@ const Profile = () => {
           description: "Aradığınız profil bulunamadı. Lütfen ayarlardan profil bilgilerinizi tamamlayın.",
           variant: "destructive",
         });
+        setIsLoading(false);
         navigate("/settings");
         return;
       }
