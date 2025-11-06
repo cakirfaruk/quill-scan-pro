@@ -29,6 +29,7 @@ import { SwipeableMessage } from "@/components/SwipeableMessage";
 import { useLongPress } from "@/hooks/use-gestures";
 import { VideoCallDialog } from "@/components/VideoCallDialog";
 import { ScheduleMessageDialog } from "@/components/ScheduleMessageDialog";
+import { ForwardMessageDialog } from "@/components/ForwardMessageDialog";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { playRingtone, vibrate, vibrateShort, showBrowserNotification } from "@/utils/callNotifications";
@@ -132,6 +133,8 @@ const Messages = () => {
   const [translatedMessages, setTranslatedMessages] = useState<Record<string, { text: string; sourceLanguage?: string }>>({});
   const [translatingMessageId, setTranslatingMessageId] = useState<string | null>(null);
   const [showTranslation, setShowTranslation] = useState<Record<string, boolean>>({});
+  const [forwardDialogOpen, setForwardDialogOpen] = useState(false);
+  const [messageToForward, setMessageToForward] = useState<Message | null>(null);
   
   // Language name mapping
   const languageNames: Record<string, string> = {
@@ -1263,41 +1266,56 @@ const Messages = () => {
     try {
       soundEffects.playMessageSent();
       
-      // Convert audio blob to base64
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
+      // Upload audio to storage
+      const fileName = `voice_${currentUserId}_${Date.now()}.webm`;
+      const fileExt = 'webm';
+      const filePath = `${currentUserId}/${Date.now()}.${fileExt}`;
       
-      await new Promise((resolve) => {
-        reader.onloadend = async () => {
-          const base64Audio = reader.result as string;
-          
-          const messageContent = `[VOICE_MESSAGE:${base64Audio}]`;
-          let message_category: "friend" | "match" | "other" = selectedCategory || "other";
+      const { data, error: uploadError } = await supabase.storage
+        .from('posts')
+        .upload(filePath, audioBlob, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: 'audio/webm'
+        });
 
-          const { error } = await supabase
-            .from("messages")
-            .insert({
-              sender_id: currentUserId,
-              receiver_id: selectedFriend.user_id,
-              content: messageContent,
-              message_category,
-            });
+      if (uploadError) throw uploadError;
 
-          if (error) throw error;
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('posts')
+        .getPublicUrl(data.path);
+      
+      const messageContent = `[VOICE_MESSAGE:${urlData.publicUrl}]`;
+      let message_category: "friend" | "match" | "other" = selectedCategory || "other";
 
-          // Vibrate on successful send
-          vibrateShort();
+      const { error } = await supabase
+        .from("messages")
+        .insert({
+          sender_id: currentUserId,
+          receiver_id: selectedFriend.user_id,
+          content: messageContent,
+          message_category,
+        });
 
-          setShowVoiceRecorder(false);
-          loadMessages(selectedFriend.user_id);
-          resolve(null);
-        };
+      if (error) throw error;
+
+      // Vibrate on successful send
+      vibrateShort();
+
+      setShowVoiceRecorder(false);
+      loadMessages(selectedFriend.user_id);
+      
+      toast({
+        title: "Başarılı",
+        description: "Sesli mesaj gönderildi",
       });
     } catch (error: any) {
+      console.error('Voice message error:', error);
       soundEffects.playError();
       toast({
         title: "Hata",
-        description: "Sesli mesaj gönderilemedi",
+        description: error.message || "Sesli mesaj gönderilemedi",
         variant: "destructive",
       });
     } finally {
@@ -1477,23 +1495,12 @@ const Messages = () => {
   };
 
   const handleForwardMessage = async (messageId: string) => {
-    try {
-      const message = messages.find(m => m.id === messageId);
-      if (!message) return;
+    const message = messages.find(m => m.id === messageId);
+    if (!message) return;
 
-      // For now, just copy the message content to input
-      setNewMessage(message.content.replace(/\[.*?\]/g, ''));
-      toast({
-        title: "Mesaj kopyalandı",
-        description: "Mesaj içeriği giriş alanına kopyalandı. İstediğiniz kişiye gönderebilirsiniz.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Hata",
-        description: "Mesaj iletilemedi.",
-        variant: "destructive",
-      });
-    }
+    // Open forward dialog
+    setMessageToForward(message);
+    setForwardDialogOpen(true);
   };
 
   const handleSendMessage = async () => {
@@ -2903,6 +2910,14 @@ const Messages = () => {
             callType={incomingCall.callType}
           />
         )}
+
+        {/* Forward Message Dialog */}
+        <ForwardMessageDialog
+          open={forwardDialogOpen}
+          onOpenChange={setForwardDialogOpen}
+          message={messageToForward}
+          currentUserId={currentUserId}
+        />
 
         {/* Mobile Options Menu */}
         <Drawer open={showMobileMenu} onOpenChange={setShowMobileMenu}>
