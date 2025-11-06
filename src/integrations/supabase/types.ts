@@ -1874,6 +1874,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          auto_translate_messages: boolean | null
           bio: string | null
           birth_date: string | null
           birth_place: string | null
@@ -1898,6 +1899,7 @@ export type Database = {
           zodiac_sign: string | null
         }
         Insert: {
+          auto_translate_messages?: boolean | null
           bio?: string | null
           birth_date?: string | null
           birth_place?: string | null
@@ -1922,6 +1924,7 @@ export type Database = {
           zodiac_sign?: string | null
         }
         Update: {
+          auto_translate_messages?: boolean | null
           bio?: string | null
           birth_date?: string | null
           birth_place?: string | null

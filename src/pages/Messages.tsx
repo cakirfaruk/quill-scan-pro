@@ -131,6 +131,8 @@ const Messages = () => {
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [translatedMessages, setTranslatedMessages] = useState<Record<string, string>>({});
   const [translatingMessageId, setTranslatingMessageId] = useState<string | null>(null);
+  const [autoTranslateEnabled, setAutoTranslateEnabled] = useState(false);
+  const [preferredLanguage, setPreferredLanguage] = useState('tr');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -356,11 +358,43 @@ const Messages = () => {
           schema: "public",
           table: "messages",
         },
-        () => {
+        async (payload) => {
           if (selectedFriend) {
             loadMessages(selectedFriend.user_id);
           }
           loadConversations();
+          
+          // Auto-translate new incoming message if enabled
+          if (payload.eventType === 'INSERT' && autoTranslateEnabled && payload.new) {
+            const newMsg = payload.new as any;
+            if (newMsg.sender_id !== currentUserId && 
+                newMsg.receiver_id === currentUserId &&
+                !newMsg.content.includes("[VOICE_MESSAGE:") &&
+                !newMsg.content.includes("[GIF:")) {
+              
+              const displayContent = newMsg.content.replace(/\[FILE_PREVIEW:[^\]]+\]/, "").trim();
+              if (displayContent) {
+                try {
+                  const { data } = await supabase.functions.invoke('translate-message', {
+                    body: { 
+                      text: displayContent, 
+                      targetLanguage: preferredLanguage,
+                      detectLanguage: true 
+                    }
+                  });
+
+                  if (data?.translatedText && data?.needsTranslation) {
+                    setTranslatedMessages(prev => ({
+                      ...prev,
+                      [newMsg.id]: data.translatedText
+                    }));
+                  }
+                } catch (error) {
+                  console.error('Auto-translate error:', error);
+                }
+              }
+            }
+          }
         }
       )
       .subscribe();
@@ -862,6 +896,41 @@ const Messages = () => {
 
       const pinnedMsgs = parsedMessages.filter(m => m.pinned_at);
       setPinnedMessages(pinnedMsgs);
+
+      // Auto-translate messages if enabled
+      if (autoTranslateEnabled && parsedMessages.length > 0) {
+        parsedMessages.forEach(async (msg) => {
+          // Only translate messages from other user that are not special types
+          if (msg.sender_id !== effectiveUserId && 
+              !('analysis_id' in msg) && 
+              !msg.content.includes("[VOICE_MESSAGE:") && 
+              !msg.content.includes("[GIF:") &&
+              !translatedMessages[msg.id]) {
+            
+            const displayContent = msg.content.replace(/\[FILE_PREVIEW:[^\]]+\]/, "").trim();
+            if (displayContent) {
+              try {
+                const { data } = await supabase.functions.invoke('translate-message', {
+                  body: { 
+                    text: displayContent, 
+                    targetLanguage: preferredLanguage,
+                    detectLanguage: true 
+                  }
+                });
+
+                if (data?.translatedText && data?.needsTranslation) {
+                  setTranslatedMessages(prev => ({
+                    ...prev,
+                    [msg.id]: data.translatedText
+                  }));
+                }
+              } catch (error) {
+                console.error('Auto-translate error:', error);
+              }
+            }
+          }
+        });
+      }
 
       if (parsedMessages.length === 0) {
         // First time messaging - no error needed

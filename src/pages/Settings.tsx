@@ -35,6 +35,7 @@ const Settings = () => {
     email: "",
     show_in_matches: true,
     preferred_language: "tr",
+    auto_translate_messages: false,
   });
   const [passwords, setPasswords] = useState({
     currentPassword: "",
@@ -142,6 +143,7 @@ const Settings = () => {
           email: user.email || "",
           show_in_matches: newData.show_in_matches ?? true,
           preferred_language: newData.preferred_language || "tr",
+          auto_translate_messages: newData.auto_translate_messages ?? false,
         });
       } else {
         setProfile({
@@ -156,6 +158,7 @@ const Settings = () => {
           email: user.email || "",
           show_in_matches: data.show_in_matches ?? true,
           preferred_language: data.preferred_language || "tr",
+          auto_translate_messages: data.auto_translate_messages ?? false,
         });
       }
     } catch (error: any) {
@@ -675,8 +678,22 @@ const Settings = () => {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Farklı dillerdeki mesajlar otomatik olarak tercih ettiğiniz dile çevrilecektir
+                    Mesajlar için varsayılan dil
                   </p>
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="auto_translate">Otomatik Çeviri</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Gelen mesajlar otomatik olarak tercih ettiğiniz dile çevrilsin
+                    </p>
+                  </div>
+                  <Switch
+                    id="auto_translate"
+                    checked={profile.auto_translate_messages}
+                    onCheckedChange={(checked) => setProfile({ ...profile, auto_translate_messages: checked })}
+                  />
                 </div>
 
                 <Button
