@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useEnhancedOfflineSync } from "@/hooks/use-enhanced-offline-sync";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -15,7 +14,6 @@ import {
   Wifi, 
   WifiOff,
   Clock,
-  Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -36,40 +34,6 @@ export const SyncNotification = () => {
   } = useEnhancedOfflineSync();
 
   const [showDetails, setShowDetails] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('info');
-  const [toastMessage, setToastMessage] = useState('');
-
-  // Show notification when sync status changes
-  useEffect(() => {
-    if (!isOnline && pendingCount > 0) {
-      setToastType('info');
-      setToastMessage(`${pendingCount} işlem çevrimiçi olduğunuzda senkronize edilecek`);
-      setShowToast(true);
-      
-      setTimeout(() => setShowToast(false), 5000);
-    }
-  }, [isOnline, pendingCount]);
-
-  // Show success notification when sync completes
-  useEffect(() => {
-    if (!isSyncing && lastSyncTime && queue.length === 0) {
-      setToastType('success');
-      setToastMessage('Tüm değişiklikler başarıyla senkronize edildi');
-      setShowToast(true);
-      
-      setTimeout(() => setShowToast(false), 3000);
-    }
-  }, [isSyncing, lastSyncTime, queue.length]);
-
-  // Show error notification when there are failed items
-  useEffect(() => {
-    if (failedCount > 0 && !isSyncing) {
-      setToastType('error');
-      setToastMessage(`${failedCount} işlem başarısız oldu`);
-      setShowToast(true);
-    }
-  }, [failedCount, isSyncing]);
 
   const getErrorMessage = (error?: string) => {
     if (!error) return 'Bilinmeyen hata';
@@ -96,48 +60,12 @@ export const SyncNotification = () => {
     }
   };
 
-  if (!showToast && pendingCount === 0 && failedCount === 0) {
+  if (pendingCount === 0 && failedCount === 0) {
     return null;
   }
 
   return (
     <>
-      {/* Toast Notification */}
-      {showToast && (
-        <div className="fixed top-20 right-4 z-50 animate-slide-in-right">
-          <Alert 
-            className={cn(
-              "shadow-lg border-2 min-w-[320px]",
-              toastType === 'success' && "border-green-500 bg-green-50 dark:bg-green-950",
-              toastType === 'error' && "border-destructive bg-destructive/10",
-              toastType === 'info' && "border-blue-500 bg-blue-50 dark:bg-blue-950"
-            )}
-          >
-            {toastType === 'success' && <CheckCircle2 className="h-5 w-5 text-green-600" />}
-            {toastType === 'error' && <XCircle className="h-5 w-5 text-destructive" />}
-            {toastType === 'info' && <Info className="h-5 w-5 text-blue-600" />}
-            
-            <AlertTitle className="mb-1">
-              {toastType === 'success' && 'Başarılı'}
-              {toastType === 'error' && 'Hata'}
-              {toastType === 'info' && 'Bilgi'}
-            </AlertTitle>
-            <AlertDescription>{toastMessage}</AlertDescription>
-            
-            {(pendingCount > 0 || failedCount > 0) && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-2 w-full"
-                onClick={() => setShowDetails(true)}
-              >
-                Detayları Gör
-              </Button>
-            )}
-          </Alert>
-        </div>
-      )}
-
       {/* Persistent Status Indicator */}
       {(pendingCount > 0 || failedCount > 0 || isSyncing) && (
         <button

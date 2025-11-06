@@ -201,10 +201,6 @@ if (typeof window !== 'undefined') {
     console.error('Failed to init offline storage:', err);
   });
   
-  // Run cleanup every day
-  setInterval(() => {
-    offlineStorage.cleanup().catch(err => {
-      console.error('Cleanup failed:', err);
-    });
-  }, 24 * 60 * 60 * 1000);
+  // Cleanup can be called manually if needed
+  // offlineStorage.cleanup() when you want to clean old data
 }

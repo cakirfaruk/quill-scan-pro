@@ -42,13 +42,6 @@ export const useEnhancedOfflineSync = () => {
     saveQueue();
   }, [queue]);
 
-  // Auto-sync when coming back online
-  useEffect(() => {
-    if (isOnline && queue.filter(a => a.status === 'pending').length > 0 && !isSyncing) {
-      syncQueue();
-    }
-  }, [isOnline]);
-
   const loadQueue = () => {
     try {
       const savedQueue = localStorage.getItem(STORAGE_KEY);
@@ -216,6 +209,13 @@ export const useEnhancedOfflineSync = () => {
       });
     }
   }, [queue, isSyncing, isOnline]);
+
+  // Auto-sync when coming back online
+  useEffect(() => {
+    if (isOnline && queue.filter(a => a.status === 'pending').length > 0 && !isSyncing) {
+      syncQueue();
+    }
+  }, [isOnline, queue.length, isSyncing, syncQueue]);
 
   const addToQueue = useCallback((action: Omit<QueuedAction, 'id' | 'timestamp' | 'retryCount' | 'status'>) => {
     const queuedAction: QueuedAction = {

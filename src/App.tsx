@@ -20,7 +20,7 @@ import { useRoutePreloader } from "@/hooks/use-route-preloader";
 import { useLinkIntersectionPreloader } from "@/hooks/use-link-intersection-preloader";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { OfflineCacheStatus } from "@/components/OfflineCacheStatus";
-import { SyncNotification } from "@/components/SyncNotification";
+// import { SyncNotification } from "@/components/SyncNotification"; // Temporarily disabled
 
 // Critical pages - load immediately (no lazy loading)
 import Index from "./pages/Index";
@@ -322,7 +322,7 @@ const App = () => {
               <Sonner />
               <PermissionManager />
               <EnhancedOfflineIndicator />
-              <SyncNotification />
+              {/* <SyncNotification /> Temporarily disabled */}
               <PWAInstallPrompt />
               <AppRoutes />
             </ThemeProvider>
