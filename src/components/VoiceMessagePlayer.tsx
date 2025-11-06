@@ -9,9 +9,10 @@ interface VoiceMessagePlayerProps {
   duration?: number;
   preferredLanguage?: string;
   autoTranscribe?: boolean;
+  messageId: string;
 }
 
-export const VoiceMessagePlayer = ({ audioUrl, duration, preferredLanguage = 'tr', autoTranscribe = false }: VoiceMessagePlayerProps) => {
+export const VoiceMessagePlayer = ({ audioUrl, duration, preferredLanguage = 'tr', autoTranscribe = false, messageId }: VoiceMessagePlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState(duration || 0);
@@ -19,10 +20,39 @@ export const VoiceMessagePlayer = ({ audioUrl, duration, preferredLanguage = 'tr
   const [translation, setTranslation] = useState<string | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
+  const [sourceLanguage, setSourceLanguage] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
 
-  // Auto-transcribe on mount if enabled
+  // Check cache on mount
+  useEffect(() => {
+    const checkCache = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('messages')
+          .select('transcription, translation, transcription_language')
+          .eq('id', messageId)
+          .maybeSingle();
+
+        if (!error && data?.transcription) {
+          setTranscription(data.transcription);
+          setTranslation(data.translation);
+          setSourceLanguage(data.transcription_language);
+          
+          // Auto-show transcript if we have cached data and auto-transcribe is on
+          if (autoTranscribe) {
+            setShowTranscript(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking cache:', error);
+      }
+    };
+
+    checkCache();
+  }, [messageId, autoTranscribe]);
+
+  // Auto-transcribe on mount if enabled and no cache
   useEffect(() => {
     if (autoTranscribe && !transcription && !isTranscribing) {
       handleTranscribe(true); // Auto-translate as well
@@ -90,11 +120,34 @@ export const VoiceMessagePlayer = ({ audioUrl, duration, preferredLanguage = 'tr
       if (error) throw error;
 
       if (data?.transcription) {
-        setTranscription(data.transcription);
-        setShowTranscript(true);
+        const newTranscription = data.transcription;
+        const newTranslation = data.translation;
+        const newSourceLanguage = data.sourceLanguage;
         
-        if (data.translation) {
-          setTranslation(data.translation);
+        setTranscription(newTranscription);
+        setShowTranscript(true);
+        setSourceLanguage(newSourceLanguage);
+        
+        if (newTranslation) {
+          setTranslation(newTranslation);
+        }
+
+        // Cache the results in the database
+        try {
+          await supabase
+            .from('messages')
+            .update({
+              transcription: newTranscription,
+              translation: newTranslation,
+              transcription_language: newSourceLanguage
+            })
+            .eq('id', messageId);
+        } catch (cacheError) {
+          console.error('Error caching transcription:', cacheError);
+          // Don't show error to user, just log it
+        }
+        
+        if (newTranslation) {
           toast({
             title: "Başarılı",
             description: "Sesli mesaj metne dönüştürüldü ve çevrildi",
@@ -186,7 +239,9 @@ export const VoiceMessagePlayer = ({ audioUrl, duration, preferredLanguage = 'tr
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <FileText className="w-3 h-3 opacity-70" />
-              <span className="text-xs font-medium opacity-70">Transkript</span>
+              <span className="text-xs font-medium opacity-70">
+                Transkript {sourceLanguage && `(${sourceLanguage})`}
+              </span>
             </div>
             <Button
               variant="ghost"

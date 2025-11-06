@@ -1273,6 +1273,9 @@ export type Database = {
           receiver_id: string
           reply_to: string | null
           sender_id: string
+          transcription: string | null
+          transcription_language: string | null
+          translation: string | null
         }
         Insert: {
           content: string
@@ -1285,6 +1288,9 @@ export type Database = {
           receiver_id: string
           reply_to?: string | null
           sender_id: string
+          transcription?: string | null
+          transcription_language?: string | null
+          translation?: string | null
         }
         Update: {
           content?: string
@@ -1297,6 +1303,9 @@ export type Database = {
           receiver_id?: string
           reply_to?: string | null
           sender_id?: string
+          transcription?: string | null
+          transcription_language?: string | null
+          translation?: string | null
         }
         Relationships: [
           {

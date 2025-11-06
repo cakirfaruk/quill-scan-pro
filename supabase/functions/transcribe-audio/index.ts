@@ -6,36 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Process base64 in chunks to prevent memory issues
-function processBase64Chunks(base64String: string, chunkSize = 32768) {
-  const chunks: Uint8Array[] = [];
-  let position = 0;
-  
-  while (position < base64String.length) {
-    const chunk = base64String.slice(position, position + chunkSize);
-    const binaryChunk = atob(chunk);
-    const bytes = new Uint8Array(binaryChunk.length);
-    
-    for (let i = 0; i < binaryChunk.length; i++) {
-      bytes[i] = binaryChunk.charCodeAt(i);
-    }
-    
-    chunks.push(bytes);
-    position += chunkSize;
-  }
-
-  const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-  const result = new Uint8Array(totalLength);
-  let offset = 0;
-
-  for (const chunk of chunks) {
-    result.set(chunk, offset);
-    offset += chunk.length;
-  }
-
-  return result;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -59,10 +29,11 @@ serve(async (req) => {
     const audioBlob = await audioResponse.blob();
     console.log('Audio blob size:', audioBlob.size);
 
-    // Prepare form data for Whisper API
+    // Prepare form data for Whisper API - request verbose JSON to get language info
     const formData = new FormData();
     formData.append('file', audioBlob, 'audio.webm');
     formData.append('model', 'whisper-1');
+    formData.append('response_format', 'verbose_json'); // Get language detection
 
     console.log('Sending to OpenAI Whisper API...');
 
@@ -83,8 +54,10 @@ serve(async (req) => {
 
     const transcribeResult = await transcribeResponse.json();
     const transcribedText = transcribeResult.text;
+    const detectedLanguage = transcribeResult.language; // e.g., "en", "tr", etc.
 
     console.log('Transcription successful:', transcribedText);
+    console.log('Detected language:', detectedLanguage);
 
     // If translation is requested, use Lovable AI
     if (translate && targetLanguage) {
@@ -135,7 +108,8 @@ Only return the translated text, nothing else. Preserve formatting and special c
         return new Response(
           JSON.stringify({ 
             transcription: transcribedText,
-            translation: null
+            translation: null,
+            sourceLanguage: detectedLanguage
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -147,7 +121,8 @@ Only return the translated text, nothing else. Preserve formatting and special c
       return new Response(
         JSON.stringify({ 
           transcription: transcribedText,
-          translation: translatedText
+          translation: translatedText,
+          sourceLanguage: detectedLanguage
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -156,7 +131,8 @@ Only return the translated text, nothing else. Preserve formatting and special c
     return new Response(
       JSON.stringify({ 
         transcription: transcribedText,
-        translation: null
+        translation: null,
+        sourceLanguage: detectedLanguage
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
