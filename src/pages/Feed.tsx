@@ -26,7 +26,6 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { CreatePostDialog } from "@/components/CreatePostDialog";
 import { NoFriendsIllustration, NoPostsIllustration } from "@/components/EmptyStateIllustrations";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { useOnboarding } from "@/hooks/use-onboarding";
@@ -34,6 +33,7 @@ import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
 import { WidgetDashboard } from "@/components/WidgetDashboard";
 import { FullScreenMediaViewer } from "@/components/FullScreenMediaViewer";
+import { Virtuoso } from "react-virtuoso";
 
 interface Post {
   id: string;
@@ -557,14 +557,6 @@ const Feed = () => {
     loadMore(); // Use optimized hook's loadMore
   }, [userId, feedLoading, loadMore]);
 
-  const infiniteScroll = useInfiniteScroll({
-    onLoadMore: handleLoadMore,
-    hasMore: true, // Optimized hook handles hasMore internally
-    isLoading: feedLoading,
-    threshold: 0.5,
-    rootMargin: "200px",
-  });
-
   const renderComment = (comment: Comment) => (
     <FeedCommentItem
       key={comment.id}
@@ -653,15 +645,24 @@ const Feed = () => {
                 variant="gradient"
               />
             ) : (
-              <>
-                {friendsPosts.map(renderPost)}
-                <div ref={infiniteScroll.sentinelRef} className="h-10" />
-                {infiniteScroll.isLoadingMore && (
-                  <div className="py-8">
-                    <LoadingSpinner size="md" text="Daha fazla gönderi yükleniyor..." />
+              <Virtuoso
+                data={friendsPosts}
+                endReached={handleLoadMore}
+                itemContent={(index, post) => (
+                  <div key={post.id} className="mb-4">
+                    {renderPost(post)}
                   </div>
                 )}
-              </>
+                components={{
+                  Footer: () => feedLoading ? (
+                    <div className="py-8">
+                      <LoadingSpinner size="md" text="Daha fazla gönderi yükleniyor..." />
+                    </div>
+                  ) : null
+                }}
+                style={{ height: '100vh' }}
+                increaseViewportBy={{ top: 600, bottom: 600 }}
+              />
             )}
           </TabsContent>
           
@@ -677,15 +678,24 @@ const Feed = () => {
                 variant="gradient"
               />
             ) : (
-              <>
-                {enrichedPosts.map(renderPost)}
-                <div ref={infiniteScroll.sentinelRef} className="h-10" />
-                {infiniteScroll.isLoadingMore && (
-                  <div className="py-8">
-                    <LoadingSpinner size="md" text="Daha fazla gönderi yükleniyor..." />
+              <Virtuoso
+                data={enrichedPosts}
+                endReached={handleLoadMore}
+                itemContent={(index, post) => (
+                  <div key={post.id} className="mb-4">
+                    {renderPost(post)}
                   </div>
                 )}
-              </>
+                components={{
+                  Footer: () => feedLoading ? (
+                    <div className="py-8">
+                      <LoadingSpinner size="md" text="Daha fazla gönderi yükleniyor..." />
+                    </div>
+                  ) : null
+                }}
+                style={{ height: '100vh' }}
+                increaseViewportBy={{ top: 600, bottom: 600 }}
+              />
             )}
           </TabsContent>
         </Tabs>
