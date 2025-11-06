@@ -2284,10 +2284,10 @@ const Messages = () => {
                           </div>
                         )}
                         
-                        <div className="flex gap-2 items-center">
-                          {/* Draft indicator */}
+                        <div className="flex gap-1 md:gap-2 items-center">
+                          {/* Draft indicator - Hidden on mobile */}
                           {draft.hasDraft && draft.lastSaved && (
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground mr-2">
+                            <div className="hidden md:flex items-center gap-1 text-xs text-muted-foreground mr-2">
                               <Save className="w-3 h-3" />
                               <span>
                                 {new Date(draft.lastSaved).toLocaleTimeString('tr-TR', { 
@@ -2301,34 +2301,12 @@ const Messages = () => {
                           {/* Emoji Picker */}
                           <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
                             <PopoverTrigger asChild>
-                              <Button variant="ghost" size="icon" type="button">
-                                <Smile className="w-5 h-5" />
+                              <Button variant="ghost" size="icon" type="button" className="h-8 w-8 md:h-10 md:w-10">
+                                <Smile className="w-4 h-4 md:w-5 md:h-5" />
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-full p-0 border-0" align="start">
                               <EmojiPicker onEmojiClick={onEmojiClick} />
-                            </PopoverContent>
-                          </Popover>
-
-                          {/* Voice Recorder Button */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            type="button"
-                            onClick={() => setShowVoiceRecorder(true)}
-                          >
-                            <Mic className="w-5 h-5" />
-                          </Button>
-
-                          {/* GIF Picker */}
-                          <Popover open={showGifPicker} onOpenChange={setShowGifPicker}>
-                            <PopoverTrigger asChild>
-                              <Button variant="ghost" size="icon" type="button">
-                                <ImageIcon className="w-5 h-5" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <GifPicker onSelectGif={handleSendGif} />
                             </PopoverContent>
                           </Popover>
 
@@ -2345,8 +2323,9 @@ const Messages = () => {
                             size="icon"
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
+                            className="h-8 w-8 md:h-10 md:w-10"
                           >
-                            <Paperclip className="w-5 h-5" />
+                            <Paperclip className="w-4 h-4 md:w-5 md:h-5" />
                           </Button>
 
                           {/* Message Input */}
@@ -2360,31 +2339,57 @@ const Messages = () => {
                                 handleSendMessage();
                               }
                             }}
-                            className="flex-1"
+                            className="flex-1 min-w-0"
                           />
                           
-                          {/* Schedule Button */}
-                          {selectedCategory === "friend" && (
+                          {/* Additional Options - Hidden on mobile, visible on desktop */}
+                          <div className="hidden md:flex gap-2">
+                            {/* Voice Recorder Button */}
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => setScheduleDialogOpen(true)}
-                              title="Mesaj Zamanla"
+                              type="button"
+                              onClick={() => setShowVoiceRecorder(true)}
                             >
-                              <Clock className="w-4 h-4" />
+                              <Mic className="w-5 h-5" />
                             </Button>
-                          )}
+
+                            {/* GIF Picker */}
+                            <Popover open={showGifPicker} onOpenChange={setShowGifPicker}>
+                              <PopoverTrigger asChild>
+                                <Button variant="ghost" size="icon" type="button">
+                                  <ImageIcon className="w-5 h-5" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <GifPicker onSelectGif={handleSendGif} />
+                              </PopoverContent>
+                            </Popover>
+                            
+                            {/* Schedule Button */}
+                            {selectedCategory === "friend" && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setScheduleDialogOpen(true)}
+                                title="Mesaj Zamanla"
+                              >
+                                <Clock className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
                           
                           {/* Send Button */}
                           <Button
                             onClick={handleSendMessage}
                             disabled={(!newMessage.trim() && !attachedFile) || isSending}
                             size="icon"
+                            className="h-8 w-8 md:h-10 md:w-10 shrink-0"
                           >
                             {isSending ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <Loader2 className="w-3 h-3 md:w-4 md:h-4 animate-spin" />
                             ) : (
-                              <Send className="w-4 h-4" />
+                              <Send className="w-3 h-3 md:w-4 md:h-4" />
                             )}
                           </Button>
                         </div>

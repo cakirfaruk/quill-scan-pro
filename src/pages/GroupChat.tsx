@@ -1111,7 +1111,7 @@ const GroupChat = () => {
             </div>
           )}
 
-          <form onSubmit={handleSendMessage} className="flex gap-2">
+          <form onSubmit={handleSendMessage} className="flex gap-1 md:gap-2">
             <input
               type="file"
               ref={fileInputRef}
@@ -1126,18 +1126,19 @@ const GroupChat = () => {
               size="icon"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
+              className="h-8 w-8 md:h-10 md:w-10 shrink-0"
             >
               {uploading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
               ) : (
-                <Paperclip className="w-5 h-5" />
+                <Paperclip className="w-4 h-4 md:w-5 md:h-5" />
               )}
             </Button>
 
             <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
               <PopoverTrigger asChild>
-                <Button type="button" variant="ghost" size="icon">
-                  <Smile className="w-5 h-5" />
+                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 md:h-10 md:w-10 shrink-0">
+                  <Smile className="w-4 h-4 md:w-5 md:h-5" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-full p-0" align="start">
@@ -1151,13 +1152,14 @@ const GroupChat = () => {
               placeholder={replyingTo ? "Yanıt yaz..." : "Mesaj yaz..."}
               disabled={sending || uploading}
               maxLength={2000}
+              className="flex-1 min-w-0"
             />
 
-            <Button type="submit" disabled={sending || uploading || !newMessage.trim()}>
+            <Button type="submit" disabled={sending || uploading || !newMessage.trim()} className="h-8 w-8 md:h-10 md:w-10 shrink-0">
               {sending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-3 h-3 md:w-4 md:h-4 animate-spin" />
               ) : (
-                <Send className="w-5 h-5" />
+                <Send className="w-3 h-3 md:w-4 md:h-4" />
               )}
             </Button>
           </form>
