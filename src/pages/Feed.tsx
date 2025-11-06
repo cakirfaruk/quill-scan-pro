@@ -228,29 +228,39 @@ const Feed = () => {
   }, []);
 
   const checkUserAndLoad = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      navigate("/auth");
-      return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+      
+      setUserId(user.id);
+      
+      // Load user profile
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("username, profile_photo")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (profile) {
+        setUsername(profile.username);
+        setProfilePhoto(profile.profile_photo);
+      }
+      
+      // **SADECE ARKADAŞLARI YÜKLEyalım** - Postlar optimized hook ile gelecek
+      await loadFriends(user.id);
+    } catch (error) {
+      console.error("Error loading feed:", error);
+      toast({
+        title: "Hata",
+        description: "Sayfa yüklenirken bir hata oluştu",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
-    
-    setUserId(user.id);
-    
-    // Load user profile
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("username, profile_photo")
-      .eq("user_id", user.id)
-      .single();
-    
-    if (profile) {
-      setUsername(profile.username);
-      setProfilePhoto(profile.profile_photo);
-    }
-    
-    // **SADECE ARKADAŞLARI YÜKLEyalım** - Postlar optimized hook ile gelecek
-    await loadFriends(user.id);
-    setLoading(false);
   };
 
   const loadFriends = async (currentUserId: string) => {

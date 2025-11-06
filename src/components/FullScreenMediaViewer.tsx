@@ -45,6 +45,11 @@ export const FullScreenMediaViewer = ({
     }
   }, [open]);
 
+  // Early return if no media
+  if (!media || media.length === 0 || !currentMedia) {
+    return null;
+  }
+
   const handleNext = () => {
     if (currentIndex < media.length - 1) {
       setCurrentIndex(prev => prev + 1);
@@ -73,6 +78,8 @@ export const FullScreenMediaViewer = ({
   };
 
   const handleDownload = async () => {
+    if (!currentMedia) return;
+    
     try {
       const response = await fetch(currentMedia.url);
       const blob = await response.blob();
@@ -221,7 +228,7 @@ export const FullScreenMediaViewer = ({
               onClick={handleDoubleTap}
               style={{ cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
             >
-              {currentMedia.type === "photo" ? (
+              {currentMedia && currentMedia.type === "photo" ? (
                 <img
                   ref={imageRef}
                   src={currentMedia.url}
@@ -276,7 +283,7 @@ export const FullScreenMediaViewer = ({
           )}
 
           {/* Bottom Controls */}
-          {currentMedia.type === "photo" && (
+          {currentMedia && currentMedia.type === "photo" && (
             <div className="absolute bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-t from-black/60 to-transparent">
               <div className="flex items-center justify-center gap-4">
                 <Button
