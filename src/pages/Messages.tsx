@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useDraft } from "@/hooks/use-draft";
 import { Loader2, Send, Search, ArrowLeft, FileText, Smile, Paperclip, Ban, Check, CheckCheck, Mic, Image as ImageIcon, Pin, Forward, MoreVertical, Users, Phone, Video, Clock, MessageSquare, UserPlus, Heart, Save } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+import { AnalysisMessageCard } from "@/components/AnalysisMessageCard";
 import { useIsMobile } from "@/hooks/use-mobile";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -2093,50 +2094,23 @@ const Messages = () => {
                             )}
                             
                             {isAnalysisShare ? (
-                            <Card
-                              className={`max-w-full cursor-pointer hover:shadow-lg transition-all border-2 ${
-                                msg.sender_id === currentUserId
-                                  ? "bg-primary/5 border-primary/30 hover:border-primary/50"
-                                  : "bg-accent/5 border-accent/30 hover:border-accent/50"
-                              }`}
-                              onClick={() => {
-                                if (msg.analysis_type) {
-                                  handleAnalysisClick(msg.analysis_id!, msg.analysis_type);
-                                } else {
-                                  toast({
-                                    title: "Hata",
-                                    description: "Analiz türü bilgisi bulunamadı.",
-                                    variant: "destructive",
-                                  });
-                                }
-                              }}
-                            >
-                              <div className="p-4">
-                                <div className="flex items-start gap-3 mb-3">
-                                  <div className="p-2.5 bg-gradient-primary rounded-lg">
-                                    <FileText className="w-6 h-6 text-primary-foreground" />
-                                  </div>
-                                  <div className="flex-1">
-                                    <p className="font-semibold text-sm mb-1">📊 Analiz Sonucu Paylaşıldı</p>
-                                    <p className="text-xs text-muted-foreground">Detayları görmek için tıklayın</p>
-                                  </div>
-                                </div>
-                                {msg.content.split('[Analiz ID:')[0].trim() && (
-                                  <p className="text-sm mb-3 px-1">
-                                    {msg.content.split('[Analiz ID:')[0].trim()}
-                                  </p>
-                                )}
-                                <div className="flex items-center justify-between pt-2 border-t border-border/50">
-                                  <p className="text-xs text-muted-foreground">
-                                    {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
-                                  </p>
-                                  <p className="text-xs font-medium text-primary">Görüntüle →</p>
-                                </div>
-                              </div>
-                            </Card>
+                              <AnalysisMessageCard
+                                content={msg.content}
+                                analysisType={msg.analysis_type}
+                                timestamp={msg.created_at}
+                                isSender={msg.sender_id === currentUserId}
+                                onClick={() => {
+                                  if (msg.analysis_type) {
+                                    handleAnalysisClick(msg.analysis_id!, msg.analysis_type);
+                                  } else {
+                                    toast({
+                                      title: "Hata",
+                                      description: "Analiz türü bilgisi bulunamadı.",
+                                      variant: "destructive",
+                                    });
+                                  }
+                                }}
+                              />
                             ) : isGif && gifUrl ? (
                               <>
                                 <div className="rounded-lg overflow-hidden max-w-xs">

@@ -9,6 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 interface ShareResultButtonProps {
   content: string;
   title: string;
+  analysisId?: string;
+  analysisType?: string;
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm" | "lg" | "icon";
   className?: string;
@@ -17,6 +19,8 @@ interface ShareResultButtonProps {
 export const ShareResultButton = ({ 
   content, 
   title, 
+  analysisId,
+  analysisType,
   variant = "outline", 
   size = "sm",
   className = ""
@@ -77,12 +81,19 @@ export const ShareResultButton = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Prepare message content with metadata
+      const messageContent = analysisId && analysisType
+        ? `📊 **${title}**\n\n${content}\n\n[Analiz ID: ${analysisId}]\n[Analiz Türü: ${analysisType}]`
+        : `📊 **${title}**\n\n${content}`;
+
       // Send message with analysis result
       await supabase.from("messages").insert({
         sender_id: user.id,
         receiver_id: friendId,
-        content: `📊 **${title}**\n\n${content}`,
+        content: messageContent,
         message_category: "other",
+        analysis_id: analysisId || null,
+        analysis_type: analysisType || null,
       });
 
       toast({
