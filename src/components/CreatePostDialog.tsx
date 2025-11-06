@@ -40,6 +40,7 @@ import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
 import { z } from "zod";
 import { useEnhancedOfflineSync } from "@/hooks/use-enhanced-offline-sync";
 import { useNetworkStatus } from "@/hooks/use-network-status";
+import { useOptimisticUI } from "@/hooks/use-optimistic-ui";
 
 const postSchema = z.object({
   content: z.string()
@@ -101,6 +102,7 @@ export const CreatePostDialog = ({
   const { toast } = useToast();
   const isOnline = useNetworkStatus();
   const { addToQueue } = useEnhancedOfflineSync();
+  const { addOptimisticItem } = useOptimisticUI();
 
   // Draft management
   const draft = useDraft({
@@ -292,22 +294,20 @@ export const CreatePostDialog = ({
       const hashtags = extractHashtags(content);
 
       if (!isOnline) {
-        // Offline - queue for later
-        addToQueue({
-          type: 'post',
-          data: {
-            user_id: userId,
-            content: content.trim(),
-            media_urls: mediaPreviews.length > 0 ? mediaPreviews.map(m => m.url) : null,
-            media_types: mediaPreviews.length > 0 ? mediaPreviews.map(m => m.type) : null,
-            post_type: postType,
-            location_name: locationName || null,
-            location_latitude: locationLatitude,
-            location_longitude: locationLongitude,
-            mentions,
-            hashtags,
-            taggedFriends: taggedFriends.map(f => f.user_id),
-          }
+        // Offline - add optimistically and queue
+        const optimisticId = addOptimisticItem('post', {
+          user_id: userId,
+          content: content.trim(),
+          media_urls: mediaPreviews.length > 0 ? mediaPreviews.map(m => m.url) : null,
+          media_types: mediaPreviews.length > 0 ? mediaPreviews.map(m => m.type) : null,
+          post_type: postType,
+          location_name: locationName || null,
+          location_latitude: locationLatitude,
+          location_longitude: locationLongitude,
+          mentions,
+          hashtags,
+          taggedFriends: taggedFriends.map(f => f.user_id),
+          created_at: new Date().toISOString(),
         });
         
         // Reset form

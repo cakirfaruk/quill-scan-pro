@@ -34,6 +34,8 @@ interface Post {
   comments: number;
   hasLiked: boolean;
   hasSaved: boolean;
+  _optimistic?: boolean;
+  _status?: 'pending' | 'syncing' | 'success' | 'failed';
 }
 
 interface FeedPostCardProps {

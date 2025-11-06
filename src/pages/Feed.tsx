@@ -37,6 +37,8 @@ import { Suspense } from "react";
 import { useEnhancedOfflineSync } from "@/hooks/use-enhanced-offline-sync";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { useOfflineCache } from "@/hooks/use-offline-cache";
+import { useOptimisticUI } from "@/hooks/use-optimistic-ui";
+import { SyncStatusBadge } from "@/components/SyncStatusBadge";
 
 interface Post {
   id: string;
@@ -97,6 +99,7 @@ const Feed = () => {
   const [userId, setUserId] = useState<string>("");
   const isOnline = useNetworkStatus();
   const { addToQueue } = useEnhancedOfflineSync();
+  const { addOptimisticItem, optimisticItems, getSyncStatus } = useOptimisticUI();
   
   // Offline cache for posts
   const {
@@ -155,13 +158,22 @@ const Feed = () => {
       shares_count: post.shares_count || 0
     }));
     
+    // Add optimistic posts at the top
+    const optimisticPosts = optimisticItems
+      .filter(item => item.type === 'post')
+      .map(item => ({
+        ...item.data,
+        _optimistic: true,
+        _status: item.status,
+      }));
+    
     // If offline and no online posts, use cached posts
     if (!isOnline && onlinePosts.length === 0 && cachedPosts.length > 0) {
-      return cachedPosts;
+      return [...optimisticPosts, ...cachedPosts];
     }
     
-    return onlinePosts;
-  }, [allPosts, likeCounts, commentCounts, userLikes, savedPosts, isOnline, cachedPosts]);
+    return [...optimisticPosts, ...onlinePosts];
+  }, [allPosts, likeCounts, commentCounts, userLikes, savedPosts, isOnline, cachedPosts, optimisticItems]);
 
   // **FRIENDS POSTS** - Arkadaş postları filtrele
   const friendsPosts = useMemo(() => {
@@ -518,16 +530,15 @@ const Feed = () => {
       soundEffects.playMessageSent();
       
       if (!isOnline) {
-        // Offline - queue for later
-        addToQueue({
-          type: 'comment',
-          data: {
-            post_id: selectedPost.id,
-            user_id: userId,
-            content: newComment.trim(),
-            parent_comment_id: replyingTo,
-          }
+        // Offline - add optimistically and queue
+        const optimisticId = addOptimisticItem('comment', {
+          post_id: selectedPost.id,
+          user_id: userId,
+          content: newComment.trim(),
+          parent_comment_id: replyingTo,
+          created_at: new Date().toISOString(),
         });
+        
         setNewComment("");
         setReplyingTo(null);
         return;

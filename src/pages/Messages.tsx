@@ -38,6 +38,8 @@ import { NoMessagesIllustration, NoConversationIllustration } from "@/components
 import { Suspense } from "react";
 import { useEnhancedOfflineSync } from "@/hooks/use-enhanced-offline-sync";
 import { useNetworkStatus } from "@/hooks/use-network-status";
+import { useOptimisticUI } from "@/hooks/use-optimistic-ui";
+import { SyncStatusBadge } from "@/components/SyncStatusBadge";
 import { useOfflineCache } from "@/hooks/use-offline-cache";
 
 interface Friend {
@@ -165,6 +167,7 @@ const Messages = () => {
   const isMobile = useIsMobile();
   const isOnline = useNetworkStatus();
   const { addToQueue } = useEnhancedOfflineSync();
+  const { addOptimisticItem, optimisticItems } = useOptimisticUI();
   
   // Offline cache for conversations and messages
   const {
@@ -1582,16 +1585,15 @@ const Messages = () => {
       let message_category: "friend" | "match" | "other" = selectedCategory || "other";
 
       if (!isOnline) {
-        // Offline - queue for later
-        addToQueue({
-          type: 'message',
-          data: {
-            sender_id: currentUserId,
-            receiver_id: selectedFriend.user_id,
-            content: messageContent,
-            message_category,
-            reply_to: replyingTo?.id || null,
-          }
+        // Offline - add optimistically and queue
+        const optimisticId = addOptimisticItem('message', {
+          sender_id: currentUserId,
+          receiver_id: selectedFriend.user_id,
+          content: messageContent,
+          message_category,
+          reply_to: replyingTo?.id || null,
+          created_at: new Date().toISOString(),
+          read: false,
         });
         
         // Clear inputs
