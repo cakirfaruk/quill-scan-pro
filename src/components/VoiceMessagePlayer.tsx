@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Play, Pause, FileText, Languages, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { AudioWaveform } from "./AudioWaveform";
 
 interface VoiceMessagePlayerProps {
   audioUrl: string;
@@ -98,6 +99,14 @@ export const VoiceMessagePlayer = ({ audioUrl, duration, preferredLanguage = 'tr
       audio.play();
     }
     setIsPlaying(!isPlaying);
+  };
+
+  const handleSeek = (time: number) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    audio.currentTime = time;
+    setCurrentTime(time);
   };
 
   const formatTime = (seconds: number) => {
@@ -198,29 +207,29 @@ export const VoiceMessagePlayer = ({ audioUrl, duration, preferredLanguage = 'tr
           size="icon"
           variant="ghost"
           onClick={togglePlay}
-          className="h-8 w-8 rounded-full flex-shrink-0"
+          className="h-10 w-10 rounded-full flex-shrink-0 hover:bg-primary/10 transition-colors"
         >
           {isPlaying ? (
-            <Pause className="h-4 w-4" />
+            <Pause className="h-5 w-5" />
           ) : (
-            <Play className="h-4 w-4" />
+            <Play className="h-5 w-5 ml-0.5" />
           )}
         </Button>
 
-        <div className="flex-1 space-y-1">
-          <div className="h-1 bg-muted rounded-full overflow-hidden relative">
-            <div 
-              className="h-full bg-primary transition-all"
-              style={{ width: `${progress}%` }}
-            />
-            {isTranscribing && (
-              <div className="absolute inset-0 overflow-hidden">
-                <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-[slide-in-right_1.5s_ease-in-out_infinite]" />
-              </div>
-            )}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {formatTime(currentTime)} / {formatTime(audioDuration)}
+        <div className="flex-1 space-y-1.5">
+          {/* Waveform visualization */}
+          <AudioWaveform
+            audioUrl={audioUrl}
+            currentTime={currentTime}
+            duration={audioDuration}
+            isPlaying={isPlaying}
+            onSeek={handleSeek}
+          />
+          
+          {/* Time display */}
+          <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(audioDuration)}</span>
           </div>
         </div>
 
