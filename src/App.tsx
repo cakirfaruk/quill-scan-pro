@@ -11,15 +11,8 @@ import { IncomingGroupCallDialog } from "@/components/IncomingGroupCallDialog";
 import { PermissionManager } from "@/components/PermissionManager";
 import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
 import { initPerformanceMonitoring } from "@/utils/performanceMonitoring";
-
-// Lazy load heavy animation libraries
-const AnimatePresence = lazy(() => import("framer-motion").then(mod => ({ default: mod.AnimatePresence })));
-const motion = lazy(() => import("framer-motion").then(mod => ({ default: mod.motion })));
-const RouteProgressBar = lazy(() => import("@/components/AnimationWrappers").then(mod => ({ default: mod.RouteProgressBar })));
-const EnhancedOfflineIndicator = lazy(() => import("@/components/EnhancedOfflineIndicator").then(mod => ({ default: mod.EnhancedOfflineIndicator })));
-const Tutorial = lazy(() => import("@/components/Tutorial").then(mod => ({ default: mod.Tutorial })));
-const MobileNav = lazy(() => import("@/components/MobileNav").then(mod => ({ default: mod.MobileNav })));
-
+import { EnhancedOfflineIndicator } from "@/components/EnhancedOfflineIndicator";
+import { MobileNav } from "@/components/MobileNav";
 // Lazy load ALL pages including Index for optimal code splitting
 const Index = lazy(() => import("./pages/Index"));
 const Feed = lazy(() => import("./pages/Feed"));
@@ -202,9 +195,6 @@ const AppRoutes = () => {
 
   return (
     <>
-      <Suspense fallback={null}>
-        <RouteProgressBar isAnimating={isNavigating} />
-      </Suspense>
       {incomingCall && (
         <IncomingCallDialog
           isOpen={true}
@@ -265,11 +255,7 @@ const AppRoutes = () => {
               <Route path="*" element={<NotFound />} />
             </Routes>
       </Suspense>
-      {showNav && (
-        <Suspense fallback={null}>
-          <MobileNav />
-        </Suspense>
-      )}
+      {showNav && <MobileNav />}
     </>
   );
 };
@@ -287,10 +273,7 @@ const App = () => {
           <Toaster />
           <Sonner />
           <PermissionManager />
-          <Suspense fallback={null}>
-            <EnhancedOfflineIndicator />
-            <Tutorial />
-          </Suspense>
+          <EnhancedOfflineIndicator />
           <AppRoutes />
         </ThemeProvider>
       </BrowserRouter>
