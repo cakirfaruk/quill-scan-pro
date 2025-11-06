@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -50,6 +51,7 @@ interface Analysis {
 
 const Profile = () => {
   const { username } = useParams();
+  const { user, userId: authUserId, isLoading: authLoading } = useAuth(); // AUTH CONTEXT
   const [profile, setProfile] = useState({
     user_id: "",
     username: "",
@@ -377,10 +379,9 @@ const Profile = () => {
     console.log("Profile: Starting loadProfile, username:", username);
     setIsLoading(true);
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError) {
-        console.error("Profile: Auth error:", authError);
-        throw authError;
+      // **AUTH CONTEXT KULLANIMI** - supabase.auth.getUser() yerine
+      if (authLoading) {
+        return; // Auth yükleniyor, bekle
       }
       
       if (!user) {
@@ -389,7 +390,7 @@ const Profile = () => {
         return;
       }
 
-      console.log("Profile: User authenticated:", user.id);
+      console.log("Profile: User authenticated from context:", user.id);
       setCurrentUserId(user.id);
 
       // Get userId from URL query params if present

@@ -14,6 +14,7 @@ import { initPerformanceMonitoring } from "@/utils/performanceMonitoring";
 import { EnhancedOfflineIndicator } from "@/components/EnhancedOfflineIndicator";
 import { MobileNav } from "@/components/MobileNav";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 // Critical pages - load immediately (no lazy loading)
 import Index from "./pages/Index";
@@ -52,14 +53,15 @@ const VapidKeyGenerator = lazy(() => import("./pages/VapidKeyGenerator"));
 const AnalysisHistory = lazy(() => import("./pages/AnalysisHistory"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// Optimized QueryClient with better cache settings
+// Optimized QueryClient with AGGRESSIVE cache settings
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (was cacheTime)
+      staleTime: 15 * 60 * 1000, // 15 minutes - AGRESIF
+      gcTime: 30 * 60 * 1000, // 30 minutes - AGRESIF
       refetchOnWindowFocus: false,
       refetchOnMount: false,
+      refetchOnReconnect: false, // YENİ - Reconnect'te refetch yapma
       retry: 1,
     },
   },
@@ -273,13 +275,15 @@ const App = () => {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <Toaster />
-            <Sonner />
-            <PermissionManager />
-            <EnhancedOfflineIndicator />
-            <AppRoutes />
-          </ThemeProvider>
+          <AuthProvider>
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+              <Toaster />
+              <Sonner />
+              <PermissionManager />
+              <EnhancedOfflineIndicator />
+              <AppRoutes />
+            </ThemeProvider>
+          </AuthProvider>
         </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>

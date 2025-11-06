@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useMemo, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { useOptimizedFeed } from "@/hooks/use-optimized-feed";
 import { useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
@@ -94,6 +95,7 @@ const Feed = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { shouldShowOnboarding, markOnboardingComplete } = useOnboarding();
+  const { user, userId: authUserId, isLoading: authLoading } = useAuth(); // AUTH CONTEXT
   const [userId, setUserId] = useState<string>("");
   
   // **OPTIMIZED FEED HOOK** - Keyset pagination + batch queries
@@ -223,36 +225,28 @@ const Feed = () => {
     threshold: 80,
   });
 
+  // **AUTH CONTEXT KULLANIMI** - Tek seferlik auth kontrolü
   useEffect(() => {
-    checkUserAndLoad();
-  }, []);
+    if (authLoading) return; // Auth yükleniyor, bekle
+    
+    if (!user) {
+      console.log("Feed: No user found, redirecting to auth");
+      navigate("/auth");
+      return;
+    }
 
-  const checkUserAndLoad = async () => {
+    console.log("Feed: User authenticated from context, loading profile");
+    setUserId(user.id);
+    checkUserAndLoad(user.id);
+  }, [user, authLoading]);
+
+  const checkUserAndLoad = async (currentUserId: string) => {
     try {
-      console.log("Feed: Checking user authentication");
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError) {
-        console.error("Feed auth error:", authError);
-        navigate("/auth");
-        return;
-      }
-      
-      if (!user) {
-        console.log("Feed: No user found, redirecting to auth");
-        navigate("/auth");
-        return;
-      }
-      
-      console.log("Feed: User authenticated, loading profile");
-      
-      setUserId(user.id);
-      
       // Load user profile
       const { data: profile } = await supabase
         .from("profiles")
         .select("username, profile_photo")
-        .eq("user_id", user.id)
+        .eq("user_id", currentUserId)
         .single();
       
       if (profile) {
@@ -261,7 +255,7 @@ const Feed = () => {
       }
       
       // **SADECE ARKADAŞLARI YÜKLEyalım** - Postlar optimized hook ile gelecek
-      await loadFriends(user.id);
+      await loadFriends(currentUserId);
     } catch (error) {
       console.error("Error loading feed:", error);
       toast({

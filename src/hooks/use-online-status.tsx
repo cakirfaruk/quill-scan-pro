@@ -54,54 +54,50 @@ export const useOnlineStatus = (userId: string | null) => {
 
 export const useUpdateOnlineStatus = () => {
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
     let userId: string | null = null;
+    let isUpdating = false;
 
-    const updateStatus = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    const updateStatus = async (online: boolean) => {
+      if (isUpdating) return; // Eğer zaten güncelleme yapılıyorsa çık
+      isUpdating = true;
 
-      userId = user.id;
-
-      await supabase
-        .from("profiles")
-        .update({
-          is_online: true,
-          last_seen: new Date().toISOString(),
-        })
-        .eq("user_id", user.id);
-    };
-
-    const setOffline = async () => {
-      if (!userId) {
+      try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-        userId = user.id;
-      }
 
-      await supabase
-        .from("profiles")
-        .update({
-          is_online: false,
-          last_seen: new Date().toISOString(),
-        })
-        .eq("user_id", userId);
+        userId = user.id;
+
+        await supabase
+          .from("profiles")
+          .update({
+            is_online: online,
+            last_seen: new Date().toISOString(),
+          })
+          .eq("user_id", user.id);
+      } finally {
+        isUpdating = false;
+      }
     };
 
-    // Update status immediately and then every 30 seconds
-    updateStatus();
-    intervalId = setInterval(updateStatus, 30000);
+    // İLK yükleme: Online yap
+    updateStatus(true);
 
-    // Set offline when leaving page
+    // SADECE sayfa kapatılırken offline yap - 30 saniyede bir güncelleme YOK!
     const handleBeforeUnload = () => {
-      setOffline();
+      if (userId) {
+        // Sync call for beforeunload
+        navigator.sendBeacon(
+          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}`,
+          JSON.stringify({ is_online: false, last_seen: new Date().toISOString() })
+        );
+      }
     };
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        setOffline();
+        updateStatus(false);
       } else {
-        updateStatus();
+        updateStatus(true);
       }
     };
 
@@ -109,10 +105,9 @@ export const useUpdateOnlineStatus = () => {
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      clearInterval(intervalId);
       window.removeEventListener("beforeunload", handleBeforeUnload);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      setOffline();
+      updateStatus(false);
     };
   }, []);
 };
