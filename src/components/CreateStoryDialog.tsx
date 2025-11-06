@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, X, Camera, Music, Smile, Type, BarChart3, HelpCircle } from "lucide-react";
+import { Loader2, Upload, X, Camera, Music, Smile, Type, BarChart3, HelpCircle, Sparkles } from "lucide-react";
 import { soundEffects } from "@/utils/soundEffects";
 import { StoryMusicPicker } from "./StoryMusicPicker";
 import { GifPicker } from "./GifPicker";
@@ -12,6 +12,7 @@ import { StoryTextEditor } from "./StoryTextEditor";
 import { StoryPollCreator } from "./StoryPollCreator";
 import { StoryQuestionCreator } from "./StoryQuestionCreator";
 import { StoryCanvas } from "./StoryCanvas";
+import { StoryFilterPicker } from "./StoryFilterPicker";
 
 interface CreateStoryDialogProps {
   open: boolean;
@@ -46,6 +47,8 @@ export const CreateStoryDialog = ({
   const [poll, setPoll] = useState<{ question: string; options: string[] } | null>(null);
   const [question, setQuestion] = useState<string | null>(null);
   const [backgroundColor, setBackgroundColor] = useState<string>("#000000");
+  const [showFilterPicker, setShowFilterPicker] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState<{ name: string; value: string }>({ name: "Normal", value: "none" });
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -214,18 +217,20 @@ export const CreateStoryDialog = ({
             </div>
           ) : (
             <div className="space-y-4">
-              <StoryCanvas
-                backgroundImage={preview}
-                mediaType={mediaType}
-                stickers={selectedStickers}
-                gifs={selectedGifs}
-                textElements={textElements}
-                onElementsUpdate={(data) => {
-                  setSelectedStickers(data.stickers);
-                  setSelectedGifs(data.gifs);
-                  setTextElements(data.textElements);
-                }}
-              />
+              <div style={{ filter: selectedFilter.value }}>
+                <StoryCanvas
+                  backgroundImage={preview}
+                  mediaType={mediaType}
+                  stickers={selectedStickers}
+                  gifs={selectedGifs}
+                  textElements={textElements}
+                  onElementsUpdate={(data) => {
+                    setSelectedStickers(data.stickers);
+                    setSelectedGifs(data.gifs);
+                    setTextElements(data.textElements);
+                  }}
+                />
+              </div>
 
               {/* Clear/Reset button */}
               <div className="flex gap-2">
@@ -246,6 +251,15 @@ export const CreateStoryDialog = ({
 
               {/* Enhancement tools */}
               <div className="flex gap-2 flex-wrap">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFilterPicker(true)}
+                >
+                  <Sparkles className="w-4 h-4 mr-1" />
+                  Filtre
+                </Button>
                 <Button
                   type="button"
                   variant="outline"
@@ -304,6 +318,11 @@ export const CreateStoryDialog = ({
 
               {/* Active enhancements display */}
               <div className="flex gap-2 flex-wrap text-xs">
+                {selectedFilter.name !== "Normal" && (
+                  <span className="bg-primary/10 text-primary px-2 py-1 rounded-full">
+                    ✨ {selectedFilter.name}
+                  </span>
+                )}
                 {selectedMusic && (
                   <span className="bg-primary/10 text-primary px-2 py-1 rounded-full">
                     🎵 {selectedMusic.name}
@@ -365,6 +384,15 @@ export const CreateStoryDialog = ({
         </div>
 
         {/* Enhancement dialogs */}
+        <StoryFilterPicker
+          open={showFilterPicker}
+          onOpenChange={setShowFilterPicker}
+          onSelect={(filter) => {
+            setSelectedFilter(filter);
+            setShowFilterPicker(false);
+          }}
+        />
+
         <StoryMusicPicker
           open={showMusicPicker}
           onOpenChange={setShowMusicPicker}
