@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { HashRouter, Routes, Route, useLocation } from "react-router-dom";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingFallback } from "@/components/LoadingFallback";
@@ -268,7 +268,7 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <HashRouter>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Toaster />
           <Sonner />
@@ -276,7 +276,7 @@ const App = () => {
           <EnhancedOfflineIndicator />
           <AppRoutes />
         </ThemeProvider>
-      </BrowserRouter>
+      </HashRouter>
     </QueryClientProvider>
   );
 };

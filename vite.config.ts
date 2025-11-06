@@ -37,19 +37,16 @@ export default defineConfig(({ mode }) => ({
         },
       },
     },
-    chunkSizeWarningLimit: 600, // Stricter limit
+    chunkSizeWarningLimit: 600,
     sourcemap: false,
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true,
+        drop_console: mode === 'production',
         drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info', 'console.debug'], // Remove specific console methods
       },
     },
-    // Optimize CSS
     cssMinify: true,
-    // Report compressed size
     reportCompressedSize: true,
   },
 }));
