@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Plus, Video, Sparkles, Heart, Menu, Coffee, Moon, Hand, Star, Target, Calendar, FileText } from "lucide-react";
+import { Home, Plus, Video, Sparkles, Heart, Menu, Coffee, Moon, Hand, Star, Target, Calendar, FileText, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { CreatePostDialog } from "@/components/CreatePostDialog";
@@ -59,6 +59,7 @@ export const MobileNav = () => {
   ];
 
   const quickMenuItems = [
+    { icon: History, label: "Analiz Geçmişi", path: "/analysis-history" },
     { icon: Sparkles, label: "Tarot", path: "/tarot" },
     { icon: Coffee, label: "Kahve Falı", path: "/coffee-fortune" },
     { icon: Moon, label: "Rüya Tabiri", path: "/dream-interpretation" },

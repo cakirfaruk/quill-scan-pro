@@ -2,7 +2,7 @@ import { Header } from "@/components/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Heart, Moon, Star, Coffee, Hand, TrendingUp, Brain, Calendar } from "lucide-react";
+import { Sparkles, Heart, Moon, Star, Coffee, Hand, TrendingUp, Brain, Calendar, History } from "lucide-react";
 
 const Discovery = () => {
   const navigate = useNavigate();
@@ -92,6 +92,17 @@ const Discovery = () => {
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Analizler ve fallarla kendinizi keşfedin, geleceğinize dair ipuçları edinin
           </p>
+          <div className="mt-4">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => navigate("/analysis-history")}
+              className="gap-2"
+            >
+              <History className="w-5 h-5" />
+              Analiz Geçmişim
+            </Button>
+          </div>
         </div>
 
         {/* Analyses Section */}

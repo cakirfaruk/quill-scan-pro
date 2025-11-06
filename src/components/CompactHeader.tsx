@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
-  Home, Search, Plus, Video, Sparkles, Shield, Coins, MessageCircle, Menu, Heart
+  Home, Search, Plus, Video, Sparkles, Shield, Coins, MessageCircle, Menu, Heart, History
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -227,6 +227,16 @@ export const CompactHeader = () => {
               >
                 <Sparkles className="w-4 h-4" />
                 Analizler
+              </Button>
+            </Link>
+            <Link to="/analysis-history">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`gap-2 ${location.pathname === "/analysis-history" ? "text-primary" : ""}`}
+              >
+                <History className="w-4 h-4" />
+                Geçmiş
               </Button>
             </Link>
           </nav>

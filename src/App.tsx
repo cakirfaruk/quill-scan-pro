@@ -54,6 +54,7 @@ const GroupSettings = lazy(() => import("./pages/GroupSettings"));
 const Discovery = lazy(() => import("./pages/Discovery"));
 const CallHistory = lazy(() => import("./pages/CallHistory"));
 const VapidKeyGenerator = lazy(() => import("./pages/VapidKeyGenerator"));
+const AnalysisHistory = lazy(() => import("./pages/AnalysisHistory"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Optimized QueryClient with better cache settings
@@ -196,7 +197,7 @@ const AppRoutes = () => {
     };
   }, [currentUserId]);
   
-  const showNav = ['/feed', '/explore', '/reels', '/discovery', '/messages', '/profile', '/match', '/friends'].some(
+  const showNav = ['/feed', '/explore', '/reels', '/discovery', '/messages', '/profile', '/match', '/friends', '/analysis-history'].some(
     path => location.pathname === path || location.pathname.startsWith('/profile/')
   );
 
@@ -260,6 +261,7 @@ const AppRoutes = () => {
               <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
               <Route path="/match" element={<Match />} />
               <Route path="/call-history" element={<CallHistory />} />
+              <Route path="/analysis-history" element={<AnalysisHistory />} />
               <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
