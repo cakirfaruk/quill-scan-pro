@@ -35,6 +35,8 @@ import { useOnboarding } from "@/hooks/use-onboarding";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
 import { WidgetDashboard } from "@/components/WidgetDashboard";
+import { DoubleTapLike } from "@/components/DoubleTapLike";
+import { FullScreenMediaViewer } from "@/components/FullScreenMediaViewer";
 
 interface Post {
   id: string;
@@ -120,6 +122,9 @@ const Feed = () => {
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
   const [username, setUsername] = useState("");
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [mediaViewerOpen, setMediaViewerOpen] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState<{ url: string; type: "photo" | "video" }[]>([]);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
 
   // **OPTIMIZED & ENRICHED POSTS** - useMemo ile cache'lenir
   const enrichedPosts = useMemo(() => {
@@ -652,21 +657,38 @@ const Feed = () => {
       )}
 
       {post.media_url && (
-        <div className="relative overflow-hidden group/media">
-          {post.media_type === "image" ? (
-            <img 
-              src={post.media_url} 
-              alt="Post" 
-              className="w-full object-cover max-h-96 sm:max-h-[500px] transition-transform duration-700 group-hover/media:scale-105"
-            />
-          ) : post.media_type === "video" ? (
-            <video 
-              src={post.media_url} 
-              controls 
-              className="w-full max-h-96 sm:max-h-[500px]"
-            />
-          ) : null}
-        </div>
+        <DoubleTapLike
+          onDoubleTap={() => !post.hasLiked && handleLike(post.id, false)}
+          isLiked={post.hasLiked}
+          className="cursor-pointer"
+        >
+          <div 
+            className="relative overflow-hidden group/media"
+            onClick={() => {
+              setSelectedMedia([{ 
+                url: post.media_url!, 
+                type: post.media_type === "video" ? "video" : "photo" 
+              }]);
+              setSelectedMediaIndex(0);
+              setMediaViewerOpen(true);
+            }}
+          >
+            {post.media_type === "image" ? (
+              <img 
+                src={post.media_url} 
+                alt="Post" 
+                className="w-full object-cover max-h-96 sm:max-h-[500px] transition-transform duration-700 group-hover/media:scale-105"
+              />
+            ) : post.media_type === "video" ? (
+              <video 
+                src={post.media_url} 
+                controls 
+                className="w-full max-h-96 sm:max-h-[500px]"
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : null}
+          </div>
+        </DoubleTapLike>
       )}
 
       <div className="p-3 sm:p-4 space-y-3">
@@ -1076,6 +1098,25 @@ const Feed = () => {
           storageKey="feed-tour"
         />
       )}
+
+      {/* Full Screen Media Viewer */}
+      <FullScreenMediaViewer
+        open={mediaViewerOpen}
+        onOpenChange={setMediaViewerOpen}
+        media={selectedMedia}
+        initialIndex={selectedMediaIndex}
+        onLike={() => {
+          // Find the post with this media and toggle like
+          const post = enrichedPosts.find(p => p.media_url === selectedMedia[selectedMediaIndex]?.url);
+          if (post && !post.hasLiked) {
+            handleLike(post.id, false);
+          }
+        }}
+        isLiked={(() => {
+          const post = enrichedPosts.find(p => p.media_url === selectedMedia[selectedMediaIndex]?.url);
+          return post?.hasLiked || false;
+        })()}
+      />
     </div>
   );
 };

@@ -3,11 +3,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Loader2, MessageCircle, Heart, Share2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { soundEffects } from "@/utils/soundEffects";
+import { DoubleTapLike } from "@/components/DoubleTapLike";
+import { FullScreenMediaViewer } from "@/components/FullScreenMediaViewer";
 
 interface Post {
   id: string;
@@ -35,6 +36,9 @@ interface ProfilePostsProps {
 
 export const ProfilePosts = ({ posts, loading, isOwnProfile, onLike }: ProfilePostsProps) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [mediaViewerOpen, setMediaViewerOpen] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState<{ url: string; type: "photo" | "video" }[]>([]);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
 
   const handleLike = async (postId: string, hasLiked: boolean) => {
     if (!hasLiked) {
@@ -105,21 +109,38 @@ export const ProfilePosts = ({ posts, loading, isOwnProfile, onLike }: ProfilePo
             </div>
 
             {post.media_url && (
-              <div className="w-full">
-                {post.media_type === "photo" ? (
-                  <img 
-                    src={post.media_url} 
-                    alt="Post media" 
-                    className="w-full max-h-[400px] sm:max-h-[500px] object-cover"
-                  />
-                ) : (
-                  <video 
-                    src={post.media_url} 
-                    controls 
-                    className="w-full max-h-[400px] sm:max-h-[500px]"
-                  />
-                )}
-              </div>
+              <DoubleTapLike
+                onDoubleTap={() => !post.hasLiked && handleLike(post.id, false)}
+                isLiked={post.hasLiked}
+                className="cursor-pointer"
+              >
+                <div 
+                  className="w-full"
+                  onClick={() => {
+                    setSelectedMedia([{ 
+                      url: post.media_url!, 
+                      type: post.media_type === "video" ? "video" : "photo" 
+                    }]);
+                    setSelectedMediaIndex(0);
+                    setMediaViewerOpen(true);
+                  }}
+                >
+                  {post.media_type === "photo" ? (
+                    <img 
+                      src={post.media_url} 
+                      alt="Post media" 
+                      className="w-full max-h-[400px] sm:max-h-[500px] object-cover transition-transform duration-300 hover:scale-105"
+                    />
+                  ) : (
+                    <video 
+                      src={post.media_url} 
+                      controls 
+                      className="w-full max-h-[400px] sm:max-h-[500px]"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  )}
+                </div>
+              </DoubleTapLike>
             )}
 
             <div className="p-3 sm:p-4">
@@ -164,15 +185,23 @@ export const ProfilePosts = ({ posts, loading, isOwnProfile, onLike }: ProfilePo
         ))}
       </div>
 
-      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden">
-          <img 
-            src={selectedImage || ""} 
-            alt="Profile" 
-            className="w-full h-auto"
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Full Screen Media Viewer */}
+      <FullScreenMediaViewer
+        open={mediaViewerOpen}
+        onOpenChange={setMediaViewerOpen}
+        media={selectedMedia}
+        initialIndex={selectedMediaIndex}
+        onLike={() => {
+          const post = posts.find(p => p.media_url === selectedMedia[selectedMediaIndex]?.url);
+          if (post && !post.hasLiked) {
+            handleLike(post.id, false);
+          }
+        }}
+        isLiked={(() => {
+          const post = posts.find(p => p.media_url === selectedMedia[selectedMediaIndex]?.url);
+          return post?.hasLiked || false;
+        })()}
+      />
     </Card>
   );
 };
