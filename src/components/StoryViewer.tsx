@@ -7,11 +7,13 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { X, ChevronLeft, ChevronRight, Eye, Send, Music, Volume2, VolumeX, BarChart3, MessageCircle } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Eye, Send, Music, Volume2, VolumeX, BarChart3, MessageCircle, Share2, Loader2, CheckSquare } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { StoryPollResults } from "./StoryPollResults";
 import { StoryQuestionResults } from "./StoryQuestionResults";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 
 interface Story {
   id: string;
@@ -66,6 +68,11 @@ export const StoryViewer = ({
   const [questionAnswer, setQuestionAnswer] = useState("");
   const [showPollResults, setShowPollResults] = useState(false);
   const [showQuestionResults, setShowQuestionResults] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [friends, setFriends] = useState<any[]>([]);
+  const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
+  const [loadingFriends, setLoadingFriends] = useState(false);
+  const [sendingShare, setSendingShare] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -335,6 +342,119 @@ export const StoryViewer = ({
     }
   };
 
+  const loadFriends = async () => {
+    setLoadingFriends(true);
+    try {
+      // Get all users this person has messaged or received messages from
+      const { data: sentMessages } = await supabase
+        .from("messages")
+        .select("receiver_id")
+        .eq("sender_id", currentUserId);
+
+      const { data: receivedMessages } = await supabase
+        .from("messages")
+        .select("sender_id")
+        .eq("receiver_id", currentUserId);
+
+      const uniqueUserIds = new Set([
+        ...(sentMessages?.map(m => m.receiver_id) || []),
+        ...(receivedMessages?.map(m => m.sender_id) || [])
+      ]);
+
+      if (uniqueUserIds.size === 0) {
+        setFriends([]);
+        setLoadingFriends(false);
+        return;
+      }
+
+      // Get profiles for these users
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, username, full_name, profile_photo")
+        .in("user_id", Array.from(uniqueUserIds));
+
+      if (profiles) {
+        setFriends(profiles);
+      }
+    } catch (error) {
+      console.error("Error loading friends:", error);
+    } finally {
+      setLoadingFriends(false);
+    }
+  };
+
+  const toggleFriendSelection = (friendId: string) => {
+    setSelectedFriends(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(friendId)) {
+        newSet.delete(friendId);
+      } else {
+        newSet.add(friendId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedFriends.size === friends.length) {
+      setSelectedFriends(new Set());
+    } else {
+      setSelectedFriends(new Set(friends.map(f => f.user_id)));
+    }
+  };
+
+  const handleShare = async () => {
+    if (selectedFriends.size === 0) {
+      toast({
+        title: "Uyarı",
+        description: "Lütfen en az bir arkadaş seçin",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSendingShare(true);
+    try {
+      const storyOwnerName = currentStory.profile.full_name || currentStory.profile.username;
+      const messageContent = `📖 ${storyOwnerName} bir story paylaştı!\n\nStory'yi görmek için story bölümüne gidin.`;
+
+      // Send messages to all selected friends
+      const messages = Array.from(selectedFriends).map(friendId => ({
+        sender_id: currentUserId,
+        receiver_id: friendId,
+        content: messageContent,
+        message_category: "other",
+      }));
+
+      const { error } = await supabase.from("messages").insert(messages);
+
+      if (error) throw error;
+
+      toast({
+        title: "Başarılı",
+        description: `Story ${selectedFriends.size} arkadaşınıza paylaşıldı`,
+      });
+
+      setShowShareDialog(false);
+      setSelectedFriends(new Set());
+    } catch (error) {
+      console.error("Error sharing story:", error);
+      toast({
+        title: "Hata",
+        description: "Paylaşım sırasında bir hata oluştu",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingShare(false);
+    }
+  };
+
+  const handleOpenShareDialog = () => {
+    setShowShareDialog(true);
+    setSelectedFriends(new Set());
+    loadFriends();
+  };
+
   if (!currentStory) return null;
 
   return (
@@ -393,6 +513,17 @@ export const StoryViewer = ({
                   </span>
                 </div>
               )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white hover:bg-white/20"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenShareDialog();
+                }}
+              >
+                <Share2 className="w-5 h-5" />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"
@@ -721,6 +852,129 @@ export const StoryViewer = ({
           question={(questionData as any).question}
         />
       )}
+
+      {/* Share Dialog */}
+      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <DialogContent className="max-w-md">
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold flex items-center justify-between">
+                <span>Story'yi Paylaş</span>
+                {selectedFriends.size > 0 && (
+                  <Badge variant="secondary">
+                    {selectedFriends.size} seçili
+                  </Badge>
+                )}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Bu story'yi arkadaşlarınızla paylaşın
+              </p>
+            </div>
+
+            {loadingFriends ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : friends.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                Henüz arkadaşınız yok
+              </p>
+            ) : (
+              <>
+                {/* Select All / Deselect All */}
+                <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="select-all-story"
+                      checked={selectedFriends.size === friends.length && friends.length > 0}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                    <label
+                      htmlFor="select-all-story"
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      {selectedFriends.size === friends.length ? "Tümünü Kaldır" : "Tümünü Seç"}
+                    </label>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {friends.length} arkadaş
+                  </span>
+                </div>
+
+                {/* Friends List */}
+                <div className="space-y-2 max-h-[350px] overflow-y-auto">
+                  {friends.map((friend) => {
+                    const isSelected = selectedFriends.has(friend.user_id);
+                    return (
+                      <div
+                        key={friend.user_id}
+                        onClick={() => toggleFriendSelection(friend.user_id)}
+                        className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                          isSelected
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:bg-secondary/50"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleFriendSelection(friend.user_id)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={friend.profile_photo} />
+                          <AvatarFallback>{friend.username?.[0]?.toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">
+                            {friend.full_name || friend.username}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            @{friend.username}
+                          </p>
+                        </div>
+                        {isSelected && (
+                          <CheckSquare className="w-4 h-4 text-primary flex-shrink-0" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Share Button */}
+                <div className="flex gap-2 pt-2 border-t">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowShareDialog(false)}
+                    className="flex-1"
+                    disabled={sendingShare}
+                  >
+                    İptal
+                  </Button>
+                  <Button
+                    onClick={handleShare}
+                    disabled={sendingShare || selectedFriends.size === 0}
+                    className="flex-1"
+                  >
+                    {sendingShare ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        Gönderiliyor...
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="w-4 h-4 mr-2" />
+                        {selectedFriends.size > 0 
+                          ? `${selectedFriends.size} Kişiye Gönder` 
+                          : "Gönder"}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 };
