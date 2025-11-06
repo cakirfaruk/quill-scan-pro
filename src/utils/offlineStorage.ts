@@ -176,16 +176,93 @@ class OfflineStorage {
     });
   }
 
-  // Clean up old data (older than 7 days)
+  // Get cache settings from localStorage
+  private getCacheSettings() {
+    const defaults = {
+      maxSize: 50 * 1024 * 1024, // 50 MB in bytes
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
+      autoCleanup: true,
+      cleanupInterval: 24 * 60 * 60 * 1000, // 24 hours in ms
+    };
+
+    try {
+      const saved = localStorage.getItem('cache-settings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          maxSize: (parsed.maxSize || 50) * 1024 * 1024, // Convert MB to bytes
+          maxAge: (parsed.maxAge || 7) * 24 * 60 * 60 * 1000, // Convert days to ms
+          autoCleanup: parsed.autoCleanup ?? true,
+          cleanupInterval: (parsed.cleanupInterval || 24) * 60 * 60 * 1000, // Convert hours to ms
+        };
+      }
+    } catch (error) {
+      console.error('Error loading cache settings:', error);
+    }
+
+    return defaults;
+  }
+
+  // Estimate total cache size
+  async estimateSize(): Promise<number> {
+    if (!this.db) await this.init();
+    
+    let totalSize = 0;
+    
+    for (const storeName of Object.values(STORES)) {
+      const items = await this.getAll(storeName);
+      // Rough estimate: JSON string length * 2 bytes per character
+      const storeSize = JSON.stringify(items).length * 2;
+      totalSize += storeSize;
+    }
+    
+    return totalSize;
+  }
+
+  // Check if cache size exceeds limit and cleanup if needed
+  async enforceSizeLimit(): Promise<void> {
+    const settings = this.getCacheSettings();
+    const currentSize = await this.estimateSize();
+    
+    if (currentSize > settings.maxSize) {
+      console.log(`Cache size (${currentSize}) exceeds limit (${settings.maxSize}), cleaning up...`);
+      
+      // Remove oldest items until we're under the limit
+      for (const storeName of Object.values(STORES)) {
+        const items = await this.getAll(storeName);
+        const sortedItems = items.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+        
+        // Remove oldest 20% of items from this store
+        const removeCount = Math.ceil(sortedItems.length * 0.2);
+        for (let i = 0; i < removeCount; i++) {
+          if (sortedItems[i]) {
+            await this.delete(storeName, sortedItems[i].id);
+          }
+        }
+        
+        // Check if we're under the limit now
+        const newSize = await this.estimateSize();
+        if (newSize <= settings.maxSize) {
+          break;
+        }
+      }
+    }
+  }
+
+  // Clean up old data based on user settings
   async cleanup(): Promise<void> {
-    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const settings = this.getCacheSettings();
+    const cutoffTime = Date.now() - settings.maxAge;
 
     for (const storeName of Object.values(STORES)) {
-      const oldItems = await this.getOlderThan(storeName, sevenDaysAgo);
+      const oldItems = await this.getOlderThan(storeName, cutoffTime);
       for (const item of oldItems) {
         await this.delete(storeName, item.id);
       }
     }
+
+    // Also enforce size limit
+    await this.enforceSizeLimit();
   }
 }
 
@@ -195,8 +272,25 @@ export const offlineStorage = new OfflineStorage();
 if (typeof window !== 'undefined') {
   offlineStorage.init().catch(console.error);
   
-  // Run cleanup every day
-  setInterval(() => {
-    offlineStorage.cleanup().catch(console.error);
-  }, 24 * 60 * 60 * 1000);
+  // Setup cleanup interval based on user settings
+  const setupCleanupInterval = () => {
+    const settings = JSON.parse(localStorage.getItem('cache-settings') || '{}');
+    const autoCleanup = settings.autoCleanup ?? true;
+    const cleanupInterval = (settings.cleanupInterval || 24) * 60 * 60 * 1000;
+    
+    if (autoCleanup) {
+      setInterval(() => {
+        offlineStorage.cleanup().catch(console.error);
+      }, cleanupInterval);
+    }
+  };
+
+  setupCleanupInterval();
+
+  // Listen for settings changes
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'cache-settings') {
+      setupCleanupInterval();
+    }
+  });
 }
