@@ -33,6 +33,7 @@ import { PinnedMessages } from "@/components/PinnedMessages";
 import { GroupVideoCallDialog } from "@/components/GroupVideoCallDialog";
 import { useLongPress } from "@/hooks/use-gestures";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { vibrateShort } from "@/utils/callNotifications";
 
 const messageSchema = z.object({
   content: z.string()
@@ -597,9 +598,17 @@ const GroupChat = () => {
 
       if (error) throw error;
 
+      // Vibrate on successful send
+      vibrateShort();
+
       setNewMessage("");
       setReplyingTo(null);
       setShowEmojiPicker(false);
+      
+      // Reset textarea height
+      if (messageInputRef.current) {
+        messageInputRef.current.style.height = 'auto';
+      }
     } catch (error: any) {
       toast({
         title: "Hata",
@@ -666,6 +675,9 @@ const GroupChat = () => {
       });
 
       if (messageError) throw messageError;
+
+      // Vibrate on successful send
+      vibrateShort();
 
       toast({
         title: "Başarılı",

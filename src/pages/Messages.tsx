@@ -30,7 +30,7 @@ import { VideoCallDialog } from "@/components/VideoCallDialog";
 import { ScheduleMessageDialog } from "@/components/ScheduleMessageDialog";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
-import { playRingtone, vibrate, showBrowserNotification } from "@/utils/callNotifications";
+import { playRingtone, vibrate, vibrateShort, showBrowserNotification } from "@/utils/callNotifications";
 import { requestNotificationPermission, subscribeToPushNotifications, checkNotificationPermission } from "@/utils/pushNotifications";
 import { SkeletonConversationList } from "@/components/SkeletonConversation";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -1090,6 +1090,9 @@ const Messages = () => {
 
           if (error) throw error;
 
+          // Vibrate on successful send
+          vibrateShort();
+
           setShowVoiceRecorder(false);
           loadMessages(selectedFriend.user_id);
           resolve(null);
@@ -1168,6 +1171,9 @@ const Messages = () => {
         });
 
       if (error) throw error;
+
+      // Vibrate on successful send
+      vibrateShort();
 
       setShowGifPicker(false);
       loadMessages(selectedFriend.user_id);
@@ -1275,11 +1281,20 @@ const Messages = () => {
 
       if (error) throw error;
 
+      // Vibrate on successful send
+      vibrateShort();
+
       // Clear draft after successful send
       draft.clearDraft();
 
       setNewMessage("");
       removeAttachment();
+      
+      // Reset textarea height
+      if (messageInputRef.current) {
+        messageInputRef.current.style.height = 'auto';
+      }
+      
       loadMessages(selectedFriend.user_id);
     } catch (error: any) {
       toast({

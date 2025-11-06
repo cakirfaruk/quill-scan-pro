@@ -57,6 +57,18 @@ export const vibrate = () => {
   }
 };
 
+export const vibrateShort = () => {
+  if ('vibrate' in navigator) {
+    navigator.vibrate(50); // Short, gentle vibration
+  }
+};
+
+export const vibrateMedium = () => {
+  if ('vibrate' in navigator) {
+    navigator.vibrate([100, 50, 100]); // Medium vibration pattern
+  }
+};
+
 export const showBrowserNotification = (title: string, options?: NotificationOptions) => {
   if (Notification.permission === 'granted') {
     new Notification(title, {
