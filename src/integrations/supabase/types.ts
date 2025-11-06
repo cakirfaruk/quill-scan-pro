@@ -1806,6 +1806,9 @@ export type Database = {
           content: string | null
           created_at: string | null
           id: string
+          location_latitude: number | null
+          location_longitude: number | null
+          location_name: string | null
           media_type: string | null
           media_types: string[] | null
           media_url: string | null
@@ -1819,6 +1822,9 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           id?: string
+          location_latitude?: number | null
+          location_longitude?: number | null
+          location_name?: string | null
           media_type?: string | null
           media_types?: string[] | null
           media_url?: string | null
@@ -1832,6 +1838,9 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           id?: string
+          location_latitude?: number | null
+          location_longitude?: number | null
+          location_name?: string | null
           media_type?: string | null
           media_types?: string[] | null
           media_url?: string | null
