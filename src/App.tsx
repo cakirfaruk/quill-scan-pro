@@ -16,6 +16,8 @@ import { MobileNav } from "@/components/MobileNav";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { lazyWithPreload } from "@/utils/lazyWithPreload";
+import { useRoutePreloader } from "@/hooks/use-route-preloader";
+import { useLinkIntersectionPreloader } from "@/hooks/use-link-intersection-preloader";
 
 // Critical pages - load immediately (no lazy loading)
 import Index from "./pages/Index";
@@ -53,6 +55,36 @@ const VapidKeyGenerator = lazyWithPreload(() => import("./pages/VapidKeyGenerato
 const AnalysisHistory = lazyWithPreload(() => import("./pages/AnalysisHistory"));
 const NotFound = lazyWithPreload(() => import("./pages/NotFound"));
 
+// Route component map for preloading
+const routeComponents: { [path: string]: any } = {
+  '/feed': Feed,
+  '/credits': Credits,
+  '/compatibility': Compatibility,
+  '/about': About,
+  '/faq': FAQ,
+  '/numerology': Numerology,
+  '/birth-chart': BirthChart,
+  '/admin': Admin,
+  '/profile': Profile,
+  '/friends': Friends,
+  '/messages': Messages,
+  '/settings': Settings,
+  '/match': Match,
+  '/tarot': Tarot,
+  '/coffee-fortune': CoffeeFortune,
+  '/dream': DreamInterpretation,
+  '/daily-horoscope': DailyHoroscope,
+  '/palmistry': Palmistry,
+  '/handwriting': Handwriting,
+  '/saved': SavedPosts,
+  '/reels': Reels,
+  '/explore': Explore,
+  '/groups': Groups,
+  '/discovery': Discovery,
+  '/call-history': CallHistory,
+  '/analysis-history': AnalysisHistory,
+};
+
 // Optimized QueryClient with AGGRESSIVE cache settings
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -75,6 +107,12 @@ const AppRoutes = () => {
   const [incomingGroupCall, setIncomingGroupCall] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
+
+  // 🚀 Smart route preloading based on current location
+  useRoutePreloader(routeComponents);
+  
+  // 👁️ Automatic preload when links enter viewport
+  useLinkIntersectionPreloader(routeComponents);
 
   // Get current user
   useEffect(() => {
