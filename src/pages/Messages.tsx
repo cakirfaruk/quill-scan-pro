@@ -2099,6 +2099,8 @@ const Messages = () => {
                                 analysisType={msg.analysis_type}
                                 timestamp={msg.created_at}
                                 isSender={msg.sender_id === currentUserId}
+                                messageId={msg.id}
+                                currentUserId={currentUserId}
                                 onClick={() => {
                                   if (msg.analysis_type) {
                                     handleAnalysisClick(msg.analysis_id!, msg.analysis_type);

@@ -1,6 +1,14 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Coffee, Moon, Hand, Heart, Star, Zap } from "lucide-react";
+import { Sparkles, Coffee, Moon, Hand, Heart, Star, Zap, MessageSquare, Send } from "lucide-react";
+import { MessageReactions } from "@/components/MessageReactions";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface AnalysisMessageCardProps {
   content: string;
@@ -8,6 +16,20 @@ interface AnalysisMessageCardProps {
   timestamp: string;
   isSender: boolean;
   onClick: () => void;
+  messageId: string;
+  currentUserId: string;
+}
+
+interface Comment {
+  id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  profile?: {
+    username: string;
+    full_name: string;
+    profile_photo: string;
+  };
 }
 
 const analysisTypeConfig: Record<string, {
@@ -80,8 +102,15 @@ export const AnalysisMessageCard = ({
   analysisType, 
   timestamp,
   isSender,
-  onClick 
+  onClick,
+  messageId,
+  currentUserId
 }: AnalysisMessageCardProps) => {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [isCommenting, setIsCommenting] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const { toast } = useToast();
   // Extract the main content before analysis metadata
   const mainContent = content.split('[Analiz ID:')[0].trim();
   
@@ -105,6 +134,97 @@ export const AnalysisMessageCard = ({
       };
 
   const Icon = config.icon;
+
+  useEffect(() => {
+    loadComments();
+
+    // Subscribe to comments changes
+    const channel = supabase
+      .channel(`message-comments-${messageId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "message_comments",
+          filter: `message_id=eq.${messageId}`,
+        },
+        () => {
+          loadComments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [messageId]);
+
+  const loadComments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("message_comments")
+        .select(`
+          id,
+          user_id,
+          content,
+          created_at,
+          profiles:user_id (
+            username,
+            full_name,
+            profile_photo
+          )
+        `)
+        .eq("message_id", messageId)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      const formattedComments = data?.map((comment: any) => ({
+        id: comment.id,
+        user_id: comment.user_id,
+        content: comment.content,
+        created_at: comment.created_at,
+        profile: Array.isArray(comment.profiles) ? comment.profiles[0] : comment.profiles,
+      })) || [];
+
+      setComments(formattedComments);
+    } catch (error: any) {
+      console.error("Error loading comments:", error);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return;
+
+    setIsCommenting(true);
+    try {
+      const { error } = await supabase
+        .from("message_comments")
+        .insert({
+          message_id: messageId,
+          user_id: currentUserId,
+          content: newComment.trim(),
+        });
+
+      if (error) throw error;
+
+      setNewComment("");
+      toast({
+        title: "Yorum eklendi",
+        description: "Yorumunuz başarıyla eklendi",
+      });
+    } catch (error: any) {
+      console.error("Error adding comment:", error);
+      toast({
+        title: "Hata",
+        description: "Yorum eklenirken bir hata oluştu",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCommenting(false);
+    }
+  };
 
   return (
     <Card 
@@ -147,19 +267,97 @@ export const AnalysisMessageCard = ({
           </p>
         )}
 
-        {/* Footer */}
-        <div className="flex items-center justify-between pt-2 border-t border-border/30">
-          <p className="text-xs text-muted-foreground">
-            {new Date(timestamp).toLocaleTimeString("tr-TR", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
-          <div className="flex items-center gap-1.5 text-primary text-xs font-medium">
-            <span>Detayları Gör</span>
-            <Sparkles className="w-3.5 h-3.5" />
-          </div>
+        {/* Reactions */}
+        <div className="pt-2">
+          <MessageReactions messageId={messageId} currentUserId={currentUserId} />
         </div>
+
+        {/* Comments Section */}
+        <Collapsible open={showComments} onOpenChange={setShowComments}>
+          <div className="flex items-center justify-between pt-2 border-t border-border/30 mt-2">
+            <p className="text-xs text-muted-foreground">
+              {new Date(timestamp).toLocaleTimeString("tr-TR", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+            <div className="flex items-center gap-2">
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>{comments.length}</span>
+                </Button>
+              </CollapsibleTrigger>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={onClick}
+                className="h-7 text-xs gap-1.5 text-primary"
+              >
+                <span>Detayları Gör</span>
+                <Sparkles className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+
+          <CollapsibleContent className="pt-3 space-y-3">
+            {/* Comment Input */}
+            <div className="flex gap-2">
+              <Input
+                placeholder="Yorum yazın..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleAddComment();
+                  }
+                }}
+                className="text-xs h-8"
+              />
+              <Button
+                size="sm"
+                onClick={handleAddComment}
+                disabled={isCommenting || !newComment.trim()}
+                className="h-8 px-3"
+              >
+                <Send className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+
+            {/* Comments List */}
+            {comments.length > 0 && (
+              <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="flex gap-2 p-2 rounded-lg bg-muted/30">
+                    <Avatar className="w-6 h-6">
+                      <AvatarImage src={comment.profile?.profile_photo} />
+                      <AvatarFallback className="text-[10px]">
+                        {comment.profile?.username?.[0]?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-foreground">
+                        {comment.profile?.full_name || comment.profile?.username}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {comment.content}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground/60 mt-1">
+                        {new Date(comment.created_at).toLocaleString("tr-TR", {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
       </div>
     </Card>
   );
