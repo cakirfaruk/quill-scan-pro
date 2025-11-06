@@ -2447,7 +2447,10 @@ const Messages = () => {
                                   : "bg-muted"
                               }`}>
                                 <div className="p-2">
-                                  <VoiceMessagePlayer audioUrl={voiceMessageUrl} />
+                                  <VoiceMessagePlayer 
+                                    audioUrl={voiceMessageUrl} 
+                                    preferredLanguage={preferredLanguage}
+                                  />
                                   <div className="flex items-center gap-2 justify-end mt-1">
                                     <p className="text-xs opacity-70">
                                       {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
