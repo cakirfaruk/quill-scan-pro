@@ -25,6 +25,10 @@ import {
   Check,
   Camera,
   ImageIcon,
+  ChevronUp,
+  ChevronDown,
+  Plus,
+  Maximize2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
@@ -84,7 +88,9 @@ export const CreatePostDialog = ({
   const [taggedFriends, setTaggedFriends] = useState<Friend[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showPhotoEditor, setShowPhotoEditor] = useState(false);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const carouselApiRef = useRef<any>(null);
   const { toast } = useToast();
 
   // Draft management
@@ -192,9 +198,38 @@ export const CreatePostDialog = ({
   const handleRemoveMedia = (index: number) => {
     setMediaPreviews(mediaPreviews.filter((_, i) => i !== index));
     setMediaFiles(mediaFiles.filter((_, i) => i !== index));
+    if (index === selectedMediaIndex && index > 0) {
+      setSelectedMediaIndex(index - 1);
+    }
     if (fileInputRef.current && mediaPreviews.length === 1) {
       fileInputRef.current.value = "";
     }
+  };
+
+  const handleMoveMedia = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= mediaPreviews.length) return;
+    
+    const newPreviews = [...mediaPreviews];
+    const newFiles = [...mediaFiles];
+    
+    // Swap items
+    [newPreviews[fromIndex], newPreviews[toIndex]] = [newPreviews[toIndex], newPreviews[fromIndex]];
+    if (newFiles.length > 0) {
+      [newFiles[fromIndex], newFiles[toIndex]] = [newFiles[toIndex], newFiles[fromIndex]];
+    }
+    
+    setMediaPreviews(newPreviews);
+    setMediaFiles(newFiles);
+    setSelectedMediaIndex(toIndex);
+    
+    // Update carousel position
+    if (carouselApiRef.current) {
+      carouselApiRef.current.scrollTo(toIndex);
+    }
+  };
+
+  const handleAddMoreMedia = () => {
+    fileInputRef.current?.click();
   };
 
   const handleEmojiClick = (emojiData: EmojiClickData) => {
@@ -480,68 +515,192 @@ export const CreatePostDialog = ({
 
                       {/* Media Preview with Carousel */}
                       {mediaPreviews.length > 0 && (
-                        <div className="relative">
-                          {mediaPreviews.length === 1 ? (
-                            <div className="relative rounded-lg overflow-hidden bg-black">
-                              {mediaPreviews[0].type === "photo" ? (
-                                <img
-                                  src={mediaPreviews[0].url}
-                                  alt="Preview"
-                                  className="w-full max-h-96 object-contain"
-                                />
-                              ) : (
-                                <video
-                                  src={mediaPreviews[0].url}
-                                  controls
-                                  className="w-full max-h-96"
-                                />
-                              )}
-                              <Button
-                                size="icon"
-                                variant="secondary"
-                                className="absolute top-2 right-2 rounded-full"
-                                onClick={() => handleRemoveMedia(0)}
+                        <div className="space-y-3">
+                          {/* Main Preview */}
+                          <div className="relative">
+                            {mediaPreviews.length === 1 ? (
+                              <div className="relative rounded-lg overflow-hidden bg-black">
+                                {mediaPreviews[0].type === "photo" ? (
+                                  <img
+                                    src={mediaPreviews[0].url}
+                                    alt="Preview"
+                                    className="w-full max-h-96 object-contain"
+                                  />
+                                ) : (
+                                  <video
+                                    src={mediaPreviews[0].url}
+                                    controls
+                                    className="w-full max-h-96"
+                                  />
+                                )}
+                                <Button
+                                  size="icon"
+                                  variant="secondary"
+                                  className="absolute top-2 right-2 rounded-full"
+                                  onClick={() => handleRemoveMedia(0)}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <Carousel 
+                                className="w-full"
+                                opts={{ startIndex: selectedMediaIndex }}
+                                setApi={(api) => {
+                                  carouselApiRef.current = api;
+                                  api?.on('select', () => {
+                                    setSelectedMediaIndex(api.selectedScrollSnap());
+                                  });
+                                }}
                               >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <Carousel className="w-full">
-                              <CarouselContent>
+                                <CarouselContent>
+                                  {mediaPreviews.map((media, index) => (
+                                    <CarouselItem key={index}>
+                                      <div className="relative rounded-lg overflow-hidden bg-black">
+                                        {media.type === "photo" ? (
+                                          <img
+                                            src={media.url}
+                                            alt={`Preview ${index + 1}`}
+                                            className="w-full max-h-96 object-contain"
+                                          />
+                                        ) : (
+                                          <video
+                                            src={media.url}
+                                            controls
+                                            className="w-full max-h-96"
+                                          />
+                                        )}
+                                        <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs">
+                                          {index + 1} / {mediaPreviews.length}
+                                        </div>
+                                      </div>
+                                    </CarouselItem>
+                                  ))}
+                                </CarouselContent>
+                                <CarouselPrevious className="left-2" />
+                                <CarouselNext className="right-2" />
+                              </Carousel>
+                            )}
+                          </div>
+
+                          {/* Media Editor - Thumbnails Grid */}
+                          {mediaPreviews.length > 1 && (
+                            <div className="space-y-2">
+                              <Label className="text-sm">Medya Düzenle ({mediaPreviews.length}/10)</Label>
+                              <div className="grid grid-cols-5 gap-2">
                                 {mediaPreviews.map((media, index) => (
-                                  <CarouselItem key={index}>
-                                    <div className="relative rounded-lg overflow-hidden bg-black">
+                                  <div
+                                    key={index}
+                                    className={`relative group cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
+                                      selectedMediaIndex === index 
+                                        ? 'border-primary ring-2 ring-primary/20' 
+                                        : 'border-transparent hover:border-primary/50'
+                                    }`}
+                                    onClick={() => {
+                                      setSelectedMediaIndex(index);
+                                      if (carouselApiRef.current) {
+                                        carouselApiRef.current.scrollTo(index);
+                                      }
+                                    }}
+                                  >
+                                    {/* Thumbnail */}
+                                    <div className="aspect-square bg-black">
                                       {media.type === "photo" ? (
                                         <img
                                           src={media.url}
-                                          alt={`Preview ${index + 1}`}
-                                          className="w-full max-h-96 object-contain"
+                                          alt={`Thumb ${index + 1}`}
+                                          className="w-full h-full object-cover"
                                         />
                                       ) : (
-                                        <video
-                                          src={media.url}
-                                          controls
-                                          className="w-full max-h-96"
-                                        />
+                                        <div className="w-full h-full flex items-center justify-center relative">
+                                          <video
+                                            src={media.url}
+                                            className="w-full h-full object-cover"
+                                          />
+                                          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                            <Video className="w-6 h-6 text-white" />
+                                          </div>
+                                        </div>
                                       )}
+                                    </div>
+
+                                    {/* Controls Overlay */}
+                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                                      {/* Move Up */}
+                                      {index > 0 && (
+                                        <Button
+                                          size="icon"
+                                          variant="secondary"
+                                          className="h-7 w-7 rounded-full"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleMoveMedia(index, index - 1);
+                                          }}
+                                        >
+                                          <ChevronUp className="w-3 h-3" />
+                                        </Button>
+                                      )}
+                                      
+                                      {/* Delete */}
                                       <Button
                                         size="icon"
-                                        variant="secondary"
-                                        className="absolute top-2 right-2 rounded-full"
-                                        onClick={() => handleRemoveMedia(index)}
+                                        variant="destructive"
+                                        className="h-7 w-7 rounded-full"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleRemoveMedia(index);
+                                        }}
                                       >
-                                        <X className="w-4 h-4" />
+                                        <X className="w-3 h-3" />
                                       </Button>
-                                      <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs">
-                                        {index + 1} / {mediaPreviews.length}
-                                      </div>
+
+                                      {/* Move Down */}
+                                      {index < mediaPreviews.length - 1 && (
+                                        <Button
+                                          size="icon"
+                                          variant="secondary"
+                                          className="h-7 w-7 rounded-full"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleMoveMedia(index, index + 1);
+                                          }}
+                                        >
+                                          <ChevronDown className="w-3 h-3" />
+                                        </Button>
+                                      )}
                                     </div>
-                                  </CarouselItem>
+
+                                    {/* Index Badge */}
+                                    <div className="absolute top-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                                      {index + 1}
+                                    </div>
+                                  </div>
                                 ))}
-                              </CarouselContent>
-                              <CarouselPrevious className="left-2" />
-                              <CarouselNext className="right-2" />
-                            </Carousel>
+
+                                {/* Add More Button */}
+                                {mediaPreviews.length < 10 && (
+                                  <button
+                                    onClick={handleAddMoreMedia}
+                                    className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary hover:bg-accent transition-all flex flex-col items-center justify-center gap-1"
+                                  >
+                                    <Plus className="w-5 h-5 text-muted-foreground" />
+                                    <span className="text-xs text-muted-foreground">Ekle</span>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Add More Button for Single Media */}
+                          {mediaPreviews.length === 1 && mediaPreviews.length < 10 && (
+                            <Button
+                              variant="outline"
+                              onClick={handleAddMoreMedia}
+                              className="w-full gap-2"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Daha Fazla Ekle ({mediaPreviews.length}/10)
+                            </Button>
                           )}
                         </div>
                       )}
