@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { Suspense } from "react";
 import { PWAInstallButton } from "@/components/PWAInstallButton";
 import { OfflineCacheStatus } from "@/components/OfflineCacheStatus";
+import { SyncProgressBar } from "@/components/SyncProgressBar";
 
 export const CompactHeader = () => {
   const [credits, setCredits] = useState(0);
@@ -361,6 +362,11 @@ export const CompactHeader = () => {
             </Button>
           )}
         </div>
+          </div>
+
+          {/* Sync Progress Bar - Below header */}
+          <div className="absolute bottom-0 left-0 right-0">
+            <SyncProgressBar showLabel={false} />
           </div>
         </div>
       </header>
