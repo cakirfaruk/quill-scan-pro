@@ -97,8 +97,8 @@ export const GifPicker = ({ open, onOpenChange, onSelectGif }: GifPickerProps) =
                     className="relative aspect-square rounded-lg overflow-hidden hover:ring-2 hover:ring-primary transition-all"
                   >
                     <img
-                      src={gif.media_formats.tinygif.url}
-                      alt={gif.content_description}
+                      src={gif.media_formats.gif.url}
+                      alt={gif.content_description || gif.title || 'GIF'}
                       className="w-full h-full object-cover"
                     />
                   </button>
