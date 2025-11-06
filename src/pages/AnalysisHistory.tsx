@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ShareResultButton } from "@/components/ShareResultButton";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
-import { Loader2, Search, Calendar, Filter, Sparkles, Coffee, Moon, Hand, Heart, Star, Zap, Eye, X } from "lucide-react";
+import { Loader2, Search, Calendar, Filter, Sparkles, Coffee, Moon, Hand, Heart, Star, Zap, Eye, X, BookmarkPlus, Bookmark } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 
@@ -25,6 +25,7 @@ interface Analysis {
   icon: any;
   color: string;
   result?: any;
+  isFavorite?: boolean;
 }
 
 const analysisTypeConfig: Record<string, { icon: any; label: string; color: string }> = {
@@ -44,6 +45,8 @@ export default function AnalysisHistory() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [selectedAnalysis, setSelectedAnalysis] = useState<Analysis | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const navigate = useNavigate();
@@ -51,11 +54,51 @@ export default function AnalysisHistory() {
 
   useEffect(() => {
     loadAnalyses();
+    loadFavorites();
+
+    // Subscribe to favorites changes
+    const channel = supabase
+      .channel("favorites-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "favorite_analyses",
+        },
+        () => {
+          loadFavorites();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
     filterAnalyses();
-  }, [analyses, searchQuery, selectedType]);
+  }, [analyses, searchQuery, selectedType, showFavoritesOnly, favorites]);
+
+  const loadFavorites = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("favorite_analyses")
+        .select("analysis_id, analysis_type")
+        .eq("user_id", user.id);
+
+      if (data) {
+        const favoriteSet = new Set(data.map(f => `${f.analysis_id}-${f.analysis_type}`));
+        setFavorites(favoriteSet);
+      }
+    } catch (error: any) {
+      console.error("Error loading favorites:", error);
+    }
+  };
 
   const loadAnalyses = async () => {
     try {
@@ -237,7 +280,13 @@ export default function AnalysisHistory() {
       // Sort all analyses by date
       allAnalyses.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-      setAnalyses(allAnalyses);
+      // Mark favorites
+      const analyzesWithFavorites = allAnalyses.map(analysis => ({
+        ...analysis,
+        isFavorite: favorites.has(`${analysis.id}-${analysis.type}`)
+      }));
+
+      setAnalyses(analyzesWithFavorites);
     } catch (error: any) {
       console.error("Error loading analyses:", error);
       toast({
@@ -252,6 +301,11 @@ export default function AnalysisHistory() {
 
   const filterAnalyses = () => {
     let filtered = analyses;
+
+    // Filter by favorites
+    if (showFavoritesOnly) {
+      filtered = filtered.filter(a => a.isFavorite);
+    }
 
     // Filter by type
     if (selectedType !== "all") {
@@ -268,6 +322,67 @@ export default function AnalysisHistory() {
     }
 
     setFilteredAnalyses(filtered);
+  };
+
+  const toggleFavorite = async (analysis: Analysis) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const favoriteKey = `${analysis.id}-${analysis.type}`;
+      const isFavorite = favorites.has(favoriteKey);
+
+      if (isFavorite) {
+        // Remove from favorites
+        const { error } = await supabase
+          .from("favorite_analyses")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("analysis_id", analysis.id)
+          .eq("analysis_type", analysis.type);
+
+        if (error) throw error;
+
+        setFavorites(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(favoriteKey);
+          return newSet;
+        });
+
+        toast({
+          title: "Favorilerden Çıkarıldı",
+          description: "Analiz favorilerinizden kaldırıldı",
+        });
+      } else {
+        // Add to favorites
+        const { error } = await supabase
+          .from("favorite_analyses")
+          .insert({
+            user_id: user.id,
+            analysis_id: analysis.id,
+            analysis_type: analysis.type,
+          });
+
+        if (error) throw error;
+
+        setFavorites(prev => new Set(prev).add(favoriteKey));
+
+        toast({
+          title: "Favorilere Eklendi",
+          description: "Analiz favorilerinize eklendi",
+        });
+      }
+
+      // Reload analyses to update favorite status
+      loadAnalyses();
+    } catch (error: any) {
+      console.error("Error toggling favorite:", error);
+      toast({
+        title: "Hata",
+        description: "İşlem sırasında bir hata oluştu",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleViewAnalysis = (analysis: Analysis) => {
@@ -302,6 +417,14 @@ export default function AnalysisHistory() {
               className="pl-9"
             />
           </div>
+          <Button
+            variant={showFavoritesOnly ? "default" : "outline"}
+            onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+            className="gap-2"
+          >
+            <Bookmark className="w-4 h-4" />
+            {showFavoritesOnly ? "Tüm Analizler" : "Favoriler"}
+          </Button>
         </div>
 
         {/* Type Filter Tabs */}
@@ -348,11 +471,11 @@ export default function AnalysisHistory() {
                 <Card key={analysis.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-1">
                         <div className="p-2 rounded-lg bg-primary/10">
                           <Icon className={`w-5 h-5 ${analysis.color}`} />
                         </div>
-                        <div>
+                        <div className="flex-1">
                           <CardTitle className="text-lg">{analysis.title}</CardTitle>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge variant="secondary" className="text-xs">
@@ -365,6 +488,21 @@ export default function AnalysisHistory() {
                           </div>
                         </div>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(analysis);
+                        }}
+                        className="flex-shrink-0"
+                      >
+                        {analysis.isFavorite ? (
+                          <Bookmark className="w-5 h-5 fill-primary text-primary" />
+                        ) : (
+                          <BookmarkPlus className="w-5 h-5" />
+                        )}
+                      </Button>
                     </div>
                   </CardHeader>
                   <CardContent>

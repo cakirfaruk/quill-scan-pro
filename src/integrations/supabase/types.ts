@@ -614,6 +614,30 @@ export type Database = {
           },
         ]
       }
+      favorite_analyses: {
+        Row: {
+          analysis_id: string
+          analysis_type: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          analysis_id: string
+          analysis_type: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          analysis_id?: string
+          analysis_type?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       friend_suggestions: {
         Row: {
           common_interests: string[] | null
