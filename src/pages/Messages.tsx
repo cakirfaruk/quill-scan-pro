@@ -36,6 +36,8 @@ import { SkeletonConversationList } from "@/components/SkeletonConversation";
 import { EmptyState } from "@/components/ui/empty-state";
 import { NoMessagesIllustration, NoConversationIllustration } from "@/components/EmptyStateIllustrations";
 import { Suspense } from "react";
+import { useEnhancedOfflineSync } from "@/hooks/use-enhanced-offline-sync";
+import { useNetworkStatus } from "@/hooks/use-network-status";
 
 interface Friend {
   user_id: string;
@@ -160,6 +162,8 @@ const Messages = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
+  const isOnline = useNetworkStatus();
+  const { addToQueue } = useEnhancedOfflineSync();
 
   // Draft management - unique key for each conversation
   const draftKey = selectedFriend 
@@ -1537,6 +1541,32 @@ const Messages = () => {
 
       // Determine message category
       let message_category: "friend" | "match" | "other" = selectedCategory || "other";
+
+      if (!isOnline) {
+        // Offline - queue for later
+        addToQueue({
+          type: 'message',
+          data: {
+            sender_id: currentUserId,
+            receiver_id: selectedFriend.user_id,
+            content: messageContent,
+            message_category,
+            reply_to: replyingTo?.id || null,
+          }
+        });
+        
+        // Clear inputs
+        draft.clearDraft();
+        setNewMessage("");
+        setReplyingTo(null);
+        removeAttachment();
+        
+        if (messageInputRef.current) {
+          messageInputRef.current.style.height = 'auto';
+        }
+        
+        return;
+      }
 
       const { error } = await supabase
         .from("messages")

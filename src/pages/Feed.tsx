@@ -34,6 +34,8 @@ import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
 import { WidgetDashboard } from "@/components/WidgetDashboard";
 import { Virtuoso } from "react-virtuoso";
 import { Suspense } from "react";
+import { useEnhancedOfflineSync } from "@/hooks/use-enhanced-offline-sync";
+import { useNetworkStatus } from "@/hooks/use-network-status";
 
 interface Post {
   id: string;
@@ -92,6 +94,8 @@ const Feed = () => {
   const { shouldShowOnboarding, markOnboardingComplete } = useOnboarding();
   const { user, userId: authUserId, isLoading: authLoading } = useAuth(); // AUTH CONTEXT
   const [userId, setUserId] = useState<string>("");
+  const isOnline = useNetworkStatus();
+  const { addToQueue } = useEnhancedOfflineSync();
   
   // **OPTIMIZED FEED HOOK** - Keyset pagination + batch queries
   const { 
@@ -471,6 +475,23 @@ const Feed = () => {
 
     try {
       soundEffects.playMessageSent();
+      
+      if (!isOnline) {
+        // Offline - queue for later
+        addToQueue({
+          type: 'comment',
+          data: {
+            post_id: selectedPost.id,
+            user_id: userId,
+            content: newComment.trim(),
+            parent_comment_id: replyingTo,
+          }
+        });
+        setNewComment("");
+        setReplyingTo(null);
+        return;
+      }
+      
       await supabase.from("post_comments").insert({
         post_id: selectedPost.id,
         user_id: userId,

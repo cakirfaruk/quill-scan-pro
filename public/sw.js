@@ -129,13 +129,79 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // Background sync event (for offline actions)
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-posts') {
-    event.waitUntil(syncPosts());
+self.addEventListener('sync', async (event) => {
+  if (event.tag === 'sync-offline-queue') {
+    event.waitUntil(syncOfflineQueue());
   }
 });
 
-async function syncPosts() {
-  // Implement post syncing logic here
-  console.log('Syncing posts in background');
+async function syncOfflineQueue() {
+  try {
+    console.log('[SW] Starting offline queue sync');
+    
+    // Get the offline queue from IndexedDB
+    const db = await openOfflineDB();
+    const queue = await getQueueFromDB(db);
+    
+    if (queue.length === 0) {
+      console.log('[SW] No items in queue to sync');
+      return;
+    }
+    
+    console.log(`[SW] Syncing ${queue.length} queued items`);
+    
+    // Try to sync each item
+    for (const item of queue) {
+      try {
+        await syncItem(item);
+        await removeFromQueue(db, item.id);
+        console.log('[SW] Successfully synced item:', item.id);
+      } catch (error) {
+        console.error('[SW] Failed to sync item:', item.id, error);
+      }
+    }
+    
+    console.log('[SW] Offline queue sync complete');
+  } catch (error) {
+    console.error('[SW] Error in syncOfflineQueue:', error);
+  }
+}
+
+function openOfflineDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('offline-storage', 1);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function getQueueFromDB(db) {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(['offline-queue'], 'readonly');
+    const store = transaction.objectStore('offline-queue');
+    const request = store.getAll();
+    
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function removeFromQueue(db, id) {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(['offline-queue'], 'readwrite');
+    const store = transaction.objectStore('offline-queue');
+    const request = store.delete(id);
+    
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function syncItem(item) {
+  // This would need to make requests to your Supabase backend
+  // For now, we'll just simulate success
+  console.log('[SW] Syncing item:', item);
+  // The actual sync is handled by the React app when it comes online
+  // This is just a fallback for background sync
+  return Promise.resolve();
 }

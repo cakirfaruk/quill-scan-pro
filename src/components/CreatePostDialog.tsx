@@ -38,6 +38,8 @@ import { PhotoCaptureEditor } from "@/components/PhotoCaptureEditor";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
 import { z } from "zod";
+import { useEnhancedOfflineSync } from "@/hooks/use-enhanced-offline-sync";
+import { useNetworkStatus } from "@/hooks/use-network-status";
 
 const postSchema = z.object({
   content: z.string()
@@ -97,6 +99,8 @@ export const CreatePostDialog = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const carouselApiRef = useRef<any>(null);
   const { toast } = useToast();
+  const isOnline = useNetworkStatus();
+  const { addToQueue } = useEnhancedOfflineSync();
 
   // Draft management
   const draft = useDraft({
@@ -286,6 +290,39 @@ export const CreatePostDialog = ({
       // Extract mentions and hashtags
       const mentions = extractMentions(content);
       const hashtags = extractHashtags(content);
+
+      if (!isOnline) {
+        // Offline - queue for later
+        addToQueue({
+          type: 'post',
+          data: {
+            user_id: userId,
+            content: content.trim(),
+            media_urls: mediaPreviews.length > 0 ? mediaPreviews.map(m => m.url) : null,
+            media_types: mediaPreviews.length > 0 ? mediaPreviews.map(m => m.type) : null,
+            post_type: postType,
+            location_name: locationName || null,
+            location_latitude: locationLatitude,
+            location_longitude: locationLongitude,
+            mentions,
+            hashtags,
+            taggedFriends: taggedFriends.map(f => f.user_id),
+          }
+        });
+        
+        // Reset form
+        setContent("");
+        setMediaFiles([]);
+        setMediaPreviews([]);
+        setTaggedFriends([]);
+        setLocationName("");
+        setLocationLatitude(null);
+        setLocationLongitude(null);
+        draft.clearDraft();
+        
+        if (onPostCreated) onPostCreated();
+        return;
+      }
 
       // Create post with media arrays and location
       const { data: postData, error: postError } = await supabase
