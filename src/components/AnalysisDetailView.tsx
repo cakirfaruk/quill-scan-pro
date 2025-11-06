@@ -485,6 +485,15 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
                 Aşk ve İlişkiler
               </h4>
               <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.love}</p>
+              <div className="mt-3 pt-3 border-t border-border">
+                <ShareResultButton
+                  title="Günlük Burç - Aşk ve İlişkiler"
+                  content={formatShareContent("Aşk ve İlişkiler", result.love)}
+                  size="sm"
+                  variant="ghost"
+                  className="w-full"
+                />
+              </div>
             </Card>
           )}
 
@@ -636,6 +645,15 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
                     <p className="text-xs font-semibold text-primary uppercase mb-1">Öneriler</p>
                     <p className="text-sm text-foreground">{area.recommendations}</p>
                   </div>
+                  <div className="pt-2">
+                    <ShareResultButton
+                      title={`Uyumluluk - ${area.name}`}
+                      content={`${area.name}\n\nUyum: %${area.compatibilityScore}\n\nGüçlü Yanlar: ${area.strengths}\n\nZorluklar: ${area.challenges}\n\nÖneriler: ${area.recommendations}`}
+                      size="sm"
+                      variant="ghost"
+                      className="w-full"
+                    />
+                  </div>
                 </div>
               </Card>
             ))}
@@ -765,6 +783,15 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
                   <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
                     {topicData.tavsiyeler}
                   </p>
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <ShareResultButton
+                      title={`Doğum Haritası - ${topicName}`}
+                      content={`${topicName}\n\n${topicData.genel_bakis || ''}\n\nTavsiyeler: ${topicData.tavsiyeler}`}
+                      size="sm"
+                      variant="ghost"
+                      className="w-full"
+                    />
+                  </div>
                 </div>
               )}
             </div>
