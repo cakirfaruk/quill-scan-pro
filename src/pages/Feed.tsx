@@ -229,11 +229,22 @@ const Feed = () => {
 
   const checkUserAndLoad = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      console.log("Feed: Checking user authentication");
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error("Feed auth error:", authError);
         navigate("/auth");
         return;
       }
+      
+      if (!user) {
+        console.log("Feed: No user found, redirecting to auth");
+        navigate("/auth");
+        return;
+      }
+      
+      console.log("Feed: User authenticated, loading profile");
       
       setUserId(user.id);
       

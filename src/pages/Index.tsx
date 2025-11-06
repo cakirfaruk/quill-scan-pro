@@ -21,11 +21,23 @@ const Index = () => {
 
   useEffect(() => {
     // Check if user is logged in and redirect to feed
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        navigate("/feed");
+    const checkAuth = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+          console.error("Index auth check error:", error);
+          return;
+        }
+        if (user) {
+          console.log("User logged in, redirecting to feed");
+          navigate("/feed");
+        }
+      } catch (error) {
+        console.error("Index auth check failed:", error);
       }
-    });
+    };
+    
+    checkAuth();
   }, [navigate]);
 
   return (

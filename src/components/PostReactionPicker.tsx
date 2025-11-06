@@ -139,16 +139,21 @@ export const PostReactionPicker = ({ postId, currentUserId, onReactionChange }: 
 
   return (
     <div className="flex items-center gap-2">
-      {/* Quick reaction button */}
+      {/* Quick reaction button - Mobile friendly */}
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="ghost"
             size="sm"
             className={cn(
-              "gap-2 transition-colors",
+              "gap-1 sm:gap-2 transition-colors flex-1 sm:flex-initial min-w-0",
               userReaction && "text-primary"
             )}
+            onClick={(e) => {
+              // Mobile: prevent double-tap zoom
+              e.preventDefault();
+              setIsOpen(!isOpen);
+            }}
           >
             {userReaction ? (
               <>
@@ -156,22 +161,31 @@ export const PostReactionPicker = ({ postId, currentUserId, onReactionChange }: 
                   <span className={REACTIONS.find(r => r.type === userReaction.type)?.color}>
                     {(() => {
                       const Icon = REACTIONS.find(r => r.type === userReaction.type)?.icon;
-                      return Icon ? <Icon className="h-4 w-4" /> : null;
+                      return Icon ? <Icon className="h-4 w-4 sm:h-5 sm:w-5" /> : null;
                     })()}
                   </span>
                 )}
-                <span className="text-sm">{totalReactions}</span>
+                <span className="text-xs sm:text-sm">{totalReactions}</span>
               </>
             ) : (
               <>
-                <ThumbsUp className="h-4 w-4" />
-                <span className="text-sm">Beğen</span>
+                <ThumbsUp className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="hidden sm:inline text-sm">Beğen</span>
               </>
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-2" side="top">
-          <div className="flex gap-1">
+        <PopoverContent 
+          className="w-auto p-2 sm:p-3" 
+          side="top"
+          align="center"
+          sideOffset={5}
+          onOpenAutoFocus={(e) => {
+            // Prevent focus on mobile
+            e.preventDefault();
+          }}
+        >
+          <div className="flex gap-1 sm:gap-2">
             {REACTIONS.map((reaction) => {
               const Icon = reaction.icon;
               const isActive = userReaction?.type === reaction.type;
@@ -181,13 +195,22 @@ export const PostReactionPicker = ({ postId, currentUserId, onReactionChange }: 
                   variant="ghost"
                   size="sm"
                   className={cn(
-                    "p-2 hover:scale-125 transition-transform",
+                    "p-2 sm:p-3 hover:scale-110 active:scale-95 transition-transform touch-manipulation",
                     isActive && "bg-accent"
                   )}
-                  onClick={() => handleReaction(reaction.type)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleReaction(reaction.type);
+                  }}
+                  onTouchEnd={(e) => {
+                    // Better mobile touch handling
+                    e.preventDefault();
+                    handleReaction(reaction.type);
+                  }}
                   title={reaction.label}
+                  aria-label={reaction.label}
                 >
-                  <Icon className={cn("h-5 w-5", reaction.color)} />
+                  <Icon className={cn("h-5 w-5 sm:h-6 sm:w-6", reaction.color)} />
                 </Button>
               );
             })}

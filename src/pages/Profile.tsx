@@ -374,20 +374,28 @@ const Profile = () => {
   };
 
   const loadProfile = async () => {
+    console.log("Profile: Starting loadProfile, username:", username);
     setIsLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error("Profile: Auth error:", authError);
+        throw authError;
+      }
+      
       if (!user) {
-        setIsLoading(false);
+        console.log("Profile: No user found, redirecting to auth");
         navigate("/auth");
         return;
       }
 
+      console.log("Profile: User authenticated:", user.id);
       setCurrentUserId(user.id);
 
       // Get userId from URL query params if present
       const searchParams = new URLSearchParams(window.location.search);
       const userIdParam = searchParams.get('userId');
+      console.log("Profile: userId param:", userIdParam, "username:", username);
 
       // If no username in URL, show current user's profile by user_id
       let profileData;
@@ -429,7 +437,6 @@ const Profile = () => {
           description: "Profil yüklenirken bir hata oluştu.",
           variant: "destructive",
         });
-        setIsLoading(false);
         return;
       }
 
@@ -440,11 +447,11 @@ const Profile = () => {
           description: "Aradığınız profil bulunamadı. Lütfen ayarlardan profil bilgilerinizi tamamlayın.",
           variant: "destructive",
         });
-        setIsLoading(false);
         navigate("/settings");
         return;
       }
 
+      console.log("Profile: Profile data loaded:", profileData.username);
       setProfile(profileData);
       setIsOwnProfile(profileData.user_id === user.id);
 
@@ -517,13 +524,17 @@ const Profile = () => {
 
       // Load analyses async (don't wait)
       if (profileData.user_id === user.id) {
+        console.log("Profile: Loading own analyses");
         Promise.all([
           loadAnalyses(profileData.user_id),
           loadLatestAnalyses(profileData.user_id)
         ]);
       } else {
+        console.log("Profile: Loading shared analyses");
         loadSharedAnalyses(profileData.user_id);
       }
+      
+      console.log("Profile: loadProfile completed successfully");
     } catch (error: any) {
       console.error("Profile error details:", error);
       toast({
@@ -532,6 +543,7 @@ const Profile = () => {
         variant: "destructive",
       });
     } finally {
+      console.log("Profile: Setting isLoading to false");
       setIsLoading(false);
     }
   };
