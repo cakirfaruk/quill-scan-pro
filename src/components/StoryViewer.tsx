@@ -7,9 +7,11 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { X, ChevronLeft, ChevronRight, Eye, Send, Music, Volume2, VolumeX } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Eye, Send, Music, Volume2, VolumeX, BarChart3, MessageCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
+import { StoryPollResults } from "./StoryPollResults";
+import { StoryQuestionResults } from "./StoryQuestionResults";
 
 interface Story {
   id: string;
@@ -60,6 +62,8 @@ export const StoryViewer = ({
   const [questionData, setQuestionData] = useState<any>(null);
   const [selectedPollOptions, setSelectedPollOptions] = useState<number[]>([]);
   const [questionAnswer, setQuestionAnswer] = useState("");
+  const [showPollResults, setShowPollResults] = useState(false);
+  const [showQuestionResults, setShowQuestionResults] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -528,6 +532,23 @@ export const StoryViewer = ({
             </div>
           )}
 
+          {/* Poll Results Button for Owner */}
+          {pollData && currentStory.user_id === currentUserId && (
+            <div className="absolute bottom-24 left-4 right-4 z-40">
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPollResults(true);
+                }}
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Anket Sonuçlarını Görüntüle
+              </Button>
+            </div>
+          )}
+
           {/* Question */}
           {questionData && currentStory.user_id !== currentUserId && (
             <div className="absolute bottom-24 left-4 right-4 z-40 bg-black/70 backdrop-blur-sm rounded-xl p-4 space-y-3">
@@ -558,6 +579,23 @@ export const StoryViewer = ({
                   <Send className="w-4 h-4" />
                 </Button>
               </div>
+            </div>
+          )}
+
+          {/* Question Results Button for Owner */}
+          {questionData && currentStory.user_id === currentUserId && (
+            <div className="absolute bottom-24 left-4 right-4 z-40">
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowQuestionResults(true);
+                }}
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Soru Yanıtlarını Görüntüle
+              </Button>
             </div>
           )}
 
@@ -652,6 +690,27 @@ export const StoryViewer = ({
           </div>
         )}
       </DialogContent>
+
+      {/* Poll Results Dialog */}
+      {pollData && (
+        <StoryPollResults
+          open={showPollResults}
+          onOpenChange={setShowPollResults}
+          pollId={(pollData as any).id}
+          question={(pollData as any).question}
+          options={(pollData as any).options || []}
+        />
+      )}
+
+      {/* Question Results Dialog */}
+      {questionData && (
+        <StoryQuestionResults
+          open={showQuestionResults}
+          onOpenChange={setShowQuestionResults}
+          questionId={(questionData as any).id}
+          question={(questionData as any).question}
+        />
+      )}
     </Dialog>
   );
 };
