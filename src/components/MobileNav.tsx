@@ -2,8 +2,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Home, Plus, Video, Sparkles, Heart, Menu, Coffee, Moon, Hand, Star, Target, Calendar, FileText, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PreloadLink } from "@/components/PreloadLink";
-import { useState, useEffect } from "react";
-import { CreatePostDialog } from "@/components/CreatePostDialog";
+import { useState, useEffect, Suspense } from "react";
+import { LazyCreatePostDialog } from "@/utils/lazyImports";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -159,20 +159,22 @@ export const MobileNav = () => {
       </nav>
 
       {/* Create Post Dialog */}
-      <CreatePostDialog
-        open={createPostDialogOpen}
-        onOpenChange={setCreatePostDialogOpen}
-        userId={userId}
-        username={currentProfile.username}
-        profilePhoto={currentProfile.profile_photo}
-        onPostCreated={() => {
-          toast({
-            title: "Başarılı",
-            description: "Gönderi oluşturuldu",
-          });
-          setCreatePostDialogOpen(false);
-        }}
-      />
+      <Suspense fallback={<div />}>
+        <LazyCreatePostDialog
+          open={createPostDialogOpen}
+          onOpenChange={setCreatePostDialogOpen}
+          userId={userId}
+          username={currentProfile.username}
+          profilePhoto={currentProfile.profile_photo}
+          onPostCreated={() => {
+            toast({
+              title: "Başarılı",
+              description: "Gönderi oluşturuldu",
+            });
+            setCreatePostDialogOpen(false);
+          }}
+        />
+      </Suspense>
     </>
   );
 };

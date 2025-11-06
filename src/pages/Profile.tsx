@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { CreatePostDialog } from "@/components/CreatePostDialog";
+import { LazyCreatePostDialog } from "@/utils/lazyImports";
 import { ProfilePosts } from "@/components/ProfilePosts";
 import { MutualFriends } from "@/components/MutualFriends";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
@@ -28,6 +28,7 @@ import { soundEffects } from "@/utils/soundEffects";
 import { OnlineStatusBadge } from "@/components/OnlineStatusBadge";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { Virtuoso } from "react-virtuoso";
+import { Suspense } from "react";
 
 interface UserPhoto {
   id: string;
@@ -1961,20 +1962,22 @@ const Profile = () => {
         </Dialog>
 
         {/* Create Post Dialog */}
-        <CreatePostDialog
-          open={createPostDialogOpen}
-          onOpenChange={setCreatePostDialogOpen}
-          userId={currentUserId}
-          username={profile.username}
-          profilePhoto={profile.profile_photo}
-          onPostCreated={() => {
-            loadUserPosts();
-            toast({
-              title: "Başarılı",
-              description: "Gönderi oluşturuldu",
-            });
-          }}
-        />
+        <Suspense fallback={<div />}>
+          <LazyCreatePostDialog
+            open={createPostDialogOpen}
+            onOpenChange={setCreatePostDialogOpen}
+            userId={currentUserId}
+            username={profile.username}
+            profilePhoto={profile.profile_photo}
+            onPostCreated={() => {
+              loadUserPosts();
+              toast({
+                title: "Başarılı",
+                description: "Gönderi oluşturuldu",
+              });
+            }}
+          />
+        </Suspense>
 
         {/* Profile Image Zoom Dialog */}
         <Dialog open={!!selectedProfileImage} onOpenChange={() => setSelectedProfileImage(null)}>

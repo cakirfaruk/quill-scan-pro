@@ -2,9 +2,9 @@ import { useEffect, useState, memo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Plus } from "lucide-react";
-import { StoryViewer } from "./StoryViewer";
-import { CreateStoryDialog } from "./CreateStoryDialog";
+import { LazyStoryViewer, LazyCreateStoryDialog } from "@/utils/lazyImports";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Suspense } from "react";
 
 interface Story {
   id: string;
@@ -292,19 +292,23 @@ export const StoriesBar = memo(({ currentUserId }: StoriesBarProps) => {
         </div>
       </ScrollArea>
 
-      <StoryViewer
-        stories={selectedStories}
-        initialIndex={selectedIndex}
-        open={viewerOpen}
-        onOpenChange={setViewerOpen}
-        currentUserId={currentUserId}
-      />
+      <Suspense fallback={<div />}>
+        <LazyStoryViewer
+          stories={selectedStories}
+          initialIndex={selectedIndex}
+          open={viewerOpen}
+          onOpenChange={setViewerOpen}
+          currentUserId={currentUserId}
+        />
+      </Suspense>
 
-      <CreateStoryDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-        onSuccess={loadStories}
-      />
+      <Suspense fallback={<div />}>
+        <LazyCreateStoryDialog
+          open={createDialogOpen}
+          onOpenChange={setCreateDialogOpen}
+          onSuccess={loadStories}
+        />
+      </Suspense>
     </>
   );
 });

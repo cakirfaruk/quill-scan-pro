@@ -22,11 +22,12 @@ import { PageHistory } from "@/components/PageHistory";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
-import { CreatePostDialog } from "@/components/CreatePostDialog";
+import { LazyCreatePostDialog } from "@/utils/lazyImports";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { useScrollProgress } from "@/hooks/use-parallax";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import { cn } from "@/lib/utils";
+import { Suspense } from "react";
 
 export const CompactHeader = () => {
   const [credits, setCredits] = useState(0);
@@ -353,20 +354,22 @@ export const CompactHeader = () => {
       </header>
 
       {/* Create Post Dialog */}
-      <CreatePostDialog
-        open={createPostDialogOpen}
-        onOpenChange={setCreatePostDialogOpen}
-        userId={currentUserId || ""}
-        username={username}
-        profilePhoto={profilePhoto}
-        onPostCreated={() => {
-          toast({
-            title: "Başarılı",
-            description: "Gönderi oluşturuldu",
-          });
-          setCreatePostDialogOpen(false);
-        }}
-      />
+      <Suspense fallback={<div />}>
+        <LazyCreatePostDialog
+          open={createPostDialogOpen}
+          onOpenChange={setCreatePostDialogOpen}
+          userId={currentUserId || ""}
+          username={username}
+          profilePhoto={profilePhoto}
+          onPostCreated={() => {
+            toast({
+              title: "Başarılı",
+              description: "Gönderi oluşturuldu",
+            });
+            setCreatePostDialogOpen(false);
+          }}
+        />
+      </Suspense>
     </>
   );
 };

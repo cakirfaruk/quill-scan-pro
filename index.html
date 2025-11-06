@@ -1,13 +1,14 @@
 <!doctype html>
-<html lang="en">
+<html lang="tr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
-    <meta name="theme-color" content="#9b87f5" />
+    <meta name="theme-color" content="#8B5CF6" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="apple-touch-icon" href="https://storage.googleapis.com/gpt-engineer-file-uploads/DMw3eaESLpeKAzKlfQPVGMQ5a3f1/uploads/1761954894293-pngtree-black-and-white-astro-icon-in-an-orbit-vector-png-image_7075895.png">
+    <link rel="manifest" href="/manifest.json" />
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -39,6 +40,17 @@
   <meta name="twitter:title" content="Astro Social">
   <meta property="og:description" content="Analizler, Fallar, Kehanetler, Eşleşmeler, Arkadaşlıklar, Paylaşımlar...">
   <meta name="twitter:description" content="Analizler, Fallar, Kehanetler, Eşleşmeler, Arkadaşlıklar, Paylaşımlar...">
+  
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => console.log('SW registered:', registration))
+          .catch(error => console.log('SW registration failed:', error));
+      });
+    }
+  </script>
 </head>
 
   <body>

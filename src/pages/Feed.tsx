@@ -23,7 +23,7 @@ import { soundEffects } from "@/utils/soundEffects";
 import { StoriesBar } from "@/components/StoriesBar";
 import { SkeletonPost } from "@/components/ui/enhanced-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { CreatePostDialog } from "@/components/CreatePostDialog";
+import { LazyCreatePostDialog, LazyFullScreenMediaViewer } from "@/utils/lazyImports";
 import { NoFriendsIllustration, NoPostsIllustration } from "@/components/EmptyStateIllustrations";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -32,8 +32,8 @@ import { useOnboarding } from "@/hooks/use-onboarding";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
 import { WidgetDashboard } from "@/components/WidgetDashboard";
-import { FullScreenMediaViewer } from "@/components/FullScreenMediaViewer";
 import { Virtuoso } from "react-virtuoso";
+import { Suspense } from "react";
 
 interface Post {
   id: string;
@@ -913,17 +913,19 @@ const Feed = () => {
 
       {/* Create Post Dialog */}
       {userId && username && (
-        <CreatePostDialog
-          open={createPostOpen}
-          onOpenChange={setCreatePostOpen}
-          userId={userId}
-          username={username}
-          profilePhoto={profilePhoto}
-          onPostCreated={() => {
-            setCreatePostOpen(false);
-            handleRefresh();
-          }}
-        />
+        <Suspense fallback={<div />}>
+          <LazyCreatePostDialog
+            open={createPostOpen}
+            onOpenChange={setCreatePostOpen}
+            userId={userId}
+            username={username}
+            profilePhoto={profilePhoto}
+            onPostCreated={() => {
+              setCreatePostOpen(false);
+              handleRefresh();
+            }}
+          />
+        </Suspense>
       )}
 
       {/* Keyboard Shortcuts Help */}
@@ -943,28 +945,30 @@ const Feed = () => {
       )}
 
       {/* Full Screen Media Viewer */}
-      <FullScreenMediaViewer
-        open={mediaViewerOpen}
-        onOpenChange={setMediaViewerOpen}
-        media={selectedMedia}
-        initialIndex={selectedMediaIndex}
-        onLike={() => {
-          const mediaUrl = selectedMedia[selectedMediaIndex]?.url;
-          const post = enrichedPosts.find(p => 
-            p.media_urls?.includes(mediaUrl) || p.media_url === mediaUrl
-          );
-          if (post && !post.hasLiked) {
-            handleLike(post.id, false);
-          }
-        }}
-        isLiked={(() => {
-          const mediaUrl = selectedMedia[selectedMediaIndex]?.url;
-          const post = enrichedPosts.find(p => 
-            p.media_urls?.includes(mediaUrl) || p.media_url === mediaUrl
-          );
-          return post?.hasLiked || false;
-        })()}
-      />
+      <Suspense fallback={<div />}>
+        <LazyFullScreenMediaViewer
+          open={mediaViewerOpen}
+          onOpenChange={setMediaViewerOpen}
+          media={selectedMedia}
+          initialIndex={selectedMediaIndex}
+          onLike={() => {
+            const mediaUrl = selectedMedia[selectedMediaIndex]?.url;
+            const post = enrichedPosts.find(p => 
+              p.media_urls?.includes(mediaUrl) || p.media_url === mediaUrl
+            );
+            if (post && !post.hasLiked) {
+              handleLike(post.id, false);
+            }
+          }}
+          isLiked={(() => {
+            const mediaUrl = selectedMedia[selectedMediaIndex]?.url;
+            const post = enrichedPosts.find(p => 
+              p.media_urls?.includes(mediaUrl) || p.media_url === mediaUrl
+            );
+            return post?.hasLiked || false;
+          })()}
+        />
+      </Suspense>
     </div>
   );
 };

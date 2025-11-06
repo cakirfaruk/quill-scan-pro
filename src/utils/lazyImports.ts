@@ -44,6 +44,56 @@ export const LazyEmojiPicker = lazy(() =>
 );
 
 /**
+ * LAZY LOADED HEAVY MODALS - Only load when needed
+ * These components are large and should be code-split
+ */
+
+// Dialog & Modal Components (~50KB total)
+export const LazyCreatePostDialog = createLazyComponent(() => 
+  import('@/components/CreatePostDialog').then(mod => ({ default: mod.CreatePostDialog }))
+);
+
+export const LazyStoryViewer = createLazyComponent(() => 
+  import('@/components/StoryViewer').then(mod => ({ default: mod.StoryViewer }))
+);
+
+export const LazyCreateStoryDialog = createLazyComponent(() => 
+  import('@/components/CreateStoryDialog').then(mod => ({ default: mod.CreateStoryDialog }))
+);
+
+export const LazyVideoCallDialog = createLazyComponent(() => 
+  import('@/components/VideoCallDialog').then(mod => ({ default: mod.VideoCallDialog }))
+);
+
+export const LazyGroupVideoCallDialog = createLazyComponent(() => 
+  import('@/components/GroupVideoCallDialog').then(mod => ({ default: mod.GroupVideoCallDialog }))
+);
+
+export const LazyFullScreenMediaViewer = createLazyComponent(() => 
+  import('@/components/FullScreenMediaViewer').then(mod => ({ default: mod.FullScreenMediaViewer }))
+);
+
+export const LazyScheduleMessageDialog = createLazyComponent(() => 
+  import('@/components/ScheduleMessageDialog').then(mod => ({ default: mod.ScheduleMessageDialog }))
+);
+
+export const LazyForwardMessageDialog = createLazyComponent(() => 
+  import('@/components/ForwardMessageDialog').then(mod => ({ default: mod.ForwardMessageDialog }))
+);
+
+export const LazyCreateGroupFileDialog = createLazyComponent(() => 
+  import('@/components/CreateGroupFileDialog').then(mod => ({ default: mod.CreateGroupFileDialog }))
+);
+
+export const LazyPhotoEditor = createLazyComponent(() => 
+  import('@/components/PhotoCaptureEditor').then(mod => ({ default: mod.PhotoCaptureEditor }))
+);
+
+export const LazyStoryCanvas = createLazyComponent(() => 
+  import('@/components/StoryCanvas').then(mod => ({ default: mod.StoryCanvas }))
+);
+
+/**
  * Create a lazy loaded component with preload capability
  * Usage:
  * const MyComponent = createLazyComponent(() => import('./MyComponent'));

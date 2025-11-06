@@ -27,9 +27,7 @@ import { GifPicker } from "@/components/GifPicker";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { SwipeableMessage } from "@/components/SwipeableMessage";
 import { useLongPress } from "@/hooks/use-gestures";
-import { VideoCallDialog } from "@/components/VideoCallDialog";
-import { ScheduleMessageDialog } from "@/components/ScheduleMessageDialog";
-import { ForwardMessageDialog } from "@/components/ForwardMessageDialog";
+import { LazyVideoCallDialog, LazyScheduleMessageDialog, LazyForwardMessageDialog } from "@/utils/lazyImports";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { playRingtone, vibrate, vibrateShort, showBrowserNotification } from "@/utils/callNotifications";
@@ -37,6 +35,7 @@ import { requestNotificationPermission, subscribeToPushNotifications, checkNotif
 import { SkeletonConversationList } from "@/components/SkeletonConversation";
 import { EmptyState } from "@/components/ui/empty-state";
 import { NoMessagesIllustration, NoConversationIllustration } from "@/components/EmptyStateIllustrations";
+import { Suspense } from "react";
 
 interface Friend {
   user_id: string;
@@ -2860,28 +2859,32 @@ const Messages = () => {
 
         {/* Video Call Dialog */}
         {showCallInterface && selectedFriend && activeCallId && (
-          <VideoCallDialog
-            isOpen={showCallInterface}
-            onClose={() => {
-              setShowCallInterface(false);
-              setActiveCallId(null);
-            }}
-            callId={activeCallId}
-            friendId={selectedFriend.user_id}
-            friendName={selectedFriend.full_name || selectedFriend.username}
-            friendPhoto={selectedFriend.profile_photo}
-            callType={callType}
-          />
+          <Suspense fallback={<div />}>
+            <LazyVideoCallDialog
+              isOpen={showCallInterface}
+              onClose={() => {
+                setShowCallInterface(false);
+                setActiveCallId(null);
+              }}
+              callId={activeCallId}
+              friendId={selectedFriend.user_id}
+              friendName={selectedFriend.full_name || selectedFriend.username}
+              friendPhoto={selectedFriend.profile_photo}
+              callType={callType}
+            />
+          </Suspense>
         )}
 
         {/* Schedule Message Dialog */}
         {selectedFriend && (
-          <ScheduleMessageDialog
-            open={scheduleDialogOpen}
-            onOpenChange={setScheduleDialogOpen}
-            receiverId={selectedFriend.user_id}
-            receiverName={selectedFriend.full_name || selectedFriend.username}
-          />
+          <Suspense fallback={<div />}>
+            <LazyScheduleMessageDialog
+              open={scheduleDialogOpen}
+              onOpenChange={setScheduleDialogOpen}
+              receiverId={selectedFriend.user_id}
+              receiverName={selectedFriend.full_name || selectedFriend.username}
+            />
+          </Suspense>
         )}
 
         {/* GIF Picker Dialog */}
@@ -2893,31 +2896,35 @@ const Messages = () => {
 
         {/* Incoming/Active Call Dialog */}
         {incomingCall && (
-          <VideoCallDialog
-            isOpen={true}
-            onClose={() => {
-              setIncomingCall(null);
-              if (ringtone) {
-                ringtone.stop();
-                setRingtone(null);
-              }
-            }}
-            callId={incomingCall.callId}
-            friendId={incomingCall.callerId}
-            friendName={incomingCall.callerName}
-            friendPhoto={incomingCall.callerPhoto}
-            isIncoming={true}
-            callType={incomingCall.callType}
-          />
+          <Suspense fallback={<div />}>
+            <LazyVideoCallDialog
+              isOpen={true}
+              onClose={() => {
+                setIncomingCall(null);
+                if (ringtone) {
+                  ringtone.stop();
+                  setRingtone(null);
+                }
+              }}
+              callId={incomingCall.callId}
+              friendId={incomingCall.callerId}
+              friendName={incomingCall.callerName}
+              friendPhoto={incomingCall.callerPhoto}
+              isIncoming={true}
+              callType={incomingCall.callType}
+            />
+          </Suspense>
         )}
 
         {/* Forward Message Dialog */}
-        <ForwardMessageDialog
-          open={forwardDialogOpen}
-          onOpenChange={setForwardDialogOpen}
-          message={messageToForward}
-          currentUserId={currentUserId}
-        />
+        <Suspense fallback={<div />}>
+          <LazyForwardMessageDialog
+            open={forwardDialogOpen}
+            onOpenChange={setForwardDialogOpen}
+            message={messageToForward}
+            currentUserId={currentUserId}
+          />
+        </Suspense>
 
         {/* Mobile Options Menu */}
         <Drawer open={showMobileMenu} onOpenChange={setShowMobileMenu}>
