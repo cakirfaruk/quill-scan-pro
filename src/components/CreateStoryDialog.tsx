@@ -3,8 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, X, Camera, Video } from "lucide-react";
+import { Loader2, Upload, X, Camera, Music, Smile, Type, BarChart3, HelpCircle } from "lucide-react";
 import { soundEffects } from "@/utils/soundEffects";
+import { StoryMusicPicker } from "./StoryMusicPicker";
+import { GifPicker } from "./GifPicker";
+import { StoryStickerPicker } from "./StoryStickerPicker";
+import { StoryTextEditor } from "./StoryTextEditor";
+import { StoryPollCreator } from "./StoryPollCreator";
+import { StoryQuestionCreator } from "./StoryQuestionCreator";
 
 interface CreateStoryDialogProps {
   open: boolean;
@@ -23,6 +29,22 @@ export const CreateStoryDialog = ({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Story enhancement states
+  const [showMusicPicker, setShowMusicPicker] = useState(false);
+  const [showGifPicker, setShowGifPicker] = useState(false);
+  const [showStickerPicker, setShowStickerPicker] = useState(false);
+  const [showTextEditor, setShowTextEditor] = useState(false);
+  const [showPollCreator, setShowPollCreator] = useState(false);
+  const [showQuestionCreator, setShowQuestionCreator] = useState(false);
+
+  const [selectedMusic, setSelectedMusic] = useState<{ name: string; artist: string; url: string } | null>(null);
+  const [selectedGifs, setSelectedGifs] = useState<Array<{ url: string; x: number; y: number }>>([]);
+  const [selectedStickers, setSelectedStickers] = useState<Array<{ emoji: string; x: number; y: number; size: number }>>([]);
+  const [textElements, setTextElements] = useState<Array<{ text: string; font: string; color: string; size: number; animation: string; x: number; y: number }>>([]);
+  const [poll, setPoll] = useState<{ question: string; options: string[] } | null>(null);
+  const [question, setQuestion] = useState<string | null>(null);
+  const [backgroundColor, setBackgroundColor] = useState<string>("#000000");
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -58,19 +80,67 @@ export const CreateStoryDialog = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // For now, we'll store the base64 directly in the database
-      // In production, you'd upload to Supabase Storage
       const reader = new FileReader();
       reader.onload = async (e) => {
         const base64Data = e.target?.result as string;
 
-        const { error } = await supabase.from("stories").insert({
+        const storyData: any = {
           user_id: user.id,
           media_url: base64Data,
           media_type: mediaType,
-        });
+          background_color: backgroundColor,
+        };
+
+        // Add music if selected
+        if (selectedMusic) {
+          storyData.music_url = selectedMusic.url;
+          storyData.music_name = selectedMusic.name;
+          storyData.music_artist = selectedMusic.artist;
+        }
+
+        // Add stickers, gifs, and text effects
+        if (selectedStickers.length > 0) {
+          storyData.stickers = selectedStickers;
+        }
+        if (selectedGifs.length > 0) {
+          storyData.gifs = selectedGifs;
+        }
+        if (textElements.length > 0) {
+          storyData.text_effects = textElements;
+        }
+
+        // Add poll or question flags
+        if (poll) {
+          storyData.has_poll = true;
+        }
+        if (question) {
+          storyData.has_question = true;
+        }
+
+        const { data: storyRecord, error } = await supabase
+          .from("stories")
+          .insert(storyData)
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // If there's a poll, create it
+        if (poll && storyRecord) {
+          await supabase.from("story_polls" as any).insert({
+            story_id: storyRecord.id,
+            question: poll.question,
+            options: poll.options.map((opt, idx) => ({ id: idx, text: opt, votes: 0 })),
+          } as any);
+        }
+
+        // If there's a question, create it
+        if (question && storyRecord) {
+          await supabase.from("story_questions" as any).insert({
+            story_id: storyRecord.id,
+            question: question,
+          } as any);
+        }
 
         soundEffects.playMatch();
         toast({
@@ -98,6 +168,13 @@ export const CreateStoryDialog = ({
     setFile(null);
     setPreview(null);
     setMediaType(null);
+    setSelectedMusic(null);
+    setSelectedGifs([]);
+    setSelectedStickers([]);
+    setTextElements([]);
+    setPoll(null);
+    setQuestion(null);
+    setBackgroundColor("#000000");
     onOpenChange(false);
   };
 
@@ -164,6 +241,98 @@ export const CreateStoryDialog = ({
                 </Button>
               </div>
 
+              {/* Enhancement tools */}
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowMusicPicker(true)}
+                >
+                  <Music className="w-4 h-4 mr-1" />
+                  Müzik
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowGifPicker(true)}
+                >
+                  <Smile className="w-4 h-4 mr-1" />
+                  GIF
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowStickerPicker(true)}
+                >
+                  <Smile className="w-4 h-4 mr-1" />
+                  Sticker
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowTextEditor(true)}
+                >
+                  <Type className="w-4 h-4 mr-1" />
+                  Metin
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowPollCreator(true)}
+                >
+                  <BarChart3 className="w-4 h-4 mr-1" />
+                  Anket
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowQuestionCreator(true)}
+                >
+                  <HelpCircle className="w-4 h-4 mr-1" />
+                  Soru
+                </Button>
+              </div>
+
+              {/* Active enhancements display */}
+              <div className="flex gap-2 flex-wrap text-xs">
+                {selectedMusic && (
+                  <span className="bg-primary/10 text-primary px-2 py-1 rounded-full">
+                    🎵 {selectedMusic.name}
+                  </span>
+                )}
+                {selectedStickers.length > 0 && (
+                  <span className="bg-primary/10 text-primary px-2 py-1 rounded-full">
+                    {selectedStickers.length} sticker
+                  </span>
+                )}
+                {selectedGifs.length > 0 && (
+                  <span className="bg-primary/10 text-primary px-2 py-1 rounded-full">
+                    {selectedGifs.length} GIF
+                  </span>
+                )}
+                {textElements.length > 0 && (
+                  <span className="bg-primary/10 text-primary px-2 py-1 rounded-full">
+                    {textElements.length} metin
+                  </span>
+                )}
+                {poll && (
+                  <span className="bg-primary/10 text-primary px-2 py-1 rounded-full">
+                    📊 Anket
+                  </span>
+                )}
+                {question && (
+                  <span className="bg-primary/10 text-primary px-2 py-1 rounded-full">
+                    ❓ Soru
+                  </span>
+                )}
+              </div>
+
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -191,6 +360,59 @@ export const CreateStoryDialog = ({
             </div>
           )}
         </div>
+
+        {/* Enhancement dialogs */}
+        <StoryMusicPicker
+          open={showMusicPicker}
+          onOpenChange={setShowMusicPicker}
+          onSelect={(music) => {
+            setSelectedMusic(music);
+            setShowMusicPicker(false);
+          }}
+        />
+
+        <GifPicker
+          onSelectGif={(url) => {
+            setSelectedGifs([...selectedGifs, { url, x: 50, y: 50 }]);
+            setShowGifPicker(false);
+          }}
+        />
+
+        <StoryStickerPicker
+          open={showStickerPicker}
+          onOpenChange={setShowStickerPicker}
+          onSelect={(sticker) => {
+            setSelectedStickers([...selectedStickers, { emoji: sticker, x: 50, y: 50, size: 48 }]);
+            setShowStickerPicker(false);
+          }}
+        />
+
+        <StoryTextEditor
+          open={showTextEditor}
+          onOpenChange={setShowTextEditor}
+          onSave={(textData) => {
+            setTextElements([...textElements, { ...textData, x: 50, y: 50 }]);
+            setShowTextEditor(false);
+          }}
+        />
+
+        <StoryPollCreator
+          open={showPollCreator}
+          onOpenChange={setShowPollCreator}
+          onSave={(pollData) => {
+            setPoll(pollData);
+            setShowPollCreator(false);
+          }}
+        />
+
+        <StoryQuestionCreator
+          open={showQuestionCreator}
+          onOpenChange={setShowQuestionCreator}
+          onSave={(questionData) => {
+            setQuestion(questionData);
+            setShowQuestionCreator(false);
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
