@@ -1,4 +1,4 @@
-import * as React from "react";
+import { forwardRef, useRef, useImperativeHandle, type ButtonHTMLAttributes, type MouseEvent } from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 
@@ -32,20 +32,20 @@ const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  extends ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   ripple?: boolean;
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ripple = true, onClick, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
-    const buttonRef = React.useRef<HTMLButtonElement>(null);
+    const buttonRef = useRef<HTMLButtonElement>(null);
     
-    React.useImperativeHandle(ref, () => buttonRef.current!);
+    useImperativeHandle(ref, () => buttonRef.current!);
 
-    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
       if (ripple && buttonRef.current) {
         const button = buttonRef.current;
         const rippleElement = document.createElement("span");
