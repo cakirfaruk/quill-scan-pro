@@ -1,14 +1,25 @@
 import { useEffect, useRef } from 'react';
+import { useNetworkInfo } from './use-network-info';
 
 /**
  * Automatically preload route components when links enter viewport
  * Uses Intersection Observer for efficient link detection
+ * Network-aware: disables on slow connections
  */
 export function useLinkIntersectionPreloader(routeComponents: { [path: string]: any }) {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const preloadedLinksRef = useRef<Set<string>>(new Set());
+  
+  // 📡 Network-aware preloading
+  const { shouldPreload, isSlowConnection, effectiveType } = useNetworkInfo();
 
   useEffect(() => {
+    // 📡 Disable intersection preloading on slow connections
+    if (isSlowConnection) {
+      console.log(`⏸️ Intersection preloading disabled (${effectiveType} connection)`);
+      return;
+    }
+
     // Create intersection observer
     observerRef.current = new IntersectionObserver(
       (entries) => {
@@ -74,7 +85,7 @@ export function useLinkIntersectionPreloader(routeComponents: { [path: string]: 
       observerRef.current?.disconnect();
       mutationObserver.disconnect();
     };
-  }, [routeComponents]);
+  }, [routeComponents, isSlowConnection, effectiveType]);
 
   return {
     preloadedLinks: preloadedLinksRef.current

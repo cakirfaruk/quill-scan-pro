@@ -1,7 +1,26 @@
 # Route Preload Optimization Strategy
 
 ## Overview
-This project implements a comprehensive route preloading system to minimize perceived loading times and improve navigation performance.
+This project implements a comprehensive **network-aware** route preloading system to minimize perceived loading times and improve navigation performance while respecting users' bandwidth limitations.
+
+## Network-Aware Preloading
+
+**Automatic Detection:**
+- Uses Network Information API to detect connection speed
+- Monitors: effective type (slow-2g, 2g, 3g, 4g), downlink speed, latency, data saver mode
+- Automatically disables/enables preloading based on conditions
+
+**Slow Connection Detection:**
+Preloading is disabled when:
+- Connection type is `slow-2g`, `2g`, or `3g`
+- Data Saver mode is enabled
+- Download speed is below 1.5 Mbps
+
+**Smart Adaptation:**
+- **4G/Fast WiFi**: All preload strategies active
+- **3G**: Only high-priority routes preloaded (with delay)
+- **2G/Slow-2G**: All preloading disabled
+- **Data Saver ON**: All preloading disabled
 
 ## Preload Strategies
 
@@ -96,15 +115,22 @@ const routeComponents = {
 - Route switch: 300-800ms loading time
 - User sees loading spinner on every navigation
 
-**After Preloading:**
+**After Preloading (Fast Connection):**
 - Route switch: <50ms (instant feel)
 - Components already in memory
 - No loading spinner for preloaded routes
 
+**On Slow Connections:**
+- Preloading automatically disabled
+- Bandwidth preserved for actual content
+- No unnecessary background downloads
+- Better experience on limited data plans
+
 **Estimated Improvements:**
-- 90% faster navigation for common routes
-- 70% faster for related routes
-- Improved user experience and perceived performance
+- **4G**: 90% faster navigation for common routes
+- **3G**: Limited preload, bandwidth-conscious
+- **2G**: No preload, maximum bandwidth for content
+- Respects user's data saver preferences
 
 ## Bundle Size Impact
 - Additional hooks: ~3KB (gzipped)

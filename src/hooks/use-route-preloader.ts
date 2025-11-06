@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useNetworkInfo } from './use-network-info';
 
 /**
  * Route preloading strategy configurations
@@ -22,6 +23,9 @@ export function useRoutePreloader(
   const location = useLocation();
   const preloadedRef = useRef<Set<string>>(new Set());
   const idleCallbackIdRef = useRef<number>();
+  
+  // 📡 Network-aware preloading
+  const { shouldPreload, isSlowConnection, effectiveType } = useNetworkInfo();
 
   // Default intelligent preload configuration
   const defaultConfig: RoutePreloadConfig = {
@@ -69,6 +73,12 @@ export function useRoutePreloader(
    * Preload a single route component
    */
   const preloadRoute = (path: string) => {
+    // 📡 Skip preloading on slow connections
+    if (!shouldPreload) {
+      console.log(`⏸️ Preload skipped (${effectiveType} connection): ${path}`);
+      return;
+    }
+
     const component = routeComponents[path];
     
     if (!component || preloadedRef.current.has(path)) {
@@ -90,8 +100,21 @@ export function useRoutePreloader(
 
   /**
    * Preload routes with priority scheduling
+   * Network-aware: adjusts timing based on connection speed
    */
   const preloadWithPriority = (routes: string[], priority: 'high' | 'medium' | 'low') => {
+    // 📡 On slow connections, only preload high priority routes with delay
+    if (isSlowConnection) {
+      if (priority === 'high') {
+        setTimeout(() => {
+          routes.forEach(route => preloadRoute(route));
+        }, 2000); // Delayed even for high priority
+      }
+      // Skip medium and low priority on slow connections
+      return;
+    }
+
+    // Fast connection - normal priority scheduling
     if (priority === 'high') {
       // High priority: Preload immediately
       routes.forEach(route => preloadRoute(route));
@@ -147,8 +170,15 @@ export function useRoutePreloader(
 
   /**
    * Preload common routes during idle time (after initial load)
+   * Only on fast connections
    */
   useEffect(() => {
+    // 📡 Skip common route preloading on slow connections
+    if (isSlowConnection) {
+      console.log('⏸️ Common route preloading disabled (slow connection)');
+      return;
+    }
+
     const commonRoutes = ['/feed', '/messages', '/profile', '/explore'];
     
     // Wait a bit after app load, then preload common routes
@@ -161,7 +191,7 @@ export function useRoutePreloader(
     }, 3000);
 
     return () => clearTimeout(timeoutId);
-  }, []);
+  }, [isSlowConnection]);
 
   return {
     preloadRoute,
