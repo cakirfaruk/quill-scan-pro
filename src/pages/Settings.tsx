@@ -22,7 +22,6 @@ import { ThemeCustomizationPanel } from "@/components/ThemeCustomizationPanel";
 import { NotificationPreferences } from "@/components/NotificationPreferences";
 import { PermissionSettings } from "@/components/PermissionSettings";
 import { OfflineCacheStatus } from "@/components/OfflineCacheStatus";
-import { CacheSettings } from "@/components/CacheSettings";
 
 const Settings = () => {
   const [profile, setProfile] = useState({
@@ -831,8 +830,6 @@ const Settings = () => {
           <TabsContent value="permissions">
             <div className="space-y-4">
               <PermissionSettings />
-              
-              <CacheSettings />
               
               <Card>
                 <CardHeader>

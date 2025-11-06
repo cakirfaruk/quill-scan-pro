@@ -23,11 +23,16 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
+    // Log to console ALWAYS (even in production)
+    console.error('🔴 ERROR BOUNDARY CAUGHT:', error);
     return { hasError: true };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
+    // Log to console ALWAYS (even in production)
+    console.error('🔴 UNCAUGHT ERROR:', error);
+    console.error('🔴 ERROR INFO:', errorInfo);
+    console.error('🔴 COMPONENT STACK:', errorInfo.componentStack);
     this.setState({
       error,
       errorInfo,

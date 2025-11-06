@@ -49,28 +49,11 @@ export const useOfflineCache = <T extends { id: string }>(options: CacheOptions)
     try {
       const itemsArray = Array.isArray(items) ? items : [items];
       
-      // Check size limit before saving
-      const currentSize = await offlineStorage.estimateSize();
-      const settings = JSON.parse(localStorage.getItem('cache-settings') || '{}');
-      const maxSize = (settings.maxSize || 50) * 1024 * 1024; // Convert MB to bytes
-      
-      if (currentSize > maxSize * 0.9) { // 90% threshold
-        toast({
-          title: "Önbellek Neredeyse Dolu",
-          description: "Eski veriler otomatik olarak temizlenecek.",
-          duration: 3000,
-        });
-        await offlineStorage.cleanup();
-      }
-      
       if (itemsArray.length === 1) {
         await offlineStorage.save(storeName, itemsArray[0]);
       } else {
         await offlineStorage.saveMany(storeName, itemsArray);
       }
-      
-      // Enforce size limit after saving
-      await offlineStorage.enforceSizeLimit();
       
       await loadFromCache();
       
