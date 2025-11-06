@@ -4,6 +4,7 @@ import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -108,7 +109,7 @@ const GroupChat = () => {
   const [replyingTo, setReplyingTo] = useState<GroupMessage | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const messageInputRef = useRef<HTMLInputElement>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const isMobile = useIsMobile();
 
   // Long press handler for mobile menu
@@ -120,6 +121,17 @@ const GroupChat = () => {
     },
     delay: 500,
   });
+
+  // Auto-resize textarea
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNewMessage(e.target.value);
+    
+    // Auto-resize
+    if (messageInputRef.current) {
+      messageInputRef.current.style.height = 'auto';
+      messageInputRef.current.style.height = `${Math.min(messageInputRef.current.scrollHeight, 120)}px`;
+    }
+  };
 
   useEffect(() => {
     loadGroup();
@@ -1162,14 +1174,21 @@ const GroupChat = () => {
               </PopoverContent>
             </Popover>
 
-            <Input
+            <Textarea
               ref={messageInputRef}
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={handleTextareaChange}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage(e as any);
+                }
+              }}
               placeholder={replyingTo ? "Yanıt yaz..." : "Mesaj yaz..."}
               disabled={sending || uploading}
               maxLength={2000}
-              className="flex-1 min-w-0"
+              className="flex-1 min-w-0 min-h-[40px] max-h-[120px] resize-none"
+              rows={1}
               {...longPressHandlers}
             />
 

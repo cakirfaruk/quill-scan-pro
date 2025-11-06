@@ -4,6 +4,7 @@ import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -124,7 +125,7 @@ const Messages = () => {
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const messageInputRef = useRef<HTMLInputElement>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -153,6 +154,17 @@ const Messages = () => {
     },
     delay: 500,
   });
+
+  // Auto-resize textarea
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNewMessage(e.target.value);
+    
+    // Auto-resize
+    if (messageInputRef.current) {
+      messageInputRef.current.style.height = 'auto';
+      messageInputRef.current.style.height = `${Math.min(messageInputRef.current.scrollHeight, 120)}px`;
+    }
+  };
 
   // Auto-save draft when message changes
   useEffect(() => {
@@ -2342,18 +2354,19 @@ const Messages = () => {
                           </Button>
 
                           {/* Message Input */}
-                          <Input
+                          <Textarea
                             ref={messageInputRef}
                             placeholder="Mesajınızı yazın..."
                             value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            onKeyPress={(e) => {
+                            onChange={handleTextareaChange}
+                            onKeyDown={(e) => {
                               if (e.key === "Enter" && !e.shiftKey) {
                                 e.preventDefault();
                                 handleSendMessage();
                               }
                             }}
-                            className="flex-1 min-w-0"
+                            className="flex-1 min-w-0 min-h-[40px] max-h-[120px] resize-none"
+                            rows={1}
                             {...longPressHandlers}
                           />
                           
