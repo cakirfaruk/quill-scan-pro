@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, MessageCircle, Heart, Share2 } from "lucide-react";
+import { ParsedText } from "@/components/ParsedText";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { soundEffects } from "@/utils/soundEffects";
@@ -108,7 +109,9 @@ export const ProfilePosts = ({ posts, loading, isOwnProfile, onLike }: ProfilePo
               </div>
 
             {post.content && (
-              <p className="text-foreground whitespace-pre-wrap mb-3 text-xs sm:text-sm leading-relaxed">{post.content}</p>
+              <div className="text-foreground whitespace-pre-wrap mb-3 text-xs sm:text-sm leading-relaxed">
+                <ParsedText text={post.content} />
+              </div>
             )}
           </div>
 

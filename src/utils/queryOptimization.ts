@@ -39,6 +39,8 @@ export async function fetchPostsOptimized(limit = 20, offset = 0) {
       content,
       media_url,
       media_type,
+      media_urls,
+      media_types,
       created_at,
       user_id,
       profiles!posts_user_id_fkey (
@@ -75,6 +77,8 @@ export async function fetchPostsKeyset(
       content,
       media_url,
       media_type,
+      media_urls,
+      media_types,
       created_at,
       user_id,
       profiles!posts_user_id_fkey (
