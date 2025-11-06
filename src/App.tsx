@@ -11,7 +11,7 @@ import { IncomingGroupCallDialog } from "@/components/IncomingGroupCallDialog";
 import { PermissionManager } from "@/components/PermissionManager";
 import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
 import { initPerformanceMonitoring } from "@/utils/performanceMonitoring";
-import { EnhancedOfflineIndicator } from "@/components/EnhancedOfflineIndicator";
+// import { EnhancedOfflineIndicator } from "@/components/EnhancedOfflineIndicator"; // Temporarily disabled
 import { MobileNav } from "@/components/MobileNav";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -19,8 +19,6 @@ import { lazyWithPreload } from "@/utils/lazyWithPreload";
 import { useRoutePreloader } from "@/hooks/use-route-preloader";
 import { useLinkIntersectionPreloader } from "@/hooks/use-link-intersection-preloader";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
-import { OfflineCacheStatus } from "@/components/OfflineCacheStatus";
-// import { SyncNotification } from "@/components/SyncNotification"; // Temporarily disabled
 
 // Critical pages - load immediately (no lazy loading)
 import Index from "./pages/Index";
@@ -321,8 +319,6 @@ const App = () => {
               <Toaster />
               <Sonner />
               <PermissionManager />
-              <EnhancedOfflineIndicator />
-              {/* <SyncNotification /> Temporarily disabled */}
               <PWAInstallPrompt />
               <AppRoutes />
             </ThemeProvider>
