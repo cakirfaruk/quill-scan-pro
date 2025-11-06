@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { loadGoogleMaps } from "@/utils/googleMaps";
 
 interface PlaceAutocompleteInputProps {
   value: string;
@@ -9,11 +10,9 @@ interface PlaceAutocompleteInputProps {
   id?: string;
 }
 
-// Declare google as a global
 declare global {
   interface Window {
     google: any;
-    initAutocomplete: () => void;
   }
 }
 
@@ -27,73 +26,88 @@ export const PlaceAutocompleteInput = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    // Load Google Maps script
-    const apiKey = "AIzaSyCONL709dmB9jCd3Pd2li5xACFF7qltmSI";
+    let mounted = true;
 
-    // Check if already loaded
-    if (window.google && window.google.maps) {
-      setIsLoaded(true);
-      return;
-    }
-
-    // Load script
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initAutocomplete`;
-    script.async = true;
-    script.defer = true;
-
-    window.initAutocomplete = () => {
-      setIsLoaded(true);
-    };
-
-    document.head.appendChild(script);
+    // Load Google Maps
+    loadGoogleMaps()
+      .then(() => {
+        if (mounted) {
+          setIsLoaded(true);
+          setError(false);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load Google Maps:', err);
+        if (mounted) {
+          setError(true);
+        }
+      });
 
     return () => {
-      // Cleanup
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-      delete window.initAutocomplete;
+      mounted = false;
     };
   }, []);
 
   useEffect(() => {
-    if (!isLoaded || !inputRef.current || !window.google) return;
+    if (!isLoaded || !inputRef.current || !window.google?.maps?.places) return;
 
-    // Initialize autocomplete
-    autocompleteRef.current = new window.google.maps.places.Autocomplete(
-      inputRef.current,
-      {
-        types: ["(cities)"],
-        fields: ["formatted_address", "geometry", "name"]
-      }
-    );
-
-    // Listen for place selection
-    autocompleteRef.current.addListener("place_changed", () => {
-      const place = autocompleteRef.current.getPlace();
-      if (place.formatted_address) {
-        onChange(place.formatted_address);
-        
-        // Callback with place details including coordinates
-        if (onPlaceSelect && place.geometry?.location) {
-          onPlaceSelect({
-            name: place.formatted_address,
-            latitude: place.geometry.location.lat(),
-            longitude: place.geometry.location.lng(),
-          });
+    try {
+      // Initialize autocomplete
+      autocompleteRef.current = new window.google.maps.places.Autocomplete(
+        inputRef.current,
+        {
+          types: ["(cities)"],
+          fields: ["formatted_address", "geometry", "name"]
         }
-      }
-    });
+      );
+
+      // Listen for place selection
+      autocompleteRef.current.addListener("place_changed", () => {
+        const place = autocompleteRef.current.getPlace();
+        if (place.formatted_address) {
+          onChange(place.formatted_address);
+          
+          // Callback with place details including coordinates
+          if (onPlaceSelect && place.geometry?.location) {
+            onPlaceSelect({
+              name: place.formatted_address,
+              latitude: place.geometry.location.lat(),
+              longitude: place.geometry.location.lng(),
+            });
+          }
+        }
+      });
+    } catch (err) {
+      console.error('Failed to initialize autocomplete:', err);
+      setError(true);
+    }
 
     return () => {
-      if (autocompleteRef.current) {
-        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+      if (autocompleteRef.current && window.google?.maps?.event) {
+        try {
+          window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+        } catch (err) {
+          console.error('Failed to cleanup autocomplete:', err);
+        }
       }
     };
-  }, [isLoaded, onChange]);
+  }, [isLoaded, onChange, onPlaceSelect]);
+
+  // Fallback to regular input if Google Maps fails
+  if (error) {
+    return (
+      <Input
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoComplete="off"
+      />
+    );
+  }
 
   return (
     <Input
