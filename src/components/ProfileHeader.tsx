@@ -65,7 +65,11 @@ export const ProfileHeader = memo(({
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
         <div className="relative">
           <Avatar className="w-24 h-24 sm:w-32 sm:h-32 border-4 border-primary/20">
-            <AvatarImage src={profile.profile_photo || undefined} />
+            <AvatarImage 
+              src={profile.profile_photo || undefined}
+              loading="lazy"
+              decoding="async"
+            />
             <AvatarFallback className="bg-gradient-primary text-primary-foreground text-2xl">
               {profile.username.substring(0, 2).toUpperCase()}
             </AvatarFallback>

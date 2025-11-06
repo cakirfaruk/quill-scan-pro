@@ -241,7 +241,11 @@ export const StoriesBar = memo(({ currentUserId }: StoriesBarProps) => {
               className="relative"
             >
               <Avatar className="w-16 h-16 ring-2 ring-primary">
-                <AvatarImage src={ownStories[0]?.profile.profile_photo || undefined} />
+                <AvatarImage 
+                  src={ownStories[0]?.profile.profile_photo || undefined}
+                  loading="lazy"
+                  decoding="async"
+                />
                 <AvatarFallback className="bg-gradient-primary text-primary-foreground">
                   Sen
                 </AvatarFallback>
@@ -271,7 +275,11 @@ export const StoriesBar = memo(({ currentUserId }: StoriesBarProps) => {
                     : "ring-muted"
                 }`}
               >
-                <AvatarImage src={user.profile_photo || undefined} />
+                <AvatarImage 
+                  src={user.profile_photo || undefined}
+                  loading="lazy"
+                  decoding="async"
+                />
                 <AvatarFallback className="bg-gradient-primary text-primary-foreground">
                   {user.username[0].toUpperCase()}
                 </AvatarFallback>

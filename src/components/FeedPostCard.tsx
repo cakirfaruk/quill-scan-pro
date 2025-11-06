@@ -12,6 +12,7 @@ import { ParsedText } from "@/components/ParsedText";
 import { DoubleTapLike } from "@/components/DoubleTapLike";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 interface Post {
   id: string;
@@ -63,7 +64,11 @@ export const FeedPostCard = memo(({
             className="w-10 h-10 sm:w-12 sm:h-12 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
             onClick={() => navigate(`/profile/${post.profile.username}`)}
           >
-            <AvatarImage src={post.profile.profile_photo || undefined} />
+            <AvatarImage 
+              src={post.profile.profile_photo || undefined}
+              loading="lazy"
+              decoding="async"
+            />
             <AvatarFallback className="bg-gradient-primary text-primary-foreground text-sm">
               {post.profile.username.substring(0, 2).toUpperCase()}
             </AvatarFallback>
@@ -131,15 +136,19 @@ export const FeedPostCard = memo(({
                 }}
               >
                 {post.media_types?.[0] === "image" || post.media_types?.[0] === "photo" ? (
-                  <img 
-                    src={post.media_urls[0]} 
-                    alt="Post" 
-                    className="w-full object-cover max-h-96 sm:max-h-[500px] transition-transform duration-700 group-hover/media:scale-105"
+                  <OptimizedImage
+                    src={post.media_urls[0]}
+                    alt="Post"
+                    className="w-full max-h-96 sm:max-h-[500px]"
+                    aspectRatio="16/9"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 600px, 800px"
+                    quality={80}
                   />
                 ) : post.media_types?.[0] === "video" ? (
                   <video 
                     src={post.media_urls[0]} 
                     controls 
+                    preload="metadata"
                     className="w-full max-h-96 sm:max-h-[500px]"
                     onClick={(e) => e.stopPropagation()}
                   />
@@ -160,15 +169,19 @@ export const FeedPostCard = memo(({
                         }}
                       >
                         {post.media_types?.[index] === "image" || post.media_types?.[index] === "photo" ? (
-                          <img 
-                            src={url} 
-                            alt={`Post ${index + 1}`} 
-                            className="w-full object-cover max-h-96 sm:max-h-[500px] transition-transform duration-700"
+                          <OptimizedImage
+                            src={url}
+                            alt={`Post ${index + 1}`}
+                            className="w-full max-h-96 sm:max-h-[500px]"
+                            aspectRatio="16/9"
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 600px, 800px"
+                            quality={80}
                           />
                         ) : post.media_types?.[index] === "video" ? (
                           <video 
                             src={url} 
                             controls 
+                            preload="metadata"
                             className="w-full max-h-96 sm:max-h-[500px]"
                             onClick={(e) => e.stopPropagation()}
                           />
