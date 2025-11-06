@@ -129,8 +129,24 @@ const Messages = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
-  const [translatedMessages, setTranslatedMessages] = useState<Record<string, string>>({});
+  const [translatedMessages, setTranslatedMessages] = useState<Record<string, { text: string; sourceLanguage?: string }>>({});
   const [translatingMessageId, setTranslatingMessageId] = useState<string | null>(null);
+  
+  // Language name mapping
+  const languageNames: Record<string, string> = {
+    'en': 'İngilizce',
+    'tr': 'Türkçe',
+    'es': 'İspanyolca',
+    'fr': 'Fransızca',
+    'de': 'Almanca',
+    'ar': 'Arapça',
+    'zh': 'Çince',
+    'ja': 'Japonca',
+    'ko': 'Korece',
+    'pt': 'Portekizce',
+    'ru': 'Rusça',
+    'it': 'İtalyanca'
+  };
   const [autoTranslateEnabled, setAutoTranslateEnabled] = useState(false);
   const [preferredLanguage, setPreferredLanguage] = useState('tr');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -386,7 +402,10 @@ const Messages = () => {
                   if (data?.translatedText && data?.needsTranslation) {
                     setTranslatedMessages(prev => ({
                       ...prev,
-                      [newMsg.id]: data.translatedText
+                      [newMsg.id]: {
+                        text: data.translatedText,
+                        sourceLanguage: data.detectedLanguage
+                      }
                     }));
                   }
                 } catch (error) {
@@ -921,7 +940,10 @@ const Messages = () => {
                 if (data?.translatedText && data?.needsTranslation) {
                   setTranslatedMessages(prev => ({
                     ...prev,
-                    [msg.id]: data.translatedText
+                    [msg.id]: {
+                      text: data.translatedText,
+                      sourceLanguage: data.detectedLanguage
+                    }
                   }));
                 }
               } catch (error) {
@@ -1344,7 +1366,10 @@ const Messages = () => {
       if (data?.translatedText && data?.needsTranslation) {
         setTranslatedMessages(prev => ({
           ...prev,
-          [messageId]: data.translatedText
+          [messageId]: {
+            text: data.translatedText,
+            sourceLanguage: data.detectedLanguage
+          }
         }));
       } else if (!data?.needsTranslation) {
         toast({
@@ -2461,17 +2486,22 @@ const Messages = () => {
                                 </div>
                               )}
                               <div className="px-4 py-2">
-                                <p className="text-sm whitespace-pre-wrap break-words">{displayContent}</p>
+                <p className="text-sm whitespace-pre-wrap break-words">{displayContent}</p>
                                 {translatedMessages[msg.id] && (
                                   <div className="mt-2 pt-2 border-t border-current/20 animate-in fade-in duration-300">
-                                    <div className="flex items-center gap-1 mb-1">
+                                    <div className="flex items-center gap-1.5 mb-1">
                                       <svg className="w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
                                       </svg>
-                                      <p className="text-xs opacity-70 font-medium">Otomatik Çeviri</p>
+                                      <p className="text-xs opacity-70 font-medium">
+                                        {translatedMessages[msg.id].sourceLanguage 
+                                          ? `${languageNames[translatedMessages[msg.id].sourceLanguage!] || translatedMessages[msg.id].sourceLanguage} → Türkçe`
+                                          : 'Otomatik Çeviri'
+                                        }
+                                      </p>
                                     </div>
                                     <p className="text-sm whitespace-pre-wrap break-words font-medium">
-                                      {translatedMessages[msg.id]}
+                                      {translatedMessages[msg.id].text}
                                     </p>
                                   </div>
                                 )}
