@@ -129,6 +129,8 @@ const Messages = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [translatedMessages, setTranslatedMessages] = useState<Record<string, string>>({});
+  const [translatingMessageId, setTranslatingMessageId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1235,6 +1237,43 @@ const Messages = () => {
     messageInputRef.current?.focus();
   };
 
+  const handleTranslateMessage = async (messageId: string, text: string) => {
+    if (translatedMessages[messageId]) {
+      // Already translated, remove translation to show original
+      setTranslatedMessages(prev => {
+        const updated = { ...prev };
+        delete updated[messageId];
+        return updated;
+      });
+      return;
+    }
+
+    setTranslatingMessageId(messageId);
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-message', {
+        body: { text, targetLanguage: 'Turkish' }
+      });
+
+      if (error) throw error;
+
+      if (data?.translatedText) {
+        setTranslatedMessages(prev => ({
+          ...prev,
+          [messageId]: data.translatedText
+        }));
+      }
+    } catch (error) {
+      console.error('Translation error:', error);
+      toast({
+        title: "Çeviri Hatası",
+        description: "Mesaj çevrilirken bir hata oluştu",
+        variant: "destructive",
+      });
+    } finally {
+      setTranslatingMessageId(null);
+    }
+  };
+
   const handleSendGif = async (gifUrl: string) => {
     if (!selectedFriend) return;
 
@@ -2329,6 +2368,14 @@ const Messages = () => {
                               )}
                               <div className="px-4 py-2">
                                 <p className="text-sm whitespace-pre-wrap break-words">{displayContent}</p>
+                                {translatedMessages[msg.id] && (
+                                  <div className="mt-2 pt-2 border-t border-current/20">
+                                    <p className="text-xs opacity-60 mb-1">Çeviri:</p>
+                                    <p className="text-sm whitespace-pre-wrap break-words italic opacity-90">
+                                      {translatedMessages[msg.id]}
+                                    </p>
+                                  </div>
+                                )}
                                 <div className="flex items-center gap-2 mt-1">
                                   <p className="text-xs opacity-70">
                                     {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
@@ -2373,6 +2420,19 @@ const Messages = () => {
                                 <MessageSquare className="mr-2 h-4 w-4" />
                                 Yanıtla
                               </DropdownMenuItem>
+                              {!isAnalysisShare && !isVoiceMessage && !isGif && (
+                                <DropdownMenuItem 
+                                  onClick={() => handleTranslateMessage(msg.id, displayContent)}
+                                  disabled={translatingMessageId === msg.id}
+                                >
+                                  {translatingMessageId === msg.id ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <FileText className="mr-2 h-4 w-4" />
+                                  )}
+                                  {translatedMessages[msg.id] ? "Orijinali Göster" : "Çevir"}
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem onClick={() => handlePinMessage(msg.id)}>
                                 <Pin className="mr-2 h-4 w-4" />
                                 {msg.pinned_at ? "Sabitlemeyi Kaldır" : "Sabitle"}
