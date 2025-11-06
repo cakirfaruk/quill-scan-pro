@@ -30,6 +30,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { PhotoCaptureEditor } from "@/components/PhotoCaptureEditor";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { z } from "zod";
 
 const postSchema = z.object({
@@ -72,9 +73,9 @@ export const CreatePostDialog = ({
   const [step, setStep] = useState<"select" | "capture" | "edit" | "share">("select");
   const [postType, setPostType] = useState<"photo" | "video" | "reels">("photo");
   const [content, setContent] = useState(prefilledContent?.content || "");
-  const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [mediaPreview, setMediaPreview] = useState<string | null>(
-    prefilledContent?.mediaUrl || null
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [mediaPreviews, setMediaPreviews] = useState<Array<{ url: string; type: "photo" | "video" }>>(
+    prefilledContent?.mediaUrl ? [{ url: prefilledContent.mediaUrl, type: prefilledContent.mediaType || "photo" }] : []
   );
   const [isLoading, setIsLoading] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -143,63 +144,55 @@ export const CreatePostDialog = ({
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    // Check file size (max 50MB)
-    if (file.size > 50 * 1024 * 1024) {
+    // Max 10 files
+    if (mediaPreviews.length + files.length > 10) {
       toast({
-        title: "Dosya çok büyük",
-        description: "Maksimum dosya boyutu 50MB olabilir.",
+        title: "Çok fazla dosya",
+        description: "Maksimum 10 fotoğraf/video ekleyebilirsiniz.",
         variant: "destructive",
       });
       return;
     }
 
-    // For reels, check if video is vertical (portrait)
-    if (postType === "reels" && file.type.startsWith("video/")) {
-      const video = document.createElement("video");
-      video.preload = "metadata";
-      video.onloadedmetadata = () => {
-        URL.revokeObjectURL(video.src);
-        const aspectRatio = video.videoWidth / video.videoHeight;
+    const validFiles: File[] = [];
+    const newPreviews: Array<{ url: string; type: "photo" | "video" }> = [];
+
+    files.forEach((file) => {
+      // Check file size (max 50MB)
+      if (file.size > 50 * 1024 * 1024) {
+        toast({
+          title: "Dosya çok büyük",
+          description: `${file.name} çok büyük. Maksimum dosya boyutu 50MB olabilir.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      validFiles.push(file);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const url = e.target?.result as string;
+        const type = file.type.startsWith("video") ? "video" : "photo";
+        newPreviews.push({ url, type });
         
-        // Video is vertical if aspect ratio < 1 (height > width)
-        if (aspectRatio >= 1) {
-          toast({
-            title: "Geçersiz video formatı",
-            description: "Reels için sadece dik (portre) videolar yükleyebilirsiniz.",
-            variant: "destructive",
-          });
-          return;
+        if (newPreviews.length === validFiles.length) {
+          setMediaPreviews([...mediaPreviews, ...newPreviews]);
+          setMediaFiles([...mediaFiles, ...validFiles]);
         }
-        
-        // If vertical, proceed with setting the file
-        setMediaFile(file);
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setMediaPreview(e.target?.result as string);
-        };
-        reader.readAsDataURL(file);
       };
-      video.src = URL.createObjectURL(file);
-      return;
-    }
-
-    setMediaFile(file);
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setMediaPreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    });
   };
 
-  const handleRemoveMedia = () => {
-    setMediaFile(null);
-    setMediaPreview(null);
-    if (fileInputRef.current) {
+  const handleRemoveMedia = (index: number) => {
+    setMediaPreviews(mediaPreviews.filter((_, i) => i !== index));
+    setMediaFiles(mediaFiles.filter((_, i) => i !== index));
+    if (fileInputRef.current && mediaPreviews.length === 1) {
       fileInputRef.current.value = "";
     }
   };
@@ -227,7 +220,7 @@ export const CreatePostDialog = ({
   };
 
   const handleCreatePost = async () => {
-    if (!content.trim() && !mediaPreview) {
+    if (!content.trim() && mediaPreviews.length === 0) {
       toast({
         title: "Uyarı",
         description: "Lütfen bir içerik veya medya ekleyin",
@@ -254,14 +247,14 @@ export const CreatePostDialog = ({
       const mentions = extractMentions(content);
       const hashtags = extractHashtags(content);
 
-      // Create post
+      // Create post with media arrays
       const { data: postData, error: postError } = await supabase
         .from("posts")
         .insert({
           user_id: userId,
           content: content.trim(),
-          media_url: mediaPreview,
-          media_type: mediaPreview ? (postType === "video" || postType === "reels" ? "video" : "photo") : null,
+          media_urls: mediaPreviews.length > 0 ? mediaPreviews.map(m => m.url) : null,
+          media_types: mediaPreviews.length > 0 ? mediaPreviews.map(m => m.type) : null,
           post_type: postType,
         })
         .select()
@@ -324,8 +317,8 @@ export const CreatePostDialog = ({
 
       // Reset form
       setContent("");
-      setMediaFile(null);
-      setMediaPreview(null);
+      setMediaFiles([]);
+      setMediaPreviews([]);
       setTaggedFriends([]);
       onOpenChange(false);
       onPostCreated?.();
@@ -354,7 +347,7 @@ export const CreatePostDialog = ({
   }, [open]);
 
   const handlePhotoCapture = (imageData: string) => {
-    setMediaPreview(imageData);
+    setMediaPreviews([...mediaPreviews, { url: imageData, type: "photo" }]);
     setShowPhotoEditor(false);
     setStep("share");
   };
@@ -391,7 +384,7 @@ export const CreatePostDialog = ({
             {step === "share" && (
               <Button
                 onClick={handleCreatePost}
-                disabled={isLoading || (!content.trim() && !mediaPreview)}
+                disabled={isLoading || (!content.trim() && mediaPreviews.length === 0)}
                 className="gap-2"
               >
                 {isLoading ? (
@@ -441,7 +434,7 @@ export const CreatePostDialog = ({
                       </div>
                       <div className="text-center">
                         <h3 className="font-semibold text-lg mb-1">Galeri</h3>
-                        <p className="text-sm text-muted-foreground">Fotoğraf/Video seç</p>
+                        <p className="text-sm text-muted-foreground">Fotoğraf/Video seç (max 10)</p>
                       </div>
                     </button>
                   </div>
@@ -449,10 +442,11 @@ export const CreatePostDialog = ({
                     ref={fileInputRef}
                     type="file"
                     accept="image/*,video/*"
+                    multiple
                     className="hidden"
                     onChange={(e) => {
                       handleFileSelect(e);
-                      if (e.target.files?.[0]) {
+                      if (e.target.files && e.target.files.length > 0) {
                         setStep("share");
                       }
                     }}
@@ -484,22 +478,71 @@ export const CreatePostDialog = ({
                         </div>
                       </div>
 
-                      {/* Media Preview */}
-                      {mediaPreview && (
-                        <div className="relative rounded-lg overflow-hidden bg-black">
-                          <img
-                            src={mediaPreview}
-                            alt="Preview"
-                            className="w-full max-h-96 object-contain"
-                          />
-                          <Button
-                            size="icon"
-                            variant="secondary"
-                            className="absolute top-2 right-2 rounded-full"
-                            onClick={handleRemoveMedia}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
+                      {/* Media Preview with Carousel */}
+                      {mediaPreviews.length > 0 && (
+                        <div className="relative">
+                          {mediaPreviews.length === 1 ? (
+                            <div className="relative rounded-lg overflow-hidden bg-black">
+                              {mediaPreviews[0].type === "photo" ? (
+                                <img
+                                  src={mediaPreviews[0].url}
+                                  alt="Preview"
+                                  className="w-full max-h-96 object-contain"
+                                />
+                              ) : (
+                                <video
+                                  src={mediaPreviews[0].url}
+                                  controls
+                                  className="w-full max-h-96"
+                                />
+                              )}
+                              <Button
+                                size="icon"
+                                variant="secondary"
+                                className="absolute top-2 right-2 rounded-full"
+                                onClick={() => handleRemoveMedia(0)}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <Carousel className="w-full">
+                              <CarouselContent>
+                                {mediaPreviews.map((media, index) => (
+                                  <CarouselItem key={index}>
+                                    <div className="relative rounded-lg overflow-hidden bg-black">
+                                      {media.type === "photo" ? (
+                                        <img
+                                          src={media.url}
+                                          alt={`Preview ${index + 1}`}
+                                          className="w-full max-h-96 object-contain"
+                                        />
+                                      ) : (
+                                        <video
+                                          src={media.url}
+                                          controls
+                                          className="w-full max-h-96"
+                                        />
+                                      )}
+                                      <Button
+                                        size="icon"
+                                        variant="secondary"
+                                        className="absolute top-2 right-2 rounded-full"
+                                        onClick={() => handleRemoveMedia(index)}
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </Button>
+                                      <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs">
+                                        {index + 1} / {mediaPreviews.length}
+                                      </div>
+                                    </div>
+                                  </CarouselItem>
+                                ))}
+                              </CarouselContent>
+                              <CarouselPrevious className="left-2" />
+                              <CarouselNext className="right-2" />
+                            </Carousel>
+                          )}
                         </div>
                       )}
 

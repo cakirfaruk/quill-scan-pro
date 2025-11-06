@@ -1785,7 +1785,9 @@ export type Database = {
           created_at: string | null
           id: string
           media_type: string | null
+          media_types: string[] | null
           media_url: string | null
+          media_urls: string[] | null
           post_type: string | null
           shares_count: number | null
           updated_at: string | null
@@ -1796,7 +1798,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           media_type?: string | null
+          media_types?: string[] | null
           media_url?: string | null
+          media_urls?: string[] | null
           post_type?: string | null
           shares_count?: number | null
           updated_at?: string | null
@@ -1807,7 +1811,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           media_type?: string | null
+          media_types?: string[] | null
           media_url?: string | null
+          media_urls?: string[] | null
           post_type?: string | null
           shares_count?: number | null
           updated_at?: string | null

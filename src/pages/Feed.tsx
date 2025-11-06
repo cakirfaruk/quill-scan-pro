@@ -37,6 +37,7 @@ import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
 import { WidgetDashboard } from "@/components/WidgetDashboard";
 import { DoubleTapLike } from "@/components/DoubleTapLike";
 import { FullScreenMediaViewer } from "@/components/FullScreenMediaViewer";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 interface Post {
   id: string;
@@ -44,6 +45,8 @@ interface Post {
   content: string | null;
   media_url: string | null;
   media_type: string | null;
+  media_urls: string[] | null;
+  media_types: string[] | null;
   created_at: string;
   shares_count: number;
   profile: {
@@ -656,38 +659,80 @@ const Feed = () => {
         </div>
       )}
 
-      {post.media_url && (
+      {post.media_urls && post.media_urls.length > 0 && (
         <DoubleTapLike
           onDoubleTap={() => !post.hasLiked && handleLike(post.id, false)}
           isLiked={post.hasLiked}
           className="cursor-pointer"
         >
-          <div 
-            className="relative overflow-hidden group/media"
-            onClick={() => {
-              setSelectedMedia([{ 
-                url: post.media_url!, 
-                type: post.media_type === "video" ? "video" : "photo" 
-              }]);
-              setSelectedMediaIndex(0);
-              setMediaViewerOpen(true);
-            }}
-          >
-            {post.media_type === "image" ? (
-              <img 
-                src={post.media_url} 
-                alt="Post" 
-                className="w-full object-cover max-h-96 sm:max-h-[500px] transition-transform duration-700 group-hover/media:scale-105"
-              />
-            ) : post.media_type === "video" ? (
-              <video 
-                src={post.media_url} 
-                controls 
-                className="w-full max-h-96 sm:max-h-[500px]"
-                onClick={(e) => e.stopPropagation()}
-              />
-            ) : null}
-          </div>
+          {post.media_urls.length === 1 ? (
+            <div 
+              className="relative overflow-hidden group/media"
+              onClick={() => {
+                setSelectedMedia(post.media_urls!.map((url, i) => ({ 
+                  url, 
+                  type: post.media_types?.[i] === "video" ? "video" : "photo" 
+                })));
+                setSelectedMediaIndex(0);
+                setMediaViewerOpen(true);
+              }}
+            >
+              {post.media_types?.[0] === "image" || post.media_types?.[0] === "photo" ? (
+                <img 
+                  src={post.media_urls[0]} 
+                  alt="Post" 
+                  className="w-full object-cover max-h-96 sm:max-h-[500px] transition-transform duration-700 group-hover/media:scale-105"
+                />
+              ) : post.media_types?.[0] === "video" ? (
+                <video 
+                  src={post.media_urls[0]} 
+                  controls 
+                  className="w-full max-h-96 sm:max-h-[500px]"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : null}
+            </div>
+          ) : (
+            <Carousel className="w-full">
+              <CarouselContent>
+                {post.media_urls.map((url, index) => (
+                  <CarouselItem key={index}>
+                    <div 
+                      className="relative overflow-hidden group/media"
+                      onClick={() => {
+                        setSelectedMedia(post.media_urls!.map((url, i) => ({ 
+                          url, 
+                          type: post.media_types?.[i] === "video" ? "video" : "photo" 
+                        })));
+                        setSelectedMediaIndex(index);
+                        setMediaViewerOpen(true);
+                      }}
+                    >
+                      {post.media_types?.[index] === "image" || post.media_types?.[index] === "photo" ? (
+                        <img 
+                          src={url} 
+                          alt={`Post ${index + 1}`} 
+                          className="w-full object-cover max-h-96 sm:max-h-[500px] transition-transform duration-700"
+                        />
+                      ) : post.media_types?.[index] === "video" ? (
+                        <video 
+                          src={url} 
+                          controls 
+                          className="w-full max-h-96 sm:max-h-[500px]"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      ) : null}
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="left-2" />
+              <CarouselNext className="right-2" />
+              <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs">
+                {post.media_urls.length} fotoğraf
+              </div>
+            </Carousel>
+          )}
         </DoubleTapLike>
       )}
 
@@ -1106,14 +1151,19 @@ const Feed = () => {
         media={selectedMedia}
         initialIndex={selectedMediaIndex}
         onLike={() => {
-          // Find the post with this media and toggle like
-          const post = enrichedPosts.find(p => p.media_url === selectedMedia[selectedMediaIndex]?.url);
+          const mediaUrl = selectedMedia[selectedMediaIndex]?.url;
+          const post = enrichedPosts.find(p => 
+            p.media_urls?.includes(mediaUrl) || p.media_url === mediaUrl
+          );
           if (post && !post.hasLiked) {
             handleLike(post.id, false);
           }
         }}
         isLiked={(() => {
-          const post = enrichedPosts.find(p => p.media_url === selectedMedia[selectedMediaIndex]?.url);
+          const mediaUrl = selectedMedia[selectedMediaIndex]?.url;
+          const post = enrichedPosts.find(p => 
+            p.media_urls?.includes(mediaUrl) || p.media_url === mediaUrl
+          );
           return post?.hasLiked || false;
         })()}
       />
