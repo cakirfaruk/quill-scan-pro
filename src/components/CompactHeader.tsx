@@ -274,8 +274,10 @@ export const CompactHeader = () => {
               {/* Notifications */}
               <NotificationBell />
 
-              {/* Page History */}
-              <PageHistory />
+              {/* Page History - Hidden on mobile */}
+              <div className="hidden md:block">
+                <PageHistory />
+              </div>
 
               {/* Messages - Mobile Visible */}
               <Button
