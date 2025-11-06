@@ -21,6 +21,7 @@ export const VoiceMessagePlayer = ({ audioUrl, duration, preferredLanguage = 'tr
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
   const [sourceLanguage, setSourceLanguage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
 
@@ -108,6 +109,7 @@ export const VoiceMessagePlayer = ({ audioUrl, duration, preferredLanguage = 'tr
 
   const handleTranscribe = async (translateAlso: boolean = false) => {
     setIsTranscribing(true);
+    setError(null); // Clear previous errors
     try {
       const { data, error } = await supabase.functions.invoke('transcribe-audio', {
         body: { 
@@ -161,6 +163,8 @@ export const VoiceMessagePlayer = ({ audioUrl, duration, preferredLanguage = 'tr
       }
     } catch (error) {
       console.error('Transcription error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Bilinmeyen hata';
+      setError(errorMessage);
       toast({
         title: "Hata",
         description: "Sesli mesaj metne dönüştürülürken bir hata oluştu",
@@ -249,6 +253,44 @@ export const VoiceMessagePlayer = ({ audioUrl, duration, preferredLanguage = 'tr
           </Button>
         </div>
       </div>
+
+      {/* Error display with retry */}
+      {error && (
+        <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg space-y-2 text-sm animate-in fade-in duration-300">
+          <div className="flex items-start gap-2">
+            <div className="mt-0.5 animate-[scale-in_0.3s_ease-out]">
+              <svg className="w-4 h-4 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="flex-1 space-y-2">
+              <div>
+                <p className="font-medium text-destructive">Transkript Hatası</p>
+                <p className="text-xs text-muted-foreground mt-1">{error}</p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleTranscribe(true)}
+                className="h-7 text-xs border-destructive/30 hover:bg-destructive/10"
+              >
+                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Yeniden Dene
+              </Button>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setError(null)}
+              className="h-6 w-6 p-0"
+            >
+              ✕
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Transcript display */}
       {showTranscript && transcription && (
