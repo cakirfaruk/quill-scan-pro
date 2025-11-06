@@ -7,6 +7,7 @@ import { LazyCreatePostDialog } from "@/utils/lazyImports";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { PWAInstallButton } from "@/components/PWAInstallButton";
 
 export const MobileNav = () => {
   const location = useLocation();
@@ -133,7 +134,13 @@ export const MobileNav = () => {
               <SheetHeader>
                 <SheetTitle>Hızlı Erişim</SheetTitle>
               </SheetHeader>
-              <div className="grid grid-cols-3 gap-4 mt-6">
+              
+              {/* PWA Install Button */}
+              <div className="mt-4 mb-2">
+                <PWAInstallButton />
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4 mt-4">
                 {quickMenuItems.map((item) => {
                   const Icon = item.icon;
                   return (

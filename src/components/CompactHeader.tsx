@@ -28,6 +28,7 @@ import { useScrollProgress } from "@/hooks/use-parallax";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import { cn } from "@/lib/utils";
 import { Suspense } from "react";
+import { PWAInstallButton } from "@/components/PWAInstallButton";
 
 export const CompactHeader = () => {
   const [credits, setCredits] = useState(0);
@@ -275,6 +276,11 @@ export const CompactHeader = () => {
 
               {/* Notifications */}
               <NotificationBell />
+
+              {/* PWA Install Button - Hidden on mobile */}
+              <div className="hidden sm:block">
+                <PWAInstallButton />
+              </div>
 
               {/* Page History - Hidden on mobile */}
               <div className="hidden md:block">
