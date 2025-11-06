@@ -125,8 +125,11 @@ const Messages = () => {
   const [ringtone, setRingtone] = useState<{ stop: () => void } | null>(null);
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingChannelRef = useRef<any>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -159,6 +162,29 @@ const Messages = () => {
   // Auto-resize textarea
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setNewMessage(e.target.value);
+    
+    // Broadcast typing status
+    if (typingChannelRef.current && selectedFriend) {
+      typingChannelRef.current.track({
+        user_id: currentUserId,
+        typing: true,
+      });
+
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Stop typing after 2 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        if (typingChannelRef.current) {
+          typingChannelRef.current.track({
+            user_id: currentUserId,
+            typing: false,
+          });
+        }
+      }, 2000);
+    }
     
     // Auto-resize
     if (messageInputRef.current) {
@@ -456,6 +482,49 @@ const Messages = () => {
       supabase.removeChannel(groupMessagesChannel);
       supabase.removeChannel(incomingCallsChannel);
       supabase.removeChannel(callStatusChannel);
+    };
+  }, [selectedFriend, currentUserId]);
+
+  // Typing indicator with Supabase presence
+  useEffect(() => {
+    if (!selectedFriend || !currentUserId) return;
+
+    const channelName = `typing:${[currentUserId, selectedFriend.user_id].sort().join('-')}`;
+    
+    // Clean up previous channel if exists
+    if (typingChannelRef.current) {
+      supabase.removeChannel(typingChannelRef.current);
+    }
+
+    const channel = supabase.channel(channelName);
+    typingChannelRef.current = channel;
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const presenceState = channel.presenceState();
+        const otherUserPresence = presenceState[selectedFriend.user_id] as any[];
+        
+        if (otherUserPresence && otherUserPresence[0]?.typing) {
+          setIsOtherUserTyping(true);
+        } else {
+          setIsOtherUserTyping(false);
+        }
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({
+            user_id: currentUserId,
+            typing: false,
+          });
+        }
+      });
+
+    return () => {
+      if (typingChannelRef.current) {
+        supabase.removeChannel(typingChannelRef.current);
+        typingChannelRef.current = null;
+      }
+      setIsOtherUserTyping(false);
     };
   }, [selectedFriend, currentUserId]);
 
@@ -1284,6 +1353,19 @@ const Messages = () => {
 
       // Vibrate on successful send
       vibrateShort();
+
+      // Stop typing indicator
+      if (typingChannelRef.current) {
+        typingChannelRef.current.track({
+          user_id: currentUserId,
+          typing: false,
+        });
+      }
+
+      // Clear typing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
 
       // Clear draft after successful send
       draft.clearDraft();
@@ -2260,6 +2342,19 @@ const Messages = () => {
                         </SwipeableMessage>
                       );
                     })}
+
+                    {/* Typing Indicator */}
+                    {isOtherUserTyping && (
+                      <div className="flex gap-2 justify-start">
+                        <div className="bg-muted rounded-lg px-4 py-3">
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </ScrollArea>
 
