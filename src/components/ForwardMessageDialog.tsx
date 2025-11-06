@@ -147,8 +147,8 @@ export function ForwardMessageDialog({
   };
 
   const filteredFriends = friends.filter((friend) =>
-    friend.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    friend.username.toLowerCase().includes(searchQuery.toLowerCase())
+    friend.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    friend.username?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -207,11 +207,11 @@ export function ForwardMessageDialog({
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={friend.profile_photo} />
                       <AvatarFallback>
-                        {friend.full_name.substring(0, 2).toUpperCase()}
+                        {(friend.full_name || friend.username || 'U').substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{friend.full_name}</p>
+                      <p className="font-medium truncate">{friend.full_name || friend.username}</p>
                       <p className="text-sm text-muted-foreground truncate">
                         @{friend.username}
                       </p>
