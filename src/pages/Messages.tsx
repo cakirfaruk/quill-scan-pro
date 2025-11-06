@@ -131,6 +131,7 @@ const Messages = () => {
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [translatedMessages, setTranslatedMessages] = useState<Record<string, { text: string; sourceLanguage?: string }>>({});
   const [translatingMessageId, setTranslatingMessageId] = useState<string | null>(null);
+  const [showTranslation, setShowTranslation] = useState<Record<string, boolean>>({});
   
   // Language name mapping
   const languageNames: Record<string, string> = {
@@ -406,6 +407,11 @@ const Messages = () => {
                         text: data.translatedText,
                         sourceLanguage: data.detectedLanguage
                       }
+                    }));
+                    // Show translation by default for auto-translated messages
+                    setShowTranslation(prev => ({
+                      ...prev,
+                      [newMsg.id]: true
                     }));
                   }
                 } catch (error) {
@@ -945,6 +951,11 @@ const Messages = () => {
                       sourceLanguage: data.detectedLanguage
                     }
                   }));
+                  // Show translation by default for auto-loaded messages
+                  setShowTranslation(prev => ({
+                    ...prev,
+                    [msg.id]: true
+                  }));
                 }
               } catch (error) {
                 console.error('Auto-translate error:', error);
@@ -1370,6 +1381,11 @@ const Messages = () => {
             text: data.translatedText,
             sourceLanguage: data.detectedLanguage
           }
+        }));
+        // Show translation by default when manually triggered
+        setShowTranslation(prev => ({
+          ...prev,
+          [messageId]: true
         }));
       } else if (!data?.needsTranslation) {
         toast({
@@ -2486,23 +2502,52 @@ const Messages = () => {
                                 </div>
                               )}
                               <div className="px-4 py-2">
-                <p className="text-sm whitespace-pre-wrap break-words">{displayContent}</p>
+                                <p className="text-sm whitespace-pre-wrap break-words">{displayContent}</p>
                                 {translatedMessages[msg.id] && (
                                   <div className="mt-2 pt-2 border-t border-current/20 animate-in fade-in duration-300">
-                                    <div className="flex items-center gap-1.5 mb-1">
-                                      <svg className="w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                                      </svg>
-                                      <p className="text-xs opacity-70 font-medium">
-                                        {translatedMessages[msg.id].sourceLanguage 
-                                          ? `${languageNames[translatedMessages[msg.id].sourceLanguage!] || translatedMessages[msg.id].sourceLanguage} → Türkçe`
-                                          : 'Otomatik Çeviri'
-                                        }
-                                      </p>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <div className="flex items-center gap-1.5">
+                                        <svg className="w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                                        </svg>
+                                        <p className="text-xs opacity-70 font-medium">
+                                          {translatedMessages[msg.id].sourceLanguage 
+                                            ? `${languageNames[translatedMessages[msg.id].sourceLanguage!] || translatedMessages[msg.id].sourceLanguage} → Türkçe`
+                                            : 'Otomatik Çeviri'
+                                          }
+                                        </p>
+                                      </div>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setShowTranslation(prev => ({
+                                          ...prev,
+                                          [msg.id]: !prev[msg.id]
+                                        }))}
+                                        className="h-6 px-2 text-xs opacity-70 hover:opacity-100"
+                                      >
+                                        {showTranslation[msg.id] === false ? (
+                                          <>
+                                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                                            </svg>
+                                            Çeviriyi Göster
+                                          </>
+                                        ) : (
+                                          <>
+                                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Orijinali Göster
+                                          </>
+                                        )}
+                                      </Button>
                                     </div>
-                                    <p className="text-sm whitespace-pre-wrap break-words font-medium">
-                                      {translatedMessages[msg.id].text}
-                                    </p>
+                                    {showTranslation[msg.id] !== false && (
+                                      <p className="text-sm whitespace-pre-wrap break-words font-medium">
+                                        {translatedMessages[msg.id].text}
+                                      </p>
+                                    )}
                                   </div>
                                 )}
                                 <div className="flex items-center gap-2 mt-1">
