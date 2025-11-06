@@ -207,7 +207,7 @@ const Messages = () => {
           .eq('call_id', urlCallId)
           .eq('receiver_id', user.id)
           .eq('status', 'ringing')
-          .single();
+          .maybeSingle();
 
         if (call) {
           // Load caller profile
@@ -215,7 +215,7 @@ const Messages = () => {
             .from('profiles')
             .select('username, full_name, profile_photo')
             .eq('user_id', call.caller_id)
-            .single();
+            .maybeSingle();
 
           if (callerProfile) {
             // Play ringtone
@@ -253,7 +253,7 @@ const Messages = () => {
             .from('profiles')
             .select('username, full_name, profile_photo')
             .eq('user_id', call.caller_id)
-            .single();
+            .maybeSingle();
 
           if (callerProfile) {
             // Play ringtone
@@ -372,7 +372,7 @@ const Messages = () => {
               .from("profiles")
               .select("username, full_name, profile_photo")
               .eq("user_id", call.caller_id)
-              .single();
+              .maybeSingle();
 
             if (callerProfile) {
               console.log("Showing incoming call from:", callerProfile);
@@ -618,7 +618,7 @@ const Messages = () => {
               .from("profiles")
               .select("username")
               .eq("user_id", lastMessage.sender_id)
-              .single();
+              .maybeSingle();
             
             lastMessageSenderName = senderProfile?.username || "Bilinmeyen";
           }
