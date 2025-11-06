@@ -4,18 +4,22 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
-import { RouteProgressBar } from "@/components/AnimationWrappers";
-import { EnhancedOfflineIndicator } from "@/components/EnhancedOfflineIndicator";
-import { Tutorial } from "@/components/Tutorial";
-import { MobileNav } from "@/components/MobileNav";
-import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingFallback } from "@/components/LoadingFallback";
 import { IncomingCallDialog } from "@/components/IncomingCallDialog";
 import { IncomingGroupCallDialog } from "@/components/IncomingGroupCallDialog";
 import { PermissionManager } from "@/components/PermissionManager";
+import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
+import { initPerformanceMonitoring } from "@/utils/performanceMonitoring";
+
+// Lazy load heavy animation libraries
+const AnimatePresence = lazy(() => import("framer-motion").then(mod => ({ default: mod.AnimatePresence })));
+const motion = lazy(() => import("framer-motion").then(mod => ({ default: mod.motion })));
+const RouteProgressBar = lazy(() => import("@/components/AnimationWrappers").then(mod => ({ default: mod.RouteProgressBar })));
+const EnhancedOfflineIndicator = lazy(() => import("@/components/EnhancedOfflineIndicator").then(mod => ({ default: mod.EnhancedOfflineIndicator })));
+const Tutorial = lazy(() => import("@/components/Tutorial").then(mod => ({ default: mod.Tutorial })));
+const MobileNav = lazy(() => import("@/components/MobileNav").then(mod => ({ default: mod.MobileNav })));
 
 // Lazy load ALL pages including Index for optimal code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -52,7 +56,18 @@ const CallHistory = lazy(() => import("./pages/CallHistory"));
 const VapidKeyGenerator = lazy(() => import("./pages/VapidKeyGenerator"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient();
+// Optimized QueryClient with better cache settings
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (was cacheTime)
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      retry: 1,
+    },
+  },
+});
 
 // Component that uses hooks - must be inside providers
 const AppRoutes = () => {
@@ -185,20 +200,11 @@ const AppRoutes = () => {
     path => location.pathname === path || location.pathname.startsWith('/profile/')
   );
 
-  // Page transition variants
-  const pageTransition = {
-    initial: { opacity: 0, y: 10 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -10 },
-    transition: { 
-      duration: 0.3, 
-      ease: "easeInOut" as const
-    }
-  };
-
   return (
     <>
-      <RouteProgressBar isAnimating={isNavigating} />
+      <Suspense fallback={null}>
+        <RouteProgressBar isAnimating={isNavigating} />
+      </Suspense>
       {incomingCall && (
         <IncomingCallDialog
           isOpen={true}
@@ -224,16 +230,7 @@ const AppRoutes = () => {
         />
       )}
       <Suspense fallback={<LoadingFallback />}>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={location.pathname}
-            initial={pageTransition.initial}
-            animate={pageTransition.animate}
-            exit={pageTransition.exit}
-            transition={pageTransition.transition}
-            className="w-full"
-          >
-            <Routes location={location}>
+        <Routes location={location}>
               <Route path="/" element={<Index />} />
               <Route path="/feed" element={<Feed />} />
               <Route path="/auth" element={<Auth />} />
@@ -266,15 +263,22 @@ const AppRoutes = () => {
               <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </motion.div>
-        </AnimatePresence>
       </Suspense>
-      {showNav && <MobileNav />}
+      {showNav && (
+        <Suspense fallback={null}>
+          <MobileNav />
+        </Suspense>
+      )}
     </>
   );
 };
 
 const App = () => {
+  // Initialize performance monitoring
+  useEffect(() => {
+    initPerformanceMonitoring();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -283,8 +287,10 @@ const App = () => {
             <Toaster />
             <Sonner />
             <PermissionManager />
-            <EnhancedOfflineIndicator />
-            <Tutorial />
+            <Suspense fallback={null}>
+              <EnhancedOfflineIndicator />
+              <Tutorial />
+            </Suspense>
             <AppRoutes />
           </TooltipProvider>
         </ThemeProvider>

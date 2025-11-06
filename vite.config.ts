@@ -88,23 +88,37 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    // Simplified chunk splitting - keep all vendors together
     rollupOptions: {
       output: {
-        manualChunks: undefined, // Disable manual chunking to avoid React dispatcher issues
+        // Smart chunking for better caching
+        manualChunks: (id) => {
+          // Vendor chunks
+          if (id.includes('node_modules')) {
+            // Large libraries get their own chunks
+            if (id.includes('framer-motion')) return 'framer-motion';
+            if (id.includes('@radix-ui')) return 'radix-ui';
+            if (id.includes('react-query')) return 'react-query';
+            if (id.includes('recharts')) return 'recharts';
+            if (id.includes('emoji-picker')) return 'emoji-picker';
+            // Other vendors grouped together
+            return 'vendor';
+          }
+        },
       },
     },
-    // Increase chunk size warning limit
-    chunkSizeWarningLimit: 1000,
-    // Enable source maps for production debugging (optional)
+    chunkSizeWarningLimit: 600, // Stricter limit
     sourcemap: false,
-    // Minify with terser for better compression
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true, // Remove console logs in production
+        drop_console: true,
         drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info', 'console.debug'], // Remove specific console methods
       },
     },
+    // Optimize CSS
+    cssMinify: true,
+    // Report compressed size
+    reportCompressedSize: true,
   },
 }));
