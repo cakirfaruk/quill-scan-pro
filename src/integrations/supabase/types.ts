@@ -1271,6 +1271,7 @@ export type Database = {
           pinned_at: string | null
           read: boolean | null
           receiver_id: string
+          reply_to: string | null
           sender_id: string
         }
         Insert: {
@@ -1282,6 +1283,7 @@ export type Database = {
           pinned_at?: string | null
           read?: boolean | null
           receiver_id: string
+          reply_to?: string | null
           sender_id: string
         }
         Update: {
@@ -1293,6 +1295,7 @@ export type Database = {
           pinned_at?: string | null
           read?: boolean | null
           receiver_id?: string
+          reply_to?: string | null
           sender_id?: string
         }
         Relationships: [
@@ -1309,6 +1312,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "messages_reply_to_fkey"
+            columns: ["reply_to"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "messages_sender_id_fkey"

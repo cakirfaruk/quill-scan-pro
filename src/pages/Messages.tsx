@@ -66,6 +66,8 @@ interface Message {
   analysis_type?: string;
   pinned_at?: string | null;
   forwarded_from?: string | null;
+  reply_to?: string | null;
+  replied_message?: Message | null;
 }
 
 interface Conversation {
@@ -126,6 +128,7 @@ const Messages = () => {
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -818,21 +821,39 @@ const Messages = () => {
 
       if (error) throw error;
 
+      // Fetch replied messages if any
+      const replyToIds = data?.filter(m => m.reply_to).map(m => m.reply_to) || [];
+      let repliedMessagesMap = new Map<string, any>();
+
+      if (replyToIds.length > 0) {
+        const { data: repliedMessages } = await supabase
+          .from("messages")
+          .select("*")
+          .in("id", replyToIds);
+
+        repliedMessages?.forEach(msg => {
+          repliedMessagesMap.set(msg.id, msg);
+        });
+      }
+
       const parsedMessages = data?.map(msg => {
         const analysisIdMatch = msg.content.match(/\[Analiz ID: ([^\]]+)\]/);
         const analysisTypeMatch = msg.content.match(/\[Analiz Türü: ([^\]]+)\]/);
+        
+        const baseMsg = {
+          ...msg,
+          message_category: (msg.message_category || "other") as "friend" | "match" | "other",
+          replied_message: msg.reply_to ? repliedMessagesMap.get(msg.reply_to) : null,
+        };
+
         if (analysisIdMatch && analysisTypeMatch) {
           return {
-            ...msg,
-            message_category: (msg.message_category || "other") as "friend" | "match" | "other",
+            ...baseMsg,
             analysis_id: analysisIdMatch[1],
             analysis_type: analysisTypeMatch[1],
           };
         }
-        return {
-          ...msg,
-          message_category: (msg.message_category || "other") as "friend" | "match" | "other",
-        };
+        return baseMsg;
       }) || [];
 
       setMessages(parsedMessages);
@@ -1209,8 +1230,9 @@ const Messages = () => {
     }
   };
 
-  const handleReplyToMessage = (messageContent: string) => {
-    setNewMessage(`Yanıt: "${messageContent.substring(0, 50)}..." \n\n`);
+  const handleReplyToMessage = (message: Message) => {
+    setReplyingTo(message);
+    messageInputRef.current?.focus();
   };
 
   const handleSendGif = async (gifUrl: string) => {
@@ -1347,6 +1369,7 @@ const Messages = () => {
           receiver_id: selectedFriend.user_id,
           content: messageContent,
           message_category,
+          reply_to: replyingTo?.id || null,
         });
 
       if (error) throw error;
@@ -1371,6 +1394,7 @@ const Messages = () => {
       draft.clearDraft();
 
       setNewMessage("");
+      setReplyingTo(null);
       removeAttachment();
       
       // Reset textarea height
@@ -2159,7 +2183,7 @@ const Messages = () => {
                       return (
                         <SwipeableMessage
                           key={msg.id}
-                          onSwipeRight={() => handleReplyToMessage(displayContent)}
+                          onSwipeRight={() => handleReplyToMessage(msg)}
                           onSwipeLeft={msg.sender_id === currentUserId ? () => handleDeleteMessage(msg.id) : undefined}
                         >
                            <div
@@ -2167,11 +2191,28 @@ const Messages = () => {
                               msg.sender_id === currentUserId ? "justify-end" : "justify-start"
                             }`}
                           >
-                          <div className="flex flex-col max-w-[85%] min-w-0">
+                           <div className="flex flex-col max-w-[85%] min-w-0">
                             {msg.pinned_at && (
                               <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                                 <Pin className="w-3 h-3" />
                                 <span>Sabitlendi</span>
+                              </div>
+                            )}
+                            
+                            {/* Replied Message Preview */}
+                            {msg.replied_message && (
+                              <div className={`text-xs p-2 rounded-t-lg border-l-2 ${
+                                msg.sender_id === currentUserId 
+                                  ? "bg-primary/5 border-primary-foreground/30" 
+                                  : "bg-muted/50 border-primary/30"
+                              }`}>
+                                <div className="font-semibold opacity-70 mb-1">
+                                  {msg.replied_message.sender_id === currentUserId ? "Sen" : selectedFriend?.full_name || selectedFriend?.username}
+                                </div>
+                                <div className="opacity-60 truncate">
+                                  {msg.replied_message.content.replace(/\[.*?\]/g, '').substring(0, 50)}
+                                  {msg.replied_message.content.length > 50 && '...'}
+                                </div>
                               </div>
                             )}
                             
@@ -2328,6 +2369,10 @@ const Messages = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleReplyToMessage(msg)}>
+                                <MessageSquare className="mr-2 h-4 w-4" />
+                                Yanıtla
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handlePinMessage(msg.id)}>
                                 <Pin className="mr-2 h-4 w-4" />
                                 {msg.pinned_at ? "Sabitlemeyi Kaldır" : "Sabitle"}
@@ -2368,6 +2413,29 @@ const Messages = () => {
                   </div>
                 ) : (
                   <div className="p-4 border-t space-y-3">
+                    {/* Reply Preview */}
+                    {replyingTo && (
+                      <div className="flex items-start gap-2 p-3 bg-primary/5 border-l-2 border-primary rounded-lg">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-semibold text-primary mb-1">
+                            {replyingTo.sender_id === currentUserId ? "Kendine" : selectedFriend?.full_name || selectedFriend?.username}'ye yanıt veriyorsun
+                          </div>
+                          <div className="text-sm opacity-70 truncate">
+                            {replyingTo.content.replace(/\[.*?\]/g, '').substring(0, 60)}
+                            {replyingTo.content.length > 60 && '...'}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setReplyingTo(null)}
+                          className="h-6 w-6 p-0"
+                        >
+                          ✕
+                        </Button>
+                      </div>
+                    )}
+                    
                     {/* Voice Recorder */}
                     {showVoiceRecorder ? (
                       <VoiceRecorder
