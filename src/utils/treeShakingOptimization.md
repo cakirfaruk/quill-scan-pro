@@ -21,8 +21,16 @@
 - **accordion.tsx**: `forwardRef`, type imports
 - **switch.tsx**: `forwardRef`, type imports
 - **slider.tsx**: `forwardRef`, type imports
+- **alert-dialog.tsx**: `forwardRef`, type imports (✅ YENİ)
+- **popover.tsx**: `forwardRef`, type imports (✅ YENİ)
+- **tooltip.tsx**: `forwardRef`, type imports (✅ YENİ)
+- **separator.tsx**: `forwardRef`, type imports (✅ YENİ)
+- **progress.tsx**: `forwardRef`, type imports (✅ YENİ)
+- **scroll-area.tsx**: `forwardRef`, type imports (✅ YENİ)
+- **sheet.tsx**: `forwardRef`, type imports (✅ YENİ)
+- **hover-card.tsx**: `forwardRef`, type imports (✅ YENİ)
 
-**Toplam Optimize Edilen:** 16 kritik UI component
+**Toplam Optimize Edilen:** 24 kritik UI component
 
 ### Beklenen Kazanımlar
 
@@ -34,8 +42,8 @@
 Sonra (her component):
 - import { forwardRef, useState }: ~2KB (sadece kullanılanlar)
 
-16 component × ~13KB tasarruf = ~208KB (minified)
-→ ~50KB (gzip) tasarruf
+24 component × ~13KB tasarruf = ~312KB (minified)
+→ ~75KB (gzip) tasarruf
 ```
 
 #### Tree-Shaking Verimliliği:
@@ -46,8 +54,7 @@ Sonra (her component):
 
 ## 📝 Henüz Optimize Edilmeyenler
 
-### UI Components (kalan ~30 component):
-- alert-dialog.tsx
+### UI Components (kalan ~22 component):
 - calendar.tsx
 - carousel.tsx
 - chart.tsx
@@ -58,7 +65,6 @@ Sonra (her component):
 - empty-state.tsx
 - enhanced-skeleton.tsx
 - form.tsx
-- hover-card.tsx
 - info-alert.tsx
 - input-otp.tsx
 - interactive-card.tsx
@@ -67,14 +73,9 @@ Sonra (her component):
 - menubar.tsx
 - navigation-menu.tsx
 - pagination.tsx
-- popover.tsx
 - profile-card.tsx
-- progress.tsx
 - radio-group.tsx
 - resizable.tsx
-- scroll-area.tsx
-- separator.tsx
-- sheet.tsx
 - sidebar.tsx
 - skeleton.tsx
 - swipeable-card.tsx
@@ -82,7 +83,6 @@ Sonra (her component):
 - theme-customizer.tsx
 - toggle.tsx
 - toggle-group.tsx
-- tooltip.tsx
 
 ### Diğer Component'ler:
 Proje dosyalarında `import * as React` pattern'i kullanan ~181 component daha var (src/components/ klasöründe).
