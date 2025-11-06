@@ -175,8 +175,20 @@ export const VoiceMessagePlayer = ({ audioUrl, duration, preferredLanguage = 'tr
 
   return (
     <div className="space-y-2">{/* Wrapper for player and transcript */}
-      <div className="flex items-center gap-2 bg-accent/30 rounded-lg p-2 min-w-[200px]">
+      <div className="relative flex items-center gap-2 bg-accent/30 rounded-lg p-2 min-w-[200px]">
         <audio ref={audioRef} src={audioUrl} preload="metadata" />
+        
+        {isTranscribing && (
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm rounded-lg flex items-center justify-center z-10">
+            <div className="flex flex-col items-center gap-2">
+              <div className="relative">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <div className="absolute inset-0 h-6 w-6 rounded-full border-2 border-primary/20 animate-pulse" />
+              </div>
+              <p className="text-xs font-medium text-primary">İşleniyor...</p>
+            </div>
+          </div>
+        )}
         
         <Button
           size="icon"
@@ -192,11 +204,16 @@ export const VoiceMessagePlayer = ({ audioUrl, duration, preferredLanguage = 'tr
         </Button>
 
         <div className="flex-1 space-y-1">
-          <div className="h-1 bg-muted rounded-full overflow-hidden">
+          <div className="h-1 bg-muted rounded-full overflow-hidden relative">
             <div 
               className="h-full bg-primary transition-all"
               style={{ width: `${progress}%` }}
             />
+            {isTranscribing && (
+              <div className="absolute inset-0 overflow-hidden">
+                <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-[slide-in-right_1.5s_ease-in-out_infinite]" />
+              </div>
+            )}
           </div>
           <div className="text-xs text-muted-foreground">
             {formatTime(currentTime)} / {formatTime(audioDuration)}
