@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { HashRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingFallback } from "@/components/LoadingFallback";
@@ -13,12 +13,15 @@ import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
 import { initPerformanceMonitoring } from "@/utils/performanceMonitoring";
 import { EnhancedOfflineIndicator } from "@/components/EnhancedOfflineIndicator";
 import { MobileNav } from "@/components/MobileNav";
-// Lazy load ALL pages including Index for optimal code splitting
-const Index = lazy(() => import("./pages/Index"));
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+
+// Critical pages - load immediately (no lazy loading)
+import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+
+// Lazy load other pages
 const Feed = lazy(() => import("./pages/Feed"));
 
-// Lazy load routes for better performance
-const Auth = lazy(() => import("./pages/Auth"));
 const Credits = lazy(() => import("./pages/Credits"));
 const Compatibility = lazy(() => import("./pages/Compatibility"));
 const About = lazy(() => import("./pages/About"));
@@ -267,17 +270,19 @@ const App = () => {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <HashRouter>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <Toaster />
-          <Sonner />
-          <PermissionManager />
-          <EnhancedOfflineIndicator />
-          <AppRoutes />
-        </ThemeProvider>
-      </HashRouter>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <Toaster />
+            <Sonner />
+            <PermissionManager />
+            <EnhancedOfflineIndicator />
+            <AppRoutes />
+          </ThemeProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 

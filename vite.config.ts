@@ -21,32 +21,17 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
-        // Smart chunking for better caching
+        // Simplified chunking
         manualChunks: (id) => {
-          // Vendor chunks
           if (id.includes('node_modules')) {
-            // Large libraries get their own chunks
-            if (id.includes('framer-motion')) return 'framer-motion';
-            if (id.includes('@radix-ui')) return 'radix-ui';
-            if (id.includes('react-query')) return 'react-query';
-            if (id.includes('recharts')) return 'recharts';
-            if (id.includes('emoji-picker')) return 'emoji-picker';
-            // Other vendors grouped together
             return 'vendor';
           }
         },
       },
     },
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 1000,
     sourcemap: false,
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: mode === 'production',
-        drop_debugger: true,
-      },
-    },
+    minify: 'esbuild', // Use esbuild instead of terser - faster and safer
     cssMinify: true,
-    reportCompressedSize: true,
   },
 }));
