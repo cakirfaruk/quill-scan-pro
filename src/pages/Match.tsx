@@ -1140,9 +1140,14 @@ const Match = () => {
       <Dialog open={showTarotDialog} onOpenChange={setShowTarotDialog}>
         <DialogContent className="max-w-2xl max-h-[90vh] sm:max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Tarot Falı</DialogTitle>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Tarot Falı</span>
+              <Badge variant="secondary" className="text-sm">
+                50 Kredi
+              </Badge>
+            </DialogTitle>
             <DialogDescription>
-              {currentProfile?.full_name || currentProfile?.username} ile ilişkiniz hakkında tarot falı baktırın
+              {currentProfile?.full_name || currentProfile?.username} ile ilişkiniz hakkında tarot falı baktırın (Maliyet: 50 Kredi)
             </DialogDescription>
           </DialogHeader>
 

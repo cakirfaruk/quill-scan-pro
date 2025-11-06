@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Heart, User, Sparkles, Moon, Hand, Coffee, Star, Zap } from "lucide-react";
+import { ShareResultButton } from "@/components/ShareResultButton";
 
 interface CompatibilityArea {
   name: string;
@@ -19,6 +20,11 @@ interface AnalysisDetailViewProps {
 }
 
 export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewProps) => {
+  // Helper function to format content for sharing
+  const formatShareContent = (section: string, content: string) => {
+    return `${section}\n\n${content}`;
+  };
+
   // Tarot Reading
   if (analysisType === "tarot") {
     return (
@@ -34,7 +40,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
                   Özet
                 </h3>
               </div>
-              <p className="text-xs sm:text-sm leading-relaxed text-foreground whitespace-pre-wrap line-clamp-4">
+              <p className="text-xs sm:text-sm leading-relaxed text-foreground whitespace-pre-wrap">
                 {result.overall}
               </p>
             </div>
@@ -53,7 +59,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
                   <Badge className="text-xs bg-purple-100 text-purple-900 dark:bg-purple-900 dark:text-purple-100">
                     {card.position || `${index + 1}`}
                   </Badge>
-                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap line-clamp-3">
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
                     {card.interpretation}
                   </p>
                   {card.keywords && card.keywords.length > 0 && (
@@ -77,7 +83,16 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Star className="w-3.5 h-3.5 text-blue-600" />
               Tavsiye
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.advice}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.advice}</p>
+            <div className="mt-2 pt-2 border-t border-border">
+              <ShareResultButton
+                title="Tarot Falı - Tavsiye"
+                content={formatShareContent("Tavsiye", result.advice)}
+                size="sm"
+                variant="ghost"
+                className="w-full"
+              />
+            </div>
           </Card>
         )}
 
@@ -87,7 +102,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Star className="w-3.5 h-3.5 text-orange-600" />
               Dikkat
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.warnings}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.warnings}</p>
           </Card>
         )}
       </div>
@@ -109,7 +124,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
                   Özet
                 </h3>
               </div>
-              <p className="text-xs sm:text-sm leading-relaxed text-foreground whitespace-pre-wrap line-clamp-4">
+              <p className="text-xs sm:text-sm leading-relaxed text-foreground whitespace-pre-wrap">
                 {result.overall}
               </p>
             </div>
@@ -122,7 +137,16 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Heart className="w-3.5 h-3.5 text-pink-600" />
               Aşk
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.love}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.love}</p>
+            <div className="mt-2 pt-2 border-t border-border">
+              <ShareResultButton
+                title="Kahve Falı - Aşk"
+                content={formatShareContent("Aşk", result.love)}
+                size="sm"
+                variant="ghost"
+                className="w-full"
+              />
+            </div>
           </Card>
         )}
 
@@ -132,7 +156,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Sparkles className="w-3.5 h-3.5 text-blue-600" />
               Kariyer
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.career}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.career}</p>
           </Card>
         )}
 
@@ -142,7 +166,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Sparkles className="w-3.5 h-3.5 text-green-600" />
               Finans
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.finance}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.finance}</p>
           </Card>
         )}
 
@@ -152,7 +176,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Sparkles className="w-3.5 h-3.5 text-red-600" />
               Sağlık
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.health}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.health}</p>
           </Card>
         )}
 
@@ -162,7 +186,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Star className="w-3.5 h-3.5 text-purple-600" />
               Gelecek
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.future}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.future}</p>
           </Card>
         )}
 
@@ -176,7 +200,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               {result.symbols.slice(0, 3).map((symbol: any, index: number) => (
                 <div key={index} className="p-2 bg-background rounded border border-amber-200 dark:border-amber-800">
                   <div className="text-xs font-semibold text-amber-900 dark:text-amber-100">{symbol.name}</div>
-                  <div className="text-xs text-foreground mt-1 line-clamp-2">{symbol.meaning}</div>
+                  <div className="text-xs text-foreground mt-1">{symbol.meaning}</div>
                 </div>
               ))}
             </div>
@@ -201,7 +225,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
                   Özet
                 </h3>
               </div>
-              <p className="text-xs sm:text-sm leading-relaxed text-foreground whitespace-pre-wrap line-clamp-4">
+              <p className="text-xs sm:text-sm leading-relaxed text-foreground whitespace-pre-wrap">
                 {result.overall}
               </p>
             </div>
@@ -218,7 +242,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               {result.symbols.slice(0, 3).map((symbol: any, index: number) => (
                 <div key={index} className="p-2 bg-background rounded border border-purple-200 dark:border-purple-800">
                   <div className="text-xs font-semibold text-purple-900 dark:text-purple-100">{symbol.symbol}</div>
-                  <div className="text-xs text-foreground mt-1 line-clamp-2">{symbol.meaning}</div>
+                  <div className="text-xs text-foreground mt-1">{symbol.meaning}</div>
                 </div>
               ))}
             </div>
@@ -231,7 +255,16 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Sparkles className="w-3.5 h-3.5 text-blue-600" />
               Psikolojik
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.psychological}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.psychological}</p>
+            <div className="mt-2 pt-2 border-t border-border">
+              <ShareResultButton
+                title="Rüya Tabiri - Psikolojik"
+                content={formatShareContent("Psikolojik", result.psychological)}
+                size="sm"
+                variant="ghost"
+                className="w-full"
+              />
+            </div>
           </Card>
         )}
 
@@ -241,7 +274,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Star className="w-3.5 h-3.5 text-indigo-600" />
               Manevi
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.spiritual}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.spiritual}</p>
           </Card>
         )}
 
@@ -251,7 +284,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Star className="w-3.5 h-3.5 text-purple-600" />
               Gelecek
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.future_signs}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.future_signs}</p>
           </Card>
         )}
 
@@ -261,7 +294,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Star className="w-3.5 h-3.5 text-green-600" />
               Tavsiye
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.advice}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.advice}</p>
           </Card>
         )}
 
@@ -271,7 +304,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Star className="w-3.5 h-3.5 text-orange-600" />
               Uyarı
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.warnings}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.warnings}</p>
           </Card>
         )}
       </div>
@@ -293,7 +326,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
                   Özet
                 </h3>
               </div>
-              <p className="text-xs sm:text-sm leading-relaxed text-foreground whitespace-pre-wrap line-clamp-4">
+              <p className="text-xs sm:text-sm leading-relaxed text-foreground whitespace-pre-wrap">
                 {result.overall}
               </p>
             </div>
@@ -306,7 +339,16 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Heart className="w-3.5 h-3.5 text-red-600" />
               Hayat
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.life_line}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.life_line}</p>
+            <div className="mt-2 pt-2 border-t border-border">
+              <ShareResultButton
+                title="El Okuma - Hayat Çizgisi"
+                content={formatShareContent("Hayat Çizgisi", result.life_line)}
+                size="sm"
+                variant="ghost"
+                className="w-full"
+              />
+            </div>
           </Card>
         )}
 
@@ -316,7 +358,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Sparkles className="w-3.5 h-3.5 text-blue-600" />
               Akıl
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.head_line}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.head_line}</p>
           </Card>
         )}
 
@@ -326,7 +368,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Heart className="w-3.5 h-3.5 text-pink-600" />
               Kalp
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.heart_line}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.heart_line}</p>
           </Card>
         )}
 
@@ -336,7 +378,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Star className="w-3.5 h-3.5 text-purple-600" />
               Kader
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.fate_line}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.fate_line}</p>
           </Card>
         )}
 
@@ -346,7 +388,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <User className="w-3.5 h-3.5 text-teal-600" />
               Kişilik
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.personality}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.personality}</p>
           </Card>
         )}
 
@@ -356,7 +398,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
               Kariyer
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.career}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.career}</p>
           </Card>
         )}
 
@@ -366,7 +408,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Heart className="w-3.5 h-3.5 text-rose-600" />
               İlişkiler
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.relationships}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.relationships}</p>
           </Card>
         )}
 
@@ -376,7 +418,7 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
               <Sparkles className="w-3.5 h-3.5 text-green-600" />
               Sağlık
             </h4>
-            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap line-clamp-2">{result.health}</p>
+            <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.health}</p>
           </Card>
         )}
 

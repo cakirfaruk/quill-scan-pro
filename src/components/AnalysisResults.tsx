@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight, CheckCircle2, AlertCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { ShareResultButton } from "@/components/ShareResultButton";
 
 export interface SubTopic {
   name: string;
@@ -146,10 +147,10 @@ export const AnalysisResults = ({ result }: AnalysisResultsProps) => {
                         <div className="px-2 pb-2 space-y-1.5">
                           <div className="pl-3 space-y-1">
                             <div>
-                              <p className="text-xs font-semibold text-muted-foreground mb-0.5">
+                               <p className="text-xs font-semibold text-muted-foreground mb-0.5">
                                 Bulgu
                               </p>
-                              <p className="text-xs text-foreground/80 leading-relaxed">
+                              <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap">
                                 {subTopic.finding}
                               </p>
                             </div>
@@ -157,9 +158,20 @@ export const AnalysisResults = ({ result }: AnalysisResultsProps) => {
                               <p className="text-xs font-semibold text-muted-foreground mb-0.5">
                                 Yorum
                               </p>
-                              <p className="text-xs text-foreground leading-relaxed">
+                              <p className="text-xs text-foreground leading-relaxed whitespace-pre-wrap">
                                 {subTopic.interpretation}
                               </p>
+                              
+                              {/* Share button for this subtopic */}
+                              <div className="mt-2 pt-2 border-t border-border">
+                                <ShareResultButton
+                                  title={`${topic.name} - ${subTopic.name}`}
+                                  content={`**${subTopic.name}**\n\nBulgu: ${subTopic.finding}\n\nYorum: ${subTopic.interpretation}`}
+                                  size="sm"
+                                  variant="ghost"
+                                  className="w-full"
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>
