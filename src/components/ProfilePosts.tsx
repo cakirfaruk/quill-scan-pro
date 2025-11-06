@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -12,6 +12,8 @@ import { DoubleTapLike } from "@/components/DoubleTapLike";
 import { FullScreenMediaViewer } from "@/components/FullScreenMediaViewer";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { PostReactionPicker } from "./PostReactionPicker";
+import { OptimizedImage } from "./OptimizedImage";
+import { Virtuoso } from "react-virtuoso";
 
 interface Post {
   id: string;
@@ -42,7 +44,7 @@ interface ProfilePostsProps {
   onLike?: (postId: string, hasLiked: boolean) => Promise<void>;
 }
 
-export const ProfilePosts = ({ posts, loading, isOwnProfile, onLike }: ProfilePostsProps) => {
+export const ProfilePosts = memo(({ posts, loading, isOwnProfile, onLike }: ProfilePostsProps) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [mediaViewerOpen, setMediaViewerOpen] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<{ url: string; type: "photo" | "video" }[]>([]);
@@ -87,9 +89,10 @@ export const ProfilePosts = ({ posts, loading, isOwnProfile, onLike }: ProfilePo
 
   return (
     <Card className="p-3 sm:p-6">
-      <div className="space-y-4 sm:space-y-6">
-        {posts.map((post) => (
-          <Card key={post.id} className="overflow-hidden hover:shadow-xl transition-all duration-300">
+      <Virtuoso
+        data={posts}
+        itemContent={(index, post) => (
+          <Card key={post.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 mb-4">
               <div className="p-3 sm:p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2 sm:gap-3">
@@ -97,7 +100,11 @@ export const ProfilePosts = ({ posts, loading, isOwnProfile, onLike }: ProfilePo
                     className="w-9 h-9 sm:w-10 sm:h-10 ring-2 ring-border cursor-pointer hover:ring-primary transition-all"
                     onClick={() => post.profile.profile_photo && setSelectedImage(post.profile.profile_photo)}
                   >
-                    <AvatarImage src={post.profile.profile_photo || undefined} />
+                    <AvatarImage 
+                      src={post.profile.profile_photo || undefined}
+                      loading="lazy"
+                      decoding="async"
+                    />
                     <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs sm:text-sm">
                       {post.profile.full_name?.[0] || post.profile.username[0].toUpperCase()}
                     </AvatarFallback>
@@ -146,15 +153,19 @@ export const ProfilePosts = ({ posts, loading, isOwnProfile, onLike }: ProfilePo
                   }}
                 >
                   {post.media_types?.[0] === "photo" ? (
-                    <img 
-                      src={post.media_urls[0]} 
-                      alt="Post media" 
-                      className="w-full max-h-[400px] sm:max-h-[500px] object-cover transition-transform duration-300 hover:scale-105"
+                    <OptimizedImage
+                      src={post.media_urls[0]}
+                      alt="Post media"
+                      className="w-full max-h-[400px] sm:max-h-[500px]"
+                      aspectRatio="16/9"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 600px, 800px"
+                      quality={80}
                     />
                   ) : (
                     <video 
                       src={post.media_urls[0]} 
                       controls 
+                      preload="metadata"
                       className="w-full max-h-[400px] sm:max-h-[500px]"
                       onClick={(e) => e.stopPropagation()}
                     />
@@ -177,15 +188,19 @@ export const ProfilePosts = ({ posts, loading, isOwnProfile, onLike }: ProfilePo
                           }}
                         >
                           {post.media_types?.[index] === "photo" ? (
-                            <img 
-                              src={url} 
-                              alt={`Post media ${index + 1}`} 
-                              className="w-full max-h-[400px] sm:max-h-[500px] object-cover transition-transform duration-300"
+                            <OptimizedImage
+                              src={url}
+                              alt={`Post media ${index + 1}`}
+                              className="w-full max-h-[400px] sm:max-h-[500px]"
+                              aspectRatio="16/9"
+                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 600px, 800px"
+                              quality={80}
                             />
                           ) : (
                             <video 
                               src={url} 
                               controls 
+                              preload="metadata"
                               className="w-full max-h-[400px] sm:max-h-[500px]"
                               onClick={(e) => e.stopPropagation()}
                             />
@@ -239,8 +254,10 @@ export const ProfilePosts = ({ posts, loading, isOwnProfile, onLike }: ProfilePo
               </div>
             </div>
           </Card>
-        ))}
-      </div>
+        )}
+        style={{ height: '100vh' }}
+        increaseViewportBy={{ top: 600, bottom: 600 }}
+      />
 
       {/* Full Screen Media Viewer */}
       <FullScreenMediaViewer
@@ -267,4 +284,4 @@ export const ProfilePosts = ({ posts, loading, isOwnProfile, onLike }: ProfilePo
       />
     </Card>
   );
-};
+});

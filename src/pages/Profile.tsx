@@ -27,6 +27,7 @@ import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { soundEffects } from "@/utils/soundEffects";
 import { OnlineStatusBadge } from "@/components/OnlineStatusBadge";
 import { Breadcrumb } from "@/components/Breadcrumb";
+import { Virtuoso } from "react-virtuoso";
 
 interface UserPhoto {
   id: string;
@@ -1380,14 +1381,15 @@ const Profile = () => {
                   {isOwnProfile ? "Henüz analiziniz yok" : "Paylaşılmış analiz bulunmuyor"}
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {analyses.map((analysis) => {
+                <Virtuoso
+                  data={analyses}
+                  itemContent={(index, analysis) => {
                     const Icon = getAnalysisIcon(analysis.analysis_type);
                     const isSelected = selectedAnalysisIds.includes(analysis.id);
                     return (
                       <Card
                         key={analysis.id}
-                        className={`p-4 hover:shadow-md transition-shadow ${isSelected ? 'ring-2 ring-primary' : ''}`}
+                        className={`p-4 hover:shadow-md transition-shadow mb-3 ${isSelected ? 'ring-2 ring-primary' : ''}`}
                       >
                         <div className="flex items-start gap-3">
                           {isOwnProfile && (
@@ -1454,8 +1456,10 @@ const Profile = () => {
                         </div>
                       </Card>
                     );
-                  })}
-                </div>
+                  }}
+                  style={{ height: '60vh' }}
+                  increaseViewportBy={{ top: 400, bottom: 400 }}
+                />
               )}
 
               {/* Analysis Detail Dialog */}
