@@ -73,6 +73,9 @@ export const StoryViewer = ({
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [sendingShare, setSendingShare] = useState(false);
+  const [showViewersDialog, setShowViewersDialog] = useState(false);
+  const [viewers, setViewers] = useState<any[]>([]);
+  const [loadingViewers, setLoadingViewers] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -455,6 +458,46 @@ export const StoryViewer = ({
     loadFriends();
   };
 
+  const loadViewers = async () => {
+    if (!currentStory || currentStory.user_id !== currentUserId) return;
+    
+    setLoadingViewers(true);
+    try {
+      const { data: viewsData, error } = await supabase
+        .from("story_views")
+        .select(`
+          viewer_id,
+          viewed_at,
+          profiles:viewer_id (
+            user_id,
+            username,
+            full_name,
+            profile_photo
+          )
+        `)
+        .eq("story_id", currentStory.id)
+        .order("viewed_at", { ascending: false });
+
+      if (error) throw error;
+
+      setViewers(viewsData || []);
+    } catch (error) {
+      console.error("Error loading viewers:", error);
+      toast({
+        title: "Hata",
+        description: "Görüntüleyenler yüklenemedi",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingViewers(false);
+    }
+  };
+
+  const handleOpenViewersDialog = () => {
+    setShowViewersDialog(true);
+    loadViewers();
+  };
+
   if (!currentStory) return null;
 
   return (
@@ -506,12 +549,18 @@ export const StoryViewer = ({
             </div>
             <div className="flex items-center gap-2">
               {currentStory.user_id === currentUserId && (
-                <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenViewersDialog();
+                  }}
+                  className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full hover:bg-white/30 transition-colors cursor-pointer"
+                >
                   <Eye className="w-3 h-3 text-white" />
                   <span className="text-white text-xs font-medium">
                     {currentStory.views_count}
                   </span>
-                </div>
+                </button>
               )}
               <Button
                 variant="ghost"
@@ -971,6 +1020,71 @@ export const StoryViewer = ({
                   </Button>
                 </div>
               </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Viewers Dialog */}
+      <Dialog open={showViewersDialog} onOpenChange={setShowViewersDialog}>
+        <DialogContent className="max-w-md">
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Eye className="w-5 h-5 text-primary" />
+                Görüntüleyenler
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Bu story'yi kim görüntüledi
+              </p>
+            </div>
+
+            {loadingViewers ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : viewers.length === 0 ? (
+              <div className="text-center py-8">
+                <Eye className="w-12 h-12 text-muted-foreground mx-auto mb-2 opacity-50" />
+                <p className="text-muted-foreground">Henüz kimse görüntülemedi</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {viewers.map((viewer) => {
+                  const profile = viewer.profiles;
+                  if (!profile) return null;
+                  
+                  return (
+                    <div
+                      key={viewer.viewer_id}
+                      className="flex items-center gap-3 p-3 rounded-lg border hover:bg-secondary/50 transition-colors"
+                    >
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={profile.profile_photo} />
+                        <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                          {profile.username?.[0]?.toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">
+                          {profile.full_name || profile.username}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          @{profile.username}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(viewer.viewed_at), {
+                            addSuffix: true,
+                            locale: tr,
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         </DialogContent>
