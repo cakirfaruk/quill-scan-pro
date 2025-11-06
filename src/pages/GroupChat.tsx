@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Send, Users, Settings, Smile, Loader2, UserPlus, BarChart3, Megaphone, Image as ImageIcon, Paperclip, Reply, X, TrendingUp, Search, CalendarDays, Pin, Phone, Video } from "lucide-react";
@@ -29,6 +30,8 @@ import { GroupFileCard } from "@/components/GroupFileCard";
 import { CreateGroupFileDialog } from "@/components/CreateGroupFileDialog";
 import { PinnedMessages } from "@/components/PinnedMessages";
 import { GroupVideoCallDialog } from "@/components/GroupVideoCallDialog";
+import { useLongPress } from "@/hooks/use-gestures";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const messageSchema = z.object({
   content: z.string()
@@ -103,7 +106,20 @@ const GroupChat = () => {
   const [activeCallId, setActiveCallId] = useState<string | null>(null);
   const [callType, setCallType] = useState<"audio" | "video">("audio");
   const [replyingTo, setReplyingTo] = useState<GroupMessage | null>(null);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messageInputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile();
+
+  // Long press handler for mobile menu
+  const longPressHandlers = useLongPress({
+    onLongPress: () => {
+      if (isMobile) {
+        setShowMobileMenu(true);
+      }
+    },
+    delay: 500,
+  });
 
   useEffect(() => {
     loadGroup();
@@ -1147,12 +1163,14 @@ const GroupChat = () => {
             </Popover>
 
             <Input
+              ref={messageInputRef}
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder={replyingTo ? "Yanıt yaz..." : "Mesaj yaz..."}
               disabled={sending || uploading}
               maxLength={2000}
               className="flex-1 min-w-0"
+              {...longPressHandlers}
             />
 
             <Button type="submit" disabled={sending || uploading || !newMessage.trim()} className="h-8 w-8 md:h-10 md:w-10 shrink-0">
@@ -1283,6 +1301,31 @@ const GroupChat = () => {
           callType={callType}
         />
       )}
+
+      {/* Mobile Options Menu */}
+      <Drawer open={showMobileMenu} onOpenChange={setShowMobileMenu}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Mesaj Seçenekleri</DrawerTitle>
+          </DrawerHeader>
+          <div className="p-4 space-y-2">
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-3 h-14"
+              onClick={() => {
+                fileInputRef.current?.click();
+                setShowMobileMenu(false);
+              }}
+            >
+              <Paperclip className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-medium">Fotoğraf/Video</div>
+                <div className="text-xs text-muted-foreground">Dosya paylaş</div>
+              </div>
+            </Button>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 };

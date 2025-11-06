@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -121,7 +122,9 @@ const Messages = () => {
   } | null>(null);
   const [ringtone, setRingtone] = useState<{ stop: () => void } | null>(null);
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messageInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -139,6 +142,16 @@ const Messages = () => {
     maxLength: 2000,
     autoSaveDelay: 1500,
     onRestore: (draftContent) => setNewMessage(draftContent),
+  });
+
+  // Long press handler for mobile menu
+  const longPressHandlers = useLongPress({
+    onLongPress: () => {
+      if (isMobile) {
+        setShowMobileMenu(true);
+      }
+    },
+    delay: 500,
   });
 
   // Auto-save draft when message changes
@@ -2330,6 +2343,7 @@ const Messages = () => {
 
                           {/* Message Input */}
                           <Input
+                            ref={messageInputRef}
                             placeholder="Mesajınızı yazın..."
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
@@ -2340,6 +2354,7 @@ const Messages = () => {
                               }
                             }}
                             className="flex-1 min-w-0"
+                            {...longPressHandlers}
                           />
                           
                           {/* Additional Options - Hidden on mobile, visible on desktop */}
@@ -2477,6 +2492,63 @@ const Messages = () => {
             callType={incomingCall.callType}
           />
         )}
+
+        {/* Mobile Options Menu */}
+        <Drawer open={showMobileMenu} onOpenChange={setShowMobileMenu}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Mesaj Seçenekleri</DrawerTitle>
+            </DrawerHeader>
+            <div className="p-4 space-y-2">
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-3 h-14"
+                onClick={() => {
+                  setShowVoiceRecorder(true);
+                  setShowMobileMenu(false);
+                }}
+              >
+                <Mic className="w-5 h-5" />
+                <div className="text-left">
+                  <div className="font-medium">Sesli Mesaj</div>
+                  <div className="text-xs text-muted-foreground">Ses kaydı gönder</div>
+                </div>
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-3 h-14"
+                onClick={() => {
+                  setShowGifPicker(true);
+                  setShowMobileMenu(false);
+                }}
+              >
+                <ImageIcon className="w-5 h-5" />
+                <div className="text-left">
+                  <div className="font-medium">GIF Gönder</div>
+                  <div className="text-xs text-muted-foreground">Animasyonlu resim paylaş</div>
+                </div>
+              </Button>
+
+              {selectedCategory === "friend" && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-3 h-14"
+                  onClick={() => {
+                    setScheduleDialogOpen(true);
+                    setShowMobileMenu(false);
+                  }}
+                >
+                  <Clock className="w-5 h-5" />
+                  <div className="text-left">
+                    <div className="font-medium">Mesaj Zamanla</div>
+                    <div className="text-xs text-muted-foreground">İleri bir tarihte gönder</div>
+                  </div>
+                </Button>
+              )}
+            </div>
+          </DrawerContent>
+        </Drawer>
       </main>
     </div>
   );
