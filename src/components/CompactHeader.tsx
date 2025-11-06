@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { 
   Home, Search, Plus, Video, Sparkles, Shield, Coins, MessageCircle, Menu, Heart, History
 } from "lucide-react";
+import { PreloadLink } from "@/components/PreloadLink";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -132,7 +133,7 @@ export const CompactHeader = () => {
             )}
           >
         {/* Logo */}
-        <Link 
+        <PreloadLink 
           to="/" 
           className={cn(
             "flex items-center gap-2 hover:opacity-80 transition-all duration-300",
@@ -158,7 +159,7 @@ export const CompactHeader = () => {
           >
             KAM
           </span>
-        </Link>
+        </PreloadLink>
 
         {/* Global Search - Centered */}
         {isLoggedIn && (
@@ -170,7 +171,7 @@ export const CompactHeader = () => {
         {/* Desktop Navigation - Hidden on mobile */}
         {isLoggedIn && (
           <nav className="hidden lg:flex items-center gap-1">
-            <Link to="/explore">
+            <PreloadLink to="/explore">
               <Button
                 variant="ghost"
                 size="sm"
@@ -179,8 +180,8 @@ export const CompactHeader = () => {
                 <Search className="w-4 h-4" />
                 Keşfet
               </Button>
-            </Link>
-            <Link to="/messages">
+            </PreloadLink>
+            <PreloadLink to="/messages">
               <Button
                 variant="ghost"
                 size="sm"
@@ -189,8 +190,8 @@ export const CompactHeader = () => {
                 <MessageCircle className="w-4 h-4" />
                 Mesajlar
               </Button>
-            </Link>
-            <Link to="/match">
+            </PreloadLink>
+            <PreloadLink to="/match">
               <Button
                 variant="ghost"
                 size="sm"
@@ -199,7 +200,7 @@ export const CompactHeader = () => {
                 <Heart className="w-4 h-4" />
                 Eşleşme
               </Button>
-            </Link>
+            </PreloadLink>
             <Button
               variant="ghost"
               size="sm"
@@ -209,7 +210,7 @@ export const CompactHeader = () => {
               <Plus className="w-4 h-4" />
               Oluştur
             </Button>
-            <Link to="/reels">
+            <PreloadLink to="/reels">
               <Button
                 variant="ghost"
                 size="sm"
@@ -218,8 +219,8 @@ export const CompactHeader = () => {
                 <Video className="w-4 h-4" />
                 Reels
               </Button>
-            </Link>
-            <Link to="/discovery">
+            </PreloadLink>
+            <PreloadLink to="/discovery">
               <Button
                 variant="ghost"
                 size="sm"
@@ -228,8 +229,8 @@ export const CompactHeader = () => {
                 <Sparkles className="w-4 h-4" />
                 Analizler
               </Button>
-            </Link>
-            <Link to="/analysis-history">
+            </PreloadLink>
+            <PreloadLink to="/analysis-history">
               <Button
                 variant="ghost"
                 size="sm"
@@ -238,7 +239,7 @@ export const CompactHeader = () => {
                 <History className="w-4 h-4" />
                 Geçmiş
               </Button>
-            </Link>
+            </PreloadLink>
           </nav>
         )}
 

@@ -1,6 +1,7 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Home, Plus, Video, Sparkles, Heart, Menu, Coffee, Moon, Hand, Star, Target, Calendar, FileText, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PreloadLink } from "@/components/PreloadLink";
 import { useState, useEffect } from "react";
 import { CreatePostDialog } from "@/components/CreatePostDialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -97,7 +98,7 @@ export const MobileNav = () => {
             }
             
             return (
-              <Link key={item.path} to={item.path!} className="flex-1">
+              <PreloadLink key={item.path} to={item.path!} className="flex-1">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -112,7 +113,7 @@ export const MobileNav = () => {
                     {item.label}
                   </span>
                 </Button>
-              </Link>
+              </PreloadLink>
             );
           })}
           

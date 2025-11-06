@@ -3,7 +3,7 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingFallback } from "@/components/LoadingFallback";
 import { IncomingCallDialog } from "@/components/IncomingCallDialog";
@@ -15,43 +15,43 @@ import { EnhancedOfflineIndicator } from "@/components/EnhancedOfflineIndicator"
 import { MobileNav } from "@/components/MobileNav";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { lazyWithPreload } from "@/utils/lazyWithPreload";
 
 // Critical pages - load immediately (no lazy loading)
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 
-// Lazy load other pages
-const Feed = lazy(() => import("./pages/Feed"));
-
-const Credits = lazy(() => import("./pages/Credits"));
-const Compatibility = lazy(() => import("./pages/Compatibility"));
-const About = lazy(() => import("./pages/About"));
-const FAQ = lazy(() => import("./pages/FAQ"));
-const Numerology = lazy(() => import("./pages/Numerology"));
-const BirthChart = lazy(() => import("./pages/BirthChart"));
-const Admin = lazy(() => import("./pages/Admin"));
-const Profile = lazy(() => import("./pages/Profile"));
-const Friends = lazy(() => import("./pages/Friends"));
-const Messages = lazy(() => import("./pages/Messages"));
-const Settings = lazy(() => import("./pages/Settings"));
-const Match = lazy(() => import("./pages/Match"));
-const Tarot = lazy(() => import("./pages/Tarot"));
-const CoffeeFortune = lazy(() => import("./pages/CoffeeFortune"));
-const DreamInterpretation = lazy(() => import("./pages/DreamInterpretation"));
-const DailyHoroscope = lazy(() => import("./pages/DailyHoroscope"));
-const Palmistry = lazy(() => import("./pages/Palmistry"));
-const Handwriting = lazy(() => import("./pages/Handwriting"));
-const SavedPosts = lazy(() => import("./pages/SavedPosts"));
-const Reels = lazy(() => import("./pages/Reels"));
-const Explore = lazy(() => import("./pages/Explore"));
-const Groups = lazy(() => import("./pages/Groups"));
-const GroupChat = lazy(() => import("./pages/GroupChat"));
-const GroupSettings = lazy(() => import("./pages/GroupSettings"));
-const Discovery = lazy(() => import("./pages/Discovery"));
-const CallHistory = lazy(() => import("./pages/CallHistory"));
-const VapidKeyGenerator = lazy(() => import("./pages/VapidKeyGenerator"));
-const AnalysisHistory = lazy(() => import("./pages/AnalysisHistory"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+// Lazy load other pages with preload capability
+const Feed = lazyWithPreload(() => import("./pages/Feed"));
+const Credits = lazyWithPreload(() => import("./pages/Credits"));
+const Compatibility = lazyWithPreload(() => import("./pages/Compatibility"));
+const About = lazyWithPreload(() => import("./pages/About"));
+const FAQ = lazyWithPreload(() => import("./pages/FAQ"));
+const Numerology = lazyWithPreload(() => import("./pages/Numerology"));
+const BirthChart = lazyWithPreload(() => import("./pages/BirthChart"));
+const Admin = lazyWithPreload(() => import("./pages/Admin"));
+const Profile = lazyWithPreload(() => import("./pages/Profile"));
+const Friends = lazyWithPreload(() => import("./pages/Friends"));
+const Messages = lazyWithPreload(() => import("./pages/Messages"));
+const Settings = lazyWithPreload(() => import("./pages/Settings"));
+const Match = lazyWithPreload(() => import("./pages/Match"));
+const Tarot = lazyWithPreload(() => import("./pages/Tarot"));
+const CoffeeFortune = lazyWithPreload(() => import("./pages/CoffeeFortune"));
+const DreamInterpretation = lazyWithPreload(() => import("./pages/DreamInterpretation"));
+const DailyHoroscope = lazyWithPreload(() => import("./pages/DailyHoroscope"));
+const Palmistry = lazyWithPreload(() => import("./pages/Palmistry"));
+const Handwriting = lazyWithPreload(() => import("./pages/Handwriting"));
+const SavedPosts = lazyWithPreload(() => import("./pages/SavedPosts"));
+const Reels = lazyWithPreload(() => import("./pages/Reels"));
+const Explore = lazyWithPreload(() => import("./pages/Explore"));
+const Groups = lazyWithPreload(() => import("./pages/Groups"));
+const GroupChat = lazyWithPreload(() => import("./pages/GroupChat"));
+const GroupSettings = lazyWithPreload(() => import("./pages/GroupSettings"));
+const Discovery = lazyWithPreload(() => import("./pages/Discovery"));
+const CallHistory = lazyWithPreload(() => import("./pages/CallHistory"));
+const VapidKeyGenerator = lazyWithPreload(() => import("./pages/VapidKeyGenerator"));
+const AnalysisHistory = lazyWithPreload(() => import("./pages/AnalysisHistory"));
+const NotFound = lazyWithPreload(() => import("./pages/NotFound"));
 
 // Optimized QueryClient with AGGRESSIVE cache settings
 const queryClient = new QueryClient({
