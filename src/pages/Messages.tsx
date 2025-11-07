@@ -2849,17 +2849,18 @@ const Messages = () => {
                             rows={1}
                             {...longPressHandlers}
                           />
-                          
-                          {/* Additional Options - Hidden on mobile, visible on desktop */}
-                          <div className="hidden md:flex gap-2">
+                           
+                          {/* Additional Options */}
+                          <div className="flex gap-1 md:gap-2">
                             {/* Voice Recorder Button */}
                             <Button
                               variant="ghost"
                               size="icon"
                               type="button"
                               onClick={() => setShowVoiceRecorder(true)}
+                              className="h-8 w-8 md:h-10 md:w-10"
                             >
-                              <Mic className="w-5 h-5" />
+                              <Mic className="w-4 h-4 md:w-5 md:h-5" />
                             </Button>
 
                             {/* GIF Picker */}
@@ -2868,19 +2869,21 @@ const Messages = () => {
                               size="icon" 
                               type="button"
                               onClick={() => setShowGifPicker(true)}
+                              className="h-8 w-8 md:h-10 md:w-10"
                             >
-                              <ImageIcon className="w-5 h-5" />
+                              <ImageIcon className="w-4 h-4 md:w-5 md:h-5" />
                             </Button>
                             
-                            {/* Schedule Button */}
+                            {/* Schedule Button - Desktop only */}
                             {selectedCategory === "friend" && (
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setScheduleDialogOpen(true)}
                                 title="Mesaj Zamanla"
+                                className="hidden md:flex h-8 w-8 md:h-10 md:w-10"
                               >
-                                <Clock className="w-4 h-4" />
+                                <Clock className="w-4 h-4 md:w-5 md:h-5" />
                               </Button>
                             )}
                           </div>

@@ -1330,6 +1330,7 @@ const Profile = () => {
           onBlock={handleBlockUser}
           onUnblock={handleUnblockUser}
           onSettings={() => navigate('/settings')}
+          onFriendsClick={() => setFriendsDialogOpen(true)}
           postsCount={userPosts.length}
           friendsCount={friends.length}
           analysesCount={analyses.length}

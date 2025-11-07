@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader } from "@/components/ui/drawer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, RefreshCw, Folder, FolderPlus, Rss, Users, Sparkles, Search, Home, MessageCircle, Reply } from "lucide-react";
@@ -39,6 +40,7 @@ import { useNetworkStatus } from "@/hooks/use-network-status";
 import { useOfflineCache } from "@/hooks/use-offline-cache";
 import { useOptimisticUI } from "@/hooks/use-optimistic-ui";
 import { SyncStatusBadge } from "@/components/SyncStatusBadge";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Post {
   id: string;
@@ -98,6 +100,7 @@ const Feed = () => {
   const { user, userId: authUserId, isLoading: authLoading } = useAuth(); // AUTH CONTEXT
   const [userId, setUserId] = useState<string>("");
   const isOnline = useNetworkStatus();
+  const isMobile = useIsMobile();
   const { addToQueue } = useEnhancedOfflineSync();
   const { addOptimisticItem, optimisticItems, getSyncStatus } = useOptimisticUI();
   
@@ -762,7 +765,7 @@ const Feed = () => {
         </Tabs>
       </div>
 
-      {/* Comments Dialog */}
+      {/* Comments Dialog/Drawer */}
       <Dialog open={commentsDialogOpen} onOpenChange={setCommentsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] p-0">
           <DialogHeader className="p-6 pb-4">

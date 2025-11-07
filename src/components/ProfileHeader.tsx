@@ -34,6 +34,7 @@ interface ProfileHeaderProps {
   onBlock: () => void;
   onUnblock: () => void;
   onSettings: () => void;
+  onFriendsClick: () => void;
   postsCount: number;
   friendsCount: number;
   analysesCount: number;
@@ -54,6 +55,7 @@ export const ProfileHeader = memo(({
   onBlock,
   onUnblock,
   onSettings,
+  onFriendsClick,
   postsCount,
   friendsCount,
   analysesCount
@@ -98,7 +100,10 @@ export const ProfileHeader = memo(({
               <p className="font-bold text-lg">{postsCount}</p>
               <p className="text-xs text-muted-foreground">Gönderi</p>
             </div>
-            <div className="text-center cursor-pointer hover:opacity-80 transition-opacity">
+            <div 
+              className="text-center cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={onFriendsClick}
+            >
               <p className="font-bold text-lg">{friendsCount}</p>
               <p className="text-xs text-muted-foreground">Arkadaş</p>
             </div>
