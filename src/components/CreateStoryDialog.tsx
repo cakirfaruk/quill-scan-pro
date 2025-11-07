@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload, X, Camera, Music, Smile, Type, BarChart3, HelpCircle, Sparkles } from "lucide-react";
 import { soundEffects } from "@/utils/soundEffects";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { StoryMusicPicker } from "./StoryMusicPicker";
 import { GifPicker } from "./GifPicker";
 import { StoryStickerPicker } from "./StoryStickerPicker";
@@ -186,7 +187,7 @@ export const CreateStoryDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Camera className="w-5 h-5" />
@@ -194,7 +195,8 @@ export const CreateStoryDialog = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <ScrollArea className="max-h-[75vh]">
+          <div className="space-y-4 pr-4">
           {!preview ? (
             <div className="space-y-3">
               <div
@@ -383,7 +385,8 @@ export const CreateStoryDialog = ({
               </div>
             </div>
           )}
-        </div>
+          </div>
+        </ScrollArea>
 
         {/* Enhancement dialogs */}
         <StoryFilterPicker

@@ -197,6 +197,8 @@ const Settings = () => {
           bio: profile.bio || null,
           gender: profile.gender || null,
           show_in_matches: profile.show_in_matches,
+          preferred_language: profile.preferred_language,
+          auto_translate_messages: profile.auto_translate_messages,
         })
         .eq("user_id", user.id);
 

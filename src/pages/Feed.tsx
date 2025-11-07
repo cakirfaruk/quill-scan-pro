@@ -718,57 +718,45 @@ const Feed = () => {
                 variant="gradient"
               />
             ) : (
-              <Virtuoso
-                data={friendsPosts}
-                endReached={handleLoadMore}
-                itemContent={(index, post) => (
-                  <div key={post.id} className="mb-4">
+              <div className="space-y-4">
+                {friendsPosts.map((post) => (
+                  <div key={post.id}>
                     {renderPost(post)}
                   </div>
+                ))}
+                {feedLoading && (
+                  <div className="py-8">
+                    <LoadingSpinner size="md" text="Daha fazla gönderi yükleniyor..." />
+                  </div>
                 )}
-                components={{
-                  Footer: () => feedLoading ? (
-                    <div className="py-8">
-                      <LoadingSpinner size="md" text="Daha fazla gönderi yükleniyor..." />
-                    </div>
-                  ) : null
-                }}
-                style={{ height: '100vh' }}
-                increaseViewportBy={{ top: 600, bottom: 600 }}
-              />
+              </div>
             )}
           </TabsContent>
           
           <TabsContent value="discover" className="mt-0">
-            {allPosts.length === 0 ? (
+            {enrichedPosts.length === 0 ? (
               <EmptyState
                 icon={Rss}
                 title="Henüz paylaşım yok"
                 description="İlk paylaşımı siz yapın! Fotoğraf, video veya düşüncelerinizi paylaşarak topluluğa katılın."
                 actionLabel="İlk Paylaşımı Yap"
-                onAction={() => navigate("/profile")}
+                onAction={() => setCreatePostOpen(true)}
                 illustration={<NoPostsIllustration />}
                 variant="gradient"
               />
             ) : (
-              <Virtuoso
-                data={enrichedPosts}
-                endReached={handleLoadMore}
-                itemContent={(index, post) => (
-                  <div key={post.id} className="mb-4">
+              <div className="space-y-4">
+                {enrichedPosts.map((post) => (
+                  <div key={post.id}>
                     {renderPost(post)}
                   </div>
+                ))}
+                {feedLoading && (
+                  <div className="py-8">
+                    <LoadingSpinner size="md" text="Daha fazla gönderi yükleniyor..." />
+                  </div>
                 )}
-                components={{
-                  Footer: () => feedLoading ? (
-                    <div className="py-8">
-                      <LoadingSpinner size="md" text="Daha fazla gönderi yükleniyor..." />
-                    </div>
-                  ) : null
-                }}
-                style={{ height: '100vh' }}
-                increaseViewportBy={{ top: 600, bottom: 600 }}
-              />
+              </div>
             )}
           </TabsContent>
         </Tabs>

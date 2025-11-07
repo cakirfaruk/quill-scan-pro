@@ -61,32 +61,33 @@ export const OnboardingDialog = ({ open, onComplete }: OnboardingDialogProps) =>
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[90vw] max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">{steps[currentStep].title}</DialogTitle>
-          <DialogDescription className="text-base pt-4">
+          <DialogTitle className="text-lg sm:text-2xl">{steps[currentStep].title}</DialogTitle>
+          <DialogDescription className="text-sm sm:text-base pt-2 sm:pt-4">
             {steps[currentStep].description}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex justify-center py-8">
+        <div className="flex justify-center py-4 sm:py-8">
           {steps[currentStep].icon}
         </div>
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <div className="space-y-3 sm:space-y-4">
+          <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
             <span>Adım {currentStep + 1} / {steps.length}</span>
             <span>{Math.round(progress)}%</span>
           </div>
           <Progress value={progress} className="h-2" />
         </div>
 
-        <DialogFooter className="flex-row gap-2 sm:gap-2">
+        <DialogFooter className="flex-row gap-2 sm:gap-2 mt-4">
           {currentStep > 0 && (
             <Button
               variant="outline"
               onClick={handlePrevious}
-              className="flex-1"
+              className="flex-1 text-xs sm:text-sm"
+              size="sm"
             >
               Geri
             </Button>
@@ -97,13 +98,15 @@ export const OnboardingDialog = ({ open, onComplete }: OnboardingDialogProps) =>
               <Button
                 variant="ghost"
                 onClick={handleSkip}
-                className="flex-1"
+                className="flex-1 text-xs sm:text-sm"
+                size="sm"
               >
                 Atla
               </Button>
               <Button
                 onClick={handleNext}
-                className="flex-1"
+                className="flex-1 text-xs sm:text-sm"
+                size="sm"
               >
                 İleri
               </Button>
@@ -111,7 +114,8 @@ export const OnboardingDialog = ({ open, onComplete }: OnboardingDialogProps) =>
           ) : (
             <Button
               onClick={handleNext}
-              className="flex-1"
+              className="flex-1 text-xs sm:text-sm"
+              size="sm"
             >
               Başlayalım!
             </Button>

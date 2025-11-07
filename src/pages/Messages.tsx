@@ -386,9 +386,19 @@ const Messages = () => {
   useEffect(() => {
     const userIdParam = searchParams.get("userId");
     if (userIdParam && currentUserId && userIdParam !== selectedFriend?.user_id) {
-      loadConversations();
+      // Find friend from conversations and select them
+      loadConversations().then(() => {
+        // After conversations load, find and select the friend
+        const targetConversation = conversations.find(
+          (conv) => conv.type === 'direct' && conv.friend?.user_id === userIdParam
+        );
+        if (targetConversation?.friend) {
+          setSelectedFriend(targetConversation.friend);
+          loadMessages(targetConversation.friend.user_id);
+        }
+      });
     }
-  }, [searchParams]);
+  }, [searchParams, currentUserId]);
 
   useEffect(() => {
     if (!currentUserId) return;

@@ -5,6 +5,7 @@ import { PreloadLink } from "@/components/PreloadLink";
 import { useState, useEffect, Suspense } from "react";
 import { LazyCreatePostDialog } from "@/utils/lazyImports";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { PWAInstallButton } from "@/components/PWAInstallButton";
@@ -130,7 +131,7 @@ export const MobileNav = () => {
                 <span className="text-[10px] font-medium">Menü</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[60vh]">
+            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
               <SheetHeader>
                 <SheetTitle>Hızlı Erişim</SheetTitle>
               </SheetHeader>
@@ -140,26 +141,28 @@ export const MobileNav = () => {
                 <PWAInstallButton />
               </div>
               
-              <div className="grid grid-cols-3 gap-4 mt-4">
-                {quickMenuItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.path}
-                      onClick={() => {
-                        navigate(item.path);
-                        setQuickMenuOpen(false);
-                      }}
-                      className="flex flex-col items-center gap-2 p-4 rounded-lg border hover:border-primary hover:bg-accent transition-all"
-                    >
-                      <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                        <Icon className="w-6 h-6 text-primary" />
-                      </div>
-                      <span className="text-xs text-center font-medium">{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <ScrollArea className="h-[calc(100vh-180px)] mt-4">
+                <div className="grid grid-cols-2 gap-3 pr-4">
+                  {quickMenuItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.path}
+                        onClick={() => {
+                          navigate(item.path);
+                          setQuickMenuOpen(false);
+                        }}
+                        className="flex flex-col items-center gap-2 p-3 rounded-lg border hover:border-primary hover:bg-accent transition-all"
+                      >
+                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                          <Icon className="w-5 h-5 text-primary" />
+                        </div>
+                        <span className="text-[10px] text-center font-medium leading-tight">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
             </SheetContent>
           </Sheet>
         </div>
