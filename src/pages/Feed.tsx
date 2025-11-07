@@ -1,9 +1,10 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOptimizedFeed } from "@/hooks/use-optimized-feed";
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { FeedPostCard } from "@/components/FeedPostCard";
@@ -33,7 +34,6 @@ import { useOnboarding } from "@/hooks/use-onboarding";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
 import { WidgetDashboard } from "@/components/WidgetDashboard";
-import { Virtuoso } from "react-virtuoso";
 import { Suspense } from "react";
 import { useEnhancedOfflineSync } from "@/hooks/use-enhanced-offline-sync";
 import { useNetworkStatus } from "@/hooks/use-network-status";
@@ -41,6 +41,7 @@ import { useOfflineCache } from "@/hooks/use-offline-cache";
 import { useOptimisticUI } from "@/hooks/use-optimistic-ui";
 import { SyncStatusBadge } from "@/components/SyncStatusBadge";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Post {
   id: string;
@@ -148,6 +149,8 @@ const Feed = () => {
   const [mediaViewerOpen, setMediaViewerOpen] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<{ url: string; type: "photo" | "video" }[]>([]);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
+  const [hasMorePosts, setHasMorePosts] = useState(true);
+  const [activeTab, setActiveTab] = useState<"friends" | "discover">("friends");
 
   // **OPTIMIZED & ENRICHED POSTS** - useMemo ile cache'lenir
   const enrichedPosts = useMemo(() => {
@@ -630,8 +633,26 @@ const Feed = () => {
 
   const handleLoadMore = useCallback(async () => {
     if (!userId || feedLoading) return;
-    loadMore(); // Use optimized hook's loadMore
+    await loadMore(); // Use optimized hook's loadMore
   }, [userId, feedLoading, loadMore]);
+
+  // Infinite scroll for both tabs
+  const { sentinelRef, isLoadingMore } = useInfiniteScroll({
+    onLoadMore: handleLoadMore,
+    hasMore: hasMorePosts && !feedLoading,
+    isLoading: feedLoading,
+    threshold: 0.5,
+    rootMargin: "200px",
+  });
+
+  // Update hasMore based on posts loaded
+  useEffect(() => {
+    if (allPosts.length > 0 && allPosts.length < 50) {
+      setHasMorePosts(true);
+    } else if (allPosts.length >= 50) {
+      setHasMorePosts(false);
+    }
+  }, [allPosts.length]);
 
   const renderComment = (comment: Comment) => (
     <FeedCommentItem
@@ -642,7 +663,7 @@ const Feed = () => {
     />
   );
 
-  const renderPost = (post: Post) => (
+  const renderPost = useCallback((post: Post) => (
     <FeedPostCard
       key={post.id}
       post={post}
@@ -656,7 +677,7 @@ const Feed = () => {
         setMediaViewerOpen(true);
       }}
     />
-  );
+  ), [handleLike, handleSave]);
 
   if (loading) {
     return (
@@ -703,7 +724,7 @@ const Feed = () => {
           </ScrollReveal>
         )}
 
-        <Tabs defaultValue="friends" className="w-full space-y-4 sm:space-y-6">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "friends" | "discover")} className="w-full space-y-4 sm:space-y-6">
           <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6">
             <TabsTrigger value="friends" className="text-sm sm:text-base">Arkadaşlarım</TabsTrigger>
             <TabsTrigger value="discover" className="text-sm sm:text-base">Keşfet</TabsTrigger>
@@ -721,18 +742,36 @@ const Feed = () => {
                 variant="gradient"
               />
             ) : (
-              <div className="space-y-4">
-                {friendsPosts.map((post) => (
-                  <div key={post.id}>
-                    {renderPost(post)}
-                  </div>
-                ))}
-                {feedLoading && (
-                  <div className="py-8">
-                    <LoadingSpinner size="md" text="Daha fazla gönderi yükleniyor..." />
-                  </div>
-                )}
-              </div>
+              <>
+                <AnimatePresence mode="popLayout">
+                  {friendsPosts.map((post, index) => (
+                    <motion.div
+                      key={post.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.3) }}
+                    >
+                      {renderPost(post)}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                
+                {/* Infinite Scroll Sentinel */}
+                <div ref={sentinelRef} className="py-4">
+                  {(feedLoading || isLoadingMore) && hasMorePosts && (
+                    <div className="flex flex-col items-center gap-3">
+                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                      <p className="text-sm text-muted-foreground">Daha fazla gönderi yükleniyor...</p>
+                    </div>
+                  )}
+                  {!hasMorePosts && friendsPosts.length > 10 && (
+                    <p className="text-center text-sm text-muted-foreground py-4">
+                      Tüm gönderiler yüklendi
+                    </p>
+                  )}
+                </div>
+              </>
             )}
           </TabsContent>
           
@@ -748,18 +787,36 @@ const Feed = () => {
                 variant="gradient"
               />
             ) : (
-              <div className="space-y-4">
-                {enrichedPosts.map((post) => (
-                  <div key={post.id}>
-                    {renderPost(post)}
-                  </div>
-                ))}
-                {feedLoading && (
-                  <div className="py-8">
-                    <LoadingSpinner size="md" text="Daha fazla gönderi yükleniyor..." />
-                  </div>
-                )}
-              </div>
+              <>
+                <AnimatePresence mode="popLayout">
+                  {enrichedPosts.map((post, index) => (
+                    <motion.div
+                      key={post.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.3) }}
+                    >
+                      {renderPost(post)}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                
+                {/* Infinite Scroll Sentinel */}
+                <div ref={sentinelRef} className="py-4">
+                  {(feedLoading || isLoadingMore) && hasMorePosts && (
+                    <div className="flex flex-col items-center gap-3">
+                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                      <p className="text-sm text-muted-foreground">Daha fazla gönderi yükleniyor...</p>
+                    </div>
+                  )}
+                  {!hasMorePosts && enrichedPosts.length > 10 && (
+                    <p className="text-center text-sm text-muted-foreground py-4">
+                      Tüm gönderiler yüklendi
+                    </p>
+                  )}
+                </div>
+              </>
             )}
           </TabsContent>
         </Tabs>
