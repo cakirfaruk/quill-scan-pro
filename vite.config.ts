@@ -30,22 +30,21 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff,woff2,ttf,otf}'],
         
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/ekkymypfvixlysrgtabz\.supabase\.co\/rest\/v1\/.*/,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'supabase-api-cache',
-              expiration: {
-                maxEntries: 200,
-                maxAgeSeconds: 60 * 60 * 24 * 7
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              },
-              networkTimeoutSeconds: 3
-            }
-          },
+          runtimeCaching: [
+            {
+              urlPattern: /^https:\/\/ekkymypfvixlysrgtabz\.supabase\.co\/rest\/v1\/.*/,
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'supabase-api-cache',
+                expiration: {
+                  maxEntries: 200,
+                  maxAgeSeconds: 60 * 60 * 24 * 7
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
+            },
           {
             urlPattern: /^https:\/\/ekkymypfvixlysrgtabz\.supabase\.co\/auth\/.*/,
             handler: 'NetworkFirst',
