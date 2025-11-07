@@ -1,9 +1,10 @@
-import { useState, memo } from "react";
+import { useState, memo, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, MessageCircle, Heart, Share2, MapPin } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, MessageCircle, Heart, Share2, MapPin, Grid3x3, List, Play } from "lucide-react";
 import { ParsedText } from "@/components/ParsedText";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -13,7 +14,8 @@ import { FullScreenMediaViewer } from "@/components/FullScreenMediaViewer";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { PostReactionPicker } from "./PostReactionPicker";
 import { OptimizedImage } from "./OptimizedImage";
-import { Virtuoso } from "react-virtuoso";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface Post {
   id: string;
@@ -49,6 +51,13 @@ export const ProfilePosts = memo(({ posts, loading, isOwnProfile, onLike }: Prof
   const [mediaViewerOpen, setMediaViewerOpen] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<{ url: string; type: "photo" | "video" }[]>([]);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  // Filter posts with media for grid view
+  const postsWithMedia = useMemo(() => 
+    posts.filter(post => post.media_urls && post.media_urls.length > 0),
+    [posts]
+  );
 
   const handleLike = async (postId: string, hasLiked: boolean) => {
     if (!hasLiked) {
@@ -56,6 +65,17 @@ export const ProfilePosts = memo(({ posts, loading, isOwnProfile, onLike }: Prof
     }
     if (onLike) {
       await onLike(postId, hasLiked);
+    }
+  };
+
+  const openMediaViewer = (post: Post, index: number = 0) => {
+    if (post.media_urls) {
+      setSelectedMedia(post.media_urls.map((url, i) => ({ 
+        url, 
+        type: post.media_types?.[i] === "video" ? "video" : "photo" 
+      })));
+      setSelectedMediaIndex(index);
+      setMediaViewerOpen(true);
     }
   };
 
@@ -88,10 +108,107 @@ export const ProfilePosts = memo(({ posts, loading, isOwnProfile, onLike }: Prof
   }
 
   return (
-    <Card className="p-3 sm:p-6">
-      <Virtuoso
-        data={posts}
-        itemContent={(index, post) => (
+    <>
+      {/* View Mode Toggle */}
+      <div className="flex justify-end mb-4 gap-2">
+        <Button
+          variant={viewMode === "grid" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setViewMode("grid")}
+          className="gap-2"
+        >
+          <Grid3x3 className="w-4 h-4" />
+          Grid
+        </Button>
+        <Button
+          variant={viewMode === "list" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setViewMode("list")}
+          className="gap-2"
+        >
+          <List className="w-4 h-4" />
+          Liste
+        </Button>
+      </div>
+
+      <AnimatePresence mode="wait">
+        {viewMode === "grid" ? (
+          <motion.div
+            key="grid"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            className="grid grid-cols-3 gap-1 sm:gap-2"
+          >
+            {postsWithMedia.map((post, index) => {
+              const firstMedia = post.media_urls![0];
+              const mediaType = post.media_types?.[0];
+              const isVideo = mediaType === "video";
+
+              return (
+                <motion.div
+                  key={post.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: Math.min(index * 0.05, 0.5) }}
+                  className="relative aspect-square overflow-hidden rounded-md group cursor-pointer"
+                  onClick={() => openMediaViewer(post, 0)}
+                >
+                  {isVideo ? (
+                    <>
+                      <video 
+                        src={firstMedia}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        preload="metadata"
+                      />
+                      <div className="absolute top-2 right-2 bg-black/60 rounded-full p-1.5">
+                        <Play className="w-4 h-4 text-white" fill="white" />
+                      </div>
+                    </>
+                  ) : (
+                    <OptimizedImage
+                      src={firstMedia}
+                      alt="Post"
+                      className="w-full h-full group-hover:scale-110 transition-transform duration-300"
+                      aspectRatio="1/1"
+                      sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 200px"
+                      quality={70}
+                    />
+                  )}
+                  
+                  {/* Multiple media indicator */}
+                  {post.media_urls!.length > 1 && (
+                    <div className="absolute top-2 right-2 bg-black/60 rounded-full p-1.5">
+                      <Grid3x3 className="w-4 h-4 text-white" />
+                    </div>
+                  )}
+                  
+                  {/* Hover overlay with stats */}
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4">
+                    <div className="flex items-center gap-1.5 text-white font-semibold">
+                      <Heart className="w-5 h-5" fill="white" />
+                      <span>{post.likes}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-white font-semibold">
+                      <MessageCircle className="w-5 h-5" fill="white" />
+                      <span>{post.comments}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="list"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card className="p-3 sm:p-6">
+              <div className="space-y-4">{posts.map((post) => (
           <Card key={post.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 mb-4">
               <div className="p-3 sm:p-4">
               <div className="flex items-center justify-between mb-3">
@@ -143,14 +260,7 @@ export const ProfilePosts = memo(({ posts, loading, isOwnProfile, onLike }: Prof
               {post.media_urls.length === 1 ? (
                 <div 
                   className="w-full"
-                  onClick={() => {
-                    setSelectedMedia(post.media_urls!.map((url, i) => ({ 
-                      url, 
-                      type: post.media_types?.[i] === "video" ? "video" : "photo" 
-                    })));
-                    setSelectedMediaIndex(0);
-                    setMediaViewerOpen(true);
-                  }}
+                  onClick={() => openMediaViewer(post, 0)}
                 >
                   {post.media_types?.[0] === "photo" ? (
                     <OptimizedImage
@@ -176,17 +286,10 @@ export const ProfilePosts = memo(({ posts, loading, isOwnProfile, onLike }: Prof
                   <CarouselContent>
                     {post.media_urls.map((url, index) => (
                       <CarouselItem key={index}>
-                        <div 
-                          className="w-full"
-                          onClick={() => {
-                            setSelectedMedia(post.media_urls!.map((url, i) => ({ 
-                              url, 
-                              type: post.media_types?.[i] === "video" ? "video" : "photo" 
-                            })));
-                            setSelectedMediaIndex(index);
-                            setMediaViewerOpen(true);
-                          }}
-                        >
+                      <div 
+                        className="w-full"
+                        onClick={() => openMediaViewer(post, index)}
+                      >
                           {post.media_types?.[index] === "photo" ? (
                             <OptimizedImage
                               src={url}
@@ -254,10 +357,12 @@ export const ProfilePosts = memo(({ posts, loading, isOwnProfile, onLike }: Prof
               </div>
             </div>
           </Card>
+                ))}
+              </div>
+            </Card>
+          </motion.div>
         )}
-        style={{ height: '100vh' }}
-        increaseViewportBy={{ top: 600, bottom: 600 }}
-      />
+      </AnimatePresence>
 
       {/* Full Screen Media Viewer */}
       <FullScreenMediaViewer
@@ -282,6 +387,8 @@ export const ProfilePosts = memo(({ posts, loading, isOwnProfile, onLike }: Prof
           return post?.hasLiked || false;
         })()}
       />
-    </Card>
+    </>
   );
 });
+
+ProfilePosts.displayName = "ProfilePosts";

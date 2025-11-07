@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback, memo } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProfileHeader } from "@/components/ProfileHeader";
+import { ProfileStats } from "@/components/ProfileStats";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -109,6 +110,17 @@ const Profile = () => {
   const [newCollectionName, setNewCollectionName] = useState("");
   const [newCollectionDesc, setNewCollectionDesc] = useState("");
   const [createCollectionDialogOpen, setCreateCollectionDialogOpen] = useState(false);
+
+  // Calculate profile statistics
+  const profileStats = useMemo(() => {
+    const totalLikes = userPosts.reduce((sum, post) => sum + (post.likes || 0), 0);
+    const totalComments = userPosts.reduce((sum, post) => sum + (post.comments || 0), 0);
+    return {
+      totalLikes,
+      totalComments,
+      profileViews: 0, // Can be implemented with a profile_views table
+    };
+  }, [userPosts]);
 
   const handleRefresh = async () => {
     soundEffects.playClick();
@@ -1341,6 +1353,18 @@ const Profile = () => {
           <MutualFriends userId={currentUserId} profileUserId={profile.user_id} />
         )}
 
+        {/* Profile Statistics */}
+        <div className="mb-6">
+          <ProfileStats
+            analysesCount={analyses.length}
+            friendsCount={friends.length}
+            postsCount={userPosts.length}
+            totalLikes={profileStats.totalLikes}
+            totalComments={profileStats.totalComments}
+            profileViews={profileStats.profileViews}
+          />
+        </div>
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="posts">Gönderiler</TabsTrigger>
@@ -1349,7 +1373,23 @@ const Profile = () => {
           </TabsList>
 
           <TabsContent value="posts">
-            <ProfilePosts posts={userPosts} loading={postsLoading} isOwnProfile={isOwnProfile} />
+            <ProfilePosts 
+              posts={userPosts} 
+              loading={postsLoading} 
+              isOwnProfile={isOwnProfile}
+              onLike={async (postId, hasLiked) => {
+                try {
+                  if (hasLiked) {
+                    await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", currentUserId);
+                  } else {
+                    await supabase.from("post_likes").insert({ post_id: postId, user_id: currentUserId });
+                  }
+                  await loadUserPosts(); // Reload to update stats
+                } catch (error) {
+                  console.error("Like error:", error);
+                }
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="analyses">
