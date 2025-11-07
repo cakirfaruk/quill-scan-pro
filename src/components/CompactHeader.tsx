@@ -23,7 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
 import { LazyCreatePostDialog } from "@/utils/lazyImports";
-import { GlobalSearch } from "@/components/GlobalSearch";
+import { GlobalSearch } from "@/components/EnhancedGlobalSearch";
 import { useScrollProgress } from "@/hooks/use-parallax";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import { cn } from "@/lib/utils";
