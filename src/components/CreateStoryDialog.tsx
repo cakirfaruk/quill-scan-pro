@@ -12,8 +12,7 @@ import { StoryPollCreator } from "./StoryPollCreator";
 import { StoryQuestionCreator } from "./StoryQuestionCreator";
 import { StoryCanvas } from "./StoryCanvas";
 import { StoryFilterPicker } from "./StoryFilterPicker";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface CreateStoryDialogProps {
   open: boolean;
@@ -50,7 +49,6 @@ export const CreateStoryDialog = ({
   const [backgroundColor, setBackgroundColor] = useState<string>("#000000");
   const [showFilterPicker, setShowFilterPicker] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<{ name: string; value: string }>({ name: "Normal", value: "none" });
-  const isMobile = useIsMobile();
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -186,33 +184,17 @@ export const CreateStoryDialog = ({
     onOpenChange(false);
   };
 
-  const Wrapper = isMobile ? Drawer : ({ children, ...props }: any) => (
-    <div {...props}>{children}</div>
-  );
-  
-  const WrapperContent = isMobile ? DrawerContent : ({ children, className, ...props }: any) => (
-    <div className={`sm:max-w-md ${className}`} {...props}>{children}</div>
-  );
-
-  const WrapperHeader = isMobile ? DrawerHeader : ({ children, ...props }: any) => (
-    <div {...props}>{children}</div>
-  );
-
-  const WrapperTitle = isMobile ? DrawerTitle : ({ children, className, ...props }: any) => (
-    <h2 className={`text-lg font-semibold ${className}`} {...props}>{children}</h2>
-  );
-
   return (
-    <Wrapper open={open} onOpenChange={handleClose}>
-      <WrapperContent className="max-h-[95vh] flex flex-col">
-        <WrapperHeader>
-          <WrapperTitle className="flex items-center gap-2">
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-[500px] max-h-[95vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4">
+          <DialogTitle className="flex items-center gap-2">
             <Camera className="w-5 h-5" />
             Hikaye Oluştur
-          </WrapperTitle>
-        </WrapperHeader>
+          </DialogTitle>
+        </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-4">
+        <div className="flex-1 overflow-y-auto px-6">
           <div className="space-y-4 pb-4">
           {!preview ? (
             <div className="space-y-3">
@@ -383,7 +365,7 @@ export const CreateStoryDialog = ({
 
         {/* Sticky footer with action buttons */}
         {preview && (
-          <div className="sticky bottom-0 left-0 right-0 bg-background border-t p-4 flex gap-2 z-10">
+          <div className="sticky bottom-0 left-0 right-0 bg-background border-t px-6 py-4 flex gap-2 z-10">
             <Button
               variant="outline"
               className="flex-1"
@@ -472,7 +454,7 @@ export const CreateStoryDialog = ({
             setShowQuestionCreator(false);
           }}
         />
-      </WrapperContent>
-    </Wrapper>
+      </DialogContent>
+    </Dialog>
   );
 };

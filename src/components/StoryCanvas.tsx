@@ -43,7 +43,7 @@ export const StoryCanvas = ({
   const [selectedObject, setSelectedObject] = useState<any>(null);
   const initialScaleRef = useRef<number>(1);
 
-  // Pinch-to-zoom gesture for selected object
+  // Pinch-to-zoom gesture for selected object with scale limits
   const pinchGestures = usePinch({
     onPinchStart: () => {
       if (selectedObject && selectedObject.scaleX) {
@@ -52,7 +52,8 @@ export const StoryCanvas = ({
     },
     onPinch: (scale) => {
       if (fabricCanvas && selectedObject) {
-        const newScale = initialScaleRef.current * scale;
+        // Apply scale limits: min 0.5x, max 3.0x
+        const newScale = Math.min(3.0, Math.max(0.5, initialScaleRef.current * scale));
         selectedObject.set({
           scaleX: newScale,
           scaleY: newScale,
@@ -65,13 +66,18 @@ export const StoryCanvas = ({
     },
   });
 
-  // Initialize canvas
+  // Initialize canvas with responsive sizing
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || !containerRef.current) return;
+
+    // Responsive canvas width: min(400px, 90vw)
+    const containerWidth = containerRef.current.clientWidth;
+    const canvasWidth = Math.min(400, containerWidth * 0.9);
+    const canvasHeight = Math.round(canvasWidth * (16 / 9)); // 9:16 aspect ratio
 
     const canvas = new FabricCanvas(canvasRef.current, {
-      width: 400,
-      height: 711, // 9:16 aspect ratio
+      width: canvasWidth,
+      height: canvasHeight,
       backgroundColor: "#000000",
     });
 
@@ -104,8 +110,10 @@ export const StoryCanvas = ({
     }).then((img) => {
       if (!img) return;
 
-      img.scaleToWidth(400);
-      img.scaleToHeight(711);
+      const canvasWidth = fabricCanvas.getWidth();
+      const canvasHeight = fabricCanvas.getHeight();
+      img.scaleToWidth(canvasWidth);
+      img.scaleToHeight(canvasHeight);
       img.selectable = false;
       img.evented = false;
       
@@ -126,11 +134,14 @@ export const StoryCanvas = ({
     });
 
     // Add new stickers
+    const canvasWidth = fabricCanvas.getWidth();
+    const canvasHeight = fabricCanvas.getHeight();
+    
     stickers.forEach((sticker, index) => {
       const text = new IText(sticker.emoji, {
-        left: (sticker.x / 100) * 400,
-        top: (sticker.y / 100) * 711,
-        fontSize: sticker.size,
+        left: (sticker.x / 100) * canvasWidth,
+        top: (sticker.y / 100) * canvasHeight,
+        fontSize: Math.max(sticker.size, 44), // Min touch target 44px
         selectable: true,
         hasControls: true,
         hasBorders: true,
@@ -157,6 +168,9 @@ export const StoryCanvas = ({
     });
 
     // Add new GIFs
+    const canvasWidth = fabricCanvas.getWidth();
+    const canvasHeight = fabricCanvas.getHeight();
+    
     gifs.forEach((gif, index) => {
       FabricImage.fromURL(gif.url, {
         crossOrigin: "anonymous",
@@ -164,8 +178,8 @@ export const StoryCanvas = ({
         if (!img) return;
 
         img.set({
-          left: (gif.x / 100) * 400,
-          top: (gif.y / 100) * 711,
+          left: (gif.x / 100) * canvasWidth,
+          top: (gif.y / 100) * canvasHeight,
           scaleX: 0.3,
           scaleY: 0.3,
           selectable: true,
@@ -194,10 +208,13 @@ export const StoryCanvas = ({
     });
 
     // Add new text elements
+    const canvasWidth = fabricCanvas.getWidth();
+    const canvasHeight = fabricCanvas.getHeight();
+    
     textElements.forEach((textEl, index) => {
       const text = new IText(textEl.text, {
-        left: (textEl.x / 100) * 400,
-        top: (textEl.y / 100) * 711,
+        left: (textEl.x / 100) * canvasWidth,
+        top: (textEl.y / 100) * canvasHeight,
         fontSize: textEl.size,
         fill: textEl.color,
         fontFamily: textEl.font,
@@ -224,6 +241,8 @@ export const StoryCanvas = ({
   const updateElementPositions = () => {
     if (!fabricCanvas) return;
 
+    const canvasWidth = fabricCanvas.getWidth();
+    const canvasHeight = fabricCanvas.getHeight();
     const updatedStickers: typeof stickers = [];
     const updatedGifs: typeof gifs = [];
     const updatedTexts: typeof textElements = [];
@@ -235,8 +254,8 @@ export const StoryCanvas = ({
         if (originalSticker && obj.left !== undefined && obj.top !== undefined) {
           updatedStickers.push({
             ...originalSticker,
-            x: (obj.left / 400) * 100,
-            y: (obj.top / 711) * 100,
+            x: (obj.left / canvasWidth) * 100,
+            y: (obj.top / canvasHeight) * 100,
           });
         }
       } else if (obj.data?.type === "gif") {
@@ -245,8 +264,8 @@ export const StoryCanvas = ({
         if (originalGif && obj.left !== undefined && obj.top !== undefined) {
           updatedGifs.push({
             ...originalGif,
-            x: (obj.left / 400) * 100,
-            y: (obj.top / 711) * 100,
+            x: (obj.left / canvasWidth) * 100,
+            y: (obj.top / canvasHeight) * 100,
           });
         }
       } else if (obj.data?.type === "text") {
@@ -256,8 +275,8 @@ export const StoryCanvas = ({
           updatedTexts.push({
             ...originalText,
             text: (obj as IText).text || originalText.text,
-            x: (obj.left / 400) * 100,
-            y: (obj.top / 711) * 100,
+            x: (obj.left / canvasWidth) * 100,
+            y: (obj.top / canvasHeight) * 100,
           });
         }
       }
