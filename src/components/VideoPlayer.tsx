@@ -12,6 +12,7 @@ interface VideoPlayerProps {
   muted?: boolean;
   loop?: boolean;
   onViewTracked?: (duration: number) => void;
+  reelsMode?: boolean;
 }
 
 export const VideoPlayer = ({
@@ -22,6 +23,7 @@ export const VideoPlayer = ({
   muted = false,
   loop = false,
   onViewTracked,
+  reelsMode = false,
 }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -44,6 +46,10 @@ export const VideoPlayer = ({
 
     const handleLoadedMetadata = () => {
       setDuration(video.duration);
+      if (autoPlay && reelsMode) {
+        video.play().catch(() => {});
+        setIsPlaying(true);
+      }
     };
 
     const handleEnded = () => {
@@ -51,16 +57,23 @@ export const VideoPlayer = ({
       onViewTracked?.(watchedDuration);
     };
 
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+
     video.addEventListener("timeupdate", handleTimeUpdate);
     video.addEventListener("loadedmetadata", handleLoadedMetadata);
     video.addEventListener("ended", handleEnded);
+    video.addEventListener("play", handlePlay);
+    video.addEventListener("pause", handlePause);
 
     return () => {
       video.removeEventListener("timeupdate", handleTimeUpdate);
       video.removeEventListener("loadedmetadata", handleLoadedMetadata);
       video.removeEventListener("ended", handleEnded);
+      video.removeEventListener("play", handlePlay);
+      video.removeEventListener("pause", handlePause);
     };
-  }, [watchedDuration, onViewTracked]);
+  }, [watchedDuration, onViewTracked, autoPlay, reelsMode]);
 
   const togglePlay = () => {
     if (!videoRef.current) return;
@@ -124,6 +137,24 @@ export const VideoPlayer = ({
       }
     }, 3000);
   };
+
+  // In reels mode, hide most controls
+  if (reelsMode) {
+    return (
+      <div className={cn("relative overflow-hidden bg-black", className)}>
+        <video
+          ref={videoRef}
+          src={src}
+          poster={thumbnail}
+          className="w-full h-full object-contain"
+          autoPlay={autoPlay}
+          muted={muted}
+          loop={loop}
+          playsInline
+        />
+      </div>
+    );
+  }
 
   return (
     <div
