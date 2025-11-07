@@ -2097,6 +2097,39 @@ export type Database = {
         }
         Relationships: []
       }
+      search_history: {
+        Row: {
+          clicked_result_id: string | null
+          clicked_result_type: string | null
+          created_at: string | null
+          id: string
+          query: string
+          result_count: number | null
+          search_type: string | null
+          user_id: string
+        }
+        Insert: {
+          clicked_result_id?: string | null
+          clicked_result_type?: string | null
+          created_at?: string | null
+          id?: string
+          query: string
+          result_count?: number | null
+          search_type?: string | null
+          user_id: string
+        }
+        Update: {
+          clicked_result_id?: string | null
+          clicked_result_type?: string | null
+          created_at?: string | null
+          id?: string
+          query?: string
+          result_count?: number | null
+          search_type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       shared_analyses: {
         Row: {
           allowed_user_ids: string[] | null
@@ -2460,6 +2493,30 @@ export type Database = {
         }
         Relationships: []
       }
+      trending_searches: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_searched_at: string | null
+          query: string
+          search_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_searched_at?: string | null
+          query: string
+          search_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_searched_at?: string | null
+          query?: string
+          search_count?: number | null
+        }
+        Relationships: []
+      }
       user_badges: {
         Row: {
           badge_id: string
@@ -2722,6 +2779,10 @@ export type Database = {
       }
       increment_hashtag_usage: { Args: { tag_text: string }; Returns: string }
       send_scheduled_messages: { Args: never; Returns: undefined }
+      update_trending_search: {
+        Args: { search_query: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
