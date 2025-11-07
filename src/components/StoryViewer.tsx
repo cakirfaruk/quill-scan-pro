@@ -14,6 +14,8 @@ import { StoryPollResults } from "./StoryPollResults";
 import { StoryQuestionResults } from "./StoryQuestionResults";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { useSwipe } from "@/hooks/use-gestures";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Story {
   id: string;
@@ -76,9 +78,34 @@ export const StoryViewer = ({
   const [showViewersDialog, setShowViewersDialog] = useState(false);
   const [viewers, setViewers] = useState<any[]>([]);
   const [loadingViewers, setLoadingViewers] = useState(false);
+  const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const storyContentRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Swipe gestures for story navigation
+  const swipeGestures = useSwipe({
+    onSwipeLeft: () => {
+      if (!isPaused) {
+        setSwipeDirection("left");
+        setTimeout(() => {
+          handleNext();
+          setSwipeDirection(null);
+        }, 150);
+      }
+    },
+    onSwipeRight: () => {
+      if (!isPaused) {
+        setSwipeDirection("right");
+        setTimeout(() => {
+          handlePrevious();
+          setSwipeDirection(null);
+        }, 150);
+      }
+    },
+    threshold: 50,
+  });
 
   const currentStory = stories[currentStoryIndex];
   const STORY_DURATION = 5000; // 5 seconds per story
@@ -502,7 +529,7 @@ export const StoryViewer = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0 bg-black border-0 overflow-hidden">
+      <DialogContent className="max-w-full sm:max-w-lg h-screen sm:h-[90vh] p-0 bg-black border-0 overflow-hidden flex flex-col">
         {/* Progress bars */}
         <div className="absolute top-0 left-0 right-0 z-50 flex gap-1 p-2">
           {stories.map((_, index) => (
@@ -586,14 +613,22 @@ export const StoryViewer = ({
         </div>
 
         {/* Story content */}
-        <div
-          className="relative w-full aspect-[9/16] flex items-center justify-center"
-          style={{ 
-            backgroundColor: currentStory.background_color || "#000000",
-            filter: currentStory.filter_value || "none"
-          }}
-          onClick={() => setIsPaused(!isPaused)}
-        >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStoryIndex}
+            ref={storyContentRef}
+            initial={{ opacity: 0, x: swipeDirection === "left" ? 100 : swipeDirection === "right" ? -100 : 0 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: swipeDirection === "left" ? -100 : swipeDirection === "right" ? 100 : 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="relative w-full flex-1 flex items-center justify-center"
+            style={{ 
+              backgroundColor: currentStory.background_color || "#000000",
+              filter: currentStory.filter_value || "none"
+            }}
+            onClick={() => setIsPaused(!isPaused)}
+            {...swipeGestures}
+          >
           {currentStory.media_type === "photo" ? (
             <img
               src={currentStory.media_url}
@@ -698,57 +733,86 @@ export const StoryViewer = ({
 
           {/* Poll */}
           {pollData && currentStory.user_id !== currentUserId && (
-            <div className="absolute bottom-24 left-4 right-4 z-40 bg-black/70 backdrop-blur-sm rounded-xl p-4 space-y-3">
-              <p className="text-white font-semibold text-sm">{pollData.question}</p>
-              <div className="space-y-2">
-                {pollData.options?.map((option: any) => (
-                  <Button
-                    key={option.id}
-                    variant="outline"
-                    className={`w-full justify-start ${
-                      selectedPollOptions.includes(option.id)
-                        ? "bg-primary/20 border-primary text-white"
-                        : "bg-white/10 border-white/20 text-white hover:bg-white/20"
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePollVote(option.id);
-                    }}
-                  >
-                    {option.text}
-                  </Button>
-                ))}
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: 0.2, duration: 0.3 }}
+              className="absolute bottom-24 left-4 right-4 z-40 bg-gradient-to-br from-black/80 to-black/60 backdrop-blur-md rounded-2xl p-5 space-y-4 shadow-2xl border border-white/10"
+            >
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                <p className="text-white font-bold text-base">{pollData.question}</p>
               </div>
-            </div>
+              <div className="space-y-2.5">
+                {pollData.options?.map((option: any, index: number) => {
+                  const isSelected = selectedPollOptions.includes(option.id);
+                  return (
+                    <motion.button
+                      key={option.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 + index * 0.1 }}
+                      className={`w-full text-left px-4 py-3.5 rounded-xl font-medium transition-all transform active:scale-95 ${
+                        isSelected
+                          ? "bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/30 border-2 border-primary"
+                          : "bg-white/10 text-white hover:bg-white/20 border-2 border-white/20"
+                      }`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePollVote(option.id);
+                      }}
+                    >
+                      <span className="flex items-center gap-2">
+                        {isSelected && <span className="text-lg">✓</span>}
+                        {option.text}
+                      </span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </motion.div>
           )}
 
           {/* Poll Results Button for Owner */}
           {pollData && currentStory.user_id === currentUserId && (
-            <div className="absolute bottom-24 left-4 right-4 z-40">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="absolute bottom-24 left-4 right-4 z-40"
+            >
               <Button
                 variant="secondary"
-                className="w-full"
+                className="w-full bg-gradient-to-r from-primary/20 to-primary/10 hover:from-primary/30 hover:to-primary/20 backdrop-blur-md border border-primary/30 text-white font-semibold shadow-lg"
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowPollResults(true);
                 }}
               >
-                <BarChart3 className="w-4 h-4 mr-2" />
+                <BarChart3 className="w-5 h-5 mr-2" />
                 Anket Sonuçlarını Görüntüle
               </Button>
-            </div>
+            </motion.div>
           )}
 
           {/* Question */}
           {questionData && currentStory.user_id !== currentUserId && (
-            <div className="absolute bottom-24 left-4 right-4 z-40 bg-black/70 backdrop-blur-sm rounded-xl p-4 space-y-3">
-              <p className="text-white font-semibold text-sm">{questionData.question}</p>
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: 0.2, duration: 0.3 }}
+              className="absolute bottom-24 left-4 right-4 z-40 bg-gradient-to-br from-black/80 to-black/60 backdrop-blur-md rounded-2xl p-5 space-y-4 shadow-2xl border border-white/10"
+            >
+              <div className="flex items-center gap-2">
+                <MessageCircle className="w-5 h-5 text-primary" />
+                <p className="text-white font-bold text-base">{questionData.question}</p>
+              </div>
               <div className="flex gap-2">
                 <Input
                   value={questionAnswer}
                   onChange={(e) => setQuestionAnswer(e.target.value)}
                   placeholder="Yanıtınızı yazın..."
-                  className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                  className="bg-white/10 border-white/30 text-white placeholder:text-white/60 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/30"
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -764,29 +828,34 @@ export const StoryViewer = ({
                     handleQuestionSubmit();
                   }}
                   disabled={!questionAnswer.trim()}
-                  className="bg-primary hover:bg-primary/90"
+                  className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/30 rounded-xl"
                 >
                   <Send className="w-4 h-4" />
                 </Button>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Question Results Button for Owner */}
           {questionData && currentStory.user_id === currentUserId && (
-            <div className="absolute bottom-24 left-4 right-4 z-40">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="absolute bottom-24 left-4 right-4 z-40"
+            >
               <Button
                 variant="secondary"
-                className="w-full"
+                className="w-full bg-gradient-to-r from-primary/20 to-primary/10 hover:from-primary/30 hover:to-primary/20 backdrop-blur-md border border-primary/30 text-white font-semibold shadow-lg"
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowQuestionResults(true);
                 }}
               >
-                <MessageCircle className="w-4 h-4 mr-2" />
+                <MessageCircle className="w-5 h-5 mr-2" />
                 Soru Yanıtlarını Görüntüle
               </Button>
-            </div>
+            </motion.div>
           )}
 
           {/* Navigation overlays */}
@@ -835,7 +904,8 @@ export const StoryViewer = ({
               </Button>
             )}
           </div>
-        </div>
+        </motion.div>
+      </AnimatePresence>
 
         {/* Footer with reply input or delete button */}
         {currentStory.user_id === currentUserId ? (
