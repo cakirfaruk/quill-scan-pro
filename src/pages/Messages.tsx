@@ -13,19 +13,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useDraft } from "@/hooks/use-draft";
-import { Loader2, Send, Search, ArrowLeft, FileText, Smile, Paperclip, Ban, Check, CheckCheck, Mic, Image as ImageIcon, Pin, Forward, MoreVertical, Users, Phone, Video, Clock, MessageSquare, UserPlus, Heart, Save } from "lucide-react";
+import { Loader2, Send, Search, ArrowLeft, FileText, Smile, Paperclip, Ban, Users, Phone, Video, Clock, MessageSquare, UserPlus, Heart, Save, Mic, Image as ImageIcon } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
-import { AnalysisMessageCard } from "@/components/AnalysisMessageCard";
 import { useIsMobile } from "@/hooks/use-mobile";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { soundEffects } from "@/utils/soundEffects";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
-import { VoiceMessagePlayer } from "@/components/VoiceMessagePlayer";
-import { MessageReactions } from "@/components/MessageReactions";
 import { GifPicker } from "@/components/GifPicker";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { SwipeableMessage } from "@/components/SwipeableMessage";
 import { useLongPress } from "@/hooks/use-gestures";
 import { LazyVideoCallDialog, LazyScheduleMessageDialog, LazyForwardMessageDialog } from "@/utils/lazyImports";
 import { formatDistanceToNow } from "date-fns";
@@ -41,6 +36,10 @@ import { useNetworkStatus } from "@/hooks/use-network-status";
 import { useOptimisticUI } from "@/hooks/use-optimistic-ui";
 import { SyncStatusBadge } from "@/components/SyncStatusBadge";
 import { useOfflineCache } from "@/hooks/use-offline-cache";
+import { OptimizedMessageList } from "@/components/OptimizedMessageList";
+import { TypingIndicator } from "@/components/TypingIndicator";
+import { AnimatePresence } from "framer-motion";
+import { Pin } from "lucide-react";
 
 interface Friend {
   user_id: string;
@@ -2386,346 +2385,32 @@ const Messages = () => {
                 </div>
 
                 {/* Messages */}
-                <ScrollArea className="flex-1 p-4">
+                <ScrollArea className="flex-1 p-4 will-change-transform">
                   <div className="space-y-4">
-                    {/* Pinned Messages */}
-                    {pinnedMessages.length > 0 && (
-                      <div className="bg-accent/20 rounded-lg p-3 border-l-4 border-primary">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Pin className="w-4 h-4 text-primary" />
-                          <span className="text-sm font-medium">Sabitlenmiş Mesajlar</span>
-                        </div>
-                        <div className="space-y-2">
-                          {pinnedMessages.slice(0, 3).map(pm => (
-                            <p key={pm.id} className="text-xs text-muted-foreground truncate">
-                              {pm.content.replace(/\[.*?\]/g, '').substring(0, 50)}...
-                            </p>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {messages.map((msg) => {
-                      const isAnalysisShare = msg.analysis_id;
-                      const isVoiceMessage = msg.content.includes("[VOICE_MESSAGE:");
-                      const isGif = msg.content.includes("[GIF:");
-                      const hasFilePreview = msg.content.includes("[FILE_PREVIEW:");
-                      let displayContent = msg.content;
-                      let filePreview = null;
-                      let voiceMessageUrl = null;
-                      let gifUrl = null;
-
-                      if (isGif) {
-                        const gifMatch = msg.content.match(/\[GIF:([^\]]+)\]/);
-                        if (gifMatch) {
-                          gifUrl = gifMatch[1];
-                        }
-                      }
-
-                      if (isVoiceMessage) {
-                        const voiceMatch = msg.content.match(/\[VOICE_MESSAGE:([^\]]+)\]/);
-                        if (voiceMatch) {
-                          voiceMessageUrl = voiceMatch[1];
-                        }
-                      }
-
-                      if (hasFilePreview) {
-                        const previewMatch = msg.content.match(/\[FILE_PREVIEW:([^\]]+)\]/);
-                        if (previewMatch) {
-                          filePreview = previewMatch[1];
-                          displayContent = msg.content.replace(/\[FILE_PREVIEW:[^\]]+\]/, "").trim();
-                        }
-                      }
-                      
-                      return (
-                        <SwipeableMessage
-                          key={msg.id}
-                          onSwipeRight={() => handleReplyToMessage(msg)}
-                          onSwipeLeft={msg.sender_id === currentUserId ? () => handleDeleteMessage(msg.id) : undefined}
-                        >
-                           <div
-                            className={`flex gap-2 group ${
-                              msg.sender_id === currentUserId ? "justify-end" : "justify-start"
-                            }`}
-                          >
-                           <div className="flex flex-col max-w-[85%] min-w-0">
-                            {msg.pinned_at && (
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                                <Pin className="w-3 h-3" />
-                                <span>Sabitlendi</span>
-                              </div>
-                            )}
-                            
-                            {/* Replied Message Preview */}
-                            {msg.replied_message && (
-                              <div className={`text-xs p-2 rounded-t-lg border-l-2 ${
-                                msg.sender_id === currentUserId 
-                                  ? "bg-primary/5 border-primary-foreground/30" 
-                                  : "bg-muted/50 border-primary/30"
-                              }`}>
-                                <div className="font-semibold opacity-70 mb-1">
-                                  {msg.replied_message.sender_id === currentUserId ? "Sen" : selectedFriend?.full_name || selectedFriend?.username}
-                                </div>
-                                <div className="opacity-60 truncate">
-                                  {msg.replied_message.content.replace(/\[.*?\]/g, '').substring(0, 50)}
-                                  {msg.replied_message.content.length > 50 && '...'}
-                                </div>
-                              </div>
-                            )}
-                            
-                            {isAnalysisShare ? (
-                              <AnalysisMessageCard
-                                content={msg.content}
-                                analysisType={msg.analysis_type}
-                                timestamp={msg.created_at}
-                                isSender={msg.sender_id === currentUserId}
-                                messageId={msg.id}
-                                currentUserId={currentUserId}
-                                onClick={() => {
-                                  if (msg.analysis_type) {
-                                    handleAnalysisClick(msg.analysis_id!, msg.analysis_type);
-                                  } else {
-                                    toast({
-                                      title: "Hata",
-                                      description: "Analiz türü bilgisi bulunamadı.",
-                                      variant: "destructive",
-                                    });
-                                  }
-                                }}
-                              />
-                            ) : isGif && gifUrl ? (
-                              <>
-                                <div className="rounded-lg overflow-hidden max-w-xs">
-                                  <img
-                                    src={gifUrl}
-                                    alt="GIF"
-                                    className="w-full h-auto"
-                                  />
-                                  <div className={`px-2 py-1 text-xs opacity-70 flex items-center gap-2 ${
-                                    msg.sender_id === currentUserId ? "bg-primary text-primary-foreground" : "bg-muted"
-                                  }`}>
-                                    <span>
-                                      {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })}
-                                    </span>
-                                    {msg.sender_id === currentUserId && (
-                                      <span title={msg.read ? "Okundu" : "İletildi"}>
-                                        {msg.read ? (
-                                          <CheckCheck className="w-3 h-3 text-blue-400 inline" />
-                                        ) : (
-                                          <Check className="w-3 h-3 inline" />
-                                        )}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                                <MessageReactions
-                                  messageId={msg.id}
-                                  currentUserId={currentUserId}
-                                />
-                              </>
-                            ) : isVoiceMessage && voiceMessageUrl ? (
-                            <>
-                              <div className={`rounded-lg overflow-hidden ${
-                                msg.sender_id === currentUserId
-                                  ? "bg-primary/10"
-                                  : "bg-muted"
-                              }`}>
-                                <div className="p-2">
-                                  <VoiceMessagePlayer 
-                                    audioUrl={voiceMessageUrl} 
-                                    preferredLanguage={preferredLanguage}
-                                    autoTranscribe={autoTranslateEnabled}
-                                    messageId={msg.id}
-                                  />
-                                  <div className="flex items-center gap-2 justify-end mt-1">
-                                    <p className="text-xs opacity-70">
-                                      {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })}
-                                    </p>
-                                    {msg.sender_id === currentUserId && (
-                                      <span className="text-xs opacity-70" title={msg.read ? "Okundu" : "İletildi"}>
-                                        {msg.read ? (
-                                          <CheckCheck className="w-3 h-3 text-blue-400 inline" />
-                                        ) : (
-                                          <Check className="w-3 h-3 inline" />
-                                        )}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              <MessageReactions
-                                messageId={msg.id}
-                                currentUserId={currentUserId}
-                              />
-                            </>
-                          ) : (
-                            <div
-                              className={`max-w-full rounded-lg overflow-hidden ${
-                                translatedMessages[msg.id]
-                                  ? msg.sender_id === currentUserId
-                                    ? "bg-primary text-primary-foreground ring-2 ring-accent/50 shadow-lg"
-                                    : "bg-gradient-to-br from-accent/20 to-muted ring-2 ring-accent/30 shadow-lg"
-                                  : msg.sender_id === currentUserId
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted"
-                              }`}
-                            >
-                              {filePreview && (
-                                <div className="relative">
-                                  {displayContent.startsWith("🖼️ Resim") ? (
-                                    <img 
-                                      src={filePreview} 
-                                      alt="Shared" 
-                                      className="w-full max-h-64 object-cover"
-                                    />
-                                  ) : displayContent.startsWith("🎥 Video") ? (
-                                    <video 
-                                      src={filePreview} 
-                                      controls 
-                                      className="w-full max-h-64"
-                                    />
-                                  ) : null}
-                                </div>
-                              )}
-                              <div className="px-4 py-2">
-                                <p className="text-sm whitespace-pre-wrap break-words">{displayContent}</p>
-                                {translatedMessages[msg.id] && (
-                                  <div className="mt-2 pt-2 border-t border-current/20 animate-in fade-in duration-300">
-                                    <div className="flex items-center justify-between mb-1">
-                                      <div className="flex items-center gap-1.5">
-                                        <svg className="w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                                        </svg>
-                                        <p className="text-xs opacity-70 font-medium">
-                                          {translatedMessages[msg.id].sourceLanguage 
-                                            ? `${languageNames[translatedMessages[msg.id].sourceLanguage!] || translatedMessages[msg.id].sourceLanguage} → Türkçe`
-                                            : 'Otomatik Çeviri'
-                                          }
-                                        </p>
-                                      </div>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setShowTranslation(prev => ({
-                                          ...prev,
-                                          [msg.id]: !prev[msg.id]
-                                        }))}
-                                        className="h-6 px-2 text-xs opacity-70 hover:opacity-100"
-                                      >
-                                        {showTranslation[msg.id] === false ? (
-                                          <>
-                                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                                            </svg>
-                                            Çeviriyi Göster
-                                          </>
-                                        ) : (
-                                          <>
-                                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            Orijinali Göster
-                                          </>
-                                        )}
-                                      </Button>
-                                    </div>
-                                    {showTranslation[msg.id] !== false && (
-                                      <p className="text-sm whitespace-pre-wrap break-words font-medium">
-                                        {translatedMessages[msg.id].text}
-                                      </p>
-                                    )}
-                                  </div>
-                                )}
-                                <div className="flex items-center gap-2 mt-1">
-                                  <p className="text-xs opacity-70">
-                                    {new Date(msg.created_at).toLocaleTimeString("tr-TR", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
-                                  </p>
-                                  {msg.sender_id === currentUserId && (
-                                    <span className="text-xs opacity-70" title={msg.read ? "Okundu" : "İletildi"}>
-                                      {msg.read ? (
-                                        <CheckCheck className="w-3 h-3 text-blue-400 inline" />
-                                      ) : (
-                                        <Check className="w-3 h-3 inline" />
-                                      )}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                            {!isAnalysisShare && (
-                              <MessageReactions
-                                messageId={msg.id}
-                                currentUserId={currentUserId}
-                              />
-                            )}
-                          </div>
-
-                          {/* Message Actions Menu */}
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="md:opacity-0 md:group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleReplyToMessage(msg)}>
-                                <MessageSquare className="mr-2 h-4 w-4" />
-                                Yanıtla
-                              </DropdownMenuItem>
-                              {!isAnalysisShare && !isVoiceMessage && !isGif && (
-                                <DropdownMenuItem 
-                                  onClick={() => handleTranslateMessage(msg.id, displayContent)}
-                                  disabled={translatingMessageId === msg.id}
-                                >
-                                  {translatingMessageId === msg.id ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <FileText className="mr-2 h-4 w-4" />
-                                  )}
-                                  {translatedMessages[msg.id] ? "Orijinali Göster" : "Çevir"}
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem onClick={() => handlePinMessage(msg.id)}>
-                                <Pin className="mr-2 h-4 w-4" />
-                                {msg.pinned_at ? "Sabitlemeyi Kaldır" : "Sabitle"}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleForwardMessage(msg.id)}>
-                                <Forward className="mr-2 h-4 w-4" />
-                                İlet
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                          </div>
-                        </SwipeableMessage>
-                      );
-                    })}
+                    <OptimizedMessageList
+                      messages={messages}
+                      currentUserId={currentUserId}
+                      selectedFriend={selectedFriend}
+                      pinnedMessages={pinnedMessages}
+                      translatedMessages={translatedMessages}
+                      showTranslation={showTranslation}
+                      translatingMessageId={translatingMessageId}
+                      preferredLanguage={preferredLanguage}
+                      autoTranslateEnabled={autoTranslateEnabled}
+                      languageNames={languageNames}
+                      onReplyToMessage={handleReplyToMessage}
+                      onDeleteMessage={handleDeleteMessage}
+                      onPinMessage={handlePinMessage}
+                      onForwardMessage={handleForwardMessage}
+                      onTranslateMessage={handleTranslateMessage}
+                      onAnalysisClick={handleAnalysisClick}
+                      setShowTranslation={setShowTranslation}
+                    />
 
                     {/* Typing Indicator */}
-                    {isOtherUserTyping && (
-                      <div className="flex gap-2 justify-start">
-                        <div className="bg-muted rounded-lg px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                    <AnimatePresence>
+                      {isOtherUserTyping && <TypingIndicator />}
+                    </AnimatePresence>
                   </div>
                 </ScrollArea>
 
