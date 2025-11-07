@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX, LogOut, Phone, RotateCcw, Shield, Eye, Palette, FileText, ShieldCheck } from "lucide-react";
+import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX, LogOut, Phone, RotateCcw, Shield, Eye, Palette, FileText, ShieldCheck, Database } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { requestNotificationPermission } from "@/utils/notifications";
 import { subscribeToPushNotifications } from "@/utils/pushNotifications";
@@ -840,7 +840,7 @@ const Settings = () => {
                     Çevrimdışıyken içerikleri görüntülemek için önbelleğe alınan verileri yönetin
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
                       Önbelleğe alınmış veriler, internet bağlantısı olmadan da gönderileri, 
@@ -848,6 +848,15 @@ const Settings = () => {
                     </p>
                     <OfflineCacheStatus />
                   </div>
+                  
+                  <Button
+                    onClick={() => navigate("/cache-management")}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Database className="w-4 h-4 mr-2" />
+                    Cache Yönetimi
+                  </Button>
                 </CardContent>
               </Card>
             </div>

@@ -55,6 +55,7 @@ const Discovery = lazyWithPreload(() => import("./pages/Discovery"));
 const CallHistory = lazyWithPreload(() => import("./pages/CallHistory"));
 const VapidKeyGenerator = lazyWithPreload(() => import("./pages/VapidKeyGenerator"));
 const AnalysisHistory = lazyWithPreload(() => import("./pages/AnalysisHistory"));
+const CacheManagement = lazyWithPreload(() => import("./pages/CacheManagement"));
 const NotFound = lazyWithPreload(() => import("./pages/NotFound"));
 
 // Route component map for preloading
@@ -85,6 +86,7 @@ const routeComponents: { [path: string]: any } = {
   '/discovery': Discovery,
   '/call-history': CallHistory,
   '/analysis-history': AnalysisHistory,
+  '/cache-management': CacheManagement,
 };
 
 // Optimized QueryClient with AGGRESSIVE cache settings
@@ -343,6 +345,7 @@ const AppRoutes = () => {
               <Route path="/match" element={<Match />} />
               <Route path="/call-history" element={<CallHistory />} />
               <Route path="/analysis-history" element={<AnalysisHistory />} />
+              <Route path="/cache-management" element={<CacheManagement />} />
               <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
