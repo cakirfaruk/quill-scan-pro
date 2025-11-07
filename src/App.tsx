@@ -1,9 +1,9 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, useContext } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingFallback } from "@/components/LoadingFallback";
 import { IncomingCallDialog } from "@/components/IncomingCallDialog";
@@ -105,6 +105,7 @@ const queryClient = new QueryClient({
 const AppRoutes = () => {
   useUpdateOnlineStatus();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const [incomingCall, setIncomingCall] = useState<any>(null);
   const [incomingGroupCall, setIncomingGroupCall] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -122,6 +123,53 @@ const AppRoutes = () => {
       if (user) setCurrentUserId(user.id);
     });
   }, []);
+
+  // Prefetch critical data on app load
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    // Prefetch user profile
+    queryClient.prefetchQuery({
+      queryKey: ['profile', currentUserId],
+      queryFn: async () => {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', currentUserId)
+          .single();
+        return data;
+      },
+      staleTime: 30 * 60 * 1000,
+    });
+
+    // Prefetch friends
+    queryClient.prefetchQuery({
+      queryKey: ['friends', currentUserId],
+      queryFn: async () => {
+        const { data } = await supabase
+          .from('friends')
+          .select('*, friend_profile:profiles!friends_friend_id_fkey(*)')
+          .eq('user_id', currentUserId)
+          .eq('status', 'accepted');
+        return data;
+      },
+      staleTime: 30 * 60 * 1000,
+    });
+
+    // Prefetch initial feed
+    queryClient.prefetchQuery({
+      queryKey: ['feed', 'optimized', undefined, undefined],
+      queryFn: async () => {
+        const { data } = await supabase
+          .from('posts')
+          .select('*, profiles!posts_user_id_fkey(*)')
+          .order('created_at', { ascending: false })
+          .limit(20);
+        return data;
+      },
+      staleTime: 30 * 60 * 1000,
+    });
+  }, [currentUserId, queryClient]);
 
   // Track route changes for progress bar
   useEffect(() => {

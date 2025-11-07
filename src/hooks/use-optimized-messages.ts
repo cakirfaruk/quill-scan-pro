@@ -1,4 +1,5 @@
-import { useOptimizedQuery } from './use-optimized-queries';
+import { useHybridCache } from './use-hybrid-cache';
+import { useOptimisticMutation } from './use-optimistic-mutation';
 import { fetchMessagesOptimized } from '@/utils/queryOptimization';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect } from 'react';
@@ -10,14 +11,35 @@ import { useQueryClient } from '@tanstack/react-query';
  */
 export function useOptimizedMessages(currentUserId: string | null, otherUserId: string | null) {
   const queryClient = useQueryClient();
+  const queryKey = ['messages', 'optimized', currentUserId, otherUserId];
 
-  const { data: messages, isLoading, error } = useOptimizedQuery({
-    queryKey: ['messages', 'optimized', currentUserId, otherUserId],
-    queryFn: async () => {
+  const { data: messages, isLoading, error } = useHybridCache(
+    queryKey,
+    async () => {
       if (!currentUserId || !otherUserId) return [];
       return fetchMessagesOptimized(currentUserId, otherUserId);
     },
-    enabled: !!currentUserId && !!otherUserId
+    { enabled: !!currentUserId && !!otherUserId }
+  );
+
+  // Optimistic send message
+  const sendMessage = useOptimisticMutation({
+    mutationFn: async (message: any) => {
+      const { data } = await supabase
+        .from('messages')
+        .insert(message)
+        .select()
+        .single();
+      return data;
+    },
+    queryKey,
+    optimisticUpdate: (oldMessages: any[], newMessage: any) => {
+      return [...oldMessages, { 
+        ...newMessage, 
+        id: 'temp-' + Date.now(),
+        created_at: new Date().toISOString(),
+      }];
+    },
   });
 
   // Real-time subscription
@@ -51,6 +73,7 @@ export function useOptimizedMessages(currentUserId: string | null, otherUserId: 
   return {
     messages: messages || [],
     isLoading,
-    error
+    error,
+    sendMessage
   };
 }

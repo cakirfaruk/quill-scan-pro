@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useOptimizedQuery } from './use-optimized-queries';
+import { useHybridCache } from './use-hybrid-cache';
 import { fetchPostsKeyset, batchFetchLikeCounts, batchCheckUserLikes } from '@/utils/queryOptimization';
 
 /**
@@ -10,9 +10,9 @@ export function useOptimizedFeed(userId: string | null) {
   const [lastCreatedAt, setLastCreatedAt] = useState<string | undefined>();
   const [lastId, setLastId] = useState<string | undefined>();
 
-  const { data: posts, isLoading, error, refetch } = useOptimizedQuery({
-    queryKey: ['feed', 'optimized', lastCreatedAt, lastId],
-    queryFn: async () => {
+  const { data: posts, isLoading, error, refetch } = useHybridCache(
+    ['feed', 'optimized', lastCreatedAt, lastId],
+    async () => {
       if (!userId) return { posts: [], likeCounts: {}, userLikes: {}, commentCounts: {}, savedPosts: {} };
       
       const fetchedPosts = await fetchPostsKeyset(20, lastCreatedAt, lastId);
@@ -37,8 +37,8 @@ export function useOptimizedFeed(userId: string | null) {
         savedPosts
       };
     },
-    enabled: !!userId
-  });
+    { enabled: !!userId }
+  );
 
   const loadMore = useCallback(() => {
     if (posts?.posts && posts.posts.length > 0) {

@@ -9,12 +9,13 @@ export const useOptimizedQuery = <TData = unknown, TError = unknown>(
   options: UseQueryOptions<TData, TError>
 ) => {
   return useQuery<TData, TError>({
-    staleTime: 15 * 60 * 1000, // 15 minutes - AGRESIF CACHE
-    gcTime: 30 * 60 * 1000, // 30 minutes - AGRESIF CACHE
+    staleTime: 30 * 60 * 1000, // 30 minutes - DAHA AGRESIF
+    gcTime: 60 * 60 * 1000, // 60 minutes - DAHA UZUN HAFIZA
     refetchOnWindowFocus: false,
     refetchOnMount: false,
-    refetchOnReconnect: false, // YENİ - Reconnect'te refetch yapma
-    retry: 1,
+    refetchOnReconnect: 'always', // Reconnect'te sadece stale data refetch
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
     ...options,
   });
 };

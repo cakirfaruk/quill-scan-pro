@@ -48,40 +48,8 @@
     <meta name="twitter:description" content="Analizler, Fallar, Kehanetler, Eşleşmeler, Arkadaşlıklar, Paylaşımlar..." />
     <meta name="twitter:image" content="/screenshot-1.png" />
   
-  <!-- Service Worker Registration -->
+  <!-- Service Worker - Auto-registered by vite-plugin-pwa -->
   <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(registration => {
-            console.log('✅ PWA Service Worker registered:', registration.scope);
-            
-            // Check for updates periodically
-            setInterval(() => {
-              registration.update();
-            }, 60000); // Check every minute
-          })
-          .catch(error => console.log('❌ SW registration failed:', error));
-      });
-
-      // Handle app install prompt
-      let deferredPrompt;
-      window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        console.log('💾 App install available');
-        
-        // Show custom install UI if needed
-        // You can trigger this with: deferredPrompt.prompt()
-      });
-
-      // Track app installation
-      window.addEventListener('appinstalled', () => {
-        console.log('🎉 PWA was installed');
-        deferredPrompt = null;
-      });
-    }
-
     // Handle offline/online status
     window.addEventListener('online', () => {
       console.log('🌐 Back online');

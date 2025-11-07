@@ -50,6 +50,7 @@
     "ephemeris": "^2.2.0",
     "fabric": "^6.7.1",
     "framer-motion": "^12.23.24",
+    "idb": "^8.0.3",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
