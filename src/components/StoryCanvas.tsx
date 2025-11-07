@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Canvas as FabricCanvas, FabricImage, FabricText, IText, Shadow } from "fabric";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
+import { usePinch } from "@/hooks/use-gestures";
 
 // Extend FabricObject to include custom data
 declare module "fabric" {
@@ -36,9 +37,33 @@ export const StoryCanvas = ({
   onElementsUpdate,
 }: StoryCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [fabricCanvas, setFabricCanvas] = useState<FabricCanvas | null>(null);
   const elementRefs = useRef<Map<string, any>>(new Map());
   const [selectedObject, setSelectedObject] = useState<any>(null);
+  const initialScaleRef = useRef<number>(1);
+
+  // Pinch-to-zoom gesture for selected object
+  const pinchGestures = usePinch({
+    onPinchStart: () => {
+      if (selectedObject && selectedObject.scaleX) {
+        initialScaleRef.current = selectedObject.scaleX;
+      }
+    },
+    onPinch: (scale) => {
+      if (fabricCanvas && selectedObject) {
+        const newScale = initialScaleRef.current * scale;
+        selectedObject.set({
+          scaleX: newScale,
+          scaleY: newScale,
+        });
+        fabricCanvas.renderAll();
+      }
+    },
+    onPinchEnd: () => {
+      updateElementPositions();
+    },
+  });
 
   // Initialize canvas
   useEffect(() => {
@@ -256,7 +281,11 @@ export const StoryCanvas = ({
 
   return (
     <div className="space-y-2">
-      <div className="relative w-full flex items-center justify-center bg-black rounded-lg overflow-hidden">
+      <div 
+        ref={containerRef}
+        className="relative w-full flex items-center justify-center bg-black rounded-lg overflow-hidden touch-none"
+        {...pinchGestures}
+      >
         <canvas ref={canvasRef} className="max-w-full" />
         
         {/* Help text */}
@@ -264,7 +293,8 @@ export const StoryCanvas = ({
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <p className="text-white/70 text-sm text-center px-4">
               Sticker, GIF veya metin ekleyin<br />
-              Sürükleyerek konumlandırın
+              Sürükleyerek konumlandırın<br />
+              <span className="text-xs">2 parmakla boyutlandırın</span>
             </p>
           </div>
         )}

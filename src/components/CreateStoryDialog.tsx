@@ -1,11 +1,9 @@
 import { useState, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload, X, Camera, Music, Smile, Type, BarChart3, HelpCircle, Sparkles } from "lucide-react";
 import { soundEffects } from "@/utils/soundEffects";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { StoryMusicPicker } from "./StoryMusicPicker";
 import { GifPicker } from "./GifPicker";
 import { StoryStickerPicker } from "./StoryStickerPicker";
@@ -14,6 +12,8 @@ import { StoryPollCreator } from "./StoryPollCreator";
 import { StoryQuestionCreator } from "./StoryQuestionCreator";
 import { StoryCanvas } from "./StoryCanvas";
 import { StoryFilterPicker } from "./StoryFilterPicker";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface CreateStoryDialogProps {
   open: boolean;
@@ -50,6 +50,7 @@ export const CreateStoryDialog = ({
   const [backgroundColor, setBackgroundColor] = useState<string>("#000000");
   const [showFilterPicker, setShowFilterPicker] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<{ name: string; value: string }>({ name: "Normal", value: "none" });
+  const isMobile = useIsMobile();
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -185,18 +186,34 @@ export const CreateStoryDialog = ({
     onOpenChange(false);
   };
 
+  const Wrapper = isMobile ? Drawer : ({ children, ...props }: any) => (
+    <div {...props}>{children}</div>
+  );
+  
+  const WrapperContent = isMobile ? DrawerContent : ({ children, className, ...props }: any) => (
+    <div className={`sm:max-w-md ${className}`} {...props}>{children}</div>
+  );
+
+  const WrapperHeader = isMobile ? DrawerHeader : ({ children, ...props }: any) => (
+    <div {...props}>{children}</div>
+  );
+
+  const WrapperTitle = isMobile ? DrawerTitle : ({ children, className, ...props }: any) => (
+    <h2 className={`text-lg font-semibold ${className}`} {...props}>{children}</h2>
+  );
+
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Wrapper open={open} onOpenChange={handleClose}>
+      <WrapperContent className="max-h-[95vh] flex flex-col">
+        <WrapperHeader>
+          <WrapperTitle className="flex items-center gap-2">
             <Camera className="w-5 h-5" />
             Hikaye Oluştur
-          </DialogTitle>
-        </DialogHeader>
+          </WrapperTitle>
+        </WrapperHeader>
 
-        <ScrollArea className="max-h-[75vh]">
-          <div className="space-y-4 pr-4">
+        <div className="flex-1 overflow-y-auto px-4">
+          <div className="space-y-4 pb-4">
           {!preview ? (
             <div className="space-y-3">
               <div
@@ -359,34 +376,38 @@ export const CreateStoryDialog = ({
                 )}
               </div>
 
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={handleClose}
-                  disabled={isUploading}
-                >
-                  İptal
-                </Button>
-                <Button
-                  className="flex-1"
-                  onClick={handleUpload}
-                  disabled={isUploading}
-                >
-                  {isUploading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Yükleniyor...
-                    </>
-                  ) : (
-                    "Paylaş"
-                  )}
-                </Button>
-              </div>
             </div>
           )}
           </div>
-        </ScrollArea>
+        </div>
+
+        {/* Sticky footer with action buttons */}
+        {preview && (
+          <div className="sticky bottom-0 left-0 right-0 bg-background border-t p-4 flex gap-2 z-10">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={handleClose}
+              disabled={isUploading}
+            >
+              İptal
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={handleUpload}
+              disabled={isUploading}
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Yükleniyor...
+                </>
+              ) : (
+                "Paylaş"
+              )}
+            </Button>
+          </div>
+        )}
 
         {/* Enhancement dialogs */}
         <StoryFilterPicker
@@ -451,7 +472,7 @@ export const CreateStoryDialog = ({
             setShowQuestionCreator(false);
           }}
         />
-      </DialogContent>
-    </Dialog>
+      </WrapperContent>
+    </Wrapper>
   );
 };
