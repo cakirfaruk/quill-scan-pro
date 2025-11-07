@@ -168,7 +168,7 @@ const AppRoutes = () => {
       },
       staleTime: 30 * 60 * 1000,
     });
-  }, [currentUserId, queryClient]);
+  }, [currentUserId]);
 
   // Track route changes for progress bar
   useEffect(() => {
