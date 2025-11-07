@@ -20,6 +20,7 @@ import { useRoutePreloader } from "@/hooks/use-route-preloader";
 import { useLinkIntersectionPreloader } from "@/hooks/use-link-intersection-preloader";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { OfflineCacheStatus } from "@/components/OfflineCacheStatus";
+import { InAppNotification } from "@/components/InAppNotification";
 
 // Critical pages - load immediately (no lazy loading)
 import Index from "./pages/Index";
@@ -56,6 +57,7 @@ const CallHistory = lazyWithPreload(() => import("./pages/CallHistory"));
 const VapidKeyGenerator = lazyWithPreload(() => import("./pages/VapidKeyGenerator"));
 const AnalysisHistory = lazyWithPreload(() => import("./pages/AnalysisHistory"));
 const CacheManagement = lazyWithPreload(() => import("./pages/CacheManagement"));
+const NotificationCenter = lazyWithPreload(() => import("./pages/NotificationCenter"));
 const NotFound = lazyWithPreload(() => import("./pages/NotFound"));
 
 // Route component map for preloading
@@ -87,6 +89,7 @@ const routeComponents: { [path: string]: any } = {
   '/call-history': CallHistory,
   '/analysis-history': AnalysisHistory,
   '/cache-management': CacheManagement,
+  '/notifications': NotificationCenter,
 };
 
 // Optimized QueryClient with AGGRESSIVE cache settings
@@ -346,10 +349,12 @@ const AppRoutes = () => {
               <Route path="/call-history" element={<CallHistory />} />
               <Route path="/analysis-history" element={<AnalysisHistory />} />
               <Route path="/cache-management" element={<CacheManagement />} />
+              <Route path="/notifications" element={<NotificationCenter />} />
               <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
       </Suspense>
+      <InAppNotification />
       {showNav && <MobileNav />}
     </>
   );

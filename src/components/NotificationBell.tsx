@@ -237,7 +237,10 @@ export const NotificationBell = memo(() => {
           variant="ghost"
           size="icon"
           className="relative"
-          onClick={requestNotificationPermission}
+          onClick={() => {
+            requestNotificationPermission();
+            navigate('/notifications');
+          }}
         >
           <Bell className="w-5 h-5" />
           {unreadCount > 0 && (
