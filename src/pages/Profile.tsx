@@ -4,8 +4,9 @@ import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProfileHeader } from "@/components/ProfileHeader";
-import { ProfileStats } from "@/components/ProfileStats";
+import { ProfileStatsDrawer } from "@/components/ProfileStatsDrawer";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -110,6 +111,7 @@ const Profile = () => {
   const [newCollectionName, setNewCollectionName] = useState("");
   const [newCollectionDesc, setNewCollectionDesc] = useState("");
   const [createCollectionDialogOpen, setCreateCollectionDialogOpen] = useState(false);
+  const [statsDrawerOpen, setStatsDrawerOpen] = useState(false);
 
   // Calculate profile statistics
   const profileStats = useMemo(() => {
@@ -1290,9 +1292,29 @@ const Profile = () => {
     return (
       <div className="page-container-mobile bg-gradient-subtle">
         <Header />
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-12 h-12 animate-spin text-primary" />
-        </div>
+        <main className="container mx-auto px-4 py-4 max-w-6xl">
+          {/* Skeleton Loading */}
+          <Card className="p-4 sm:p-6 mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+              <Skeleton className="w-24 h-24 sm:w-32 sm:h-32 rounded-full" />
+              <div className="flex-1 w-full space-y-4">
+                <Skeleton className="h-8 w-48 mx-auto sm:mx-0" />
+                <Skeleton className="h-4 w-32 mx-auto sm:mx-0" />
+                <div className="flex justify-center sm:justify-start gap-6">
+                  <Skeleton className="h-12 w-16" />
+                  <Skeleton className="h-12 w-16" />
+                  <Skeleton className="h-12 w-16" />
+                </div>
+                <Skeleton className="h-10 w-full max-w-md mx-auto sm:mx-0" />
+              </div>
+            </div>
+          </Card>
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+          </div>
+        </main>
       </div>
     );
   }
@@ -1343,6 +1365,7 @@ const Profile = () => {
           onUnblock={handleUnblockUser}
           onSettings={() => navigate('/settings')}
           onFriendsClick={() => setFriendsDialogOpen(true)}
+          onViewDetailedStats={isOwnProfile ? () => setStatsDrawerOpen(true) : undefined}
           postsCount={userPosts.length}
           friendsCount={friends.length}
           analysesCount={analyses.length}
@@ -1352,18 +1375,6 @@ const Profile = () => {
         {!isOwnProfile && currentUserId && profile.user_id && (
           <MutualFriends userId={currentUserId} profileUserId={profile.user_id} />
         )}
-
-        {/* Profile Statistics */}
-        <div className="mb-6">
-          <ProfileStats
-            analysesCount={analyses.length}
-            friendsCount={friends.length}
-            postsCount={userPosts.length}
-            totalLikes={profileStats.totalLikes}
-            totalComments={profileStats.totalComments}
-            profileViews={profileStats.profileViews}
-          />
-        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
@@ -2030,6 +2041,17 @@ const Profile = () => {
             />
           </DialogContent>
         </Dialog>
+
+        {/* Profile Stats Drawer */}
+        {isOwnProfile && (
+          <ProfileStatsDrawer
+            open={statsDrawerOpen}
+            onOpenChange={setStatsDrawerOpen}
+            totalLikes={profileStats.totalLikes}
+            totalComments={profileStats.totalComments}
+            profileViews={profileStats.profileViews}
+          />
+        )}
       </main>
     </div>
   );

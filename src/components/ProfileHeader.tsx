@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Settings, MapPin, Calendar, UserPlus, UserCheck, UserX, MessageCircle, Share2, Eye, ShieldOff } from "lucide-react";
+import { Settings, MapPin, Calendar, UserPlus, UserCheck, UserX, MessageCircle, Share2, Eye, ShieldOff, BarChart3 } from "lucide-react";
 import { OnlineStatusBadge } from "@/components/OnlineStatusBadge";
 
 interface Profile {
@@ -35,6 +35,7 @@ interface ProfileHeaderProps {
   onUnblock: () => void;
   onSettings: () => void;
   onFriendsClick: () => void;
+  onViewDetailedStats?: () => void;
   postsCount: number;
   friendsCount: number;
   analysesCount: number;
@@ -56,6 +57,7 @@ export const ProfileHeader = memo(({
   onUnblock,
   onSettings,
   onFriendsClick,
+  onViewDetailedStats,
   postsCount,
   friendsCount,
   analysesCount
@@ -111,6 +113,15 @@ export const ProfileHeader = memo(({
               <p className="font-bold text-lg">{analysesCount}</p>
               <p className="text-xs text-muted-foreground">Analiz</p>
             </div>
+            {isOwnProfile && onViewDetailedStats && (
+              <div 
+                className="text-center cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={onViewDetailedStats}
+              >
+                <BarChart3 className="w-5 h-5 mx-auto mb-1 text-primary" />
+                <p className="text-xs text-muted-foreground">Detaylı</p>
+              </div>
+            )}
           </div>
 
           {profile.bio && (
