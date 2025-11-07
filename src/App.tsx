@@ -1,9 +1,9 @@
-import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { Suspense, useEffect, useState, useContext } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingFallback } from "@/components/LoadingFallback";
 import { IncomingCallDialog } from "@/components/IncomingCallDialog";
@@ -105,7 +105,6 @@ const queryClient = new QueryClient({
 const AppRoutes = () => {
   useUpdateOnlineStatus();
   const location = useLocation();
-  const queryClient = useQueryClient();
   const [incomingCall, setIncomingCall] = useState<any>(null);
   const [incomingGroupCall, setIncomingGroupCall] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
