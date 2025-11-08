@@ -265,10 +265,26 @@ JSON formatında şu yapıda cevap ver:
     });
   } catch (error) {
     console.error('Error in analyze-tarot function:', error);
+    
+    let errorMessage = "Tarot okuma sırasında bir hata oluştu";
+    let statusCode = 500;
+    
+    if (error instanceof Error) {
+      if (error.message === "Unauthorized") {
+        errorMessage = "Oturum açmanız gerekiyor";
+        statusCode = 401;
+      } else if (error.message === "Insufficient credits") {
+        errorMessage = "Yetersiz kredi. Lütfen kredi satın alın.";
+        statusCode = 402;
+      } else if (error.message.includes("AI")) {
+        errorMessage = "AI servisi şu anda kullanılamıyor. Lütfen tekrar deneyin.";
+      }
+    }
+    
     return new Response(JSON.stringify({ 
-      error: 'İşlem sırasında bir hata oluştu'
+      error: errorMessage 
     }), {
-      status: 500,
+      status: statusCode,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

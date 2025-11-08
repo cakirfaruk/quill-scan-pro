@@ -8,6 +8,7 @@ import { PhotoCaptureEditor } from "@/components/PhotoCaptureEditor";
 import { toast } from "sonner";
 import { Upload, X, Sparkles, Camera } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+import { logError } from "@/utils/analytics";
 
 const CoffeeFortune = () => {
   const navigate = useNavigate();
@@ -109,13 +110,28 @@ const CoffeeFortune = () => {
       });
 
       if (error) throw error;
+      
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       setResult(data.interpretation);
       setUserCredits(prev => prev - 40);
       toast.success("Kahve falınız hazır!");
     } catch (error: any) {
-      console.error("Error:", error);
-      toast.error(error.message || "Analiz sırasında hata oluştu");
+      console.error("Coffee fortune analysis error:", error);
+      
+      const errorMessage = error.message || "Analiz sırasında hata oluştu";
+      
+      logError(
+        'Kahve falı analizi hatası',
+        error.stack,
+        'CoffeeFortuneError',
+        'error',
+        { hasImages: images.filter(Boolean).length }
+      );
+      
+      toast.error(errorMessage);
     } finally {
       setIsAnalyzing(false);
     }

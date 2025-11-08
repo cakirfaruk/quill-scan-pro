@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Sparkles, ArrowRight, Shuffle } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+import { logError } from "@/utils/analytics";
 
 // Import tarot card images
 import cardBackImg from "@/assets/tarot/card-back.png";
@@ -157,13 +158,28 @@ const Tarot = () => {
       });
 
       if (error) throw error;
+      
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       setResult(data.interpretation);
       setUserCredits(prev => prev - 30);
       toast.success("Tarot okuma tamamlandı!");
     } catch (error: any) {
-      console.error("Error:", error);
-      toast.error(error.message || "Analiz sırasında hata oluştu");
+      console.error("Tarot analysis error:", error);
+      
+      const errorMessage = error.message || "Analiz sırasında hata oluştu";
+      
+      logError(
+        'Tarot analizi hatası',
+        error.stack,
+        'TarotAnalysisError',
+        'error',
+        { spreadType, hasQuestion: !!question, cardCount: selectedCards.length }
+      );
+      
+      toast.error(errorMessage);
     } finally {
       setIsAnalyzing(false);
     }
