@@ -9,6 +9,7 @@ import { MessageReactions } from "@/components/MessageReactions";
 import { SwipeableMessage } from "@/components/SwipeableMessage";
 import { AnalysisMessageCard } from "@/components/AnalysisMessageCard";
 import { VoiceMessagePlayer } from "@/components/VoiceMessagePlayer";
+import { SharedPostCard } from "@/components/SharedPostCard";
 
 interface Message {
   id: string;
@@ -110,6 +111,20 @@ export const OptimizedMessageList = memo(({
           const isVoiceMessage = msg.content.includes("[VOICE_MESSAGE:");
           const isGif = msg.content.includes("[GIF:");
           const hasFilePreview = msg.content.includes("[FILE_PREVIEW:");
+          
+          // Check if it's a shared post
+          let isSharedPost = false;
+          let sharedPostData = null;
+          try {
+            const parsed = JSON.parse(msg.content);
+            if (parsed.type === 'shared_post') {
+              isSharedPost = true;
+              sharedPostData = parsed;
+            }
+          } catch {
+            // Not JSON, continue with normal message
+          }
+          
           let displayContent = msg.content;
           let filePreview = null;
           let voiceMessageUrl = null;
@@ -185,7 +200,9 @@ export const OptimizedMessageList = memo(({
                     )}
 
                     {/* Message Content */}
-                    {isAnalysisShare ? (
+                    {isSharedPost && sharedPostData ? (
+                      <SharedPostCard data={sharedPostData} />
+                    ) : isAnalysisShare ? (
                       <AnalysisMessageCard
                         content={msg.content}
                         analysisType={msg.analysis_type}

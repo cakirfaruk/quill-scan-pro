@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, MapPin } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, MapPin, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { ParsedText } from "@/components/ParsedText";
@@ -45,6 +45,7 @@ interface FeedPostCardProps {
   onShare: (post: Post) => void;
   onSave: (postId: string, hasSaved: boolean) => void;
   onMediaClick: (media: { url: string; type: "photo" | "video" }[], index: number) => void;
+  isLikeLoading?: boolean;
 }
 
 export const FeedPostCard = memo(({ 
@@ -53,7 +54,8 @@ export const FeedPostCard = memo(({
   onComment, 
   onShare, 
   onSave,
-  onMediaClick 
+  onMediaClick,
+  isLikeLoading = false,
 }: FeedPostCardProps) => {
   const navigate = useNavigate();
 
@@ -227,10 +229,15 @@ export const FeedPostCard = memo(({
             <Button
               variant="ghost"
               size="sm"
-              className={`flex-1 gap-2 transition-all duration-300 hover:scale-105 active:scale-95 ${post.hasLiked ? "text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950" : "hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950"}`}
+              disabled={isLikeLoading}
+              className={`flex-1 gap-2 transition-all duration-300 hover:scale-105 active:scale-95 ${post.hasLiked ? "text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950" : "hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950"} disabled:opacity-50 disabled:cursor-not-allowed`}
               onClick={() => onLike(post.id, post.hasLiked)}
             >
-              <Heart className={`w-5 h-5 transition-all duration-300 ${post.hasLiked ? "fill-red-500 animate-bounce-in" : "group-hover:scale-110"}`} />
+              {isLikeLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Heart className={`w-5 h-5 transition-all duration-300 ${post.hasLiked ? "fill-red-500 animate-bounce-in" : "group-hover:scale-110"}`} />
+              )}
               Beğen
             </Button>
 

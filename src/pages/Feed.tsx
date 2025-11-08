@@ -53,6 +53,9 @@ interface Post {
   media_types: string[] | null;
   created_at: string;
   shares_count: number;
+  location_name?: string | null;
+  location_latitude?: number | null;
+  location_longitude?: number | null;
   profile: {
     username: string;
     full_name: string | null;
@@ -362,7 +365,21 @@ const Feed = () => {
   // loadPosts fonksiyonu kaldırıldı
 
   // **OPTIMISTIC UPDATE** - Anında UI güncelleme, sonra backend
+  // Track pending like operations to prevent duplicate requests
+  const [pendingLikes, setPendingLikes] = useState<Set<string>>(new Set());
+
   const handleLike = useCallback(async (postId: string, hasLiked: boolean) => {
+    // Prevent duplicate requests
+    if (pendingLikes.has(postId)) {
+      return;
+    }
+
+    // Mark as pending
+    setPendingLikes(prev => new Set(prev).add(postId));
+
+    // Store original state for rollback
+    const originalData = queryClient.getQueryData(['feed', 'optimized']);
+
     try {
       // 1. UI'ı hemen güncelle (optimistic)
       queryClient.setQueryData(['feed', 'optimized'], (old: any) => {
@@ -382,21 +399,49 @@ const Feed = () => {
 
       // 2. Backend işlemi
       if (hasLiked) {
-        await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", userId);
+        const { error } = await supabase
+          .from("post_likes")
+          .delete()
+          .eq("post_id", postId)
+          .eq("user_id", userId);
+        
+        if (error) throw error;
       } else {
         soundEffects.playLike();
-        await supabase.from("post_likes").insert({ post_id: postId, user_id: userId });
+        const { error } = await supabase
+          .from("post_likes")
+          .insert({ post_id: postId, user_id: userId });
+        
+        if (error) throw error;
       }
       
-      // 3. Cache'i invalidate et (arka planda güncellensin)
-      queryClient.invalidateQueries({ queryKey: ['feed', 'optimized'] });
+      // 3. Verify the operation by refetching
+      await queryClient.invalidateQueries({ queryKey: ['feed', 'optimized'] });
     } catch (error: any) {
+      console.error("Like error:", error);
       soundEffects.playError();
-      toast({ title: "Hata", description: "İşlem gerçekleştirilemedi", variant: "destructive" });
-      // Hata durumunda cache'i geri al
-      queryClient.invalidateQueries({ queryKey: ['feed', 'optimized'] });
+      
+      // Rollback to original state
+      if (originalData) {
+        queryClient.setQueryData(['feed', 'optimized'], originalData);
+      }
+      
+      toast({ 
+        title: "Hata", 
+        description: "Beğeni işlemi gerçekleştirilemedi", 
+        variant: "destructive" 
+      });
+    } finally {
+      // Remove from pending after a short delay (debounce)
+      setTimeout(() => {
+        setPendingLikes(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(postId);
+          return newSet;
+        });
+      }, 500);
     }
-  }, [userId, queryClient]);
+  }, [userId, queryClient, pendingLikes]);
 
   const handleSave = useCallback(async (postId: string, hasSaved: boolean) => {
     if (hasSaved) {
@@ -581,18 +626,27 @@ const Feed = () => {
     }
 
     try {
-      // Create message content with post info
-      let messageContent = `📸 ${postToShare.profile.full_name || postToShare.profile.username} adlı kişinin paylaşımı:\n\n`;
-      if (postToShare.content) {
-        messageContent += postToShare.content.substring(0, 100);
-        if (postToShare.content.length > 100) messageContent += "...";
-      }
+      // Create rich post card data as JSON
+      const sharedPostData = {
+        type: 'shared_post',
+        postId: postToShare.id,
+        author: {
+          username: postToShare.profile.username,
+          fullName: postToShare.profile.full_name,
+          profilePhoto: postToShare.profile.profile_photo,
+        },
+        content: postToShare.content,
+        mediaUrls: postToShare.media_urls,
+        mediaTypes: postToShare.media_types,
+        createdAt: postToShare.created_at,
+        locationName: postToShare.location_name,
+      };
 
-      // Send messages to selected friends
+      // Send messages to selected friends with JSON data
       const messagesToInsert = Array.from(selectedFriends).map(friendId => ({
         sender_id: userId,
         receiver_id: friendId,
-        content: messageContent,
+        content: JSON.stringify(sharedPostData),
         message_category: "friend" as const,
       }));
 
@@ -603,21 +657,34 @@ const Feed = () => {
       if (messageError) throw messageError;
 
       // Update shares count
-      await supabase
+      const { error: updateError } = await supabase
         .from("posts")
         .update({ shares_count: (postToShare.shares_count || 0) + selectedFriends.size })
         .eq("id", postToShare.id);
 
+      if (updateError) {
+        console.warn("Failed to update shares count:", updateError);
+      }
+
       toast({ 
         title: "Başarılı", 
-        description: `Gönderi ${selectedFriends.size} arkadaşınıza gönderildi` 
+        description: `Gönderi ${selectedFriends.size} arkadaşınıza gönderildi`,
+        duration: 3000,
       });
 
       setShareDialogOpen(false);
-      // Cache'i invalidate et
+      setSelectedFriends(new Set());
+      
+      // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['feed', 'optimized'] });
+      queryClient.invalidateQueries({ queryKey: ['messages', 'optimized'] });
     } catch (error: any) {
-      toast({ title: "Hata", description: "Gönderi paylaşılamadı", variant: "destructive" });
+      console.error("Share error:", error);
+      toast({ 
+        title: "Hata", 
+        description: "Gönderi paylaşılamadı. Lütfen tekrar deneyin.", 
+        variant: "destructive" 
+      });
     }
   };
 
@@ -671,13 +738,14 @@ const Feed = () => {
       onComment={handleOpenComments}
       onShare={handleOpenShareDialog}
       onSave={handleSave}
+      isLikeLoading={pendingLikes.has(post.id)}
       onMediaClick={(media, index) => {
         setSelectedMedia(media);
         setSelectedMediaIndex(index);
         setMediaViewerOpen(true);
       }}
     />
-  ), [handleLike, handleSave]);
+  ), [handleLike, handleSave, pendingLikes]);
 
   if (loading) {
     return (
