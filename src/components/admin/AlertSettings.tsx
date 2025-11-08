@@ -11,11 +11,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Bell, Plus, Trash2, Mail, MessageSquare } from "lucide-react";
+import { ManualAlertTest } from "./ManualAlertTest";
 
 export const AlertSettings = () => {
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const alertTypes = [
+    { value: 'error', label: 'Hatalar', description: 'Genel uygulama hataları' },
+    { value: 'performance', label: 'Performans', description: 'Yavaş sayfa yükleme ve işlemler' },
+    { value: 'security', label: 'Güvenlik', description: 'Güvenlik ihlalleri ve tehditleri' },
+    { value: 'api', label: 'API', description: 'API çağrı hataları' },
+    { value: 'database', label: 'Veritabanı', description: 'Veritabanı bağlantı ve sorgu hataları' },
+    { value: 'authentication', label: 'Kimlik Doğrulama', description: 'Giriş ve yetkilendirme hataları' },
+  ];
+
   const [newAlert, setNewAlert] = useState({
     name: '',
     type: 'email' as 'email' | 'slack',
@@ -298,6 +308,49 @@ export const AlertSettings = () => {
                   </Select>
                 </div>
 
+                <div className="space-y-2">
+                  <Label>Alert Tipleri</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Hangi tip hatalar için bildirim almak istiyorsunuz? (Boş bırakırsanız tüm tipler için bildirim alırsınız)
+                  </p>
+                  <div className="space-y-2 max-h-48 overflow-y-auto border rounded p-3">
+                    {alertTypes.map((type) => (
+                      <div key={type.value} className="flex items-start space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`type-${type.value}`}
+                          checked={newAlert.conditions.types.includes(type.value)}
+                          onChange={(e) => {
+                            const types = e.target.checked
+                              ? [...newAlert.conditions.types, type.value]
+                              : newAlert.conditions.types.filter(t => t !== type.value);
+                            setNewAlert({
+                              ...newAlert,
+                              conditions: { ...newAlert.conditions, types },
+                            });
+                          }}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <Label htmlFor={`type-${type.value}`} className="font-medium cursor-pointer">
+                            {type.label}
+                          </Label>
+                          <p className="text-xs text-muted-foreground">{type.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {newAlert.conditions.types.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {newAlert.conditions.types.map((type) => (
+                        <Badge key={type} variant="secondary">
+                          {alertTypes.find(t => t.value === type)?.label}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="enabled"
@@ -327,6 +380,8 @@ export const AlertSettings = () => {
           </Dialog>
         </div>
       </div>
+
+      <ManualAlertTest />
 
       <div className="grid gap-4 md:grid-cols-2">
         {alerts?.map((alert) => (
@@ -368,6 +423,18 @@ export const AlertSettings = () => {
                     {(alert.conditions as any)?.minSeverity || 'N/A'}
                   </Badge>
                 </div>
+                {(alert.conditions as any)?.types?.length > 0 && (
+                  <div>
+                    <span className="text-sm text-muted-foreground">Alert Tipleri:</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {((alert.conditions as any)?.types || []).map((type: string, i: number) => (
+                        <Badge key={i} variant="outline" className="text-xs">
+                          {alertTypes.find(t => t.value === type)?.label || type}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {alert.type === 'email' && (
                   <div>
                     <span className="text-sm text-muted-foreground">Alıcılar:</span>
