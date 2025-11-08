@@ -1,11 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, CheckCircle, Info } from "lucide-react";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 import {
   Table,
   TableBody,
@@ -26,6 +27,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function ErrorLogsList() {
   const [selectedError, setSelectedError] = useState<any>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   
   const { data: errors, isLoading } = useQuery({
     queryKey: ['admin-error-logs'],
@@ -40,10 +43,26 @@ export function ErrorLogsList() {
   });
 
   const handleResolve = async (errorId: string) => {
-    await supabase
-      .from('error_logs')
-      .update({ resolved: true, resolved_at: new Date().toISOString() })
-      .eq('id', errorId);
+    try {
+      const { error } = await supabase
+        .from('error_logs')
+        .update({ resolved: true, resolved_at: new Date().toISOString() })
+        .eq('id', errorId);
+      
+      if (error) throw error;
+      
+      queryClient.invalidateQueries({ queryKey: ['admin-error-logs'] });
+      toast({
+        title: "Başarılı",
+        description: "Hata çözüldü olarak işaretlendi",
+      });
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "İşlem başarısız oldu",
+        variant: "destructive",
+      });
+    }
   };
 
   const getSeverityIcon = (severity: string) => {

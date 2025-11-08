@@ -22,6 +22,7 @@ import { soundEffects } from "@/utils/soundEffects";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { GifPicker } from "@/components/GifPicker";
 import { useLongPress } from "@/hooks/use-gestures";
+import { logError } from "@/utils/analytics";
 import { LazyVideoCallDialog, LazyScheduleMessageDialog, LazyForwardMessageDialog } from "@/utils/lazyImports";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -452,6 +453,13 @@ const Messages = () => {
                   }
                 } catch (error) {
                   console.error('Auto-translate error:', error);
+                  logError(
+                    'Otomatik çeviri hatası',
+                    error instanceof Error ? error.stack : undefined,
+                    'TranslationError',
+                    'error',
+                    { messageId: newMsg.id, autoTranslate: true }
+                  );
                 }
               }
             }
@@ -1477,6 +1485,13 @@ const Messages = () => {
       }
     } catch (error) {
       console.error('Translation error:', error);
+      logError(
+        'Mesaj çeviri hatası',
+        error instanceof Error ? error.stack : undefined,
+        'TranslationError',
+        'error',
+        { messageId, manualTranslation: true }
+      );
       toast({
         title: "Çeviri Hatası",
         description: "Mesaj çevrilirken bir hata oluştu",

@@ -119,14 +119,26 @@ class OfflineStorage {
     if (!this.db) await this.init();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([storeName], 'readonly');
-      const store = transaction.objectStore(storeName);
-      const index = store.index('timestamp');
-      const range = IDBKeyRange.upperBound(timestamp);
-      const request = index.getAll(range);
+      try {
+        // Check if database is still open before creating transaction
+        if (!this.db || this.db.objectStoreNames.length === 0) {
+          resolve([]);
+          return;
+        }
+        
+        const transaction = this.db.transaction([storeName], 'readonly');
+        const store = transaction.objectStore(storeName);
+        const index = store.index('timestamp');
+        const range = IDBKeyRange.upperBound(timestamp);
+        const request = index.getAll(range);
 
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      } catch (error) {
+        // If database is closing or closed, just return empty array
+        console.warn('Database transaction error:', error);
+        resolve([]);
+      }
     });
   }
 

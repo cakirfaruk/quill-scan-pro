@@ -4,6 +4,7 @@ import { Play, Pause, FileText, Languages, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { AudioWaveform } from "./AudioWaveform";
+import { logError } from "@/utils/analytics";
 
 interface VoiceMessagePlayerProps {
   audioUrl: string;
@@ -174,6 +175,15 @@ export const VoiceMessagePlayer = ({ audioUrl, duration, preferredLanguage = 'tr
       console.error('Transcription error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Bilinmeyen hata';
       setError(errorMessage);
+      
+      logError(
+        'Sesli mesaj transkript hatası',
+        error instanceof Error ? error.stack : undefined,
+        'TranscriptionError',
+        'error',
+        { messageId, audioUrl, translateAlso }
+      );
+      
       toast({
         title: "Hata",
         description: "Sesli mesaj metne dönüştürülürken bir hata oluştu",
