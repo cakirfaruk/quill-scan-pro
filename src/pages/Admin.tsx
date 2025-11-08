@@ -310,7 +310,7 @@ const Admin = () => {
           </div>
         ) : (
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 relative z-10 bg-card">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 relative z-10 bg-card mb-8">
               <TabsTrigger value="users" className="gap-2">
                 <Users className="w-4 h-4" />
                 Kullanıcılar
@@ -337,7 +337,7 @@ const Admin = () => {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="users" className="space-y-6">
+            <TabsContent value="users" className="space-y-6 mt-8">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Users List */}
             <Card className="p-6 lg:col-span-1">
@@ -505,7 +505,7 @@ const Admin = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="analytics" className="space-y-6">
+        <TabsContent value="analytics" className="space-y-6 mt-8">
           <AnalyticsOverview />
           <div className="grid gap-6 lg:grid-cols-2">
             <EventsChart />
@@ -513,19 +513,19 @@ const Admin = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="errors" className="space-y-6">
+        <TabsContent value="errors" className="space-y-6 mt-8">
           <ErrorLogsList />
         </TabsContent>
 
-        <TabsContent value="performance" className="space-y-6">
+        <TabsContent value="performance" className="space-y-6 mt-8">
           <PerformanceMetrics />
         </TabsContent>
 
-        <TabsContent value="behavior" className="space-y-6">
+        <TabsContent value="behavior" className="space-y-6 mt-8">
           <UserBehaviorAnalysis />
         </TabsContent>
 
-        <TabsContent value="system" className="space-y-6">
+        <TabsContent value="system" className="space-y-6 mt-8">
           <AlertSettings />
         </TabsContent>
       </Tabs>
