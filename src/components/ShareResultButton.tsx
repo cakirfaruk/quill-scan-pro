@@ -170,25 +170,46 @@ export const ShareResultButton = ({
 
   const handlePDFDownload = async () => {
     try {
-      let elementToCapture: HTMLElement;
-      
-      // If contentRef is provided, use the actual UI element
+      // If contentRef is provided, use the actual UI element with clone method
       if (contentRef?.current) {
-        elementToCapture = contentRef.current;
+        const originalElement = contentRef.current;
         
-        // Generate canvas from the actual UI
-        const canvas = await html2canvas(elementToCapture, {
+        // Clone the element to avoid affecting the UI
+        const clonedElement = originalElement.cloneNode(true) as HTMLElement;
+        
+        // Create temporary off-screen container with no height restrictions
+        const tempContainer = document.createElement('div');
+        tempContainer.style.position = 'absolute';
+        tempContainer.style.left = '-9999px';
+        tempContainer.style.top = '0';
+        tempContainer.style.width = '800px';
+        tempContainer.style.maxHeight = 'none';
+        tempContainer.style.overflow = 'visible';
+        tempContainer.style.padding = '20px';
+        tempContainer.style.backgroundColor = 'white';
+        
+        // Append cloned element to temp container
+        tempContainer.appendChild(clonedElement);
+        document.body.appendChild(tempContainer);
+        
+        // Small delay to ensure rendering is complete
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Capture the full content (all scrollable area is now visible)
+        const canvas = await html2canvas(tempContainer, {
           scale: 2,
-          backgroundColor: null,
+          backgroundColor: '#ffffff',
           logging: false,
           useCORS: true,
-          scrollY: -window.scrollY,
-          scrollX: -window.scrollX,
-          windowWidth: elementToCapture.scrollWidth,
-          windowHeight: elementToCapture.scrollHeight,
+          allowTaint: true,
+          width: tempContainer.scrollWidth,
+          height: tempContainer.scrollHeight,
         });
         
-        // Create PDF
+        // Clean up temporary container
+        document.body.removeChild(tempContainer);
+        
+        // Generate multi-page PDF
         const imgWidth = 210; // A4 width in mm
         const pageHeight = 297; // A4 height in mm
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
@@ -197,14 +218,29 @@ export const ShareResultButton = ({
         let heightLeft = imgHeight;
         let position = 0;
         
-        // Add image to PDF (handle multiple pages if needed)
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+        // First page
+        pdf.addImage(
+          canvas.toDataURL('image/png'), 
+          'PNG', 
+          0, 
+          position, 
+          imgWidth, 
+          imgHeight
+        );
         heightLeft -= pageHeight;
         
+        // Additional pages if content is longer
         while (heightLeft > 0) {
           position = heightLeft - imgHeight;
           pdf.addPage();
-          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+          pdf.addImage(
+            canvas.toDataURL('image/png'), 
+            'PNG', 
+            0, 
+            position, 
+            imgWidth, 
+            imgHeight
+          );
           heightLeft -= pageHeight;
         }
         
@@ -212,7 +248,7 @@ export const ShareResultButton = ({
         const fileName = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
         pdf.save(fileName);
       } else {
-        // Fallback to old method (text-only) for backward compatibility
+        // Fallback to text-only method
         const tempDiv = document.createElement('div');
         tempDiv.style.position = 'absolute';
         tempDiv.style.left = '-9999px';
