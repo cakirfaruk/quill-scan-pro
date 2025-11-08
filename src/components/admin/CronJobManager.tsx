@@ -15,6 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RetrySettings } from "./RetrySettings";
 import { AutoScaleSettings } from "./AutoScaleSettings";
 import { CronNotificationSettings } from "./CronNotificationSettings";
+import { CronJobDashboard } from "./CronJobDashboard";
+import { CronJobPerformance } from "./CronJobPerformance";
 
 interface CronJob {
   jobid: number;
@@ -136,15 +138,39 @@ export const CronJobManager = () => {
     return <div className="text-center py-8">Yükleniyor...</div>;
   }
 
+  const triggerJobMutation = useMutation({
+    mutationFn: async (jobId: number) => {
+      const { data, error } = await supabase.functions.invoke('trigger-cron-job', {
+        body: { jobId }
+      });
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cron-job-logs'] });
+      toast.success('Cron job manuel olarak tetiklendi');
+    },
+    onError: (error) => {
+      toast.error('Cron job tetiklenemedi: ' + error.message);
+    },
+  });
+
   return (
-    <Tabs defaultValue="jobs" className="space-y-6">
-      <TabsList>
+    <Tabs defaultValue="dashboard" className="space-y-6">
+      <TabsList className="grid w-full grid-cols-7">
+        <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
         <TabsTrigger value="jobs">Aktif Job'lar</TabsTrigger>
-        <TabsTrigger value="history">Çalışma Geçmişi</TabsTrigger>
-        <TabsTrigger value="retry">Retry Ayarları</TabsTrigger>
-        <TabsTrigger value="autoscale">Otomatik Ölçeklendirme</TabsTrigger>
+        <TabsTrigger value="history">Geçmiş</TabsTrigger>
+        <TabsTrigger value="performance">Performans</TabsTrigger>
+        <TabsTrigger value="retry">Retry</TabsTrigger>
+        <TabsTrigger value="autoscale">Ölçeklendirme</TabsTrigger>
         <TabsTrigger value="notifications">Bildirimler</TabsTrigger>
       </TabsList>
+
+      <TabsContent value="dashboard">
+        <CronJobDashboard />
+      </TabsContent>
 
       <TabsContent value="jobs" className="space-y-6">
         <div className="flex items-center justify-between">
@@ -280,6 +306,18 @@ export const CronJobManager = () => {
 
                   <div className="flex gap-2 pt-2">
                     <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => {
+                        if (confirm(`"${job.jobname}" job'unu şimdi çalıştırmak istediğinizden emin misiniz?`)) {
+                          triggerJobMutation.mutate(job.jobid);
+                        }
+                      }}
+                    >
+                      <Play className="h-4 w-4 mr-2" />
+                      Şimdi Çalıştır
+                    </Button>
+                    <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEditClick(job)}
@@ -373,6 +411,10 @@ export const CronJobManager = () => {
 
       <TabsContent value="autoscale">
         <AutoScaleSettings />
+      </TabsContent>
+
+      <TabsContent value="performance">
+        <CronJobPerformance />
       </TabsContent>
 
       <TabsContent value="notifications">

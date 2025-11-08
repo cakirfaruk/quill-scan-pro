@@ -57,6 +57,9 @@ verify_jwt = false
 [functions.send-cron-notification]
 verify_jwt = false
 
+[functions.trigger-cron-job]
+verify_jwt = true
+
 [functions.manage-cron-job]
 verify_jwt = true
 

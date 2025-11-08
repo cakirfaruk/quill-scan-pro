@@ -1,11 +1,16 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { History, CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { History, CheckCircle2, XCircle, Clock, AlertCircle, Filter } from "lucide-react";
+import { formatDistanceToNow, startOfDay, endOfDay } from "date-fns";
 import { tr } from "date-fns/locale";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 interface CronJobLog {
   id: string;
@@ -29,17 +34,38 @@ interface CronJobHistoryProps {
 }
 
 export const CronJobHistory = ({ jobName }: CronJobHistoryProps) => {
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
   const { data: logs, isLoading } = useQuery({
-    queryKey: ['cron-job-logs', jobName],
+    queryKey: ['cron-job-logs', jobName, statusFilter, searchQuery, dateFrom, dateTo],
     queryFn: async () => {
       let query = supabase
         .from('cron_job_logs')
         .select('*')
         .order('started_at', { ascending: false })
-        .limit(50);
+        .limit(100);
       
       if (jobName) {
         query = query.eq('job_name', jobName);
+      }
+
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+
+      if (searchQuery) {
+        query = query.ilike('job_name', `%${searchQuery}%`);
+      }
+
+      if (dateFrom) {
+        query = query.gte('started_at', startOfDay(new Date(dateFrom)).toISOString());
+      }
+
+      if (dateTo) {
+        query = query.lte('started_at', endOfDay(new Date(dateTo)).toISOString());
       }
       
       const { data, error } = await query;
@@ -47,8 +73,15 @@ export const CronJobHistory = ({ jobName }: CronJobHistoryProps) => {
       if (error) throw error;
       return data as CronJobLog[];
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 30000,
   });
+
+  const clearFilters = () => {
+    setStatusFilter('all');
+    setSearchQuery('');
+    setDateFrom('');
+    setDateTo('');
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -106,6 +139,67 @@ export const CronJobHistory = ({ jobName }: CronJobHistoryProps) => {
 
   return (
     <div className="space-y-4">
+      {/* Filtreler */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filtreler
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-2">
+              <Label>Durum</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tümü" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tümü</SelectItem>
+                  <SelectItem value="success">Başarılı</SelectItem>
+                  <SelectItem value="failed">Başarısız</SelectItem>
+                  <SelectItem value="running">Çalışıyor</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Job Adı Ara</Label>
+              <Input
+                placeholder="Job adı..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Başlangıç Tarihi</Label>
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Bitiş Tarihi</Label>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <Button variant="outline" onClick={clearFilters} size="sm">
+              Filtreleri Temizle
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -116,6 +210,7 @@ export const CronJobHistory = ({ jobName }: CronJobHistoryProps) => {
               </CardTitle>
               <CardDescription>
                 {jobName ? `${jobName} için son çalışmalar` : 'Tüm cron job çalışmaları'}
+                {logs && ` - ${logs.length} sonuç`}
               </CardDescription>
             </div>
             {logs && logs.length > 0 && (

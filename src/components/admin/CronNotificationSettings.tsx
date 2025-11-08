@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Smartphone, Plus, X } from "lucide-react";
+import { Mail, Smartphone, Plus, X, Send } from "lucide-react";
 
 interface NotificationSettings {
   id?: string;
@@ -21,6 +21,7 @@ interface NotificationSettings {
 export function CronNotificationSettings() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [settings, setSettings] = useState<NotificationSettings>({
     email_on_error: true,
@@ -114,6 +115,37 @@ export function CronNotificationSettings() {
       ...settings,
       email_recipients: settings.email_recipients.filter(e => e !== email),
     });
+  };
+
+  const handleTestNotification = async (testType: 'success' | 'error') => {
+    setIsTesting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-cron-notification', {
+        body: {
+          jobName: 'test-notification-job',
+          status: testType === 'error' ? 'failed' : 'success',
+          errorMessage: testType === 'error' ? 'Bu bir test hatasıdır. Sistem düzgün çalışıyor.' : undefined,
+          duration: 1234,
+          isTest: true,
+        }
+      });
+      
+      if (error) throw error;
+
+      toast({
+        title: "Başarılı",
+        description: `Test bildirimi (${testType === 'error' ? 'Hata' : 'Başarı'}) gönderildi!`,
+      });
+    } catch (error) {
+      console.error('Error sending test notification:', error);
+      toast({
+        title: "Hata",
+        description: 'Test bildirimi gönderilemedi',
+        variant: "destructive",
+      });
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   return (
@@ -239,6 +271,56 @@ export function CronNotificationSettings() {
       <Button onClick={saveSettings} disabled={loading} className="w-full">
         {loading ? "Kaydediliyor..." : "Ayarları Kaydet"}
       </Button>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Send className="h-5 w-5" />
+            Bildirimleri Test Et
+          </CardTitle>
+          <CardDescription>
+            Bildirim sisteminin çalıştığını doğrulamak için test bildirimleri gönderin
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground mb-4">
+                Test bildirimleri, yukarıda yapılandırdığınız tüm aktif kanallara gönderilecektir.
+                Bu, e-posta ve push bildirim ayarlarınızın doğru çalıştığından emin olmanızı sağlar.
+              </p>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <Button
+                onClick={() => handleTestNotification('success')}
+                disabled={isTesting}
+                variant="outline"
+                className="w-full"
+              >
+                <Badge variant="default" className="mr-2">Başarı</Badge>
+                Test Başarı Bildirimi
+              </Button>
+
+              <Button
+                onClick={() => handleTestNotification('error')}
+                disabled={isTesting}
+                variant="outline"
+                className="w-full"
+              >
+                <Badge variant="destructive" className="mr-2">Hata</Badge>
+                Test Hata Bildirimi
+              </Button>
+            </div>
+
+            {isTesting && (
+              <div className="text-center text-sm text-muted-foreground">
+                Test bildirimi gönderiliyor...
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
