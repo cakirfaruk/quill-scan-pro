@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { z } from "zod";
+import { logError } from "@/utils/analytics";
 
 const numerologySchema = z.object({
   fullName: z.string()
@@ -141,7 +142,14 @@ export default function Numerology() {
         body: { fullName: personData.fullName, birthDate: personData.birthDate, selectedTopics },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Numerology analysis error:', error);
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       setAnalysisResult(data.result);
       setAvailableCredits((prev) => prev - requiredCredits);
@@ -151,9 +159,25 @@ export default function Numerology() {
         description: `${requiredCredits} kredi kullanıldı.`,
       });
     } catch (error: any) {
+      console.error('Numerology analysis error:', error);
+      
+      const errorMessage = error.message || "Analiz sırasında bir hata oluştu.";
+      
+      logError(
+        'Numeroloji analizi hatası',
+        error.stack,
+        'NumerologyAnalysisError',
+        'error',
+        { 
+          fullName: personData.fullName, 
+          birthDate: personData.birthDate, 
+          selectedTopicsCount: selectedTopics.length 
+        }
+      );
+      
       toast({
         title: "Hata",
-        description: error.message || "Analiz sırasında bir hata oluştu.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

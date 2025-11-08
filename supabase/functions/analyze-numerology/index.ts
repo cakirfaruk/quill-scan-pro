@@ -229,10 +229,33 @@ JSON formatında yanıt ver, her konu için ayrı alan oluştur.`;
     });
   } catch (error: any) {
     console.error("Error in analyze-numerology function:", error);
+    
+    // Detailed error message
+    let errorMessage = "Analiz sırasında bir hata oluştu";
+    let statusCode = 500;
+    
+    if (error.message === "Unauthorized") {
+      errorMessage = "Oturum açmanız gerekiyor";
+      statusCode = 401;
+    } else if (error.message === "Insufficient credits") {
+      errorMessage = "Yetersiz kredi. Lütfen kredi satın alın.";
+      statusCode = 402;
+    } else if (error.message === "AI analysis failed") {
+      errorMessage = "AI analizi başarısız oldu. Lütfen tekrar deneyin.";
+    } else if (error.message === "AI did not return structured data") {
+      errorMessage = "AI yanıtı işlenemedi. Lütfen tekrar deneyin.";
+    } else if (error.message?.includes("validation")) {
+      errorMessage = "Girdiğiniz bilgiler geçersiz";
+      statusCode = 400;
+    }
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: errorMessage,
+        details: error.message 
+      }),
       {
-        status: 500,
+        status: statusCode,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
