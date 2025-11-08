@@ -47,3 +47,9 @@ verify_jwt = true
 
 [functions.check-alert-escalations]
 verify_jwt = false
+
+[functions.manage-cron-job]
+verify_jwt = true
+
+[functions.list-cron-jobs]
+verify_jwt = true

@@ -16,6 +16,7 @@ import { ManualAlertTest } from "./ManualAlertTest";
 import { AlertAnalytics } from "./AlertAnalytics";
 import { AlertSnoozeManager } from "./AlertSnoozeManager";
 import { AlertEscalationSettings } from "./AlertEscalationSettings";
+import { CronJobManager } from "./CronJobManager";
 
 export const AlertSettings = () => {
   const queryClient = useQueryClient();
@@ -203,11 +204,12 @@ export const AlertSettings = () => {
       </div>
 
       <Tabs defaultValue="settings" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="settings">Ayarlar</TabsTrigger>
           <TabsTrigger value="analytics">Analitik</TabsTrigger>
           <TabsTrigger value="snooze">Sessizleştirme</TabsTrigger>
           <TabsTrigger value="escalation">Eskalasyon</TabsTrigger>
+          <TabsTrigger value="cron">Cron Jobs</TabsTrigger>
           <TabsTrigger value="test">Test</TabsTrigger>
         </TabsList>
 
@@ -507,14 +509,18 @@ export const AlertSettings = () => {
         <AlertSnoozeManager />
       </TabsContent>
 
-      <TabsContent value="escalation">
-        <AlertEscalationSettings />
-      </TabsContent>
+        <TabsContent value="escalation">
+          <AlertEscalationSettings />
+        </TabsContent>
 
-      <TabsContent value="test">
-        <ManualAlertTest />
-      </TabsContent>
-    </Tabs>
+        <TabsContent value="cron">
+          <CronJobManager />
+        </TabsContent>
+
+        <TabsContent value="test">
+          <ManualAlertTest />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
