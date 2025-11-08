@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { logError } from "./utils/analytics";
 
 // Global error handler for production debugging
 window.addEventListener('error', (event) => {
@@ -9,10 +10,32 @@ window.addEventListener('error', (event) => {
   console.error('🔴 MESSAGE:', event.message);
   console.error('🔴 FILENAME:', event.filename);
   console.error('🔴 LINENO:', event.lineno);
+  
+  // Log to analytics
+  logError(
+    event.message,
+    event.error?.stack,
+    event.error?.name || 'Error',
+    'error',
+    {
+      filename: event.filename,
+      lineno: event.lineno,
+      colno: event.colno,
+    }
+  );
 });
 
 window.addEventListener('unhandledrejection', (event) => {
   console.error('🔴 UNHANDLED PROMISE REJECTION:', event.reason);
+  
+  // Log to analytics
+  logError(
+    event.reason?.message || 'Unhandled Promise Rejection',
+    event.reason?.stack,
+    'UnhandledRejection',
+    'error',
+    { reason: String(event.reason) }
+  );
 });
 
 // Log that app is starting

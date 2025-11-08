@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "./ui/button";
 import { AlertCircle } from "lucide-react";
+import { logError } from "@/utils/analytics";
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -33,6 +34,18 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     console.error('🔴 UNCAUGHT ERROR:', error);
     console.error('🔴 ERROR INFO:', errorInfo);
     console.error('🔴 COMPONENT STACK:', errorInfo.componentStack);
+    
+    // Log to analytics database
+    logError(
+      error.message,
+      error.stack,
+      error.name,
+      'critical',
+      {
+        componentStack: errorInfo.componentStack,
+      }
+    );
+    
     this.setState({
       error,
       errorInfo,

@@ -3,6 +3,8 @@
  * Track and optimize app performance
  */
 
+import { trackPerformanceMetric } from './analytics';
+
 // Track First Contentful Paint
 export function trackFCP(): void {
   if ('PerformanceObserver' in window) {
@@ -11,6 +13,7 @@ export function trackFCP(): void {
         for (const entry of list.getEntries()) {
           if (entry.name === 'first-contentful-paint') {
             console.log('FCP:', entry.startTime);
+            trackPerformanceMetric('First Contentful Paint', entry.startTime);
           }
         }
       });
@@ -29,6 +32,7 @@ export function trackLCP(): void {
         const entries = list.getEntries();
         const lastEntry = entries[entries.length - 1];
         console.log('LCP:', lastEntry.startTime);
+        trackPerformanceMetric('Largest Contentful Paint', lastEntry.startTime);
       });
       observer.observe({ entryTypes: ['largest-contentful-paint'] });
     } catch (e) {
@@ -44,6 +48,7 @@ export function trackTTI(): void {
       const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
           console.log('TTI:', entry.startTime);
+          trackPerformanceMetric('Time to Interactive', entry.startTime);
         }
       });
       observer.observe({ entryTypes: ['measure'] });

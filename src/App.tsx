@@ -21,6 +21,7 @@ import { useLinkIntersectionPreloader } from "@/hooks/use-link-intersection-prel
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { OfflineCacheStatus } from "@/components/OfflineCacheStatus";
 import { InAppNotification } from "@/components/InAppNotification";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 // Critical pages - load immediately (no lazy loading)
 import Index from "./pages/Index";
@@ -109,6 +110,7 @@ const queryClient = new QueryClient({
 // Component that uses hooks - must be inside providers
 const AppRoutes = () => {
   useUpdateOnlineStatus();
+  useAnalytics(); // 📊 Track analytics and user behavior
   const location = useLocation();
   const [incomingCall, setIncomingCall] = useState<any>(null);
   const [incomingGroupCall, setIncomingGroupCall] = useState<any>(null);
