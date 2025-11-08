@@ -9,9 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Bell, Plus, Trash2, Mail, MessageSquare } from "lucide-react";
 import { ManualAlertTest } from "./ManualAlertTest";
+import { AlertAnalytics } from "./AlertAnalytics";
 
 export const AlertSettings = () => {
   const queryClient = useQueryClient();
@@ -196,17 +198,27 @@ export const AlertSettings = () => {
             Kritik hatalar ve performans düşüşleri için bildirimler
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={testAlert} disabled={isTesting}>
-            {isTesting ? 'Gönderiliyor...' : 'Test Alert Gönder'}
-          </Button>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Yeni Alert
-              </Button>
-            </DialogTrigger>
+      </div>
+
+      <Tabs defaultValue="settings" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="settings">Ayarlar</TabsTrigger>
+          <TabsTrigger value="analytics">Analitik</TabsTrigger>
+          <TabsTrigger value="test">Test</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="settings" className="space-y-6">
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={testAlert} disabled={isTesting}>
+              {isTesting ? 'Gönderiliyor...' : 'Test Alert Gönder'}
+            </Button>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Yeni Alert
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Yeni Alert Oluştur</DialogTitle>
@@ -379,11 +391,8 @@ export const AlertSettings = () => {
             </DialogContent>
           </Dialog>
         </div>
-      </div>
 
-      <ManualAlertTest />
-
-      <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
         {alerts?.map((alert) => (
           <Card key={alert.id}>
             <CardHeader>
@@ -484,6 +493,16 @@ export const AlertSettings = () => {
           </CardContent>
         </Card>
       )}
+      </TabsContent>
+
+      <TabsContent value="analytics">
+        <AlertAnalytics />
+      </TabsContent>
+
+      <TabsContent value="test">
+        <ManualAlertTest />
+      </TabsContent>
+    </Tabs>
     </div>
   );
 };
