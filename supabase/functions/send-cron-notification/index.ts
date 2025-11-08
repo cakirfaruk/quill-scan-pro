@@ -7,11 +7,15 @@ const corsHeaders = {
 };
 
 interface NotificationRequest {
-  cronJobLogId: string;
+  cronJobLogId?: string;
   jobName: string;
-  status: 'success' | 'error';
-  message: string;
+  status: 'success' | 'error' | 'auto_disabled' | 'failed';
+  message?: string;
+  errorMessage?: string;
   errorDetails?: string;
+  duration?: number;
+  isTest?: boolean;
+  isAutoDisable?: boolean;
 }
 
 serve(async (req) => {
@@ -24,9 +28,9 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { cronJobLogId, jobName, status, message, errorDetails }: NotificationRequest = await req.json();
+    const { cronJobLogId, jobName, status, message, errorMessage, errorDetails, duration, isTest, isAutoDisable }: NotificationRequest = await req.json();
 
-    console.log('Cron notification request:', { cronJobLogId, jobName, status });
+    console.log('Cron notification request:', { cronJobLogId, jobName, status, isAutoDisable });
 
     // Get notification settings
     const { data: settings, error: settingsError } = await supabase
@@ -42,11 +46,16 @@ serve(async (req) => {
       );
     }
 
+    // Auto-disable notifications should always be sent
     const shouldSendEmail = 
+      isAutoDisable ||
+      (status === 'failed' && settings.email_on_error) ||
       (status === 'error' && settings.email_on_error) ||
       (status === 'success' && settings.email_on_success);
 
     const shouldSendPush = 
+      isAutoDisable ||
+      (status === 'failed' && settings.push_on_error) ||
       (status === 'error' && settings.push_on_error) ||
       (status === 'success' && settings.push_on_success);
 
@@ -66,11 +75,17 @@ serve(async (req) => {
     // Send email notification
     if (shouldSendEmail && settings.email_recipients && settings.email_recipients.length > 0) {
       try {
-        const html = generateEmailHTML(jobName, status, message, errorDetails);
+        const finalMessage = message || errorMessage || 'No message';
+        const html = generateEmailHTML(jobName, status, finalMessage, errorDetails, isAutoDisable, isTest);
+
+        const subjectPrefix = 
+          isAutoDisable ? '🚨 Cron Job Otomatik Devre Dışı' :
+          status === 'error' || status === 'failed' ? '❌ Cron Job Hatası' : 
+          '✅ Cron Job Başarılı';
 
         await sendEmailAlert(
           settings.email_recipients,
-          status === 'error' ? `❌ Cron Job Hatası: ${jobName}` : `✅ Cron Job Başarılı: ${jobName}`,
+          `${subjectPrefix}: ${jobName}${isTest ? ' (TEST)' : ''}`,
           html
         );
 
@@ -100,10 +115,16 @@ serve(async (req) => {
             .in('user_id', adminIds);
 
           if (subscriptions && subscriptions.length > 0) {
+            const finalMessage = message || errorMessage || 'No message';
+            const pushTitle = 
+              isAutoDisable ? '🚨 Cron Job Devre Dışı' :
+              status === 'error' || status === 'failed' ? '❌ Cron Job Hatası' : 
+              '✅ Cron Job Başarılı';
+
             const pushPromises = subscriptions.map(sub => 
               sendPushNotification(sub, {
-                title: status === 'error' ? `❌ Cron Job Hatası` : `✅ Cron Job Başarılı`,
-                body: `${jobName}: ${message}`,
+                title: pushTitle + (isTest ? ' (TEST)' : ''),
+                body: `${jobName}: ${finalMessage}`,
                 icon: '/icon-192.png',
                 badge: '/icon-192.png',
               })
@@ -135,10 +156,26 @@ serve(async (req) => {
   }
 });
 
-function generateEmailHTML(jobName: string, status: 'success' | 'error', message: string, errorDetails?: string): string {
-  const statusColor = status === 'error' ? '#ef4444' : '#22c55e';
-  const statusIcon = status === 'error' ? '❌' : '✅';
-  const statusText = status === 'error' ? 'HATA' : 'BAŞARILI';
+function generateEmailHTML(
+  jobName: string, 
+  status: 'success' | 'error' | 'auto_disabled' | 'failed', 
+  message: string, 
+  errorDetails?: string,
+  isAutoDisable?: boolean,
+  isTest?: boolean
+): string {
+  const statusColor = 
+    isAutoDisable ? '#f59e0b' :
+    status === 'error' || status === 'failed' ? '#ef4444' : 
+    '#22c55e';
+  const statusIcon = 
+    isAutoDisable ? '🚨' :
+    status === 'error' || status === 'failed' ? '❌' : 
+    '✅';
+  const statusText = 
+    isAutoDisable ? 'DEVRE DIŞI BIRAKILDI' :
+    status === 'error' || status === 'failed' ? 'HATA' : 
+    'BAŞARILI';
   
   return `
     <!DOCTYPE html>
@@ -147,7 +184,7 @@ function generateEmailHTML(jobName: string, status: 'success' | 'error', message
         <meta charset="utf-8">
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f6f9fc; margin: 0; padding: 20px; }
-          .container { background-color: #ffffff; max-width: 600px; margin: 0 auto; padding: 40px; }
+          .container { background-color: #ffffff; max-width: 600px; margin: 0 auto; padding: 40px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
           h1 { color: #333; font-size: 24px; margin: 0 0 30px; }
           .section { margin-bottom: 20px; }
           .label { color: #6b7280; font-size: 12px; font-weight: 600; text-transform: uppercase; margin: 0 0 4px; }
@@ -161,7 +198,17 @@ function generateEmailHTML(jobName: string, status: 'success' | 'error', message
       </head>
       <body>
         <div class="container">
-          <h1>${statusIcon} Cron Job ${statusText}</h1>
+          <h1>${statusIcon} Cron Job ${statusText}${isTest ? ' (TEST)' : ''}</h1>
+          
+          ${isAutoDisable ? `
+          <div class="section" style="background-color: #fef3c7; padding: 16px; border-radius: 4px; margin-bottom: 20px;">
+            <p style="color: #92400e; font-weight: 600; margin: 0 0 8px;">⚠️ Otomatik Devre Dışı Bırakıldı</p>
+            <p style="color: #78350f; font-size: 14px; margin: 0;">
+              Bu cron job başarısızlık eşiğine ulaştığı için otomatik olarak devre dışı bırakıldı. 
+              Job'u tekrar aktif etmek için admin panelini kontrol edin.
+            </p>
+          </div>
+          ` : ''}
           
           <div class="section">
             <p class="label">Job Adı:</p>
@@ -189,6 +236,12 @@ function generateEmailHTML(jobName: string, status: 'success' | 'error', message
           <div class="section">
             <p class="label">Hata Detayları:</p>
             <div class="error">${errorDetails}</div>
+          </div>
+          ` : ''}
+
+          ${isTest ? `
+          <div class="section" style="background-color: #dbeafe; padding: 16px; border-radius: 4px; margin-top: 20px;">
+            <p style="color: #1e40af; font-weight: 600; margin: 0;">ℹ️ Bu bir test bildirimidir</p>
           </div>
           ` : ''}
 

@@ -720,11 +720,16 @@ export type Database = {
       }
       cron_jobs: {
         Row: {
+          auto_disable_enabled: boolean | null
           auto_scale_enabled: boolean | null
           created_at: string | null
           current_interval_seconds: number | null
           description: string | null
+          disabled_at: string | null
+          disabled_reason: string | null
           enabled: boolean | null
+          failure_threshold: number | null
+          failure_window_minutes: number | null
           function_name: string
           id: number
           last_scale_check_at: string | null
@@ -737,11 +742,16 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          auto_disable_enabled?: boolean | null
           auto_scale_enabled?: boolean | null
           created_at?: string | null
           current_interval_seconds?: number | null
           description?: string | null
+          disabled_at?: string | null
+          disabled_reason?: string | null
           enabled?: boolean | null
+          failure_threshold?: number | null
+          failure_window_minutes?: number | null
           function_name: string
           id?: number
           last_scale_check_at?: string | null
@@ -754,11 +764,16 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          auto_disable_enabled?: boolean | null
           auto_scale_enabled?: boolean | null
           created_at?: string | null
           current_interval_seconds?: number | null
           description?: string | null
+          disabled_at?: string | null
+          disabled_reason?: string | null
           enabled?: boolean | null
+          failure_threshold?: number | null
+          failure_window_minutes?: number | null
           function_name?: string
           id?: number
           last_scale_check_at?: string | null

@@ -17,6 +17,7 @@ import { AutoScaleSettings } from "./AutoScaleSettings";
 import { CronNotificationSettings } from "./CronNotificationSettings";
 import { CronJobDashboard } from "./CronJobDashboard";
 import { CronJobPerformance } from "./CronJobPerformance";
+import { AutoDisableSettings } from "./AutoDisableSettings";
 
 interface CronJob {
   jobid: number;
@@ -158,13 +159,14 @@ export const CronJobManager = () => {
 
   return (
     <Tabs defaultValue="dashboard" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-7">
+      <TabsList className="grid w-full grid-cols-8">
         <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
         <TabsTrigger value="jobs">Aktif Job'lar</TabsTrigger>
         <TabsTrigger value="history">Geçmiş</TabsTrigger>
         <TabsTrigger value="performance">Performans</TabsTrigger>
         <TabsTrigger value="retry">Retry</TabsTrigger>
         <TabsTrigger value="autoscale">Ölçeklendirme</TabsTrigger>
+        <TabsTrigger value="autodisable">Oto. Devre Dışı</TabsTrigger>
         <TabsTrigger value="notifications">Bildirimler</TabsTrigger>
       </TabsList>
 
@@ -283,9 +285,11 @@ export const CronJobManager = () => {
                       Job ID: {job.jobid}
                     </CardDescription>
                   </div>
-                  <Badge variant={job.active ? "default" : "secondary"}>
-                    {job.active ? "Aktif" : "Pasif"}
-                  </Badge>
+                  <div className="flex flex-col gap-2 items-end">
+                    <Badge variant={job.active ? "default" : "secondary"}>
+                      {job.active ? "Aktif" : "Pasif"}
+                    </Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -415,6 +419,10 @@ export const CronJobManager = () => {
 
       <TabsContent value="performance">
         <CronJobPerformance />
+      </TabsContent>
+
+      <TabsContent value="autodisable">
+        <AutoDisableSettings />
       </TabsContent>
 
       <TabsContent value="notifications">
