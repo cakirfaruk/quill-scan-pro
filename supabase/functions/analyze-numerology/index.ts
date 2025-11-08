@@ -102,13 +102,13 @@ Doğum Tarihi: ${birthDate}
 Analiz Konuları:
 ${selectedTopics.map((topic: string, i: number) => `${i + 1}. ${topic}`).join("\n")}
 
-Her konu için:
-- Hesaplama adımlarını göster (1-2 paragraf)
-- Rakamların anlamlarını açıkla (1-2 paragraf)
-- Kişiye özel yorumlar yap (2-3 paragraf)
-- Referanslar ver (1 paragraf)
+Her konu için akıcı ve anlaşılır bir açıklama yaz (3-4 paragraf):
+- Hesaplama nasıl yapıldı
+- Bu rakam ne anlama geliyor
+- Kişiye özel yorumlar
+- Pratik ipuçları ve tavsiyeler
 
-Analizleri özlü ve kişiye özel yap.`;
+Açıklamalar mistik, ilham verici ve kişiye özel olsun.`;
 
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!lovableApiKey) {
@@ -121,12 +121,13 @@ Analizleri özlü ve kişiye özel yap.`;
       topicProperties[topic] = {
         type: "object",
         properties: {
-          calculation: { type: "string", description: "1-2 paragraf hesaplama" },
-          meaning: { type: "string", description: "1-2 paragraf anlamlar" },
-          personal_interpretation: { type: "string", description: "2-3 paragraf yorum" },
-          references: { type: "string", description: "1 paragraf referans" }
+          explanation: { 
+            type: "string", 
+            description: "3-4 paragraf akıcı açıklama: hesaplama + anlam + yorum + ipuçları. Mistik ve ilham verici bir dil kullan."
+          }
         },
-        required: ["calculation", "meaning", "personal_interpretation", "references"]
+        required: ["explanation"],
+        additionalProperties: false
       };
     });
 

@@ -801,7 +801,97 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
     );
   }
 
-  // For other analysis types (handwriting, numerology) - use generic display
+  // Numerology Analysis
+  if (analysisType === "numerology") {
+    const topicIcons: Record<string, any> = {
+      "Kader Rakamı": { icon: Star, color: "blue" },
+      "İsim Analizi": { icon: Sparkles, color: "purple" },
+      "Doğum Tarihi Analizi": { icon: Sparkles, color: "green" },
+      "Yaşam Döngüleri": { icon: Zap, color: "orange" },
+      "Ruh Arzusu Rakamı": { icon: Heart, color: "pink" },
+      "Kişisel Rakam": { icon: User, color: "indigo" },
+      "Olgunluk Rakamı": { icon: Sparkles, color: "teal" },
+      "Köprü Rakamları": { icon: Zap, color: "amber" },
+      "Kişilik Rakamı": { icon: User, color: "cyan" },
+      "Güçlü ve Zayıf Yönler": { icon: Sparkles, color: "rose" },
+      "Kariyer ve Yetenekler": { icon: Zap, color: "violet" },
+      "İlişkiler ve Uyum": { icon: Heart, color: "red" },
+      "Sağlık ve Yaşam Enerjisi": { icon: Heart, color: "emerald" },
+    };
+
+    const colorGradients: Record<string, string> = {
+      blue: "from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800",
+      purple: "from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-800",
+      green: "from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800",
+      orange: "from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-800",
+      pink: "from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 border-pink-200 dark:border-pink-800",
+      indigo: "from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 border-indigo-200 dark:border-indigo-800",
+      teal: "from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-800/20 border-teal-200 dark:border-teal-800",
+      amber: "from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-amber-200 dark:border-amber-800",
+      cyan: "from-cyan-50 to-cyan-100 dark:from-cyan-900/20 dark:to-cyan-800/20 border-cyan-200 dark:border-cyan-800",
+      rose: "from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-800/20 border-rose-200 dark:border-rose-800",
+      violet: "from-violet-50 to-violet-100 dark:from-violet-900/20 dark:to-violet-800/20 border-violet-200 dark:border-violet-800",
+      red: "from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-800",
+      emerald: "from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 border-emerald-200 dark:border-emerald-800",
+    };
+
+    return (
+      <div className="space-y-3 sm:space-y-4">
+        {result.overall_summary && (
+          <Card className="p-3 sm:p-4 bg-gradient-to-br from-purple-50 via-background to-background dark:from-purple-900/20 border border-purple-200 dark:border-purple-800">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 sm:p-2 bg-gradient-to-br from-purple-600 to-purple-800 rounded-full flex-shrink-0">
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-purple-900 dark:text-purple-100">
+                  Genel Değerlendirme
+                </h3>
+              </div>
+              <p className="text-xs sm:text-sm leading-relaxed text-foreground whitespace-pre-wrap">
+                {result.overall_summary}
+              </p>
+            </div>
+          </Card>
+        )}
+
+        {result.topics && Object.entries(result.topics).map(([topicName, topicData]: [string, any]) => {
+          const topicConfig = topicIcons[topicName] || { icon: Sparkles, color: "blue" };
+          const Icon = topicConfig.icon;
+          const gradient = colorGradients[topicConfig.color];
+
+          return (
+            <Card key={topicName} className={`p-2.5 sm:p-3 bg-gradient-to-r ${gradient}`}>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`p-1.5 rounded-full bg-gradient-to-br from-${topicConfig.color}-600 to-${topicConfig.color}-800`}>
+                    <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                  </div>
+                  <h4 className="text-xs sm:text-sm font-semibold text-foreground">
+                    {topicName}
+                  </h4>
+                </div>
+                <p className="text-xs sm:text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
+                  {topicData.explanation}
+                </p>
+                <div className="pt-2 border-t border-border">
+                  <ShareResultButton
+                    title={`Numeroloji - ${topicName}`}
+                    content={formatShareContent(topicName, topicData.explanation)}
+                    size="sm"
+                    variant="ghost"
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // For other analysis types (handwriting) - use generic display
   const renderAnalysisSection = (data: any, depth: number = 0): JSX.Element[] => {
     const elements: JSX.Element[] = [];
     
