@@ -18,6 +18,7 @@ interface ShareResultButtonProps {
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm" | "lg" | "icon";
   className?: string;
+  contentRef?: React.RefObject<HTMLDivElement>;
 }
 
 export const ShareResultButton = ({ 
@@ -27,7 +28,8 @@ export const ShareResultButton = ({
   analysisType,
   variant = "outline", 
   size = "sm",
-  className = ""
+  className = "",
+  contentRef
 }: ShareResultButtonProps) => {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [friends, setFriends] = useState<any[]>([]);
@@ -168,56 +170,94 @@ export const ShareResultButton = ({
 
   const handlePDFDownload = async () => {
     try {
-      // Create a temporary div for PDF content
-      const tempDiv = document.createElement('div');
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.left = '-9999px';
-      tempDiv.style.width = '800px';
-      tempDiv.style.padding = '40px';
-      tempDiv.style.backgroundColor = 'white';
-      tempDiv.style.color = 'black';
-      tempDiv.innerHTML = `
-        <div style="font-family: Arial, sans-serif;">
-          <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #1a1a1a;">${title}</h1>
-          <div style="font-size: 14px; line-height: 1.8; white-space: pre-wrap; color: #333;">${content}</div>
-        </div>
-      `;
+      let elementToCapture: HTMLElement;
       
-      document.body.appendChild(tempDiv);
-      
-      // Generate canvas from the div
-      const canvas = await html2canvas(tempDiv, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        logging: false,
-      });
-      
-      // Remove temporary div
-      document.body.removeChild(tempDiv);
-      
-      // Create PDF
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      let heightLeft = imgHeight;
-      let position = 0;
-      
-      // Add image to PDF (handle multiple pages if needed)
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-      
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
+      // If contentRef is provided, use the actual UI element
+      if (contentRef?.current) {
+        elementToCapture = contentRef.current;
+        
+        // Generate canvas from the actual UI
+        const canvas = await html2canvas(elementToCapture, {
+          scale: 2,
+          backgroundColor: null,
+          logging: false,
+          useCORS: true,
+          scrollY: -window.scrollY,
+          scrollX: -window.scrollX,
+          windowWidth: elementToCapture.scrollWidth,
+          windowHeight: elementToCapture.scrollHeight,
+        });
+        
+        // Create PDF
+        const imgWidth = 210; // A4 width in mm
+        const pageHeight = 297; // A4 height in mm
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        // Add image to PDF (handle multiple pages if needed)
         pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
+        
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+        
+        // Download PDF
+        const fileName = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
+        pdf.save(fileName);
+      } else {
+        // Fallback to old method (text-only) for backward compatibility
+        const tempDiv = document.createElement('div');
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        tempDiv.style.width = '800px';
+        tempDiv.style.padding = '40px';
+        tempDiv.style.backgroundColor = 'white';
+        tempDiv.style.color = 'black';
+        tempDiv.innerHTML = `
+          <div style="font-family: Arial, sans-serif;">
+            <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #1a1a1a;">${title}</h1>
+            <div style="font-size: 14px; line-height: 1.8; white-space: pre-wrap; color: #333;">${content}</div>
+          </div>
+        `;
+        
+        document.body.appendChild(tempDiv);
+        
+        const canvas = await html2canvas(tempDiv, {
+          scale: 2,
+          backgroundColor: '#ffffff',
+          logging: false,
+        });
+        
+        document.body.removeChild(tempDiv);
+        
+        const imgWidth = 210;
+        const pageHeight = 297;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+        
+        const fileName = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
+        pdf.save(fileName);
       }
-      
-      // Download PDF
-      const fileName = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
-      pdf.save(fileName);
       
       toast({
         title: "Başarılı",

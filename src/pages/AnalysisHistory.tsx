@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { CompactHeader } from "@/components/CompactHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,6 +49,7 @@ export default function AnalysisHistory() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [selectedAnalysis, setSelectedAnalysis] = useState<Analysis | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const analysisContentRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -392,8 +393,109 @@ export default function AnalysisHistory() {
 
   const formatAnalysisContent = (analysis: Analysis): string => {
     const title = analysis.title;
-    const summary = analysis.summary;
-    return `📊 **${title}**\n\n${summary}\n\n[Analiz ID: ${analysis.id}]\n[Analiz Türü: ${analysis.type}]`;
+    let content = `📊 *${title}*\n\n`;
+    
+    if (!analysis.result) {
+      return content + analysis.summary;
+    }
+
+    const result = analysis.result;
+
+    // Format based on analysis type
+    switch(analysis.type) {
+      case "tarot":
+        if (result.overall) content += `🌟 *Özet*\n${result.overall}\n\n`;
+        if (result.cards?.length > 0) {
+          content += `🃏 *Kartlar*\n`;
+          result.cards.forEach((card: any, i: number) => {
+            content += `${i + 1}. ${card.interpretation}\n`;
+          });
+          content += "\n";
+        }
+        if (result.advice) content += `💡 *Tavsiye*\n${result.advice}\n\n`;
+        if (result.warnings) content += `⚠️ *Dikkat*\n${result.warnings}\n`;
+        break;
+
+      case "coffee_fortune":
+        if (result.overall) content += `☕ *Özet*\n${result.overall}\n\n`;
+        if (result.love) content += `💖 *Aşk*\n${result.love}\n\n`;
+        if (result.career) content += `💼 *Kariyer*\n${result.career}\n\n`;
+        if (result.finance) content += `💰 *Finans*\n${result.finance}\n\n`;
+        if (result.health) content += `🏥 *Sağlık*\n${result.health}\n\n`;
+        if (result.future) content += `🔮 *Gelecek*\n${result.future}\n`;
+        break;
+
+      case "dream":
+        if (result.overall) content += `🌙 *Özet*\n${result.overall}\n\n`;
+        if (result.psychological) content += `🧠 *Psikolojik*\n${result.psychological}\n\n`;
+        if (result.spiritual) content += `✨ *Manevi*\n${result.spiritual}\n\n`;
+        if (result.future_signs) content += `🔮 *Gelecek*\n${result.future_signs}\n\n`;
+        if (result.advice) content += `💡 *Tavsiye*\n${result.advice}\n`;
+        break;
+
+      case "palmistry":
+        if (result.overall) content += `🖐️ *Özet*\n${result.overall}\n\n`;
+        if (result.life_line) content += `❤️ *Hayat Çizgisi*\n${result.life_line}\n\n`;
+        if (result.head_line) content += `🧠 *Akıl Çizgisi*\n${result.head_line}\n\n`;
+        if (result.heart_line) content += `💝 *Kalp Çizgisi*\n${result.heart_line}\n\n`;
+        if (result.personality) content += `👤 *Kişilik*\n${result.personality}\n`;
+        break;
+
+      case "daily_horoscope":
+        if (result.genel) content += `⭐ *Genel*\n${result.genel}\n\n`;
+        if (result.ask) content += `💖 *Aşk*\n${result.ask}\n\n`;
+        if (result.kariyer) content += `💼 *Kariyer*\n${result.kariyer}\n\n`;
+        if (result.para) content += `💰 *Para*\n${result.para}\n\n`;
+        if (result.saglik) content += `🏥 *Sağlık*\n${result.saglik}\n`;
+        break;
+
+      case "compatibility":
+        if (result.summary) content += `💑 *Özet*\n${result.summary}\n\n`;
+        if (result.overall_score) content += `📊 *Uyumluluk Skoru*: ${result.overall_score}/100\n\n`;
+        if (result.areas?.length > 0) {
+          content += `🔍 *Uyumluluk Alanları*\n`;
+          result.areas.forEach((area: any) => {
+            content += `\n*${area.name}* (${area.compatibilityScore}/100)\n`;
+            content += `Güçlü Yönler: ${area.strengths}\n`;
+            if (area.recommendations) content += `Tavsiyeler: ${area.recommendations}\n`;
+          });
+        }
+        break;
+
+      case "birth_chart":
+        if (result.genel_degerlendirme) content += `🌟 *Genel Değerlendirme*\n${result.genel_degerlendirme}\n\n`;
+        if (result.planetary_positions?.length > 0) {
+          content += `🪐 *Gezegen Konumları*\n`;
+          result.planetary_positions.forEach((p: any) => {
+            content += `${p.planet}: ${p.sign} (${p.degree}°)\n`;
+          });
+          content += "\n";
+        }
+        break;
+
+      case "numerology":
+        if (result.genel_degerlendirme) content += `🔢 *Genel*\n${result.genel_degerlendirme}\n\n`;
+        
+        const topics = [
+          { key: "kader_rakami", label: "Kader Rakamı" },
+          { key: "ruh_arzusu_rakami", label: "Ruh Arzusu" },
+          { key: "kisilik_rakami", label: "Kişilik Rakamı" },
+          { key: "dogum_gunu_rakami", label: "Doğum Günü" },
+          { key: "olgunluk_rakami", label: "Olgunluk Rakamı" }
+        ];
+
+        topics.forEach(topic => {
+          if (result[topic.key]) {
+            content += `✨ *${topic.label}*\n${result[topic.key]}\n\n`;
+          }
+        });
+        break;
+
+      default:
+        content += analysis.summary;
+    }
+
+    return content;
   };
 
   return (
@@ -576,12 +678,14 @@ export default function AnalysisHistory() {
           </DialogHeader>
           
           <div className="flex-1 overflow-y-auto pr-2">
-            {selectedAnalysis && selectedAnalysis.result && (
-              <AnalysisDetailView
-                analysisType={selectedAnalysis.type}
-                result={selectedAnalysis.result}
-              />
-            )}
+            <div ref={analysisContentRef}>
+              {selectedAnalysis && selectedAnalysis.result && (
+                <AnalysisDetailView
+                  analysisType={selectedAnalysis.type}
+                  result={selectedAnalysis.result}
+                />
+              )}
+            </div>
           </div>
 
           <div className="flex-shrink-0 pt-4 border-t mt-4 flex gap-2">
@@ -590,6 +694,7 @@ export default function AnalysisHistory() {
               title={selectedAnalysis?.title || ""}
               analysisId={selectedAnalysis?.id}
               analysisType={selectedAnalysis?.type}
+              contentRef={analysisContentRef}
               variant="default"
               size="default"
               className="flex-1"
