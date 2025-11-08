@@ -204,14 +204,16 @@ export const AlertSettings = () => {
       </div>
 
       <Tabs defaultValue="settings" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="settings">Ayarlar</TabsTrigger>
-          <TabsTrigger value="analytics">Analitik</TabsTrigger>
-          <TabsTrigger value="snooze">Sessizleştirme</TabsTrigger>
-          <TabsTrigger value="escalation">Eskalasyon</TabsTrigger>
-          <TabsTrigger value="cron">Cron Jobs</TabsTrigger>
-          <TabsTrigger value="test">Test</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto pb-2 mb-4">
+          <TabsList className="inline-flex w-auto min-w-full lg:grid lg:w-full lg:grid-cols-6 bg-card">
+            <TabsTrigger value="settings" className="flex-shrink-0 px-4 py-2.5 whitespace-nowrap">Ayarlar</TabsTrigger>
+            <TabsTrigger value="analytics" className="flex-shrink-0 px-4 py-2.5 whitespace-nowrap">Analitik</TabsTrigger>
+            <TabsTrigger value="snooze" className="flex-shrink-0 px-4 py-2.5 whitespace-nowrap">Sessizleştirme</TabsTrigger>
+            <TabsTrigger value="escalation" className="flex-shrink-0 px-4 py-2.5 whitespace-nowrap">Eskalasyon</TabsTrigger>
+            <TabsTrigger value="cron" className="flex-shrink-0 px-4 py-2.5 whitespace-nowrap">Cron Jobs</TabsTrigger>
+            <TabsTrigger value="test" className="flex-shrink-0 px-4 py-2.5 whitespace-nowrap">Test</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="settings" className="space-y-6">
           <div className="flex gap-2">
