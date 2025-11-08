@@ -22,6 +22,7 @@ import { ThemeCustomizationPanel } from "@/components/ThemeCustomizationPanel";
 import { NotificationPreferences } from "@/components/NotificationPreferences";
 import { PermissionSettings } from "@/components/PermissionSettings";
 import { OfflineCacheStatus } from "@/components/OfflineCacheStatus";
+import { PushNotificationSettings } from "@/components/PushNotificationSettings";
 
 const Settings = () => {
   const [profile, setProfile] = useState({
@@ -813,20 +814,24 @@ const Settings = () => {
           </TabsContent>
 
           <TabsContent value="notifications">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="w-5 h-5" />
-                  Bildirim Tercihleri
-                </CardTitle>
-                <CardDescription>
-                  Almak istediğiniz bildirim türlerini yönetin
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <NotificationPreferences />
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              <PushNotificationSettings />
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bell className="w-5 h-5" />
+                    Bildirim Tercihleri
+                  </CardTitle>
+                  <CardDescription>
+                    Almak istediğiniz bildirim türlerini yönetin
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <NotificationPreferences />
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="permissions">
