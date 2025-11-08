@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Clock, Pause, Play, Trash2, Plus, RefreshCw } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { CronJobHistory } from "./CronJobHistory";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface CronJob {
   jobid: number;
@@ -132,18 +134,24 @@ export const CronJobManager = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-xl font-semibold flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Cron Job Yönetimi
-          </h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Zamanlanmış görevleri yönetin ve izleyin
-          </p>
-        </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+    <Tabs defaultValue="jobs" className="space-y-6">
+      <TabsList>
+        <TabsTrigger value="jobs">Aktif Job'lar</TabsTrigger>
+        <TabsTrigger value="history">Çalışma Geçmişi</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="jobs" className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-semibold flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Cron Job Yönetimi
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Zamanlanmış görevleri yönetin ve izleyin
+            </p>
+          </div>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -347,6 +355,11 @@ export const CronJobManager = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </TabsContent>
+
+      <TabsContent value="history">
+        <CronJobHistory />
+      </TabsContent>
+    </Tabs>
   );
 };

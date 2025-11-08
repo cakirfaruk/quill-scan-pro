@@ -667,6 +667,45 @@ export type Database = {
         }
         Relationships: []
       }
+      cron_job_logs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          details: Json | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          job_id: number | null
+          job_name: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          job_id?: number | null
+          job_name: string
+          started_at?: string
+          status: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          job_id?: number | null
+          job_name?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       daily_horoscopes: {
         Row: {
           created_at: string
