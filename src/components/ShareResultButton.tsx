@@ -172,12 +172,17 @@ export const ShareResultButton = ({
     try {
       // If contentRef is provided, use the actual UI element with clone method
       if (contentRef?.current) {
+        toast({
+          title: "PDF Oluşturuluyor",
+          description: "Lütfen bekleyin...",
+        });
+
         const originalElement = contentRef.current;
         
-        // Clone the element to avoid affecting the UI
+        // Clone the element deeply
         const clonedElement = originalElement.cloneNode(true) as HTMLElement;
         
-        // Create temporary off-screen container with no height restrictions
+        // Create temporary off-screen container with proper styling
         const tempContainer = document.createElement('div');
         tempContainer.style.position = 'absolute';
         tempContainer.style.left = '-9999px';
@@ -185,31 +190,132 @@ export const ShareResultButton = ({
         tempContainer.style.width = '800px';
         tempContainer.style.maxHeight = 'none';
         tempContainer.style.overflow = 'visible';
-        tempContainer.style.padding = '20px';
+        tempContainer.style.padding = '32px';
         tempContainer.style.backgroundColor = 'white';
+        tempContainer.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+        
+        // Apply styles to the cloned element to ensure everything is visible
+        clonedElement.style.maxHeight = 'none';
+        clonedElement.style.overflow = 'visible';
+        clonedElement.style.height = 'auto';
+        clonedElement.style.display = 'block';
+        
+        // Expand and fix all content in the clone
+        const expandAllContent = (element: HTMLElement) => {
+          // Find and expand all collapsed elements (Radix UI components)
+          const collapsedElements = element.querySelectorAll('[data-state="closed"]');
+          collapsedElements.forEach((el) => {
+            (el as HTMLElement).setAttribute('data-state', 'open');
+            (el as HTMLElement).style.display = 'block';
+            (el as HTMLElement).style.visibility = 'visible';
+            (el as HTMLElement).style.opacity = '1';
+          });
+          
+          // Find all elements with max-height and remove the restriction
+          const allElements = element.querySelectorAll('*');
+          allElements.forEach((el) => {
+            const htmlEl = el as HTMLElement;
+            const computedStyle = window.getComputedStyle(htmlEl);
+            
+            // Remove height restrictions
+            if (computedStyle.maxHeight && computedStyle.maxHeight !== 'none') {
+              htmlEl.style.maxHeight = 'none';
+            }
+            if (computedStyle.overflow === 'hidden' || computedStyle.overflow === 'auto' || computedStyle.overflow === 'scroll') {
+              htmlEl.style.overflow = 'visible';
+            }
+            
+            // Remove any transforms that might hide content
+            if (computedStyle.transform !== 'none') {
+              htmlEl.style.transform = 'none';
+            }
+            
+            // Ensure visibility
+            if (computedStyle.display === 'none') {
+              htmlEl.style.display = 'block';
+            }
+            if (computedStyle.visibility === 'hidden') {
+              htmlEl.style.visibility = 'visible';
+            }
+            if (computedStyle.opacity === '0') {
+              htmlEl.style.opacity = '1';
+            }
+          });
+          
+          // Find all hidden elements by class and make them visible
+          const hiddenByClass = element.querySelectorAll('.hidden, [aria-hidden="true"]');
+          hiddenByClass.forEach((el) => {
+            (el as HTMLElement).style.display = 'block';
+            (el as HTMLElement).classList.remove('hidden');
+            (el as HTMLElement).removeAttribute('aria-hidden');
+          });
+          
+          // Expand all details/summary elements
+          const detailsElements = element.querySelectorAll('details');
+          detailsElements.forEach((el) => {
+            el.setAttribute('open', 'true');
+          });
+
+          // Remove all share buttons from the PDF
+          const shareButtons = element.querySelectorAll('button');
+          shareButtons.forEach((button) => {
+            if (button.textContent?.includes('Paylaş') || button.querySelector('svg')) {
+              button.remove();
+            }
+          });
+        };
+        
+        // Apply expansions to cloned element
+        expandAllContent(clonedElement);
         
         // Append cloned element to temp container
         tempContainer.appendChild(clonedElement);
         document.body.appendChild(tempContainer);
         
-        // Small delay to ensure rendering is complete
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for all images and fonts to load
+        const images = tempContainer.querySelectorAll('img');
+        const imagePromises = Array.from(images).map((img) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+        });
         
-        // Capture the full content (all scrollable area is now visible)
+        await Promise.all(imagePromises);
+        await document.fonts.ready;
+        
+        // Wait for rendering to complete
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        // Get the actual dimensions of the content
+        const contentHeight = tempContainer.scrollHeight;
+        const contentWidth = tempContainer.scrollWidth;
+        
+        // Capture the full content with high quality
         const canvas = await html2canvas(tempContainer, {
           scale: 2,
           backgroundColor: '#ffffff',
           logging: false,
           useCORS: true,
           allowTaint: true,
-          width: tempContainer.scrollWidth,
-          height: tempContainer.scrollHeight,
+          width: contentWidth,
+          height: contentHeight,
+          windowWidth: contentWidth,
+          windowHeight: contentHeight,
+          onclone: (clonedDoc) => {
+            // Final cleanup in the cloned document
+            const clonedContainer = clonedDoc.querySelector('[style*="-9999px"]');
+            if (clonedContainer) {
+              (clonedContainer as HTMLElement).style.left = '0';
+            }
+          }
         });
         
         // Clean up temporary container
         document.body.removeChild(tempContainer);
         
-        // Generate multi-page PDF
+        // Generate multi-page PDF with proper dimensions
         const imgWidth = 210; // A4 width in mm
         const pageHeight = 297; // A4 height in mm
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
@@ -220,7 +326,7 @@ export const ShareResultButton = ({
         
         // First page
         pdf.addImage(
-          canvas.toDataURL('image/png'), 
+          canvas.toDataURL('image/png', 1.0), 
           'PNG', 
           0, 
           position, 
@@ -234,7 +340,7 @@ export const ShareResultButton = ({
           position = heightLeft - imgHeight;
           pdf.addPage();
           pdf.addImage(
-            canvas.toDataURL('image/png'), 
+            canvas.toDataURL('image/png', 1.0), 
             'PNG', 
             0, 
             position, 
@@ -247,6 +353,11 @@ export const ShareResultButton = ({
         // Download PDF
         const fileName = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
         pdf.save(fileName);
+        
+        toast({
+          title: "Başarılı",
+          description: "PDF başarıyla indirildi",
+        });
       } else {
         // Fallback to text-only method
         const tempDiv = document.createElement('div');
