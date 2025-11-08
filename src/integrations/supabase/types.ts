@@ -677,6 +677,10 @@ export type Database = {
           id: string
           job_id: number | null
           job_name: string
+          max_retries: number | null
+          next_retry_at: string | null
+          retry_count: number | null
+          retry_delay_seconds: number | null
           started_at: string
           status: string
         }
@@ -689,6 +693,10 @@ export type Database = {
           id?: string
           job_id?: number | null
           job_name: string
+          max_retries?: number | null
+          next_retry_at?: string | null
+          retry_count?: number | null
+          retry_delay_seconds?: number | null
           started_at?: string
           status: string
         }
@@ -701,6 +709,10 @@ export type Database = {
           id?: string
           job_id?: number | null
           job_name?: string
+          max_retries?: number | null
+          next_retry_at?: string | null
+          retry_count?: number | null
+          retry_delay_seconds?: number | null
           started_at?: string
           status?: string
         }

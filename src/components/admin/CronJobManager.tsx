@@ -12,6 +12,7 @@ import { Clock, Pause, Play, Trash2, Plus, RefreshCw } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { CronJobHistory } from "./CronJobHistory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RetrySettings } from "./RetrySettings";
 
 interface CronJob {
   jobid: number;
@@ -138,6 +139,7 @@ export const CronJobManager = () => {
       <TabsList>
         <TabsTrigger value="jobs">Aktif Job'lar</TabsTrigger>
         <TabsTrigger value="history">Çalışma Geçmişi</TabsTrigger>
+        <TabsTrigger value="retry">Retry Ayarları</TabsTrigger>
       </TabsList>
 
       <TabsContent value="jobs" className="space-y-6">
@@ -359,6 +361,10 @@ export const CronJobManager = () => {
 
       <TabsContent value="history">
         <CronJobHistory />
+      </TabsContent>
+
+      <TabsContent value="retry">
+        <RetrySettings />
       </TabsContent>
     </Tabs>
   );

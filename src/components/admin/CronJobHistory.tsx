@@ -18,6 +18,10 @@ interface CronJobLog {
   error_message: string | null;
   details: Record<string, any>;
   created_at: string;
+  retry_count: number;
+  max_retries: number;
+  next_retry_at: string | null;
+  retry_delay_seconds: number;
 }
 
 interface CronJobHistoryProps {
@@ -161,6 +165,29 @@ export const CronJobHistory = ({ jobName }: CronJobHistoryProps) => {
                               <div>
                                 <span className="text-muted-foreground">Süre:</span>
                                 <div className="font-medium">{formatDuration(log.duration_ms)}</div>
+                              </div>
+                            )}
+
+                            {log.status === 'failed' && log.retry_count < log.max_retries && (
+                              <div className="col-span-2">
+                                <span className="text-muted-foreground">Yeniden Deneme:</span>
+                                <div className="font-medium">
+                                  {log.retry_count} / {log.max_retries}
+                                  {log.next_retry_at && (
+                                    <span className="text-xs text-muted-foreground ml-2">
+                                      (Sonraki: {formatDistanceToNow(new Date(log.next_retry_at), {
+                                        addSuffix: true,
+                                        locale: tr,
+                                      })})
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {log.status === 'failed' && log.retry_count >= log.max_retries && (
+                              <div className="col-span-2">
+                                <Badge variant="destructive">Maksimum deneme sayısına ulaşıldı</Badge>
                               </div>
                             )}
                           </div>
