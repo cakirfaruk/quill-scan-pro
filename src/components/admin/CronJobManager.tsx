@@ -14,6 +14,7 @@ import { CronJobHistory } from "./CronJobHistory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RetrySettings } from "./RetrySettings";
 import { AutoScaleSettings } from "./AutoScaleSettings";
+import { CronNotificationSettings } from "./CronNotificationSettings";
 
 interface CronJob {
   jobid: number;
@@ -142,6 +143,7 @@ export const CronJobManager = () => {
         <TabsTrigger value="history">Çalışma Geçmişi</TabsTrigger>
         <TabsTrigger value="retry">Retry Ayarları</TabsTrigger>
         <TabsTrigger value="autoscale">Otomatik Ölçeklendirme</TabsTrigger>
+        <TabsTrigger value="notifications">Bildirimler</TabsTrigger>
       </TabsList>
 
       <TabsContent value="jobs" className="space-y-6">
@@ -371,6 +373,10 @@ export const CronJobManager = () => {
 
       <TabsContent value="autoscale">
         <AutoScaleSettings />
+      </TabsContent>
+
+      <TabsContent value="notifications">
+        <CronNotificationSettings />
       </TabsContent>
     </Tabs>
   );
