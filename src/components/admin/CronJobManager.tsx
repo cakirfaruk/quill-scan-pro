@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CronJobHistory } from "./CronJobHistory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RetrySettings } from "./RetrySettings";
+import { AutoScaleSettings } from "./AutoScaleSettings";
 
 interface CronJob {
   jobid: number;
@@ -140,6 +141,7 @@ export const CronJobManager = () => {
         <TabsTrigger value="jobs">Aktif Job'lar</TabsTrigger>
         <TabsTrigger value="history">Çalışma Geçmişi</TabsTrigger>
         <TabsTrigger value="retry">Retry Ayarları</TabsTrigger>
+        <TabsTrigger value="autoscale">Otomatik Ölçeklendirme</TabsTrigger>
       </TabsList>
 
       <TabsContent value="jobs" className="space-y-6">
@@ -365,6 +367,10 @@ export const CronJobManager = () => {
 
       <TabsContent value="retry">
         <RetrySettings />
+      </TabsContent>
+
+      <TabsContent value="autoscale">
+        <AutoScaleSettings />
       </TabsContent>
     </Tabs>
   );

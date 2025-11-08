@@ -718,6 +718,60 @@ export type Database = {
         }
         Relationships: []
       }
+      cron_jobs: {
+        Row: {
+          auto_scale_enabled: boolean | null
+          created_at: string | null
+          current_interval_seconds: number | null
+          description: string | null
+          enabled: boolean | null
+          function_name: string
+          id: number
+          last_scale_check_at: string | null
+          max_interval_seconds: number | null
+          min_interval_seconds: number | null
+          name: string
+          schedule: string
+          success_rate_threshold_high: number | null
+          success_rate_threshold_low: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_scale_enabled?: boolean | null
+          created_at?: string | null
+          current_interval_seconds?: number | null
+          description?: string | null
+          enabled?: boolean | null
+          function_name: string
+          id?: number
+          last_scale_check_at?: string | null
+          max_interval_seconds?: number | null
+          min_interval_seconds?: number | null
+          name: string
+          schedule: string
+          success_rate_threshold_high?: number | null
+          success_rate_threshold_low?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_scale_enabled?: boolean | null
+          created_at?: string | null
+          current_interval_seconds?: number | null
+          description?: string | null
+          enabled?: boolean | null
+          function_name?: string
+          id?: number
+          last_scale_check_at?: string | null
+          max_interval_seconds?: number | null
+          min_interval_seconds?: number | null
+          name?: string
+          schedule?: string
+          success_rate_threshold_high?: number | null
+          success_rate_threshold_low?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       daily_horoscopes: {
         Row: {
           created_at: string
