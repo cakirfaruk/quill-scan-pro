@@ -7,10 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Users, CreditCard, History, Loader2, Eye, Trash2 } from "lucide-react";
+import { Shield, Users, CreditCard, History, Loader2, Eye, Trash2, BarChart3, AlertTriangle, Activity } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+import { AnalyticsOverview } from "@/components/admin/AnalyticsOverview";
+import { EventsChart } from "@/components/admin/EventsChart";
+import { ErrorLogsList } from "@/components/admin/ErrorLogsList";
+import { PerformanceMetrics } from "@/components/admin/PerformanceMetrics";
+import { UserBehaviorAnalysis } from "@/components/admin/UserBehaviorAnalysis";
 import { z } from "zod";
 
 const creditSchema = z.object({
@@ -281,7 +287,7 @@ const Admin = () => {
               Admin Panel
             </h1>
             <p className="text-muted-foreground mt-1">
-              Kullanıcıları yönetin ve kredi ekleyin
+              Kullanıcıları yönetin, analytics görüntüleyin ve hataları takip edin
             </p>
           </div>
         </div>
@@ -291,7 +297,32 @@ const Admin = () => {
             <Loader2 className="w-12 h-12 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Tabs defaultValue="users" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
+              <TabsTrigger value="users" className="gap-2">
+                <Users className="w-4 h-4" />
+                Kullanıcılar
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="gap-2">
+                <BarChart3 className="w-4 h-4" />
+                Analytics
+              </TabsTrigger>
+              <TabsTrigger value="errors" className="gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                Hatalar
+              </TabsTrigger>
+              <TabsTrigger value="performance" className="gap-2">
+                <Activity className="w-4 h-4" />
+                Performans
+              </TabsTrigger>
+              <TabsTrigger value="behavior" className="gap-2">
+                <Users className="w-4 h-4" />
+                Davranış
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="users" className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Users List */}
             <Card className="p-6 lg:col-span-1">
               <div className="flex items-center gap-2 mb-4">
@@ -456,6 +487,25 @@ const Admin = () => {
               )}
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          <AnalyticsOverview />
+          <EventsChart />
+        </TabsContent>
+
+        <TabsContent value="errors" className="space-y-6">
+          <ErrorLogsList />
+        </TabsContent>
+
+        <TabsContent value="performance" className="space-y-6">
+          <PerformanceMetrics />
+        </TabsContent>
+
+        <TabsContent value="behavior" className="space-y-6">
+          <UserBehaviorAnalysis />
+        </TabsContent>
+      </Tabs>
         )}
       </main>
 
