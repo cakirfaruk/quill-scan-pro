@@ -310,7 +310,7 @@ const Admin = () => {
           </div>
         ) : (
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 relative z-10 bg-card">
               <TabsTrigger value="users" className="gap-2">
                 <Users className="w-4 h-4" />
                 Kullanıcılar

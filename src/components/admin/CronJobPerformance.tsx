@@ -190,30 +190,32 @@ export const CronJobPerformance = () => {
           <CardTitle>Başarı Oranı Trendi</CardTitle>
           <CardDescription>Son 7 günün günlük başarı oranları</CardDescription>
         </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="successRate" 
-                stroke="hsl(var(--primary))" 
-                name="Başarı Oranı (%)"
-                strokeWidth={2}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="failureRate" 
-                stroke="hsl(var(--destructive))" 
-                name="Hata Oranı (%)"
-                strokeWidth={2}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+        <CardContent className="relative">
+          <div className="relative z-0">
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={trendData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line 
+                  type="monotone" 
+                  dataKey="successRate" 
+                  stroke="hsl(var(--primary))" 
+                  name="Başarı Oranı (%)"
+                  strokeWidth={2}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="failureRate" 
+                  stroke="hsl(var(--destructive))" 
+                  name="Hata Oranı (%)"
+                  strokeWidth={2}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </CardContent>
       </Card>
 
@@ -224,16 +226,18 @@ export const CronJobPerformance = () => {
             <CardTitle>Ortalama Çalışma Süreleri</CardTitle>
             <CardDescription>Günlük ortalama süre (ms)</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="avgDuration" fill="hsl(var(--primary))" name="Ortalama Süre (ms)" />
-              </BarChart>
-            </ResponsiveContainer>
+          <CardContent className="relative">
+            <div className="relative z-0">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="avgDuration" fill="hsl(var(--primary))" name="Ortalama Süre (ms)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -243,26 +247,28 @@ export const CronJobPerformance = () => {
             <CardTitle>Durum Dağılımı</CardTitle>
             <CardDescription>Son 7 gün toplam</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={statusDistribution}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {statusDistribution?.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+          <CardContent className="relative">
+            <div className="relative z-0">
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={statusDistribution}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {statusDistribution?.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       </div>

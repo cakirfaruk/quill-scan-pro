@@ -204,22 +204,24 @@ export function AlertAnalytics() {
             <CardTitle>Alert Tipleri</CardTitle>
             <CardDescription>En çok tetiklenen alert tipleri</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={typeStats}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="type" className="text-xs" />
-                <YAxis />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "var(--radius)"
-                  }}
-                />
-                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <CardContent className="relative">
+            <div className="relative z-0">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={typeStats}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="type" className="text-xs" />
+                  <YAxis />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius)"
+                    }}
+                  />
+                  <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -229,32 +231,34 @@ export function AlertAnalytics() {
             <CardTitle>Önem Derecesi Dağılımı</CardTitle>
             <CardDescription>Alert severity seviyeleri</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={severityStats}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ severity, count }) => `${severity}: ${count}`}
-                  outerRadius={100}
-                  fill="hsl(var(--primary))"
-                  dataKey="count"
-                >
-                  {severityStats.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={SEVERITY_COLORS[index % SEVERITY_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "var(--radius)"
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+          <CardContent className="relative">
+            <div className="relative z-0">
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={severityStats}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ severity, count }) => `${severity}: ${count}`}
+                    outerRadius={100}
+                    fill="hsl(var(--primary))"
+                    dataKey="count"
+                  >
+                    {severityStats.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={SEVERITY_COLORS[index % SEVERITY_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius)"
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -264,30 +268,32 @@ export function AlertAnalytics() {
             <CardTitle>Zaman Bazlı Trend</CardTitle>
             <CardDescription>Günlük alert sayısı</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={dailyStats}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="date" className="text-xs" />
-                <YAxis />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "var(--radius)"
-                  }}
-                />
-                <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="count" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={2}
-                  dot={{ fill: "hsl(var(--primary))" }}
-                  name="Alert Sayısı"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          <CardContent className="relative">
+            <div className="relative z-0">
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={dailyStats}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="date" className="text-xs" />
+                  <YAxis />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius)"
+                    }}
+                  />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="count" 
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={2}
+                    dot={{ fill: "hsl(var(--primary))" }}
+                    name="Alert Sayısı"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
