@@ -172,79 +172,116 @@ export const CompactHeader = () => {
           </div>
         )}
 
-        {/* Desktop Navigation - Hidden on mobile */}
+        {/* Desktop Navigation - Dropdown Menu */}
         {isLoggedIn && (
-          <nav className="hidden lg:flex items-center gap-1">
-            <PreloadLink to="/explore">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`gap-2 ${location.pathname === "/explore" ? "text-primary" : ""}`}
+          <div className="hidden lg:block">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "gap-2 transition-all duration-300",
+                    isMiniMode ? "h-7 px-2" : "h-8 px-3"
+                  )}
+                >
+                  <Menu className={cn(
+                    "transition-all duration-300",
+                    isMiniMode ? "w-4 h-4" : "w-5 h-5"
+                  )} />
+                  <span className={cn(
+                    "transition-all duration-300",
+                    isMiniMode ? "text-xs" : "text-sm"
+                  )}>Menü</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent 
+                align="end" 
+                className="w-56 bg-card/95 backdrop-blur-xl border-border shadow-xl z-[100]"
               >
-                <Search className="w-4 h-4" />
-                Keşfet
-              </Button>
-            </PreloadLink>
-            <PreloadLink to="/messages">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`gap-2 ${location.pathname === "/messages" ? "text-primary" : ""}`}
-              >
-                <MessageCircle className="w-4 h-4" />
-                Mesajlar
-              </Button>
-            </PreloadLink>
-            <PreloadLink to="/match">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`gap-2 ${location.pathname === "/match" ? "text-primary" : ""}`}
-              >
-                <Heart className="w-4 h-4" />
-                Eşleşme
-              </Button>
-            </PreloadLink>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCreatePostDialogOpen(true)}
-              className="gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Oluştur
-            </Button>
-            <PreloadLink to="/reels">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`gap-2 ${location.pathname === "/reels" ? "text-primary" : ""}`}
-              >
-                <Video className="w-4 h-4" />
-                Reels
-              </Button>
-            </PreloadLink>
-            <PreloadLink to="/discovery">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`gap-2 ${location.pathname === "/discovery" ? "text-primary" : ""}`}
-              >
-                <Sparkles className="w-4 h-4" />
-                Analizler
-              </Button>
-            </PreloadLink>
-            <PreloadLink to="/analysis-history">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`gap-2 ${location.pathname === "/analysis-history" ? "text-primary" : ""}`}
-              >
-                <History className="w-4 h-4" />
-                Geçmiş
-              </Button>
-            </PreloadLink>
-          </nav>
+                <DropdownMenuLabel>Navigasyon</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                
+                <DropdownMenuItem 
+                  onClick={() => navigate("/explore")}
+                  className={cn(
+                    "gap-2 cursor-pointer",
+                    location.pathname === "/explore" && "bg-primary/10 text-primary font-medium"
+                  )}
+                >
+                  <Search className="w-4 h-4" />
+                  Keşfet
+                </DropdownMenuItem>
+
+                <DropdownMenuItem 
+                  onClick={() => navigate("/messages")}
+                  className={cn(
+                    "gap-2 cursor-pointer",
+                    location.pathname === "/messages" && "bg-primary/10 text-primary font-medium"
+                  )}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Mesajlar
+                </DropdownMenuItem>
+
+                <DropdownMenuItem 
+                  onClick={() => navigate("/match")}
+                  className={cn(
+                    "gap-2 cursor-pointer",
+                    location.pathname === "/match" && "bg-primary/10 text-primary font-medium"
+                  )}
+                >
+                  <Heart className="w-4 h-4" />
+                  Eşleşme
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem 
+                  onClick={() => setCreatePostDialogOpen(true)}
+                  className="gap-2 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  Oluştur
+                </DropdownMenuItem>
+
+                <DropdownMenuItem 
+                  onClick={() => navigate("/reels")}
+                  className={cn(
+                    "gap-2 cursor-pointer",
+                    location.pathname === "/reels" && "bg-primary/10 text-primary font-medium"
+                  )}
+                >
+                  <Video className="w-4 h-4" />
+                  Reels
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem 
+                  onClick={() => navigate("/discovery")}
+                  className={cn(
+                    "gap-2 cursor-pointer",
+                    location.pathname === "/discovery" && "bg-primary/10 text-primary font-medium"
+                  )}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Analizler
+                </DropdownMenuItem>
+
+                <DropdownMenuItem 
+                  onClick={() => navigate("/analysis-history")}
+                  className={cn(
+                    "gap-2 cursor-pointer",
+                    location.pathname === "/analysis-history" && "bg-primary/10 text-primary font-medium"
+                  )}
+                >
+                  <History className="w-4 h-4" />
+                  Geçmiş
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         )}
 
         {/* Right Section */}
