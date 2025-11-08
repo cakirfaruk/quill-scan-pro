@@ -7,6 +7,7 @@ import { ProfileHeader } from "@/components/ProfileHeader";
 import { ProfileStatsDrawer } from "@/components/ProfileStatsDrawer";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonProfile } from "@/components/SkeletonProfile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -1293,27 +1294,7 @@ const Profile = () => {
       <div className="page-container-mobile bg-gradient-subtle">
         <Header />
         <main className="container mx-auto px-4 py-4 max-w-6xl">
-          {/* Skeleton Loading */}
-          <Card className="p-4 sm:p-6 mb-4 sm:mb-6">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
-              <Skeleton className="w-24 h-24 sm:w-32 sm:h-32 rounded-full" />
-              <div className="flex-1 w-full space-y-4">
-                <Skeleton className="h-8 w-48 mx-auto sm:mx-0" />
-                <Skeleton className="h-4 w-32 mx-auto sm:mx-0" />
-                <div className="flex justify-center sm:justify-start gap-6">
-                  <Skeleton className="h-12 w-16" />
-                  <Skeleton className="h-12 w-16" />
-                  <Skeleton className="h-12 w-16" />
-                </div>
-                <Skeleton className="h-10 w-full max-w-md mx-auto sm:mx-0" />
-              </div>
-            </div>
-          </Card>
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            <Skeleton className="h-32" />
-            <Skeleton className="h-32" />
-            <Skeleton className="h-32" />
-          </div>
+          <SkeletonProfile />
         </main>
       </div>
     );

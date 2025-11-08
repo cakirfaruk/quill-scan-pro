@@ -42,6 +42,7 @@ import { useOptimisticUI } from "@/hooks/use-optimistic-ui";
 import { SyncStatusBadge } from "@/components/SyncStatusBadge";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { motion, AnimatePresence } from "framer-motion";
+import { AlertCircle } from "lucide-react";
 
 interface Post {
   id: string;
@@ -154,6 +155,8 @@ const Feed = () => {
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [hasMorePosts, setHasMorePosts] = useState(true);
   const [activeTab, setActiveTab] = useState<"friends" | "discover">("friends");
+  const [feedError, setFeedError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   // **OPTIMIZED & ENRICHED POSTS** - useMemo ile cache'lenir
   const enrichedPosts = useMemo(() => {
@@ -294,8 +297,11 @@ const Feed = () => {
 
   const checkUserAndLoad = async (currentUserId: string) => {
     try {
+      setFeedError(null);
+      setLoading(true);
+      
       // Load user profile
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("username, profile_photo")
         .eq("user_id", currentUserId)
@@ -308,8 +314,9 @@ const Feed = () => {
       
       // **SADECE ARKADAŞLARI YÜKLEyalım** - Postlar optimized hook ile gelecek
       await loadFriends(currentUserId);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading feed:", error);
+      setFeedError(error.message || "Bir hata oluştu");
       
       // If offline, show cached content
       if (!isOnline && cachedPosts.length > 0) {
@@ -320,7 +327,7 @@ const Feed = () => {
       } else {
         toast({
           title: "Hata",
-          description: "Sayfa yüklenirken bir hata oluştu",
+          description: error.message || "Sayfa yüklenirken bir hata oluştu",
           variant: "destructive"
         });
       }
@@ -792,7 +799,34 @@ const Feed = () => {
           </ScrollReveal>
         )}
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "friends" | "discover")} className="w-full space-y-4 sm:space-y-6">
+        <div className="space-y-4">
+          {/* Loading State */}
+          {(loading || feedLoading) && enrichedPosts.length === 0 ? (
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <SkeletonPost key={i} />
+              ))}
+            </div>
+          ) : feedError ? (
+            /* Error State */
+            <Card className="p-8 text-center">
+              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
+              <h3 className="text-lg font-semibold mb-2">Bir Hata Oluştu</h3>
+              <p className="text-muted-foreground mb-4">{feedError}</p>
+              <Button 
+                onClick={() => {
+                  setFeedError(null);
+                  setRetryCount(prev => prev + 1);
+                  checkUserAndLoad(userId);
+                }}
+                variant="outline"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Tekrar Dene
+              </Button>
+            </Card>
+          ) : (
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "friends" | "discover")} className="w-full space-y-4 sm:space-y-6">
           <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6">
             <TabsTrigger value="friends" className="text-sm sm:text-base">Arkadaşlarım</TabsTrigger>
             <TabsTrigger value="discover" className="text-sm sm:text-base">Keşfet</TabsTrigger>
@@ -882,12 +916,14 @@ const Feed = () => {
                     <p className="text-center text-sm text-muted-foreground py-4">
                       Tüm gönderiler yüklendi
                     </p>
-                  )}
-                </div>
-              </>
-            )}
-          </TabsContent>
-        </Tabs>
+                   )}
+                 </div>
+               </>
+              )}
+            </TabsContent>
+          </Tabs>
+          )}
+        </div>
       </div>
 
       {/* Comments Dialog/Drawer */}

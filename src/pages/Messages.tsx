@@ -903,14 +903,24 @@ const Messages = () => {
         }
       }
       
-      return { userId: user.id };
+      return null;
     } catch (error: any) {
       console.error("Error loading conversations:", error);
-      toast({
-        title: "Hata",
-        description: "Konuşmalar yüklenemedi.",
-        variant: "destructive",
-      });
+      
+      // If offline, show cached conversations
+      if (!isOnline && cachedConversations.length > 0) {
+        setConversations(cachedConversations);
+        toast({
+          title: "Çevrimdışı Mod",
+          description: `${cachedConversations.length} önbelleğe alınmış konuşma gösteriliyor`,
+        });
+      } else {
+        toast({
+          title: "Hata",
+          description: error.message || "Konuşmalar yüklenemedi",
+          variant: "destructive",
+        });
+      }
       return null;
     } finally {
       setIsLoading(false);
