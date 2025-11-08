@@ -15,6 +15,7 @@ import { Bell, Plus, Trash2, Mail, MessageSquare } from "lucide-react";
 export const AlertSettings = () => {
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
   const [newAlert, setNewAlert] = useState({
     name: '',
     type: 'email' as 'email' | 'slack',
@@ -117,6 +118,29 @@ export const AlertSettings = () => {
     },
   });
 
+  const testAlert = async () => {
+    setIsTesting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-alert', {
+        body: {
+          type: 'test',
+          severity: 'critical',
+          message: 'Bu bir test mesajıdır',
+          details: { timestamp: new Date().toISOString() },
+        },
+      });
+
+      if (error) throw error;
+      
+      toast.success('Test alert gönderildi! E-postanızı kontrol edin.');
+      queryClient.invalidateQueries({ queryKey: ['alert-logs'] });
+    } catch (error: any) {
+      toast.error('Test alert gönderilemedi: ' + error.message);
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
   const resetNewAlert = () => {
     setNewAlert({
       name: '',
@@ -162,141 +186,146 @@ export const AlertSettings = () => {
             Kritik hatalar ve performans düşüşleri için bildirimler
           </p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Yeni Alert
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Yeni Alert Oluştur</DialogTitle>
-              <DialogDescription>
-                Kritik durumlar için otomatik bildirim sistemi
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Alert Adı</Label>
-                <Input
-                  id="name"
-                  value={newAlert.name}
-                  onChange={(e) => setNewAlert({ ...newAlert, name: e.target.value })}
-                  placeholder="Örn: Kritik Hatalar"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="type">Bildirim Tipi</Label>
-                <Select
-                  value={newAlert.type}
-                  onValueChange={(value: 'email' | 'slack') => setNewAlert({ ...newAlert, type: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="email">
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4" />
-                        E-posta
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="slack">
-                      <div className="flex items-center gap-2">
-                        <MessageSquare className="h-4 w-4" />
-                        Slack
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {newAlert.type === 'email' && (
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={testAlert} disabled={isTesting}>
+            {isTesting ? 'Gönderiliyor...' : 'Test Alert Gönder'}
+          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Yeni Alert
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Yeni Alert Oluştur</DialogTitle>
+                <DialogDescription>
+                  Kritik durumlar için otomatik bildirim sistemi
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Alıcılar</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={newAlert.recipientInput}
-                      onChange={(e) => setNewAlert({ ...newAlert, recipientInput: e.target.value })}
-                      placeholder="E-posta adresi"
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addRecipient())}
-                    />
-                    <Button type="button" onClick={addRecipient}>Ekle</Button>
-                  </div>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {newAlert.recipients.map((email, index) => (
-                      <Badge key={index} variant="secondary" className="gap-1">
-                        {email}
-                        <button onClick={() => removeRecipient(index)} className="ml-1">×</button>
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {newAlert.type === 'slack' && (
-                <div className="space-y-2">
-                  <Label htmlFor="webhook">Slack Webhook URL</Label>
+                  <Label htmlFor="name">Alert Adı</Label>
                   <Input
-                    id="webhook"
-                    value={newAlert.slack_webhook_url}
-                    onChange={(e) => setNewAlert({ ...newAlert, slack_webhook_url: e.target.value })}
-                    placeholder="https://hooks.slack.com/services/..."
+                    id="name"
+                    value={newAlert.name}
+                    onChange={(e) => setNewAlert({ ...newAlert, name: e.target.value })}
+                    placeholder="Örn: Kritik Hatalar"
                   />
                 </div>
-              )}
 
-              <div className="space-y-2">
-                <Label>Minimum Severity</Label>
-                <Select
-                  value={newAlert.conditions.minSeverity}
-                  onValueChange={(value) => setNewAlert({
-                    ...newAlert,
-                    conditions: { ...newAlert.conditions, minSeverity: value },
-                  })}
+                <div className="space-y-2">
+                  <Label htmlFor="type">Bildirim Tipi</Label>
+                  <Select
+                    value={newAlert.type}
+                    onValueChange={(value: 'email' | 'slack') => setNewAlert({ ...newAlert, type: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="email">
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4" />
+                          E-posta
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="slack">
+                        <div className="flex items-center gap-2">
+                          <MessageSquare className="h-4 w-4" />
+                          Slack
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {newAlert.type === 'email' && (
+                  <div className="space-y-2">
+                    <Label>Alıcılar</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={newAlert.recipientInput}
+                        onChange={(e) => setNewAlert({ ...newAlert, recipientInput: e.target.value })}
+                        placeholder="E-posta adresi"
+                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addRecipient())}
+                      />
+                      <Button type="button" onClick={addRecipient}>Ekle</Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {newAlert.recipients.map((email, index) => (
+                        <Badge key={index} variant="secondary" className="gap-1">
+                          {email}
+                          <button onClick={() => removeRecipient(index)} className="ml-1">×</button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {newAlert.type === 'slack' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="webhook">Slack Webhook URL</Label>
+                    <Input
+                      id="webhook"
+                      value={newAlert.slack_webhook_url}
+                      onChange={(e) => setNewAlert({ ...newAlert, slack_webhook_url: e.target.value })}
+                      placeholder="https://hooks.slack.com/services/..."
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label>Minimum Severity</Label>
+                  <Select
+                    value={newAlert.conditions.minSeverity}
+                    onValueChange={(value) => setNewAlert({
+                      ...newAlert,
+                      conditions: { ...newAlert.conditions, minSeverity: value },
+                    })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="critical">Critical</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="enabled"
+                    checked={newAlert.enabled}
+                    onCheckedChange={(checked) => setNewAlert({ ...newAlert, enabled: checked })}
+                  />
+                  <Label htmlFor="enabled">Aktif</Label>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  İptal
+                </Button>
+                <Button
+                  onClick={() => createAlertMutation.mutate(newAlert)}
+                  disabled={
+                    !newAlert.name ||
+                    (newAlert.type === 'email' && newAlert.recipients.length === 0) ||
+                    (newAlert.type === 'slack' && !newAlert.slack_webhook_url)
+                  }
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="critical">Critical</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="enabled"
-                  checked={newAlert.enabled}
-                  onCheckedChange={(checked) => setNewAlert({ ...newAlert, enabled: checked })}
-                />
-                <Label htmlFor="enabled">Aktif</Label>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                İptal
-              </Button>
-              <Button
-                onClick={() => createAlertMutation.mutate(newAlert)}
-                disabled={
-                  !newAlert.name ||
-                  (newAlert.type === 'email' && newAlert.recipients.length === 0) ||
-                  (newAlert.type === 'slack' && !newAlert.slack_webhook_url)
-                }
-              >
-                Oluştur
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                  Oluştur
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
