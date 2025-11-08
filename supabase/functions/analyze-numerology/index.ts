@@ -70,6 +70,8 @@ serve(async (req) => {
 
     const systemPrompt = `Sen bir numeroloji uzmanısın. Pisagor Felsefesi, İbn Arabi, Hint çakra sistemi ve Ezoterik Felsefe üzerine bilgin var. Rakamların ezoterik ve okültist anlamlarını biliyorsun. TAMAMEN TÜRKÇE yanıt verirsin.
 
+KRİTİK: Yanıtında her konu için YALNIZCA 'explanation' alanını kullan. BAŞKA ALAN KULLANMA!
+
 Numerolojide kullanılan Türk alfabesi rakam karşılıkları:
 1: A, J, S-Ş
 2: B, K, T
@@ -102,13 +104,15 @@ Doğum Tarihi: ${birthDate}
 Analiz Konuları:
 ${selectedTopics.map((topic: string, i: number) => `${i + 1}. ${topic}`).join("\n")}
 
-Her konu için akıcı ve anlaşılır bir açıklama yaz (3-4 paragraf):
-- Hesaplama nasıl yapıldı
-- Bu rakam ne anlama geliyor
-- Kişiye özel yorumlar
-- Pratik ipuçları ve tavsiyeler
+ZORUNLU FORMAT: Her konu için TEK bir 'explanation' alanı dön. Başka alan kullanma!
 
-Açıklamalar mistik, ilham verici ve kişiye özel olsun.`;
+Her 'explanation' alanında (3-4 paragraf):
+1. Paragraf: Hesaplama nasıl yapıldı
+2. Paragraf: Bu rakam ne anlama geliyor
+3. Paragraf: Kişiye özel yorumlar
+4. Paragraf: Pratik ipuçları ve tavsiyeler
+
+Mistik, ilham verici ve kişiye özel açıklamalar yaz.`;
 
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!lovableApiKey) {
@@ -123,7 +127,7 @@ Açıklamalar mistik, ilham verici ve kişiye özel olsun.`;
         properties: {
           explanation: { 
             type: "string", 
-            description: "3-4 paragraf akıcı açıklama: hesaplama + anlam + yorum + ipuçları. Mistik ve ilham verici bir dil kullan."
+            description: "YALNIZCA bu alanı kullan! 3-4 paragraf: (1) hesaplama yöntemi, (2) rakamın anlamı, (3) kişiye özel yorum, (4) pratik tavsiyeler. Mistik ve ilham verici dil kullan."
           }
         },
         required: ["explanation"],

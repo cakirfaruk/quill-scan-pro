@@ -860,6 +860,28 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
           const Icon = topicConfig.icon;
           const gradient = colorGradients[topicConfig.color];
 
+          // Helper function to get explanation (supports both old and new format)
+          const getExplanation = (data: any): string => {
+            if (!data) return "";
+            
+            // New format: single explanation field
+            if (data.explanation) {
+              return data.explanation;
+            }
+            
+            // Old format: combine multiple fields for backward compatibility
+            const parts: string[] = [];
+            if (data.calculation) parts.push(data.calculation);
+            if (data.meaning) parts.push(data.meaning);
+            if (data.personal_interpretation) parts.push(data.personal_interpretation);
+            if (data.references) parts.push(data.references);
+            
+            return parts.join("\n\n");
+          };
+
+          const explanation = getExplanation(topicData);
+          if (!explanation) return null;
+
           return (
             <Card key={topicName} className={`p-2.5 sm:p-3 bg-gradient-to-r ${gradient}`}>
               <div className="space-y-2">
@@ -872,12 +894,12 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
                   </h4>
                 </div>
                 <p className="text-xs sm:text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
-                  {topicData.explanation}
+                  {explanation}
                 </p>
                 <div className="pt-2 border-t border-border">
                   <ShareResultButton
                     title={`Numeroloji - ${topicName}`}
-                    content={formatShareContent(topicName, topicData.explanation)}
+                    content={formatShareContent(topicName, explanation)}
                     size="sm"
                     variant="ghost"
                     className="w-full"
