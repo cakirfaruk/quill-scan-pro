@@ -310,34 +310,36 @@ const Admin = () => {
           </div>
         ) : (
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 relative z-10 bg-card mb-8">
-              <TabsTrigger value="users" className="gap-2">
-                <Users className="w-4 h-4" />
-                Kullanıcılar
-              </TabsTrigger>
-              <TabsTrigger value="analytics" className="gap-2">
-                <BarChart3 className="w-4 h-4" />
-                Analytics
-              </TabsTrigger>
-              <TabsTrigger value="errors" className="gap-2">
-                <AlertTriangle className="w-4 h-4" />
-                Hatalar
-              </TabsTrigger>
-              <TabsTrigger value="performance" className="gap-2">
-                <Activity className="w-4 h-4" />
-                Performans
-              </TabsTrigger>
-              <TabsTrigger value="behavior" className="gap-2">
-                <Users className="w-4 h-4" />
-                Davranış
-              </TabsTrigger>
-              <TabsTrigger value="system" className="gap-2">
-                <Bell className="w-4 h-4" />
-                Sistem
-              </TabsTrigger>
-            </TabsList>
+            <div className="overflow-x-auto pb-2 mb-6">
+              <TabsList className="inline-flex w-auto min-w-full lg:grid lg:w-full lg:grid-cols-6 relative z-10 bg-card">
+                <TabsTrigger value="users" className="gap-2 flex-shrink-0 px-4 py-2.5">
+                  <Users className="w-4 h-4" />
+                  <span className="whitespace-nowrap">Kullanıcılar</span>
+                </TabsTrigger>
+                <TabsTrigger value="analytics" className="gap-2 flex-shrink-0 px-4 py-2.5">
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="whitespace-nowrap">Analytics</span>
+                </TabsTrigger>
+                <TabsTrigger value="errors" className="gap-2 flex-shrink-0 px-4 py-2.5">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span className="whitespace-nowrap">Hatalar</span>
+                </TabsTrigger>
+                <TabsTrigger value="performance" className="gap-2 flex-shrink-0 px-4 py-2.5">
+                  <Activity className="w-4 h-4" />
+                  <span className="whitespace-nowrap">Performans</span>
+                </TabsTrigger>
+                <TabsTrigger value="behavior" className="gap-2 flex-shrink-0 px-4 py-2.5">
+                  <Users className="w-4 h-4" />
+                  <span className="whitespace-nowrap">Davranış</span>
+                </TabsTrigger>
+                <TabsTrigger value="system" className="gap-2 flex-shrink-0 px-4 py-2.5">
+                  <Bell className="w-4 h-4" />
+                  <span className="whitespace-nowrap">Sistem</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-            <TabsContent value="users" className="space-y-6 mt-8">
+            <TabsContent value="users" className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Users List */}
             <Card className="p-6 lg:col-span-1">
@@ -505,7 +507,7 @@ const Admin = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="analytics" className="space-y-6 mt-8">
+        <TabsContent value="analytics" className="space-y-6">
           <AnalyticsOverview />
           <div className="grid gap-6 lg:grid-cols-2">
             <EventsChart />
@@ -513,19 +515,19 @@ const Admin = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="errors" className="space-y-6 mt-8">
+        <TabsContent value="errors" className="space-y-6">
           <ErrorLogsList />
         </TabsContent>
 
-        <TabsContent value="performance" className="space-y-6 mt-8">
+        <TabsContent value="performance" className="space-y-6">
           <PerformanceMetrics />
         </TabsContent>
 
-        <TabsContent value="behavior" className="space-y-6 mt-8">
+        <TabsContent value="behavior" className="space-y-6">
           <UserBehaviorAnalysis />
         </TabsContent>
 
-        <TabsContent value="system" className="space-y-6 mt-8">
+        <TabsContent value="system" className="space-y-6">
           <AlertSettings />
         </TabsContent>
       </Tabs>

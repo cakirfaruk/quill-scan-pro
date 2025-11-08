@@ -91,10 +91,10 @@ export const ProfilePosts = memo(({ posts, loading, isOwnProfile, onLike }: Prof
 
   if (posts.length === 0) {
     return (
-      <Card className="p-6">
-        <div className="text-center py-12">
+      <Card className="p-6 mt-4">
+        <div className="text-center py-16">
           <MessageCircle className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-          <p className="text-muted-foreground text-lg mb-2">
+          <p className="text-muted-foreground text-lg font-semibold mb-2">
             {isOwnProfile ? "Henüz gönderi paylaşmadınız" : "Henüz gönderi yok"}
           </p>
           {isOwnProfile && (
@@ -110,7 +110,7 @@ export const ProfilePosts = memo(({ posts, loading, isOwnProfile, onLike }: Prof
   return (
     <>
       {/* View Mode Toggle */}
-      <div className="flex justify-end mb-4 gap-2">
+      <div className="flex justify-end mt-4 mb-4 gap-2">
         <Button
           variant={viewMode === "grid" ? "default" : "outline"}
           size="sm"
