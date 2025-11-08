@@ -120,6 +120,24 @@ export const CronJobManager = () => {
     },
   });
 
+  const triggerJobMutation = useMutation({
+    mutationFn: async (jobId: number) => {
+      const { data, error } = await supabase.functions.invoke('trigger-cron-job', {
+        body: { jobId }
+      });
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cron-job-logs'] });
+      toast.success('Cron job manuel olarak tetiklendi');
+    },
+    onError: (error) => {
+      toast.error('Cron job tetiklenemedi: ' + error.message);
+    },
+  });
+
   const handleEditClick = (job: CronJob) => {
     setSelectedJob(job);
     setEditSchedule(job.schedule);
@@ -139,36 +157,20 @@ export const CronJobManager = () => {
     return <div className="text-center py-8">Yükleniyor...</div>;
   }
 
-  const triggerJobMutation = useMutation({
-    mutationFn: async (jobId: number) => {
-      const { data, error } = await supabase.functions.invoke('trigger-cron-job', {
-        body: { jobId }
-      });
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cron-job-logs'] });
-      toast.success('Cron job manuel olarak tetiklendi');
-    },
-    onError: (error) => {
-      toast.error('Cron job tetiklenemedi: ' + error.message);
-    },
-  });
-
   return (
     <Tabs defaultValue="dashboard" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-8">
-        <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-        <TabsTrigger value="jobs">Aktif Job'lar</TabsTrigger>
-        <TabsTrigger value="history">Geçmiş</TabsTrigger>
-        <TabsTrigger value="performance">Performans</TabsTrigger>
-        <TabsTrigger value="retry">Retry</TabsTrigger>
-        <TabsTrigger value="autoscale">Ölçeklendirme</TabsTrigger>
-        <TabsTrigger value="autodisable">Oto. Devre Dışı</TabsTrigger>
-        <TabsTrigger value="notifications">Bildirimler</TabsTrigger>
-      </TabsList>
+      <div className="overflow-x-auto pb-2 mb-4">
+        <TabsList className="inline-flex w-auto min-w-full lg:grid lg:w-full lg:grid-cols-8 bg-card">
+          <TabsTrigger value="dashboard" className="flex-shrink-0 px-4 py-2.5 whitespace-nowrap">Dashboard</TabsTrigger>
+          <TabsTrigger value="jobs" className="flex-shrink-0 px-4 py-2.5 whitespace-nowrap">Aktif Job'lar</TabsTrigger>
+          <TabsTrigger value="history" className="flex-shrink-0 px-4 py-2.5 whitespace-nowrap">Geçmiş</TabsTrigger>
+          <TabsTrigger value="performance" className="flex-shrink-0 px-4 py-2.5 whitespace-nowrap">Performans</TabsTrigger>
+          <TabsTrigger value="retry" className="flex-shrink-0 px-4 py-2.5 whitespace-nowrap">Retry</TabsTrigger>
+          <TabsTrigger value="autoscale" className="flex-shrink-0 px-4 py-2.5 whitespace-nowrap">Ölçeklendirme</TabsTrigger>
+          <TabsTrigger value="autodisable" className="flex-shrink-0 px-4 py-2.5 whitespace-nowrap">Oto. Devre Dışı</TabsTrigger>
+          <TabsTrigger value="notifications" className="flex-shrink-0 px-4 py-2.5 whitespace-nowrap">Bildirimler</TabsTrigger>
+        </TabsList>
+      </div>
 
       <TabsContent value="dashboard">
         <CronJobDashboard />
