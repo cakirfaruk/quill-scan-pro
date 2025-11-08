@@ -32,7 +32,8 @@ export const FullScreenMediaViewer = ({
   const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const currentMedia = media[currentIndex];
+  const currentMedia = media?.[currentIndex];
+  const hasValidMedia = media && media.length > 0;
 
   useEffect(() => {
     setCurrentIndex(initialIndex);
@@ -44,11 +45,6 @@ export const FullScreenMediaViewer = ({
       setPosition({ x: 0, y: 0 });
     }
   }, [open]);
-
-  // Early return if no media
-  if (!media || media.length === 0 || !currentMedia) {
-    return null;
-  }
 
   const handleNext = () => {
     if (currentIndex < media.length - 1) {
@@ -171,6 +167,11 @@ export const FullScreenMediaViewer = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open, currentIndex, zoom]);
+
+  // Early return if no valid media
+  if (!hasValidMedia || !currentMedia) {
+    return null;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
