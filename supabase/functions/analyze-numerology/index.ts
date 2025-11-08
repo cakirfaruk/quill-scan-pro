@@ -15,7 +15,7 @@ const numerologySchema = z.object({
     const parsed = new Date(date);
     return !isNaN(parsed.getTime()) && parsed <= new Date();
   }, 'Geçersiz veya gelecek tarih'),
-  selectedTopics: z.array(z.string()).min(1, 'En az bir konu seçilmelidir').max(20, 'En fazla 20 konu seçilebilir')
+  selectedTopics: z.array(z.string()).min(1, 'En az bir konu seçilmelidir').max(8, 'En fazla 8 konu seçilebilir')
 });
 
 serve(async (req) => {
@@ -94,7 +94,7 @@ Her rakamın anlamları:
 
 Analizlerini detaylı ve kişiye özel yap. Mistik yorumlar sun ve mitolojik referanslar kullan.`;
 
-    const userPrompt = `Aşağıdaki kişi için seçilen konularda detaylı numeroloji analizi yap:
+    const userPrompt = `Aşağıdaki kişi için seçilen konularda numeroloji analizi yap:
 
 İsim: ${fullName}
 Doğum Tarihi: ${birthDate}
@@ -103,12 +103,12 @@ Analiz Konuları:
 ${selectedTopics.map((topic: string, i: number) => `${i + 1}. ${topic}`).join("\n")}
 
 Her konu için:
-- Hesaplama adımlarını detaylıca göster (2-3 paragraf)
-- Rakamların ezoterik ve mistik anlamlarını açıkla (2-3 paragraf)
-- Kişiye özel yorumlar yap (3-4 paragraf)
-- Mitoloji ve ezoterik referanslar ver (1-2 paragraf)
+- Hesaplama adımlarını göster (1-2 paragraf)
+- Rakamların anlamlarını açıkla (1-2 paragraf)
+- Kişiye özel yorumlar yap (2-3 paragraf)
+- Referanslar ver (1 paragraf)
 
-Analizleri detaylı, derin ve kişiye özel yap.`;
+Analizleri özlü ve kişiye özel yap.`;
 
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!lovableApiKey) {
@@ -121,14 +121,17 @@ Analizleri detaylı, derin ve kişiye özel yap.`;
       topicProperties[topic] = {
         type: "object",
         properties: {
-          calculation: { type: "string", description: "2-3 paragraf detaylı hesaplama adımları" },
-          meaning: { type: "string", description: "2-3 paragraf ezoterik ve mistik anlamlar" },
-          personal_interpretation: { type: "string", description: "3-4 paragraf kişiye özel yorumlar" },
-          references: { type: "string", description: "1-2 paragraf mitoloji ve ezoterik referanslar" }
+          calculation: { type: "string", description: "1-2 paragraf hesaplama" },
+          meaning: { type: "string", description: "1-2 paragraf anlamlar" },
+          personal_interpretation: { type: "string", description: "2-3 paragraf yorum" },
+          references: { type: "string", description: "1 paragraf referans" }
         },
         required: ["calculation", "meaning", "personal_interpretation", "references"]
       };
     });
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -137,7 +140,7 @@ Analizleri detaylı, derin ve kişiye özel yap.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -153,7 +156,7 @@ Analizleri detaylı, derin ve kişiye özel yap.`;
                 properties: {
                   overall_summary: { 
                     type: "string", 
-                    description: "3-4 paragraf genel özet ve başlangıç yorumu" 
+                    description: "2-3 paragraf genel özet" 
                   },
                   topics: {
                     type: "object",
@@ -169,11 +172,22 @@ Analizleri detaylı, derin ve kişiye özel yap.`;
         ],
         tool_choice: { type: "function", function: { name: "provide_numerology_analysis" } }
       }),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error("AI Gateway error:", response.status, errorText);
+      
+      if (response.status === 502) {
+        throw new Error("Network error - please try fewer topics");
+      }
+      if (response.status === 504) {
+        throw new Error("Request timeout - please try fewer topics");
+      }
+      
       throw new Error("AI analysis failed");
     }
 
@@ -184,9 +198,18 @@ Analizleri detaylı, derin ve kişiye özel yap.`;
     if (aiData.error) {
       console.error("AI provider error:", aiData.error);
       if (aiData.error.code === 524) {
-        throw new Error("AI timeout - please try again");
+        throw new Error("AI timeout - please try fewer topics");
+      }
+      if (aiData.error.code === 502) {
+        throw new Error("Network connection lost - please try fewer topics");
       }
       throw new Error("AI provider error");
+    }
+    
+    // Check if first choice has an error
+    if (aiData.choices?.[0]?.error) {
+      console.error("AI choice error:", aiData.choices[0].error);
+      throw new Error("AI processing error - please try fewer topics");
     }
     
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
@@ -240,18 +263,27 @@ Analizleri detaylı, derin ve kişiye özel yap.`;
     let errorMessage = "Analiz sırasında bir hata oluştu";
     let statusCode = 500;
     
-    if (error.message === "Unauthorized") {
+    if (error.name === "AbortError") {
+      errorMessage = "İstek zaman aşımına uğradı. Lütfen daha az konu seçerek tekrar deneyin.";
+      statusCode = 504;
+    } else if (error.message === "Unauthorized") {
       errorMessage = "Oturum açmanız gerekiyor";
       statusCode = 401;
     } else if (error.message === "Insufficient credits") {
       errorMessage = "Yetersiz kredi. Lütfen kredi satın alın.";
       statusCode = 402;
+    } else if (error.message?.includes("Network error") || error.message?.includes("Network connection lost")) {
+      errorMessage = "Bağlantı hatası. Lütfen daha az konu seçerek tekrar deneyin.";
+      statusCode = 502;
+    } else if (error.message?.includes("timeout") || error.message?.includes("fewer topics")) {
+      errorMessage = "İşlem çok uzun sürdü. Lütfen daha az konu seçerek (5-8 arası) tekrar deneyin.";
+      statusCode = 504;
     } else if (error.message === "AI analysis failed") {
       errorMessage = "AI analizi başarısız oldu. Lütfen tekrar deneyin.";
-    } else if (error.message === "AI timeout - please try again") {
-      errorMessage = "AI servisi zaman aşımına uğradı. Lütfen birkaç saniye sonra tekrar deneyin.";
     } else if (error.message === "AI provider error") {
       errorMessage = "AI servisinde geçici bir sorun var. Lütfen tekrar deneyin.";
+    } else if (error.message?.includes("AI processing error")) {
+      errorMessage = "AI işleme hatası. Lütfen daha az konu seçerek tekrar deneyin.";
     } else if (error.message === "AI did not return structured data") {
       errorMessage = "AI yanıtı işlenemedi. Lütfen tekrar deneyin.";
     } else if (error.message?.includes("validation")) {

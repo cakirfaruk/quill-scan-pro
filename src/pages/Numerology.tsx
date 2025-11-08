@@ -5,7 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Coins, Sparkles } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Coins, Sparkles, AlertTriangle, Clock } from "lucide-react";
 import { Header } from "@/components/Header";
 import { PersonSelector } from "@/components/PersonSelector";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,19 +29,24 @@ const numerologySchema = z.object({
 });
 
 const allTopics = [
-  "Kader Rakamı (Yaşam Yolu Sayısı)",
-  "İsim Analizi ve Dokuzlu Vefk",
-  "Doğum Tarihi Numerolojisi",
-  "Yaşam Döngüleri (0-28, 29-56, 56+)",
-  "Zirve Döngüsü Rakamları",
-  "Ruhun Arzusu Rakamı",
-  "Kişisel Rakam (Dış Dünya İlişkisi)",
-  "Kemal (Olgunluk) Rakamı",
-  "Karmik Borç Rakamı",
-  "Dominant Rakamlar",
-  "Şanslı ve Şanssız Rakamlar",
-  "Kişisel Döngüler ve Evrensel Döngüler",
-  "1-9 Arası Rakamların Ezoterik Anlamları",
+  { name: "Kader Rakamı (Yaşam Yolu Sayısı)", badge: "Popüler", color: "bg-blue-500/10 text-blue-500" },
+  { name: "İsim Analizi ve Dokuzlu Vefk", badge: "Popüler", color: "bg-blue-500/10 text-blue-500" },
+  { name: "Doğum Tarihi Numerolojisi", badge: "Hızlı", color: "bg-green-500/10 text-green-500" },
+  { name: "Yaşam Döngüleri (0-28, 29-56, 56+)", badge: "Detaylı", color: "bg-purple-500/10 text-purple-500" },
+  { name: "Zirve Döngüsü Rakamları", badge: "Hızlı", color: "bg-green-500/10 text-green-500" },
+  { name: "Ruhun Arzusu Rakamı", badge: "Popüler", color: "bg-blue-500/10 text-blue-500" },
+  { name: "Kişisel Rakam (Dış Dünya İlişkisi)", badge: "Hızlı", color: "bg-green-500/10 text-green-500" },
+  { name: "Kemal (Olgunluk) Rakamı", badge: "Detaylı", color: "bg-purple-500/10 text-purple-500" },
+  { name: "Karmik Borç Rakamı", badge: "Detaylı", color: "bg-purple-500/10 text-purple-500" },
+  { name: "Dominant Rakamlar", badge: "Hızlı", color: "bg-green-500/10 text-green-500" },
+  { name: "Şanslı ve Şanssız Rakamlar", badge: "Hızlı", color: "bg-green-500/10 text-green-500" },
+  { name: "Kişisel Döngüler ve Evrensel Döngüler", badge: "Detaylı", color: "bg-purple-500/10 text-purple-500" },
+  { name: "1-9 Arası Rakamların Ezoterik Anlamları", badge: "Detaylı", color: "bg-purple-500/10 text-purple-500" },
+];
+
+const topicPackages = [
+  { name: "Temel Analiz", topics: ["Kader Rakamı (Yaşam Yolu Sayısı)", "İsim Analizi ve Dokuzlu Vefk", "Doğum Tarihi Numerolojisi", "Ruhun Arzusu Rakamı", "Kişisel Rakam (Dış Dünya İlişkisi)"], credits: 5 },
+  { name: "Detaylı Analiz", topics: ["Kader Rakamı (Yaşam Yolu Sayısı)", "İsim Analizi ve Dokuzlu Vefk", "Yaşam Döngüleri (0-28, 29-56, 56+)", "Ruhun Arzusu Rakamı", "Kemal (Olgunluk) Rakamı", "Karmik Borç Rakamı", "Dominant Rakamlar", "1-9 Arası Rakamların Ezoterik Anlamları"], credits: 8 },
 ];
 
 export default function Numerology() {
@@ -82,9 +89,14 @@ export default function Numerology() {
     if (selectAll) {
       setSelectedTopics([]);
     } else {
-      setSelectedTopics([...allTopics]);
+      setSelectedTopics(allTopics.map(t => t.name));
     }
     setSelectAll(!selectAll);
+  };
+
+  const selectPackage = (packageTopics: string[]) => {
+    setSelectedTopics(packageTopics);
+    setSelectAll(false);
   };
 
   const handleAnalyze = async () => {
@@ -137,6 +149,13 @@ export default function Numerology() {
     }
 
     setIsAnalyzing(true);
+    
+    const estimatedTime = selectedTopics.length <= 3 ? "20-30" : selectedTopics.length <= 5 ? "30-45" : "45-60";
+    toast({
+      title: "Analiz Başlatıldı",
+      description: `Analiz ediliyor, bu işlem ${estimatedTime} saniye sürebilir...`,
+    });
+    
     try {
       const { data, error } = await supabase.functions.invoke("analyze-numerology", {
         body: { fullName: personData.fullName, birthDate: personData.birthDate, selectedTopics },
@@ -243,6 +262,35 @@ export default function Numerology() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
+                  <CardTitle>Hazır Paketler</CardTitle>
+                  <CardDescription>Hızlı başlamak için hazır konu paketlerini kullanın</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {topicPackages.map((pkg) => (
+                  <Card key={pkg.name} className="cursor-pointer hover:border-primary" onClick={() => selectPackage(pkg.topics)}>
+                    <CardHeader>
+                      <CardTitle className="text-lg">{pkg.name}</CardTitle>
+                      <CardDescription>{pkg.topics.length} konu - {pkg.credits} kredi</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock className="w-4 h-4" />
+                        {pkg.credits <= 3 ? "20-30 saniye" : pkg.credits <= 5 ? "30-45 saniye" : "45-60 saniye"}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
                   <CardTitle>Analiz Konuları</CardTitle>
                   <CardDescription>Her konu 1 kredi - Mevcut: {availableCredits} kredi</CardDescription>
                 </div>
@@ -252,16 +300,28 @@ export default function Numerology() {
               </div>
             </CardHeader>
             <CardContent>
+              {selectedTopics.length > 8 && (
+                <Alert className="mb-4 border-orange-500/50 bg-orange-500/10">
+                  <AlertTriangle className="h-4 w-4 text-orange-500" />
+                  <AlertDescription className="text-orange-500">
+                    En fazla 8 konu seçebilirsiniz. Daha iyi sonuçlar için 5-8 konu seçmenizi öneririz.
+                  </AlertDescription>
+                </Alert>
+              )}
               <ScrollArea className="h-96">
                 <div className="space-y-3">
                   {allTopics.map((topic) => (
-                    <div key={topic} className="flex items-center space-x-2 p-3 rounded-lg hover:bg-accent">
+                    <div key={topic.name} className="flex items-center space-x-2 p-3 rounded-lg hover:bg-accent">
                       <Checkbox
-                        id={topic}
-                        checked={selectedTopics.includes(topic)}
-                        onCheckedChange={() => toggleTopic(topic)}
+                        id={topic.name}
+                        checked={selectedTopics.includes(topic.name)}
+                        onCheckedChange={() => toggleTopic(topic.name)}
+                        disabled={selectedTopics.length >= 8 && !selectedTopics.includes(topic.name)}
                       />
-                      <Label htmlFor={topic} className="flex-1 cursor-pointer">{topic}</Label>
+                      <Label htmlFor={topic.name} className="flex-1 cursor-pointer">{topic.name}</Label>
+                      <Badge variant="secondary" className={topic.color}>
+                        {topic.badge}
+                      </Badge>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Coins className="w-4 h-4" />1
                       </div>
@@ -288,12 +348,18 @@ export default function Numerology() {
               )}
               <Button
                 onClick={handleAnalyze}
-                disabled={isAnalyzing || selectedTopics.length === 0 || availableCredits < selectedTopics.length || !personData.fullName || !personData.birthDate}
+                disabled={isAnalyzing || selectedTopics.length === 0 || selectedTopics.length > 8 || availableCredits < selectedTopics.length || !personData.fullName || !personData.birthDate}
                 className="w-full"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 {isAnalyzing ? "Analiz Ediliyor..." : "Analizi Başlat"}
               </Button>
+              {selectedTopics.length > 0 && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                  <Clock className="w-4 h-4" />
+                  Tahmini süre: {selectedTopics.length <= 3 ? "20-30" : selectedTopics.length <= 5 ? "30-45" : "45-60"} saniye
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
