@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback, memo } from "react";
+import { useEffect, useState, useMemo, useCallback, memo, useRef } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
@@ -110,6 +110,9 @@ const Profile = () => {
   const [newCollectionDesc, setNewCollectionDesc] = useState("");
   const [createCollectionDialogOpen, setCreateCollectionDialogOpen] = useState(false);
   const [statsDrawerOpen, setStatsDrawerOpen] = useState(false);
+
+  // Ref for PDF generation from modal
+  const analysisContentRef = useRef<HTMLDivElement>(null);
 
   // Calculate profile statistics
   const profileStats = useMemo(() => {
@@ -1521,21 +1524,36 @@ const Profile = () => {
               <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
                 <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>
-                      {selectedAnalysis && getAnalysisTypeLabel(selectedAnalysis.analysis_type)}
-                    </DialogTitle>
-                    <DialogDescription>
-                      {selectedAnalysis && new Date(selectedAnalysis.created_at).toLocaleDateString('tr-TR', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </DialogDescription>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <DialogTitle>
+                          {selectedAnalysis && getAnalysisTypeLabel(selectedAnalysis.analysis_type)}
+                        </DialogTitle>
+                        <DialogDescription>
+                          {selectedAnalysis && new Date(selectedAnalysis.created_at).toLocaleDateString('tr-TR', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </DialogDescription>
+                      </div>
+                      {selectedAnalysis && isOwnProfile && (
+                        <ShareResultButton
+                          content={formatAnalysisContent(selectedAnalysis)}
+                          title={getAnalysisTypeLabel(selectedAnalysis.analysis_type)}
+                          analysisId={selectedAnalysis.id}
+                          analysisType={selectedAnalysis.analysis_type}
+                          contentRef={analysisContentRef}
+                          variant="outline"
+                          size="sm"
+                        />
+                      )}
+                    </div>
                   </DialogHeader>
                   {selectedAnalysis && (
-                    <div className="pt-4">
+                    <div ref={analysisContentRef} className="pt-4">
                       <AnalysisDetailView 
                         result={selectedAnalysis.result} 
                         analysisType={selectedAnalysis.analysis_type}
