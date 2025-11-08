@@ -30,7 +30,7 @@ interface ProfileHeaderProps {
   onRejectRequest: () => void;
   onRemoveFriend: () => void;
   onMessage: () => void;
-  onShare: () => void;
+  onShare?: () => void;
   onBlock: () => void;
   onUnblock: () => void;
   onSettings: () => void;
@@ -195,10 +195,12 @@ export const ProfileHeader = memo(({
                         </Button>
                       </>
                     )}
-                    <Button onClick={onShare} size="sm" variant="outline" className="gap-2">
-                      <Share2 className="w-4 h-4" />
-                      Paylaş
-                    </Button>
+                    {onShare && (
+                      <Button onClick={onShare} size="sm" variant="outline" className="gap-2">
+                        <Share2 className="w-4 h-4" />
+                        Paylaş
+                      </Button>
+                    )}
                   </>
                 )}
               </>

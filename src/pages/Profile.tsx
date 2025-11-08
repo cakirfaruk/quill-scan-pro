@@ -32,6 +32,7 @@ import { OnlineStatusBadge } from "@/components/OnlineStatusBadge";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { Virtuoso } from "react-virtuoso";
 import { Suspense } from "react";
+import { ShareResultButton } from "@/components/ShareResultButton";
 
 interface UserPhoto {
   id: string;
@@ -74,7 +75,6 @@ const Profile = () => {
   const [friends, setFriends] = useState<any[]>([]);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [visibilityDialogOpen, setVisibilityDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedAnalysis, setSelectedAnalysis] = useState<Analysis | null>(null);
@@ -84,9 +84,6 @@ const Profile = () => {
   const [selectedAnalysisIds, setSelectedAnalysisIds] = useState<string[]>([]);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [summaryResult, setSummaryResult] = useState<string | null>(null);
-  const [selectedFriendForShare, setSelectedFriendForShare] = useState<string>("");
-  const [shareNote, setShareNote] = useState("");
-  const [shareType, setShareType] = useState<"message" | "feed">("message");
   const { toast } = useToast();
   const navigate = useNavigate();
   const [currentUserId, setCurrentUserId] = useState("");
@@ -870,80 +867,113 @@ const Profile = () => {
     }
   };
 
-  const handleShareAnalysis = async () => {
-    if (!selectedAnalysis) return;
+  const formatAnalysisContent = (analysis: Analysis): string => {
+    const result = analysis.result;
+    const title = getAnalysisTypeLabel(analysis.analysis_type);
+    
+    let content = `📊 ${title}\n`;
+    content += `📅 ${new Date(analysis.created_at).toLocaleDateString('tr-TR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}\n\n`;
 
-    try {
-      if (shareType === "message") {
-        if (!selectedFriendForShare) {
-          toast({
-            title: "Hata",
-            description: "Lütfen bir arkadaş seçin.",
-            variant: "destructive",
-          });
-          return;
+    if (typeof result === 'object' && result !== null) {
+      if (analysis.analysis_type === 'tarot') {
+        content += `🔮 TAROT FALI\n${'='.repeat(50)}\n\n`;
+        if (result.general) {
+          content += `🌟 GENEL DEĞERLENDİRME\n${'-'.repeat(50)}\n${result.general}\n\n`;
         }
-
-        const messageContent = `📊 ${getAnalysisTypeLabel(selectedAnalysis.analysis_type)} sonucumu paylaştım!\n\n${shareNote || "Analiz sonucumu görmek için tıkla."}\n\n[Analiz ID: ${selectedAnalysis.id}]\n[Analiz Türü: ${selectedAnalysis.analysis_type}]`;
-
-        const { error: shareError } = await supabase
-          .from("shared_analyses")
-          .insert({
-            user_id: currentUserId,
-            analysis_id: selectedAnalysis.id,
-            analysis_type: selectedAnalysis.analysis_type,
-            shared_with_user_id: selectedFriendForShare,
-            visibility_type: "specific_friends",
-            is_visible: true,
-            is_public: false,
+        if (result.cards && Array.isArray(result.cards)) {
+          result.cards.forEach((card: any, index: number) => {
+            content += `\n🎴 ${index + 1}. KART: ${card.name || 'Bilinmeyen'}\n`;
+            content += `${card.interpretation || ''}\n`;
           });
-
-        if (shareError) {
-          await supabase
-            .from("shared_analyses")
-            .update({
-              shared_with_user_id: selectedFriendForShare,
-              visibility_type: "specific_friends",
-              is_visible: true,
-            })
-            .eq("analysis_id", selectedAnalysis.id)
-            .eq("user_id", currentUserId);
         }
-
-        const { error } = await supabase
-          .from("messages")
-          .insert({
-            sender_id: currentUserId,
-            receiver_id: selectedFriendForShare,
-            content: messageContent,
-            analysis_id: selectedAnalysis.id,
-            analysis_type: selectedAnalysis.analysis_type,
-          });
-
-        if (error) throw error;
-
-        toast({
-          title: "Başarılı",
-          description: "Analiz arkadaşınıza gönderildi.",
+      } else if (analysis.analysis_type === 'numerology') {
+        content += `🔢 NUMEROLOJİ ANALİZİ\n${'='.repeat(50)}\n\n`;
+        if (result.general) {
+          content += `🌟 GENEL DEĞERLENDİRME\n${'-'.repeat(50)}\n${result.general}\n\n`;
+        }
+        Object.entries(result).forEach(([key, value]) => {
+          if (key !== 'general' && typeof value === 'string') {
+            const topicTitle = key.replace(/_/g, ' ').toUpperCase();
+            content += `\n⭐ ${topicTitle}\n${'-'.repeat(50)}\n${value}\n`;
+          }
         });
+      } else if (analysis.analysis_type === 'coffee_fortune') {
+        content += `☕ KAHVE FALI\n${'='.repeat(50)}\n\n`;
+        if (result.general) {
+          content += `🌟 GENEL YORUM\n${'-'.repeat(50)}\n${result.general}\n\n`;
+        }
+        if (result.topics) {
+          Object.entries(result.topics).forEach(([topic, interpretation]) => {
+            content += `\n💫 ${topic.toUpperCase()}\n${'-'.repeat(50)}\n${interpretation}\n`;
+          });
+        }
+      } else if (analysis.analysis_type === 'dream_interpretation') {
+        content += `🌙 RÜYA TABİRİ\n${'='.repeat(50)}\n\n`;
+        if (result.general) {
+          content += `💭 GENEL YORUM\n${'-'.repeat(50)}\n${result.general}\n\n`;
+        }
+        if (result.symbols && Array.isArray(result.symbols)) {
+          result.symbols.forEach((symbol: any) => {
+            content += `\n🔮 ${symbol.name?.toUpperCase() || 'SİMGE'}\n${'-'.repeat(50)}\n${symbol.interpretation || ''}\n`;
+          });
+        }
+      } else if (analysis.analysis_type === 'palmistry') {
+        content += `✋ EL FALINA\n${'='.repeat(50)}\n\n`;
+        if (result.general) {
+          content += `🌟 GENEL DEĞERLENDİRME\n${'-'.repeat(50)}\n${result.general}\n\n`;
+        }
+        if (result.lines) {
+          Object.entries(result.lines).forEach(([line, interpretation]) => {
+            content += `\n📏 ${line.toUpperCase()} ÇĠZGĠSĠ\n${'-'.repeat(50)}\n${interpretation}\n`;
+          });
+        }
+      } else if (analysis.analysis_type === 'birth_chart') {
+        content += `🌟 DOĞUM HARİTASI\n${'='.repeat(50)}\n\n`;
+        if (result.general) {
+          content += `✨ GENEL DEĞERLENDİRME\n${'-'.repeat(50)}\n${result.general}\n\n`;
+        }
+        if (result.planets) {
+          Object.entries(result.planets).forEach(([planet, info]) => {
+            content += `\n🪐 ${planet.toUpperCase()}\n${'-'.repeat(50)}\n${info}\n`;
+          });
+        }
+      } else if (analysis.analysis_type === 'compatibility') {
+        content += `💕 UYUMLULUK ANALİZİ\n${'='.repeat(50)}\n\n`;
+        if (result.general) {
+          content += `💖 GENEL DEĞERLENDİRME\n${'-'.repeat(50)}\n${result.general}\n\n`;
+        }
+        if (result.areas) {
+          Object.entries(result.areas).forEach(([area, compatibility]) => {
+            content += `\n💫 ${area.toUpperCase()}\n${'-'.repeat(50)}\n${compatibility}\n`;
+          });
+        }
+      } else if (analysis.analysis_type === 'handwriting') {
+        content += `✍️ EL YAZISI ANALİZİ\n${'='.repeat(50)}\n\n`;
+        if (result.general) {
+          content += `🌟 GENEL DEĞERLENDİRME\n${'-'.repeat(50)}\n${result.general}\n\n`;
+        }
+        if (result.traits) {
+          Object.entries(result.traits).forEach(([trait, analysis]) => {
+            content += `\n📝 ${trait.toUpperCase()}\n${'-'.repeat(50)}\n${analysis}\n`;
+          });
+        }
       } else {
-        toast({
-          title: "Bilgi",
-          description: "Profil akışı özelliği yakında eklenecek.",
-        });
+        content += JSON.stringify(result, null, 2);
       }
-
-      setShareDialogOpen(false);
-      setShareNote("");
-      setSelectedFriendForShare("");
-    } catch (error: any) {
-      console.error("Share error:", error);
-      toast({
-        title: "Hata",
-        description: "Paylaşım yapılamadı.",
-        variant: "destructive",
-      });
+    } else {
+      content += result?.toString() || 'Analiz içeriği bulunamadı.';
     }
+
+    content += `\n\n${'='.repeat(50)}\n`;
+    content += `💳 Kullanılan Kredi: ${analysis.credits_used}\n`;
+    
+    return content;
   };
 
   const handleVisibilitySettings = async () => {
@@ -999,13 +1029,6 @@ const Profile = () => {
     }
   };
 
-  const openShareDialog = async (analysis: Analysis) => {
-    setSelectedAnalysis(analysis);
-    setShareDialogOpen(true);
-    setShareNote("");
-    setSelectedFriendForShare("");
-    setShareType("message");
-  };
 
   const openVisibilityDialog = async (analysis: Analysis) => {
     setSelectedAnalysis(analysis);
@@ -1341,7 +1364,6 @@ const Profile = () => {
           onRejectRequest={handleRejectFriendRequest}
           onRemoveFriend={handleRemoveFriend}
           onMessage={() => navigate('/messages')}
-          onShare={() => setShareDialogOpen(true)}
           onBlock={handleBlockUser}
           onUnblock={handleUnblockUser}
           onSettings={() => navigate('/settings')}
@@ -1465,16 +1487,15 @@ const Profile = () => {
                           </div>
                           {isOwnProfile && (
                             <div className="flex gap-2">
-                              <Button
+                              <ShareResultButton
+                                content={formatAnalysisContent(analysis)}
+                                title={getAnalysisTypeLabel(analysis.analysis_type)}
+                                analysisId={analysis.id}
+                                analysisType={analysis.analysis_type}
                                 variant="outline"
                                 size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openShareDialog(analysis);
-                                }}
-                              >
-                                <Share2 className="w-4 h-4" />
-                              </Button>
+                                className="w-10 h-10 p-0"
+                              />
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -1524,82 +1545,6 @@ const Profile = () => {
                 </DialogContent>
               </Dialog>
 
-              {/* Share Dialog */}
-              <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Analizi Paylaş</DialogTitle>
-                    <DialogDescription>
-                      {selectedAnalysis && getAnalysisTypeLabel(selectedAnalysis.analysis_type)} sonucunuzu paylaşın
-                    </DialogDescription>
-                  </DialogHeader>
-
-                  <div className="space-y-4">
-                    <div>
-                      <Label>Paylaşım Türü</Label>
-                      <Select value={shareType} onValueChange={(value: any) => setShareType(value)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="message">Arkadaşa Mesaj Gönder</SelectItem>
-                          <SelectItem value="feed">Profil Akışına Paylaş</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {shareType === "message" && (
-                      <div>
-                        <Label>Arkadaş Seç</Label>
-                        <Select value={selectedFriendForShare} onValueChange={setSelectedFriendForShare}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Arkadaş seçin" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {friends.length === 0 ? (
-                              <SelectItem value="none" disabled>Henüz arkadaşınız yok</SelectItem>
-                            ) : (
-                              friends.map((friend) => {
-                                const friendProfile = friend.user_id === currentUserId 
-                                  ? friend.friend_profile 
-                                  : friend.user_profile;
-                                const friendId = friendProfile?.user_id;
-                                
-                                if (!friendId) return null;
-                                
-                                return (
-                                  <SelectItem key={friend.id} value={friendId}>
-                                    {friendProfile?.full_name || friendProfile?.username || "Arkadaş"}
-                                  </SelectItem>
-                                );
-                              })
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-
-                    <div>
-                      <Label>Not Ekle (İsteğe Bağlı)</Label>
-                      <Textarea
-                        value={shareNote}
-                        onChange={(e) => setShareNote(e.target.value)}
-                        placeholder="Paylaşırken bir not ekleyebilirsiniz..."
-                        rows={3}
-                      />
-                    </div>
-
-                    <Button
-                      onClick={handleShareAnalysis}
-                      className="w-full"
-                      disabled={shareType === "message" && !selectedFriendForShare}
-                    >
-                      <Send className="w-4 h-4 mr-2" />
-                      Paylaş
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
 
               {/* Visibility Settings Dialog */}
               <Dialog open={visibilityDialogOpen} onOpenChange={setVisibilityDialogOpen}>
