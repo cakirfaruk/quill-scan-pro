@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Share2, Loader2, CheckSquare, Square, MessageCircle } from "lucide-react";
+import { Share2, Loader2, CheckSquare, Square, MessageCircle, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 interface ShareResultButtonProps {
   content: string;
@@ -164,6 +166,73 @@ export const ShareResultButton = ({
     window.open(whatsappUrl, "_blank");
   };
 
+  const handlePDFDownload = async () => {
+    try {
+      // Create a temporary div for PDF content
+      const tempDiv = document.createElement('div');
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.width = '800px';
+      tempDiv.style.padding = '40px';
+      tempDiv.style.backgroundColor = 'white';
+      tempDiv.style.color = 'black';
+      tempDiv.innerHTML = `
+        <div style="font-family: Arial, sans-serif;">
+          <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #1a1a1a;">${title}</h1>
+          <div style="font-size: 14px; line-height: 1.8; white-space: pre-wrap; color: #333;">${content}</div>
+        </div>
+      `;
+      
+      document.body.appendChild(tempDiv);
+      
+      // Generate canvas from the div
+      const canvas = await html2canvas(tempDiv, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+      
+      // Remove temporary div
+      document.body.removeChild(tempDiv);
+      
+      // Create PDF
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      let heightLeft = imgHeight;
+      let position = 0;
+      
+      // Add image to PDF (handle multiple pages if needed)
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      
+      // Download PDF
+      const fileName = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
+      pdf.save(fileName);
+      
+      toast({
+        title: "Başarılı",
+        description: "PDF başarıyla indirildi",
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast({
+        title: "Hata",
+        description: "PDF oluşturulurken bir hata oluştu",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <>
       <Button 
@@ -198,16 +267,27 @@ export const ShareResultButton = ({
             </div>
           ) : (
             <>
-              {/* WhatsApp Share Option */}
+              {/* Share Options */}
               <div className="space-y-3">
-                <Button
-                  onClick={handleWhatsAppShare}
-                  className="w-full bg-[#25D366] hover:bg-[#20BD5A] text-white"
-                  size="lg"
-                >
-                  <MessageCircle className="w-5 h-5 mr-2" />
-                  WhatsApp'ta Paylaş
-                </Button>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    onClick={handleWhatsAppShare}
+                    className="bg-[#25D366] hover:bg-[#20BD5A] text-white"
+                    size="lg"
+                  >
+                    <MessageCircle className="w-5 h-5 mr-2" />
+                    WhatsApp
+                  </Button>
+                  
+                  <Button
+                    onClick={handlePDFDownload}
+                    variant="outline"
+                    size="lg"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    PDF İndir
+                  </Button>
+                </div>
 
                 {friends.length > 0 && (
                   <div className="relative">
