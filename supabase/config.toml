@@ -41,3 +41,6 @@ verify_jwt = true
 
 [functions.transcribe-audio]
 verify_jwt = true
+
+[functions.send-alert]
+verify_jwt = true

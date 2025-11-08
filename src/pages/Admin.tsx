@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Users, CreditCard, History, Loader2, Eye, Trash2, BarChart3, AlertTriangle, Activity } from "lucide-react";
+import { Shield, Users, CreditCard, History, Loader2, Eye, Trash2, BarChart3, AlertTriangle, Activity, Bell } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { AnalyticsOverview } from "@/components/admin/AnalyticsOverview";
 import { EventsChart } from "@/components/admin/EventsChart";
@@ -19,6 +19,7 @@ import { PerformanceMetrics } from "@/components/admin/PerformanceMetrics";
 import { UserBehaviorAnalysis } from "@/components/admin/UserBehaviorAnalysis";
 import { RealtimeIndicator } from "@/components/admin/RealtimeIndicator";
 import { LiveActivityFeed } from "@/components/admin/LiveActivityFeed";
+import { AlertSettings } from "@/components/admin/AlertSettings";
 import { useRealtimeAnalytics } from "@/hooks/use-realtime-analytics";
 import { z } from "zod";
 
@@ -309,7 +310,7 @@ const Admin = () => {
           </div>
         ) : (
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6">
               <TabsTrigger value="users" className="gap-2">
                 <Users className="w-4 h-4" />
                 Kullanıcılar
@@ -329,6 +330,10 @@ const Admin = () => {
               <TabsTrigger value="behavior" className="gap-2">
                 <Users className="w-4 h-4" />
                 Davranış
+              </TabsTrigger>
+              <TabsTrigger value="system" className="gap-2">
+                <Bell className="w-4 h-4" />
+                Sistem
               </TabsTrigger>
             </TabsList>
 
@@ -518,6 +523,10 @@ const Admin = () => {
 
         <TabsContent value="behavior" className="space-y-6">
           <UserBehaviorAnalysis />
+        </TabsContent>
+
+        <TabsContent value="system" className="space-y-6">
+          <AlertSettings />
         </TabsContent>
       </Tabs>
         )}

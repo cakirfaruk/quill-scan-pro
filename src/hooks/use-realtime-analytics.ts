@@ -51,8 +51,21 @@ export function useRealtimeAnalytics() {
           
           const error = payload.new as any;
           
-          // Show toast notification for critical errors
+          // Trigger alert for critical errors
           if (error.severity === 'critical') {
+            supabase.functions.invoke('send-alert', {
+              body: {
+                type: 'error',
+                severity: 'critical',
+                message: `Critical error: ${error.error_type}`,
+                details: {
+                  message: error.error_message,
+                  url: error.url,
+                  stack: error.error_stack,
+                },
+              },
+            }).catch(console.error);
+
             toast({
               title: '🚨 Critical Error Detected',
               description: error.error_message,
@@ -93,8 +106,20 @@ export function useRealtimeAnalytics() {
           
           const metric = payload.new as any;
           
-          // Show warning for slow metrics (> 3 seconds)
+          // Trigger alert for slow performance
           if (metric.metric_value > 3000) {
+            supabase.functions.invoke('send-alert', {
+              body: {
+                type: 'performance',
+                severity: 'high',
+                message: `Slow performance detected: ${metric.metric_name}`,
+                details: {
+                  value: metric.metric_value,
+                  page: metric.page_path,
+                },
+              },
+            }).catch(console.error);
+
             toast({
               title: '⚠️ Performance Warning',
               description: `${metric.metric_name}: ${Math.round(metric.metric_value)}ms`,

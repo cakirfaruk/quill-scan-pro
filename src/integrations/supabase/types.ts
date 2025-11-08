@@ -14,6 +14,80 @@ export type Database = {
   }
   public: {
     Tables: {
+      alert_configurations: {
+        Row: {
+          conditions: Json
+          created_at: string
+          enabled: boolean
+          id: string
+          name: string
+          recipients: string[]
+          slack_webhook_url: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          conditions?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          name: string
+          recipients?: string[]
+          slack_webhook_url?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          conditions?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          name?: string
+          recipients?: string[]
+          slack_webhook_url?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      alert_logs: {
+        Row: {
+          alert_config_id: string | null
+          details: Json | null
+          id: string
+          message: string
+          sent_at: string
+          severity: string
+          type: string
+        }
+        Insert: {
+          alert_config_id?: string | null
+          details?: Json | null
+          id?: string
+          message: string
+          sent_at?: string
+          severity: string
+          type: string
+        }
+        Update: {
+          alert_config_id?: string | null
+          details?: Json | null
+          id?: string
+          message?: string
+          sent_at?: string
+          severity?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_logs_alert_config_id_fkey"
+            columns: ["alert_config_id"]
+            isOneToOne: false
+            referencedRelation: "alert_configurations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analysis_history: {
         Row: {
           analysis_type: string
