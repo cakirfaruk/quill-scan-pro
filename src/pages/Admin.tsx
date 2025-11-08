@@ -17,6 +17,9 @@ import { EventsChart } from "@/components/admin/EventsChart";
 import { ErrorLogsList } from "@/components/admin/ErrorLogsList";
 import { PerformanceMetrics } from "@/components/admin/PerformanceMetrics";
 import { UserBehaviorAnalysis } from "@/components/admin/UserBehaviorAnalysis";
+import { RealtimeIndicator } from "@/components/admin/RealtimeIndicator";
+import { LiveActivityFeed } from "@/components/admin/LiveActivityFeed";
+import { useRealtimeAnalytics } from "@/hooks/use-realtime-analytics";
 import { z } from "zod";
 
 const creditSchema = z.object({
@@ -54,6 +57,9 @@ const Admin = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  
+  // Enable real-time analytics
+  useRealtimeAnalytics();
 
   useEffect(() => {
     checkAdminAndLoad();
@@ -278,17 +284,22 @@ const Admin = () => {
       <Header />
 
       <main className="container mx-auto px-4 py-12 max-w-7xl">
-        <div className="mb-8 flex items-center gap-3">
-          <div className="p-3 bg-gradient-primary rounded-lg">
-            <Shield className="w-6 h-6 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Admin Panel
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Kullanıcıları yönetin, analytics görüntüleyin ve hataları takip edin
-            </p>
+        <div className="mb-8">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-gradient-primary rounded-lg">
+                <Shield className="w-6 h-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  Admin Panel
+                </h1>
+                <p className="text-muted-foreground mt-1">
+                  Kullanıcıları yönetin, analytics görüntüleyin ve hataları takip edin
+                </p>
+              </div>
+            </div>
+            <RealtimeIndicator />
           </div>
         </div>
 
@@ -491,7 +502,10 @@ const Admin = () => {
 
         <TabsContent value="analytics" className="space-y-6">
           <AnalyticsOverview />
-          <EventsChart />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <EventsChart />
+            <LiveActivityFeed />
+          </div>
         </TabsContent>
 
         <TabsContent value="errors" className="space-y-6">
