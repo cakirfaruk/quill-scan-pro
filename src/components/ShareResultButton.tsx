@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Share2, Loader2, CheckSquare, Square } from "lucide-react";
+import { Share2, Loader2, CheckSquare, Square, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -157,6 +157,13 @@ export const ShareResultButton = ({
     loadFriends();
   };
 
+  const handleWhatsAppShare = () => {
+    const message = `📊 *${title}*\n\n${content}`;
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+    window.open(whatsappUrl, "_blank");
+  };
+
   return (
     <>
       <Button 
@@ -189,13 +196,40 @@ export const ShareResultButton = ({
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
-          ) : friends.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              Henüz arkadaşınız yok
-            </p>
           ) : (
             <>
-              {/* Select All / Deselect All */}
+              {/* WhatsApp Share Option */}
+              <div className="space-y-3">
+                <Button
+                  onClick={handleWhatsAppShare}
+                  className="w-full bg-[#25D366] hover:bg-[#20BD5A] text-white"
+                  size="lg"
+                >
+                  <MessageCircle className="w-5 h-5 mr-2" />
+                  WhatsApp'ta Paylaş
+                </Button>
+
+                {friends.length > 0 && (
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-border" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">
+                        veya arkadaşlarınızla
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {friends.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4 text-sm">
+                  Mesaj geçmişinizde arkadaş bulunamadı
+                </p>
+              ) : (
+                <>
+                  {/* Select All / Deselect All */}
               <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30">
                 <div className="flex items-center gap-2">
                   <Checkbox
@@ -254,8 +288,8 @@ export const ShareResultButton = ({
                 })}
               </div>
 
-              {/* Share Button */}
-              <div className="flex gap-2 pt-2 border-t">
+                  {/* Share Button */}
+                  <div className="flex gap-2 pt-2 border-t">
                 <Button
                   variant="outline"
                   onClick={() => setShowShareDialog(false)}
@@ -283,7 +317,9 @@ export const ShareResultButton = ({
                     </>
                   )}
                 </Button>
-              </div>
+                  </div>
+                </>
+              )}
             </>
           )}
         </DialogContent>
