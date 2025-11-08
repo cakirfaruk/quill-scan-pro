@@ -68,7 +68,7 @@ serve(async (req) => {
       throw new Error("Insufficient credits");
     }
 
-    const systemPrompt = `Sen bir numeroloji uzmanısın. Pisagor Felsefesi, İbn Arabi, Hint çakra sistemi, İştar mitleri ve Ezoterik Felsefe üzerine derin bilgin var. Rakamların ezoterik ve okültist anlamlarını biliyorsun. TAMAMEN TÜRKÇE yanıt verirsin, hiçbir İngilizce kelime kullanmazsın.
+    const systemPrompt = `Sen bir numeroloji uzmanısın. Pisagor Felsefesi, İbn Arabi, Hint çakra sistemi ve Ezoterik Felsefe üzerine bilgin var. Rakamların ezoterik ve okültist anlamlarını biliyorsun. TAMAMEN TÜRKÇE yanıt verirsin.
 
 Numerolojide kullanılan Türk alfabesi rakam karşılıkları:
 1: A, J, S-Ş
@@ -82,19 +82,19 @@ Numerolojide kullanılan Türk alfabesi rakam karşılıkları:
 9: I-İ, R
 
 Her rakamın anlamları:
-- 1: Bir (Monad), kendinden var olan, yaratıcı güç, başlangıç
-- 2: İki (Düad), dualite, karşıtlık, denge, Anne prensibi
-- 3: Üç (Triad), bilgelik, yaratım, üçlü birlik
-- 4: Dört (Tetrad), stabilite, düzen, dört element
-- 5: Beş (Pentad), değişim, hareket, insan
-- 6: Altı (Heksad), denge, uyum, sevgi
-- 7: Yedi, kemal, mükemmellik, ruhaniyet
-- 8: Sekiz, güç, maddi dünya, sonsuzluk
-- 9: Dokuz, tamamlanma, yüksek bilinç
+- 1: Bir (Monad), kendinden var olan, yaratıcı güç
+- 2: İki (Düad), dualite, denge, Anne prensibi
+- 3: Üç (Triad), bilgelik, yaratım
+- 4: Dört (Tetrad), stabilite, düzen
+- 5: Beş (Pentad), değişim, hareket
+- 6: Altı (Heksad), denge, uyum
+- 7: Yedi, kemal, ruhaniyet
+- 8: Sekiz, güç, maddi dünya
+- 9: Dokuz, tamamlanma
 
-ÖNEMLİ: Analizlerini çok detaylı, kapsamlı ve uzun yap. Her konu için minimum 4-5 paragraf yaz. Kişiye özel, derin ve mistik yorumlar sun. Mitolojik referansları bol kullan. Her konuyu ayrı bölümler halinde sun ve her bölümü derinlemesine açıkla.`;
+Analizlerini detaylı ve kişiye özel yap. Mistik yorumlar sun ve mitolojik referanslar kullan.`;
 
-    const userPrompt = `Aşağıdaki kişi için seçilen konularda çok detaylı ve kapsamlı numeroloji analizi yap:
+    const userPrompt = `Aşağıdaki kişi için seçilen konularda detaylı numeroloji analizi yap:
 
 İsim: ${fullName}
 Doğum Tarihi: ${birthDate}
@@ -102,16 +102,13 @@ Doğum Tarihi: ${birthDate}
 Analiz Konuları:
 ${selectedTopics.map((topic: string, i: number) => `${i + 1}. ${topic}`).join("\n")}
 
-Her konu için MUTLAKA:
-- Hesaplama adımlarını detaylıca göster (minimum 2-3 paragraf)
-- Rakamların ezoterik, okültist ve mistik anlamlarını derinlemesine açıkla (minimum 3-4 paragraf)
-- Kişiye özel, detaylı yorumlar yap - genel bilgiler değil spesifik analizler (minimum 4-5 paragraf)
-- İlgili mitoloji, felsefe, çakra sistemi ve ezoterik bilgi referansları ver (minimum 2-3 paragraf)
-- Her konuyu minimum 500-800 kelime ile açıkla
+Her konu için:
+- Hesaplama adımlarını detaylıca göster (2-3 paragraf)
+- Rakamların ezoterik ve mistik anlamlarını açıkla (2-3 paragraf)
+- Kişiye özel yorumlar yap (3-4 paragraf)
+- Mitoloji ve ezoterik referanslar ver (1-2 paragraf)
 
-ÖNEMLİ: Analizler çok uzun, detaylı ve kapsamlı olmalı. Kısa cümleler kullanma, her paragraf dolu dolu bilgi içermeli.
-
-JSON formatında yanıt ver, her konu için ayrı alan oluştur.`;
+Analizleri detaylı, derin ve kişiye özel yap.`;
 
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!lovableApiKey) {
@@ -124,10 +121,10 @@ JSON formatında yanıt ver, her konu için ayrı alan oluştur.`;
       topicProperties[topic] = {
         type: "object",
         properties: {
-          calculation: { type: "string", description: "Minimum 2-3 paragraf uzunluğunda detaylı hesaplama adımları" },
-          meaning: { type: "string", description: "Minimum 3-4 paragraf uzunluğunda rakamların ezoterik, okültist ve mistik anlamları" },
-          personal_interpretation: { type: "string", description: "Minimum 4-5 paragraf uzunluğunda kişiye özel, detaylı ve derinlemesine yorumlar" },
-          references: { type: "string", description: "Minimum 2-3 paragraf uzunluğunda mitoloji, felsefe, çakra sistemi ve ezoterik bilgi referansları" }
+          calculation: { type: "string", description: "2-3 paragraf detaylı hesaplama adımları" },
+          meaning: { type: "string", description: "2-3 paragraf ezoterik ve mistik anlamlar" },
+          personal_interpretation: { type: "string", description: "3-4 paragraf kişiye özel yorumlar" },
+          references: { type: "string", description: "1-2 paragraf mitoloji ve ezoterik referanslar" }
         },
         required: ["calculation", "meaning", "personal_interpretation", "references"]
       };
@@ -140,7 +137,7 @@ JSON formatında yanıt ver, her konu için ayrı alan oluştur.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -156,7 +153,7 @@ JSON formatında yanıt ver, her konu için ayrı alan oluştur.`;
                 properties: {
                   overall_summary: { 
                     type: "string", 
-                    description: "Minimum 5-6 paragraf uzunluğunda genel özet ve başlangıç yorumu" 
+                    description: "3-4 paragraf genel özet ve başlangıç yorumu" 
                   },
                   topics: {
                     type: "object",
@@ -182,6 +179,15 @@ JSON formatında yanıt ver, her konu için ayrı alan oluştur.`;
 
     const aiData = await response.json();
     console.log("AI Response:", JSON.stringify(aiData, null, 2));
+    
+    // Check if AI returned an error
+    if (aiData.error) {
+      console.error("AI provider error:", aiData.error);
+      if (aiData.error.code === 524) {
+        throw new Error("AI timeout - please try again");
+      }
+      throw new Error("AI provider error");
+    }
     
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) {
@@ -242,6 +248,10 @@ JSON formatında yanıt ver, her konu için ayrı alan oluştur.`;
       statusCode = 402;
     } else if (error.message === "AI analysis failed") {
       errorMessage = "AI analizi başarısız oldu. Lütfen tekrar deneyin.";
+    } else if (error.message === "AI timeout - please try again") {
+      errorMessage = "AI servisi zaman aşımına uğradı. Lütfen birkaç saniye sonra tekrar deneyin.";
+    } else if (error.message === "AI provider error") {
+      errorMessage = "AI servisinde geçici bir sorun var. Lütfen tekrar deneyin.";
     } else if (error.message === "AI did not return structured data") {
       errorMessage = "AI yanıtı işlenemedi. Lütfen tekrar deneyin.";
     } else if (error.message?.includes("validation")) {
