@@ -2778,6 +2778,10 @@ export type Database = {
         Returns: boolean
       }
       increment_hashtag_usage: { Args: { tag_text: string }; Returns: string }
+      is_group_admin: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
       send_scheduled_messages: { Args: never; Returns: undefined }
       update_trending_search: {
         Args: { search_query: string }
