@@ -1,0 +1,233 @@
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
+import { Mail, Smartphone, Plus, X } from "lucide-react";
+
+interface NotificationSettings {
+  id?: string;
+  email_on_error: boolean;
+  email_on_success: boolean;
+  push_on_error: boolean;
+  push_on_success: boolean;
+  email_recipients: string[];
+}
+
+export function CronNotificationSettings() {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [settings, setSettings] = useState<NotificationSettings>({
+    email_on_error: true,
+    email_on_success: false,
+    push_on_error: true,
+    push_on_success: false,
+    email_recipients: [],
+  });
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('cron_notification_settings')
+        .select('*')
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      if (data) {
+        setSettings(data);
+      }
+    } catch (error) {
+      console.error('Error fetching notification settings:', error);
+    }
+  };
+
+  const saveSettings = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('cron_notification_settings')
+        .upsert({
+          id: settings.id,
+          ...settings,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Başarılı",
+        description: "Bildirim ayarları kaydedildi",
+      });
+
+      fetchSettings();
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      toast({
+        title: "Hata",
+        description: "Ayarlar kaydedilirken bir hata oluştu",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addEmail = () => {
+    if (newEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+      setSettings({
+        ...settings,
+        email_recipients: [...settings.email_recipients, newEmail],
+      });
+      setNewEmail("");
+    } else {
+      toast({
+        title: "Hata",
+        description: "Geçerli bir e-posta adresi giriniz",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const removeEmail = (email: string) => {
+    setSettings({
+      ...settings,
+      email_recipients: settings.email_recipients.filter(e => e !== email),
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Mail className="h-5 w-5 text-primary" />
+            <CardTitle>E-posta Bildirimleri</CardTitle>
+          </div>
+          <CardDescription>
+            Cron job durumları için e-posta bildirimleri ayarlayın
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="email-error">Hata Durumunda Bildirim</Label>
+              <p className="text-sm text-muted-foreground">
+                Cron job başarısız olduğunda e-posta gönder
+              </p>
+            </div>
+            <Switch
+              id="email-error"
+              checked={settings.email_on_error}
+              onCheckedChange={(checked) =>
+                setSettings({ ...settings, email_on_error: checked })
+              }
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="email-success">Başarı Durumunda Bildirim</Label>
+              <p className="text-sm text-muted-foreground">
+                Cron job başarıyla tamamlandığında e-posta gönder
+              </p>
+            </div>
+            <Switch
+              id="email-success"
+              checked={settings.email_on_success}
+              onCheckedChange={(checked) =>
+                setSettings({ ...settings, email_on_success: checked })
+              }
+            />
+          </div>
+
+          <div className="space-y-3">
+            <Label>E-posta Alıcıları</Label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="admin@example.com"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addEmail()}
+              />
+              <Button onClick={addEmail} size="icon">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {settings.email_recipients.map((email) => (
+                <Badge key={email} variant="secondary" className="gap-1">
+                  {email}
+                  <button
+                    onClick={() => removeEmail(email)}
+                    className="ml-1 hover:text-destructive"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Smartphone className="h-5 w-5 text-primary" />
+            <CardTitle>Push Bildirimleri</CardTitle>
+          </div>
+          <CardDescription>
+            Admin kullanıcılarına tarayıcı bildirimleri gönder
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="push-error">Hata Durumunda Bildirim</Label>
+              <p className="text-sm text-muted-foreground">
+                Cron job başarısız olduğunda push bildirimi gönder
+              </p>
+            </div>
+            <Switch
+              id="push-error"
+              checked={settings.push_on_error}
+              onCheckedChange={(checked) =>
+                setSettings({ ...settings, push_on_error: checked })
+              }
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="push-success">Başarı Durumunda Bildirim</Label>
+              <p className="text-sm text-muted-foreground">
+                Cron job başarıyla tamamlandığında push bildirimi gönder
+              </p>
+            </div>
+            <Switch
+              id="push-success"
+              checked={settings.push_on_success}
+              onCheckedChange={(checked) =>
+                setSettings({ ...settings, push_on_success: checked })
+              }
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Button onClick={saveSettings} disabled={loading} className="w-full">
+        {loading ? "Kaydediliyor..." : "Ayarları Kaydet"}
+      </Button>
+    </div>
+  );
+}
