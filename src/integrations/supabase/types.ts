@@ -50,8 +50,47 @@ export type Database = {
         }
         Relationships: []
       }
+      alert_escalations: {
+        Row: {
+          alert_types: string[] | null
+          created_at: string | null
+          enabled: boolean | null
+          escalation_delay_minutes: number
+          escalation_levels: Json
+          id: string
+          name: string
+          severity_levels: string[]
+          updated_at: string | null
+        }
+        Insert: {
+          alert_types?: string[] | null
+          created_at?: string | null
+          enabled?: boolean | null
+          escalation_delay_minutes?: number
+          escalation_levels?: Json
+          id?: string
+          name: string
+          severity_levels?: string[]
+          updated_at?: string | null
+        }
+        Update: {
+          alert_types?: string[] | null
+          created_at?: string | null
+          enabled?: boolean | null
+          escalation_delay_minutes?: number
+          escalation_levels?: Json
+          id?: string
+          name?: string
+          severity_levels?: string[]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       alert_logs: {
         Row: {
+          acknowledged: boolean | null
+          acknowledged_at: string | null
+          acknowledged_by: string | null
           alert_config_id: string | null
           details: Json | null
           id: string
@@ -61,6 +100,9 @@ export type Database = {
           type: string
         }
         Insert: {
+          acknowledged?: boolean | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           alert_config_id?: string | null
           details?: Json | null
           id?: string
@@ -70,6 +112,9 @@ export type Database = {
           type: string
         }
         Update: {
+          acknowledged?: boolean | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           alert_config_id?: string | null
           details?: Json | null
           id?: string
@@ -735,6 +780,51 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      escalation_logs: {
+        Row: {
+          alert_log_id: string | null
+          escalation_config_id: string | null
+          escalation_level: number
+          id: string
+          notification_type: string
+          recipients: string[]
+          sent_at: string | null
+        }
+        Insert: {
+          alert_log_id?: string | null
+          escalation_config_id?: string | null
+          escalation_level: number
+          id?: string
+          notification_type: string
+          recipients: string[]
+          sent_at?: string | null
+        }
+        Update: {
+          alert_log_id?: string | null
+          escalation_config_id?: string | null
+          escalation_level?: number
+          id?: string
+          notification_type?: string
+          recipients?: string[]
+          sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escalation_logs_alert_log_id_fkey"
+            columns: ["alert_log_id"]
+            isOneToOne: false
+            referencedRelation: "alert_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escalation_logs_escalation_config_id_fkey"
+            columns: ["escalation_config_id"]
+            isOneToOne: false
+            referencedRelation: "alert_escalations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       event_participants: {
         Row: {
@@ -2938,6 +3028,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      acknowledge_alert: {
+        Args: { p_alert_log_id: string; p_user_id: string }
+        Returns: undefined
+      }
       check_mutual_match: {
         Args: { p_user1_id: string; p_user2_id: string }
         Returns: boolean

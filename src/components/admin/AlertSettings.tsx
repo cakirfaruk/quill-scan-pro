@@ -15,6 +15,7 @@ import { Bell, Plus, Trash2, Mail, MessageSquare } from "lucide-react";
 import { ManualAlertTest } from "./ManualAlertTest";
 import { AlertAnalytics } from "./AlertAnalytics";
 import { AlertSnoozeManager } from "./AlertSnoozeManager";
+import { AlertEscalationSettings } from "./AlertEscalationSettings";
 
 export const AlertSettings = () => {
   const queryClient = useQueryClient();
@@ -202,10 +203,11 @@ export const AlertSettings = () => {
       </div>
 
       <Tabs defaultValue="settings" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="settings">Ayarlar</TabsTrigger>
           <TabsTrigger value="analytics">Analitik</TabsTrigger>
           <TabsTrigger value="snooze">Sessizleştirme</TabsTrigger>
+          <TabsTrigger value="escalation">Eskalasyon</TabsTrigger>
           <TabsTrigger value="test">Test</TabsTrigger>
         </TabsList>
 
@@ -503,6 +505,10 @@ export const AlertSettings = () => {
 
       <TabsContent value="snooze">
         <AlertSnoozeManager />
+      </TabsContent>
+
+      <TabsContent value="escalation">
+        <AlertEscalationSettings />
       </TabsContent>
 
       <TabsContent value="test">

@@ -44,3 +44,6 @@ verify_jwt = true
 
 [functions.send-alert]
 verify_jwt = true
+
+[functions.check-alert-escalations]
+verify_jwt = false
