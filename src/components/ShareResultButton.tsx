@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Share2, Loader2, CheckSquare, Square, MessageCircle, Download } from "lucide-react";
+import { Share2, Loader2, CheckSquare, Square, MessageCircle, Download, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -39,6 +39,9 @@ export const ShareResultButton = ({
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [pdfGeneratedAt, setPdfGeneratedAt] = useState<Date | null>(null);
   const { toast } = useToast();
 
   const loadFriends = async () => {
@@ -171,16 +174,19 @@ export const ShareResultButton = ({
     window.open(whatsappUrl, "_blank");
   };
 
-  const handlePDFDownload = async () => {
+  const generatePDF = async () => {
+    setIsGeneratingPdf(true);
     try {
-      console.log(`📄 PDF Generator Version: ${PDF_VERSION}`);
+      const timestamp = Date.now();
+      console.log(`📄 PDF Generator Version: ${PDF_VERSION} - Timestamp: ${timestamp}`);
+      
+      toast({
+        title: "PDF Oluşturuluyor",
+        description: `Lütfen bekleyin... (v${PDF_VERSION})`,
+      });
       
       // If contentRef is provided, use the actual UI element with clone method
       if (contentRef?.current) {
-        toast({
-          title: "PDF Oluşturuluyor",
-          description: `Lütfen bekleyin... (v${PDF_VERSION})`,
-        });
 
         const originalElement = contentRef.current;
         
@@ -327,13 +333,14 @@ export const ShareResultButton = ({
         
         const pdf = new jsPDF('p', 'mm', 'a4');
         
-        // Add metadata with version information
+        // Add metadata with version and timestamp
+        const timestamp = Date.now();
         pdf.setProperties({
           title: title,
           subject: `Analysis - v${PDF_VERSION}`,
           creator: 'Astro Social',
           author: 'User',
-          keywords: `analysis, version ${PDF_VERSION}`
+          keywords: `analysis, version ${PDF_VERSION}, generated-${timestamp}`
         });
         let heightLeft = imgHeight;
         let position = 0;
@@ -364,13 +371,14 @@ export const ShareResultButton = ({
           heightLeft -= pageHeight;
         }
         
-        // Download PDF
-        const fileName = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
-        pdf.save(fileName);
+        // Convert PDF to Blob and store it
+        const pdfBlob = pdf.output('blob');
+        setPdfBlob(pdfBlob);
+        setPdfGeneratedAt(new Date());
         
         toast({
-          title: "Başarılı",
-          description: "PDF başarıyla indirildi",
+          title: "PDF Hazır!",
+          description: `PDF artık indirilmeye hazır (v${PDF_VERSION})`,
         });
       } else {
         // Fallback to text-only method
@@ -416,19 +424,65 @@ export const ShareResultButton = ({
           heightLeft -= pageHeight;
         }
         
-        const fileName = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
-        pdf.save(fileName);
+        // Convert PDF to Blob and store it
+        const pdfBlob = pdf.output('blob');
+        setPdfBlob(pdfBlob);
+        setPdfGeneratedAt(new Date());
+        
+        toast({
+          title: "PDF Hazır!",
+          description: `PDF artık indirilmeye hazır (v${PDF_VERSION})`,
+        });
       }
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast({
+        title: "Hata",
+        description: "PDF oluşturulurken bir hata oluştu",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
+  const downloadPDF = () => {
+    if (!pdfBlob) {
+      toast({
+        title: "Hata",
+        description: "PDF bulunamadı. Lütfen önce PDF oluşturun.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Create unique filename with timestamp and random ID
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(7);
+      const fileName = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${timestamp}_${randomId}.pdf`;
+      
+      // Create a download link
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the blob URL
+      URL.revokeObjectURL(blobUrl);
       
       toast({
         title: "Başarılı",
         description: "PDF başarıyla indirildi",
       });
     } catch (error) {
-      console.error("Error generating PDF:", error);
+      console.error("Error downloading PDF:", error);
       toast({
         title: "Hata",
-        description: "PDF oluşturulurken bir hata oluştu",
+        description: "PDF indirilirken bir hata oluştu",
         variant: "destructive",
       });
     }
@@ -446,7 +500,14 @@ export const ShareResultButton = ({
         Paylaş
       </Button>
 
-      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+      <Dialog open={showShareDialog} onOpenChange={(open) => {
+        setShowShareDialog(open);
+        if (!open) {
+          // Clear PDF state when dialog closes
+          setPdfBlob(null);
+          setPdfGeneratedAt(null);
+        }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
@@ -480,14 +541,35 @@ export const ShareResultButton = ({
                     WhatsApp
                   </Button>
                   
-                  <Button
-                    onClick={handlePDFDownload}
-                    variant="outline"
-                    size="lg"
-                  >
-                    <Download className="w-5 h-5 mr-2" />
-                    PDF İndir
-                  </Button>
+                  {!pdfBlob ? (
+                    <Button
+                      onClick={generatePDF}
+                      disabled={isGeneratingPdf}
+                      variant="outline"
+                      size="lg"
+                    >
+                      {isGeneratingPdf ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          Oluşturuluyor...
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-5 h-5 mr-2" />
+                          PDF Oluştur
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={downloadPDF}
+                      variant="outline"
+                      size="lg"
+                    >
+                      <Download className="w-5 h-5 mr-2" />
+                      PDF İndir
+                    </Button>
+                  )}
                 </div>
 
                 {friends.length > 0 && (
