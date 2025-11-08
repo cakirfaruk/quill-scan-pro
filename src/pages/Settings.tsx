@@ -23,6 +23,7 @@ import { NotificationPreferences } from "@/components/NotificationPreferences";
 import { PermissionSettings } from "@/components/PermissionSettings";
 import { OfflineCacheStatus } from "@/components/OfflineCacheStatus";
 import { PushNotificationSettings } from "@/components/PushNotificationSettings";
+import { performFullCacheRefresh } from "@/utils/cacheManager";
 
 const Settings = () => {
   const [profile, setProfile] = useState({
@@ -1029,7 +1030,51 @@ const Settings = () => {
                     />
                   </div>
 
-                  <div className="pt-6 border-t space-y-3">
+                  <div className="pt-6 border-t space-y-4">
+                    <div>
+                      <Label className="text-base flex items-center gap-2 mb-2">
+                        <Database className="w-4 h-4" />
+                        Önbellek Yönetimi
+                      </Label>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Eski PDF'leri ve önbellekleri temizleyerek en güncel özellikleri kullanın
+                      </p>
+                      <Button
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            toast({
+                              title: "Önbellek Temizleniyor",
+                              description: "Lütfen bekleyin...",
+                            });
+                            
+                            await performFullCacheRefresh();
+                            
+                            toast({
+                              title: "Başarılı",
+                              description: "Önbellek temizlendi. Sayfa yenileniyor...",
+                            });
+                            
+                            // Reload page after 1 second
+                            setTimeout(() => {
+                              window.location.reload();
+                            }, 1000);
+                          } catch (error) {
+                            console.error("Cache clear error:", error);
+                            toast({
+                              title: "Hata",
+                              description: "Önbellek temizlenemedi",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                        className="w-full gap-2"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        Önbelleği Temizle ve Yenile
+                      </Button>
+                    </div>
+                    
                     <Button
                       variant="outline"
                       onClick={() => navigate("/call-history")}

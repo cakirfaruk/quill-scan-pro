@@ -10,6 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
+// PDF Generator Version - Increment this when making changes to PDF generation
+const PDF_VERSION = '2.0.0';
+
 interface ShareResultButtonProps {
   content: string;
   title: string;
@@ -170,11 +173,13 @@ export const ShareResultButton = ({
 
   const handlePDFDownload = async () => {
     try {
+      console.log(`📄 PDF Generator Version: ${PDF_VERSION}`);
+      
       // If contentRef is provided, use the actual UI element with clone method
       if (contentRef?.current) {
         toast({
           title: "PDF Oluşturuluyor",
-          description: "Lütfen bekleyin...",
+          description: `Lütfen bekleyin... (v${PDF_VERSION})`,
         });
 
         const originalElement = contentRef.current;
@@ -321,6 +326,15 @@ export const ShareResultButton = ({
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
         
         const pdf = new jsPDF('p', 'mm', 'a4');
+        
+        // Add metadata with version information
+        pdf.setProperties({
+          title: title,
+          subject: `Analysis - v${PDF_VERSION}`,
+          creator: 'Astro Social',
+          author: 'User',
+          keywords: `analysis, version ${PDF_VERSION}`
+        });
         let heightLeft = imgHeight;
         let position = 0;
         

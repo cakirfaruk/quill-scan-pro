@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       devOptions: {
-        enabled: true
+        enabled: false // Disable PWA in development to prevent caching issues
       },
       includeAssets: ['icon-192.png', 'icon-512.png', 'robots.txt'],
       
@@ -31,6 +31,19 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff,woff2,ttf,otf}'],
         
           runtimeCaching: [
+            // JavaScript files - Always check network first for updates
+            {
+              urlPattern: /\.js$/,
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'js-cache',
+                networkTimeoutSeconds: 3,
+                expiration: {
+                  maxEntries: 50,
+                  maxAgeSeconds: 60 * 60 * 24 // 24 hours
+                }
+              }
+            },
             {
               urlPattern: /^https:\/\/ekkymypfvixlysrgtabz\.supabase\.co\/rest\/v1\/.*/,
               handler: 'StaleWhileRevalidate',

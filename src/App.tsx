@@ -22,6 +22,7 @@ import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { OfflineCacheStatus } from "@/components/OfflineCacheStatus";
 import { InAppNotification } from "@/components/InAppNotification";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { clearOldCaches, forceServiceWorkerUpdate, checkAppVersion } from "@/utils/cacheManager";
 
 // Critical pages - load immediately (no lazy loading)
 import Index from "./pages/Index";
@@ -363,9 +364,26 @@ const AppRoutes = () => {
 };
 
 const App = () => {
-  // Initialize performance monitoring
+  // Initialize performance monitoring and cache management
   useEffect(() => {
     initPerformanceMonitoring();
+    
+    // Check app version and clear old caches on startup
+    const performCacheCheck = async () => {
+      const { needsUpdate, currentVersion } = checkAppVersion();
+      
+      if (needsUpdate) {
+        console.log(`🔄 App updated to version ${currentVersion}, clearing old caches...`);
+        await clearOldCaches();
+        await forceServiceWorkerUpdate();
+      } else {
+        console.log(`✅ App version ${currentVersion} is current`);
+        // Still clear old caches periodically
+        await clearOldCaches();
+      }
+    };
+    
+    performCacheCheck();
   }, []);
 
   return (
