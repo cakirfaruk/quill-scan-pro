@@ -4,8 +4,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Users, UserPlus, Calendar, Clock, MapPin } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { User, Users, UserPlus, Calendar, Clock, MapPin, AlertTriangle, Settings } from "lucide-react";
 import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
+import { useNavigate } from "react-router-dom";
 
 interface PersonData {
   fullName?: string;
@@ -49,6 +52,7 @@ export const PersonSelector = ({
     gender: false,
   }
 }: PersonSelectorProps) => {
+  const navigate = useNavigate();
   const [selectionType, setSelectionType] = useState<"myself" | "friend" | "other">("myself");
   const [friends, setFriends] = useState<Friend[]>([]);
   const [selectedFriendId, setSelectedFriendId] = useState<string>("");
@@ -323,18 +327,24 @@ export const PersonSelector = ({
                   {(!personData.fullName || !personData.birthDate || 
                     (requiredFields.birthTime && !personData.birthTime) || 
                     (requiredFields.birthPlace && !personData.birthPlace)) && (
-                    <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                      <p className="text-sm font-medium text-destructive">⚠️ Eksik Profil Bilgileri</p>
-                      <p className="text-xs text-destructive/80 mt-1">
-                        Analiz yapabilmek için lütfen profil bilgilerinizi eksiksiz doldurun.
-                      </p>
-                      <a 
-                        href="/settings" 
-                        className="text-xs text-primary hover:underline inline-block mt-2"
-                      >
-                        Ayarlar → Profil Düzenle
-                      </a>
-                    </div>
+                    <Alert className="mt-3 border-destructive/50 bg-destructive/10">
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                      <AlertDescription>
+                        <p className="text-sm font-semibold text-destructive mb-2">⚠️ Eksik Profil Bilgileri</p>
+                        <p className="text-xs text-destructive/90 mb-3">
+                          Analiz yapabilmek için lütfen profil bilgilerinizi eksiksiz doldurun.
+                        </p>
+                        <Button 
+                          size="sm" 
+                          variant="destructive"
+                          onClick={() => navigate("/settings")}
+                          className="h-8"
+                        >
+                          <Settings className="w-3 h-3 mr-2" />
+                          Profili Düzenle
+                        </Button>
+                      </AlertDescription>
+                    </Alert>
                   )}
                 </>
               )}

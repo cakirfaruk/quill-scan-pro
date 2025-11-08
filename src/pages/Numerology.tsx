@@ -7,7 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Coins, Sparkles, AlertTriangle, Clock } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Coins, Sparkles, AlertTriangle, Clock, CreditCard, ExternalLink } from "lucide-react";
 import { Header } from "@/components/Header";
 import { PersonSelector } from "@/components/PersonSelector";
 import { supabase } from "@/integrations/supabase/client";
@@ -100,6 +101,15 @@ export default function Numerology() {
   };
 
   const handleAnalyze = async () => {
+    // Debug logging
+    console.log("🔍 Analyze button clicked - Debug Info:", {
+      availableCredits,
+      requiredCredits: selectedTopics.length,
+      hasFullName: !!personData.fullName,
+      hasBirthDate: !!personData.birthDate,
+      selectedTopicsCount: selectedTopics.length,
+    });
+
     // Check if profile is complete when using "myself" option
     const missingFields: string[] = [];
     if (!personData.fullName?.trim()) missingFields.push("Ad Soyad");
@@ -292,11 +302,26 @@ export default function Numerology() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Analiz Konuları</CardTitle>
-                  <CardDescription>Her konu 1 kredi - Mevcut: {availableCredits} kredi</CardDescription>
+                  <CardDescription>Her konu 1 kredi kullanır</CardDescription>
                 </div>
-                <Button variant="outline" onClick={toggleSelectAll}>
-                  {selectAll ? "Tümünü Kaldır" : "Tümünü Seç"}
-                </Button>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+                    <Coins className="w-4 h-4 text-primary" />
+                    <span className="font-semibold text-primary">{availableCredits} kredi</span>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => navigate("/credits")}
+                    className="h-8"
+                  >
+                    <CreditCard className="w-3 h-3 mr-1.5" />
+                    Kredi Ekle
+                  </Button>
+                  <Button variant="outline" onClick={toggleSelectAll}>
+                    {selectAll ? "Tümünü Kaldır" : "Tümünü Seç"}
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -343,18 +368,51 @@ export default function Numerology() {
                   {selectedTopics.length} kredi
                 </div>
               </div>
-              {availableCredits < selectedTopics.length && (
-                <p className="text-destructive text-sm mb-4">Yetersiz kredi!</p>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Button
+                        onClick={handleAnalyze}
+                        disabled={isAnalyzing || selectedTopics.length === 0 || selectedTopics.length > 13 || availableCredits < selectedTopics.length || !personData.fullName || !personData.birthDate}
+                        className="w-full"
+                      >
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        {isAnalyzing ? "Analiz Ediliyor..." : "Analizi Başlat"} ({selectedTopics.length} kredi)
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  {(availableCredits < selectedTopics.length || !personData.fullName || !personData.birthDate) && selectedTopics.length > 0 && (
+                    <TooltipContent>
+                      <p className="text-xs">
+                        {!personData.fullName || !personData.birthDate ? "Profil bilgileriniz eksik" : 
+                         availableCredits < selectedTopics.length ? `Yetersiz kredi (${selectedTopics.length} kredi gerekli)` : ""}
+                      </p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+              
+              {/* Error explanations below button */}
+              {(!personData.fullName || !personData.birthDate) && selectedTopics.length > 0 && (
+                <Alert className="mt-3 border-destructive/50 bg-destructive/10">
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                  <AlertDescription className="text-destructive text-sm">
+                    ❌ Profil bilgileriniz eksik. Lütfen yukarıdaki "Profili Düzenle" butonuna tıklayın.
+                  </AlertDescription>
+                </Alert>
               )}
-              <Button
-                onClick={handleAnalyze}
-                disabled={isAnalyzing || selectedTopics.length === 0 || selectedTopics.length > 13 || availableCredits < selectedTopics.length || !personData.fullName || !personData.birthDate}
-                className="w-full"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                {isAnalyzing ? "Analiz Ediliyor..." : "Analizi Başlat"}
-              </Button>
-              {selectedTopics.length > 0 && (
+              
+              {personData.fullName && personData.birthDate && availableCredits < selectedTopics.length && selectedTopics.length > 0 && (
+                <Alert className="mt-3 border-orange-500/50 bg-orange-500/10">
+                  <Coins className="h-4 w-4 text-orange-500" />
+                  <AlertDescription className="text-orange-500 text-sm">
+                    ❌ Yetersiz kredi: {selectedTopics.length} kredi gerekli, mevcut: {availableCredits}. Yukarıdaki "Kredi Ekle" butonuna tıklayın.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {selectedTopics.length > 0 && personData.fullName && personData.birthDate && availableCredits >= selectedTopics.length && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
                   <Clock className="w-4 h-4" />
                   Tahmini süre: {selectedTopics.length <= 3 ? "20-30" : selectedTopics.length <= 5 ? "30-45" : selectedTopics.length <= 8 ? "45-60" : "60-120"} saniye
