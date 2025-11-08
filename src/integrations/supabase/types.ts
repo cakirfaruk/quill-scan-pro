@@ -772,6 +772,39 @@ export type Database = {
         }
         Relationships: []
       }
+      cron_notification_settings: {
+        Row: {
+          created_at: string | null
+          email_on_error: boolean | null
+          email_on_success: boolean | null
+          email_recipients: string[] | null
+          id: string
+          push_on_error: boolean | null
+          push_on_success: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email_on_error?: boolean | null
+          email_on_success?: boolean | null
+          email_recipients?: string[] | null
+          id?: string
+          push_on_error?: boolean | null
+          push_on_success?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email_on_error?: boolean | null
+          email_on_success?: boolean | null
+          email_recipients?: string[] | null
+          id?: string
+          push_on_error?: boolean | null
+          push_on_success?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       daily_horoscopes: {
         Row: {
           created_at: string

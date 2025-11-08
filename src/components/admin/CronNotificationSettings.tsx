@@ -39,12 +39,19 @@ export function CronNotificationSettings() {
       const { data, error } = await supabase
         .from('cron_notification_settings')
         .select('*')
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
       
       if (data) {
-        setSettings(data);
+        setSettings({
+          id: data.id,
+          email_on_error: data.email_on_error,
+          email_on_success: data.email_on_success,
+          push_on_error: data.push_on_error,
+          push_on_success: data.push_on_success,
+          email_recipients: data.email_recipients || [],
+        });
       }
     } catch (error) {
       console.error('Error fetching notification settings:', error);
@@ -54,13 +61,17 @@ export function CronNotificationSettings() {
   const saveSettings = async () => {
     setLoading(true);
     try {
+      const payload = {
+        email_on_error: settings.email_on_error,
+        email_on_success: settings.email_on_success,
+        push_on_error: settings.push_on_error,
+        push_on_success: settings.push_on_success,
+        email_recipients: settings.email_recipients,
+      };
+
       const { error } = await supabase
         .from('cron_notification_settings')
-        .upsert({
-          id: settings.id,
-          ...settings,
-          updated_at: new Date().toISOString(),
-        });
+        .upsert(settings.id ? { id: settings.id, ...payload } : payload);
 
       if (error) throw error;
 
