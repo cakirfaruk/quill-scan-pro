@@ -88,6 +88,47 @@ export type Database = {
           },
         ]
       }
+      alert_snoozes: {
+        Row: {
+          alert_config_id: string | null
+          alert_type: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          reason: string | null
+          snooze_until: string
+          user_id: string | null
+        }
+        Insert: {
+          alert_config_id?: string | null
+          alert_type?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+          snooze_until: string
+          user_id?: string | null
+        }
+        Update: {
+          alert_config_id?: string | null
+          alert_type?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+          snooze_until?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_snoozes_alert_config_id_fkey"
+            columns: ["alert_config_id"]
+            isOneToOne: false
+            referencedRelation: "alert_configurations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analysis_history: {
         Row: {
           analysis_type: string
@@ -2901,6 +2942,7 @@ export type Database = {
         Args: { p_user1_id: string; p_user2_id: string }
         Returns: boolean
       }
+      cleanup_expired_snoozes: { Args: never; Returns: undefined }
       create_group_with_admin: {
         Args: {
           p_created_by: string
@@ -2930,6 +2972,10 @@ export type Database = {
         Returns: boolean
       }
       increment_hashtag_usage: { Args: { tag_text: string }; Returns: string }
+      is_alert_snoozed: {
+        Args: { p_alert_config_id: string; p_alert_type: string }
+        Returns: boolean
+      }
       is_group_admin: {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean

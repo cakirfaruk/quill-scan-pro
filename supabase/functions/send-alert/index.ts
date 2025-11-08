@@ -27,6 +27,21 @@ serve(async (req) => {
 
     console.log('Processing alert:', { type, severity, message });
 
+    // Check if alert type is snoozed
+    const { data: isSnoozed } = await supabase
+      .rpc('is_alert_snoozed', {
+        p_alert_type: type,
+        p_alert_config_id: null
+      });
+
+    if (isSnoozed) {
+      console.log(`Alert type ${type} is snoozed, skipping...`);
+      return new Response(
+        JSON.stringify({ success: true, message: 'Alert is snoozed' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Get active alert configurations
     const { data: configs, error: configError } = await supabase
       .from('alert_configurations')
@@ -71,6 +86,18 @@ serve(async (req) => {
     // Send alerts
     for (const config of matchingConfigs) {
       try {
+        // Check if this specific config is snoozed
+        const { data: isConfigSnoozed } = await supabase
+          .rpc('is_alert_snoozed', {
+            p_alert_type: null,
+            p_alert_config_id: config.id
+          });
+
+        if (isConfigSnoozed) {
+          console.log(`Alert config ${config.name} is snoozed, skipping...`);
+          continue;
+        }
+
         if (config.type === 'email') {
           await sendEmailAlert(config, { type, severity, message, details });
         } else if (config.type === 'slack' && config.slack_webhook_url) {
