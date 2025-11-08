@@ -15,7 +15,7 @@ const numerologySchema = z.object({
     const parsed = new Date(date);
     return !isNaN(parsed.getTime()) && parsed <= new Date();
   }, 'Geçersiz veya gelecek tarih'),
-  selectedTopics: z.array(z.string()).min(1, 'En az bir konu seçilmelidir').max(8, 'En fazla 8 konu seçilebilir')
+  selectedTopics: z.array(z.string()).min(1, 'En az bir konu seçilmelidir').max(13, 'En fazla 13 konu seçilebilir')
 });
 
 serve(async (req) => {

@@ -150,7 +150,7 @@ export default function Numerology() {
 
     setIsAnalyzing(true);
     
-    const estimatedTime = selectedTopics.length <= 3 ? "20-30" : selectedTopics.length <= 5 ? "30-45" : "45-60";
+    const estimatedTime = selectedTopics.length <= 3 ? "20-30" : selectedTopics.length <= 5 ? "30-45" : selectedTopics.length <= 8 ? "45-60" : "60-120";
     toast({
       title: "Analiz Başlatıldı",
       description: `Analiz ediliyor, bu işlem ${estimatedTime} saniye sürebilir...`,
@@ -300,11 +300,11 @@ export default function Numerology() {
               </div>
             </CardHeader>
             <CardContent>
-              {selectedTopics.length > 8 && (
+              {selectedTopics.length > 10 && (
                 <Alert className="mb-4 border-orange-500/50 bg-orange-500/10">
                   <AlertTriangle className="h-4 w-4 text-orange-500" />
                   <AlertDescription className="text-orange-500">
-                    En fazla 8 konu seçebilirsiniz. Daha iyi sonuçlar için 5-8 konu seçmenizi öneririz.
+                    10'dan fazla konu seçtiniz. Analiz daha uzun sürebilir (90-120 saniye).
                   </AlertDescription>
                 </Alert>
               )}
@@ -316,7 +316,7 @@ export default function Numerology() {
                         id={topic.name}
                         checked={selectedTopics.includes(topic.name)}
                         onCheckedChange={() => toggleTopic(topic.name)}
-                        disabled={selectedTopics.length >= 8 && !selectedTopics.includes(topic.name)}
+                        disabled={selectedTopics.length >= 13 && !selectedTopics.includes(topic.name)}
                       />
                       <Label htmlFor={topic.name} className="flex-1 cursor-pointer">{topic.name}</Label>
                       <Badge variant="secondary" className={topic.color}>
@@ -348,7 +348,7 @@ export default function Numerology() {
               )}
               <Button
                 onClick={handleAnalyze}
-                disabled={isAnalyzing || selectedTopics.length === 0 || selectedTopics.length > 8 || availableCredits < selectedTopics.length || !personData.fullName || !personData.birthDate}
+                disabled={isAnalyzing || selectedTopics.length === 0 || selectedTopics.length > 13 || availableCredits < selectedTopics.length || !personData.fullName || !personData.birthDate}
                 className="w-full"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
@@ -357,7 +357,7 @@ export default function Numerology() {
               {selectedTopics.length > 0 && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
                   <Clock className="w-4 h-4" />
-                  Tahmini süre: {selectedTopics.length <= 3 ? "20-30" : selectedTopics.length <= 5 ? "30-45" : "45-60"} saniye
+                  Tahmini süre: {selectedTopics.length <= 3 ? "20-30" : selectedTopics.length <= 5 ? "30-45" : selectedTopics.length <= 8 ? "45-60" : "60-120"} saniye
                 </div>
               )}
             </CardContent>
