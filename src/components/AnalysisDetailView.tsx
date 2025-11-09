@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Heart, User, Sparkles, Moon, Hand, Coffee, Star, Zap } from "lucide-react";
+import { Heart, User, Sparkles, Moon, Hand, Coffee, Star, Zap, FileText } from "lucide-react";
 import { ShareResultButton } from "@/components/ShareResultButton";
 
 interface CompatibilityArea {
@@ -909,6 +909,23 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
             </Card>
           );
         })}
+        
+        {/* Full PDF Download Button with complete result */}
+        <Card className="p-3 sm:p-4 border-2 border-purple-300 dark:border-purple-700 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30">
+          <div className="flex items-center gap-2 mb-2">
+            <FileText className="w-5 h-5 text-purple-600" />
+            <h4 className="text-sm font-semibold text-foreground">Tam Rapor</h4>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">Tüm analiz sonuçlarınızı PDF olarak indirin</p>
+          <ShareResultButton
+            title="Numeroloji Analizi - Tam Rapor"
+            content={`${result.overall_summary || ''}\n\n${result.topics ? Object.entries(result.topics).map(([name, data]: [string, any]) => `${name}: ${data.explanation || ''}`).join('\n\n') : ''}`}
+            result={result}
+            size="default"
+            variant="default"
+            className="w-full"
+          />
+        </Card>
       </div>
     );
   }

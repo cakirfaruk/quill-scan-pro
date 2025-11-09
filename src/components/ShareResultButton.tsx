@@ -23,6 +23,7 @@ interface ShareResultButtonProps {
   size?: "default" | "sm" | "lg" | "icon";
   className?: string;
   contentRef?: React.RefObject<HTMLDivElement>;
+  result?: any; // Full analysis result object for PDF generation
 }
 
 export const ShareResultButton = ({ 
@@ -33,7 +34,8 @@ export const ShareResultButton = ({
   variant = "outline", 
   size = "sm",
   className = "",
-  contentRef
+  contentRef,
+  result
 }: ShareResultButtonProps) => {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [friends, setFriends] = useState<any[]>([]);
@@ -243,32 +245,239 @@ export const ShareResultButton = ({
   const generatePDF = async () => {
     setIsGeneratingPdf(true);
     setPdfProgress(0);
+    setPdfProgressStep("İçerik hazırlanıyor...");
     
-    let toastId: any;
+    const timestamp = Date.now(); // For unique file naming
     
     try {
-      const timestamp = Date.now();
-      console.log(`📄 PDF Generator Version: ${PDF_VERSION} - Timestamp: ${timestamp}`);
+      console.log(`📄 PDF Generator v${PDF_VERSION} - Timestamp: ${timestamp}`);
       
-      // Step 1: Prepare
-      setPdfProgressStep("İçerik hazırlanıyor...");
-      setPdfProgress(15);
-      toastId = toast({
+      toast({
         title: "PDF Oluşturuluyor",
-        description: (
-          <div className="space-y-2">
-            <p className="text-sm">{pdfProgressStep}</p>
-            <Progress value={15} />
-          </div>
-        ),
-        duration: Infinity,
+        description: "Bu işlem birkaç saniye sürebilir...",
       });
-      
-      // If contentRef is provided, use the actual UI element with clone method
-      if (contentRef?.current) {
+
+      // Debug: Log the result structure
+      if (result) {
+        console.log("📊 Analysis Result Structure:", {
+          hasOverallSummary: !!result.overall_summary,
+          hasTopics: !!result.topics,
+          topicsKeys: result.topics ? Object.keys(result.topics) : [],
+          topicsCount: result.topics ? Object.keys(result.topics).length : 0,
+        });
+      }
+
+      // Get current user for cover page
+      const { data: { user } } = await supabase.auth.getUser();
+      const userName = user?.email?.split('@')[0] || 'Kullanıcı';
+
+      setPdfProgress(10);
+      setPdfProgressStep("Tüm içerik oluşturuluyor...");
+
+      // If we have the result object, build HTML manually for complete content
+      if (result && (result.overall_summary || result.topics)) {
+        // Create off-screen container with full content
+        const container = document.createElement('div');
+        container.style.cssText = `
+          position: absolute;
+          left: -9999px;
+          top: 0;
+          width: 1200px;
+          padding: 60px;
+          background: white;
+          font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          color: #1a1a1a;
+          line-height: 1.6;
+        `;
+
+        // Build full HTML content manually
+        const contentDiv = document.createElement('div');
+        contentDiv.setAttribute('data-pdf-content', 'true');
+        contentDiv.style.cssText = 'width: 100%; display: flex; flex-direction: column; gap: 20px;';
+
+        // Add overall summary if exists
+        if (result.overall_summary) {
+          const summaryDiv = document.createElement('div');
+          summaryDiv.style.cssText = `
+            padding: 24px;
+            background: linear-gradient(to bottom right, #f3e8ff, #e9d5ff);
+            border-radius: 12px;
+            border: 2px solid #d8b4fe;
+            margin-bottom: 16px;
+          `;
+          summaryDiv.innerHTML = `
+            <h3 style="font-size: 20px; font-weight: 700; color: #581c87; margin-bottom: 12px;">
+              Genel Değerlendirme
+            </h3>
+            <p style="font-size: 14px; color: #1f2937; white-space: pre-wrap; line-height: 1.8;">
+              ${result.overall_summary}
+            </p>
+          `;
+          contentDiv.appendChild(summaryDiv);
+        }
+
+        // Add all topics
+        if (result.topics && typeof result.topics === 'object') {
+          const topicEntries = Object.entries(result.topics);
+          console.log(`📝 Rendering ${topicEntries.length} topics to PDF`);
+
+          topicEntries.forEach(([topicName, topicData]: [string, any]) => {
+            // Get explanation text from various possible fields
+            let explanation = '';
+            if (topicData.explanation) {
+              explanation = topicData.explanation;
+            } else {
+              // Combine all available fields
+              const parts = [
+                topicData.calculation,
+                topicData.meaning,
+                topicData.personal_interpretation,
+                topicData.references
+              ].filter(Boolean);
+              explanation = parts.join('\n\n');
+            }
+
+            if (!explanation) {
+              console.warn(`⚠️ No content for topic: ${topicName}`);
+              return;
+            }
+
+            const topicDiv = document.createElement('div');
+            topicDiv.style.cssText = `
+              padding: 20px;
+              background: linear-gradient(to right, #dbeafe, #bfdbfe);
+              border-radius: 10px;
+              border: 2px solid #93c5fd;
+              margin-bottom: 12px;
+              page-break-inside: avoid;
+            `;
+            topicDiv.innerHTML = `
+              <h4 style="font-size: 16px; font-weight: 600; color: #1e3a8a; margin-bottom: 10px;">
+                ${topicName}
+              </h4>
+              <p style="font-size: 13px; color: #374151; white-space: pre-wrap; line-height: 1.7;">
+                ${explanation}
+              </p>
+            `;
+            contentDiv.appendChild(topicDiv);
+          });
+        }
+
+        container.appendChild(contentDiv);
+        document.body.appendChild(container);
+
+        setPdfProgress(40);
+        setPdfProgressStep("Görsel oluşturuluyor...");
+
+        // Wait for rendering
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        // Capture with html2canvas
+        const canvas = await html2canvas(contentDiv, {
+          scale: 3,
+          backgroundColor: '#ffffff',
+          logging: true,
+          useCORS: true,
+          allowTaint: true,
+          width: contentDiv.scrollWidth,
+          height: contentDiv.scrollHeight,
+          windowWidth: 1200,
+          windowHeight: contentDiv.scrollHeight,
+          onclone: (clonedDoc) => {
+            const clonedContainer = clonedDoc.querySelector('[data-pdf-content]');
+            if (clonedContainer) {
+              // Force all elements to be visible
+              clonedContainer.querySelectorAll('*').forEach((el: any) => {
+                el.style.display = 'block';
+                el.style.visibility = 'visible';
+                el.style.opacity = '1';
+                el.style.maxHeight = 'none';
+                el.style.overflow = 'visible';
+              });
+            }
+          }
+        });
+
+        setPdfProgress(60);
+        setPdfProgressStep("PDF dosyası oluşturuluyor...");
+
+        // Create PDF
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const margin = 20;
+
+        // Add cover page
+        addCoverPage(
+          pdf,
+          title,
+          new Date().toLocaleDateString('tr-TR', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          userName
+        );
+
+        // Add content pages
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const imgWidth = pageWidth - (2 * margin);
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        const totalPages = Math.ceil(imgHeight / (pageHeight - (2 * margin))) + 1; // +1 for cover
+
+        let yOffset = 0;
+        let currentPage = 2; // Start from page 2 (after cover)
+
+        while (yOffset < imgHeight) {
+          pdf.addPage();
+          
+          const sourceY = (yOffset / imgHeight) * canvas.height;
+          const sourceHeight = Math.min(
+            ((pageHeight - 2 * margin) / imgHeight) * canvas.height,
+            canvas.height - sourceY
+          );
+
+          // Add image section
+          pdf.addImage(
+            canvas.toDataURL('image/jpeg', 0.95),
+            'JPEG',
+            margin,
+            margin - (yOffset * (pageWidth - 2 * margin)) / imgWidth,
+            imgWidth,
+            imgHeight,
+            undefined,
+            'FAST'
+          );
+
+          // Add page numbers
+          addPageNumbers(pdf, currentPage, totalPages);
+          
+          yOffset += pageHeight - (2 * margin);
+          currentPage++;
+        }
+
+        setPdfProgress(90);
+        setPdfProgressStep("Tamamlanıyor...");
+
+        // Save as blob
+        const pdfBlob = pdf.output('blob');
+        setPdfBlob(pdfBlob);
+
+        // Cleanup
+        document.body.removeChild(container);
+
+        setPdfProgress(100);
+        setPdfProgressStep("Tamamlandı!");
+
+        toast({
+          title: "PDF Hazır",
+          description: "PDF başarıyla oluşturuldu. İndirebilirsiniz.",
+        });
+      } else if (contentRef?.current) {
+        // Fallback to contentRef method
         const originalElement = contentRef.current;
-        
-        // Clone the element deeply
         const clonedElement = originalElement.cloneNode(true) as HTMLElement;
         
         // Step 2: Create container
