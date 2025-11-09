@@ -105,6 +105,24 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
             <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.warnings}</p>
           </Card>
         )}
+
+        {/* Full PDF Download Button */}
+        <Card className="p-3 sm:p-4 border-2 border-purple-300 dark:border-purple-700 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30">
+          <div className="flex items-center gap-2 mb-2">
+            <FileText className="w-5 h-5 text-purple-600" />
+            <h4 className="text-sm font-semibold text-foreground">Tam Rapor</h4>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">Tüm tarot falı sonuçlarınızı PDF olarak indirin</p>
+          <ShareResultButton
+            title="Tarot Falı - Tam Rapor"
+            content={`${result.overall || ''}\n\n${result.cards ? result.cards.map((c: any) => `${c.position}: ${c.interpretation}`).join('\n\n') : ''}`}
+            result={result}
+            analysisType="tarot"
+            size="default"
+            variant="default"
+            className="w-full"
+          />
+        </Card>
       </div>
     );
   }
@@ -206,6 +224,24 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
             </div>
           </Card>
         )}
+
+        {/* Full PDF Download Button */}
+        <Card className="p-3 sm:p-4 border-2 border-amber-300 dark:border-amber-700 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30">
+          <div className="flex items-center gap-2 mb-2">
+            <FileText className="w-5 h-5 text-amber-600" />
+            <h4 className="text-sm font-semibold text-foreground">Tam Rapor</h4>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">Tüm kahve falı sonuçlarınızı PDF olarak indirin</p>
+          <ShareResultButton
+            title="Kahve Falı - Tam Rapor"
+            content={`${result.overall || ''}`}
+            result={result}
+            analysisType="coffee_fortune"
+            size="default"
+            variant="default"
+            className="w-full"
+          />
+        </Card>
       </div>
     );
   }
@@ -307,6 +343,24 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
             <p className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap">{result.warnings}</p>
           </Card>
         )}
+
+        {/* Full PDF Download Button */}
+        <Card className="p-3 sm:p-4 border-2 border-indigo-300 dark:border-indigo-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30">
+          <div className="flex items-center gap-2 mb-2">
+            <FileText className="w-5 h-5 text-indigo-600" />
+            <h4 className="text-sm font-semibold text-foreground">Tam Rapor</h4>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">Tüm rüya yorumunuzu PDF olarak indirin</p>
+          <ShareResultButton
+            title="Rüya Tabiri - Tam Rapor"
+            content={`${result.overall || ''}`}
+            result={result}
+            analysisType="dream"
+            size="default"
+            variant="default"
+            className="w-full"
+          />
+        </Card>
       </div>
     );
   }
@@ -451,6 +505,24 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
             </div>
           </Card>
         )}
+
+        {/* Full PDF Download Button */}
+        <Card className="p-3 sm:p-4 border-2 border-teal-300 dark:border-teal-700 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/30 dark:to-cyan-900/30">
+          <div className="flex items-center gap-2 mb-2">
+            <FileText className="w-5 h-5 text-teal-600" />
+            <h4 className="text-sm font-semibold text-foreground">Tam Rapor</h4>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">Tüm el okuma sonuçlarınızı PDF olarak indirin</p>
+          <ShareResultButton
+            title="El Okuma - Tam Rapor"
+            content={`${result.overall || ''}`}
+            result={result}
+            analysisType="palmistry"
+            size="default"
+            variant="default"
+            className="w-full"
+          />
+        </Card>
       </div>
     );
   }
@@ -560,6 +632,24 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
             <p className="text-sm text-foreground/80 whitespace-pre-wrap">{result.advice}</p>
           </Card>
         )}
+
+        {/* Full PDF Download Button */}
+        <Card className="p-3 sm:p-4 border-2 border-violet-300 dark:border-violet-700 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/30 dark:to-purple-900/30">
+          <div className="flex items-center gap-2 mb-2">
+            <FileText className="w-5 h-5 text-violet-600" />
+            <h4 className="text-sm font-semibold text-foreground">Tam Rapor</h4>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">Günlük burç yorumunuzu PDF olarak indirin</p>
+          <ShareResultButton
+            title="Günlük Burç - Tam Rapor"
+            content={`${result.general || result.daily_energy || ''}`}
+            result={result}
+            analysisType="daily_horoscope"
+            size="default"
+            variant="default"
+            className="w-full"
+          />
+        </Card>
       </div>
     );
   }
@@ -659,6 +749,24 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
             ))}
           </div>
         )}
+
+        {/* Full PDF Download Button */}
+        <Card className="p-3 sm:p-4 border-2 border-pink-300 dark:border-pink-700 bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-900/30 dark:to-rose-900/30">
+          <div className="flex items-center gap-2 mb-2">
+            <FileText className="w-5 h-5 text-pink-600" />
+            <h4 className="text-sm font-semibold text-foreground">Tam Rapor</h4>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">Tüm uyumluluk analizi sonuçlarınızı PDF olarak indirin</p>
+          <ShareResultButton
+            title="Uyumluluk Analizi - Tam Rapor"
+            content={`${result.overallSummary || result.overall_summary || ''}`}
+            result={result}
+            analysisType="compatibility"
+            size="default"
+            variant="default"
+            className="w-full"
+          />
+        </Card>
       </div>
     );
   }
@@ -797,6 +905,24 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
             </div>
           </Card>
         ))}
+        
+        {/* Full PDF Download Button */}
+        <Card className="p-3 sm:p-4 border-2 border-blue-300 dark:border-blue-700 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30">
+          <div className="flex items-center gap-2 mb-2">
+            <FileText className="w-5 h-5 text-blue-600" />
+            <h4 className="text-sm font-semibold text-foreground">Tam Rapor</h4>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">Tüm doğum haritası analizi sonuçlarınızı PDF olarak indirin</p>
+          <ShareResultButton
+            title="Doğum Haritası - Tam Rapor"
+            content={`${result.genel_degerlendirme || result.general_evaluation || ''}`}
+            result={result}
+            analysisType="birth_chart"
+            size="default"
+            variant="default"
+            className="w-full"
+          />
+        </Card>
       </div>
     );
   }

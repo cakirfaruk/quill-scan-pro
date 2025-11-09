@@ -237,8 +237,8 @@ export const ShareResultButton = ({
         userName
       );
 
-      // If we have the result object, use smart box rendering
-      if (result && (result.overall_summary || result.topics)) {
+      // Smart box rendering based on analysis type
+      if (result) {
         setPdfProgress(20);
         setPdfProgressStep("İçerik kutuları oluşturuluyor...");
 
@@ -246,56 +246,336 @@ export const ShareResultButton = ({
         const boxes: Array<{ canvas: HTMLCanvasElement; height: number }> = [];
         const imgWidth = 170; // A4 width minus margins
 
-        // Overall Summary
-        if (result.overall_summary) {
-          const summaryCanvas = await renderSingleBox({
-            title: 'Genel Değerlendirme',
-            content: result.overall_summary,
-            gradient: 'purple'
-          });
-          boxes.push({
-            canvas: summaryCanvas,
-            height: (summaryCanvas.height * imgWidth) / summaryCanvas.width
-          });
-        }
-
-        setPdfProgress(40);
-        setPdfProgressStep("Konular oluşturuluyor...");
-
-        // Topics
-        if (result.topics && typeof result.topics === 'object') {
-          let index = 0;
-          for (const [topicName, topicData] of Object.entries(result.topics) as [string, any][]) {
-            let explanation = '';
-            if (topicData.explanation) {
-              explanation = topicData.explanation;
-            } else {
-              const parts = [
-                topicData.calculation,
-                topicData.meaning,
-                topicData.personal_interpretation,
-                topicData.references
-              ].filter(Boolean);
-              explanation = parts.join('\n\n');
+        // TAROT ANALYSIS
+        if (analysisType === 'tarot') {
+          if (result.overall) {
+            boxes.push({
+              canvas: await renderSingleBox({ title: 'Genel Özet', content: result.overall, gradient: 'purple' }),
+              height: 0
+            });
+          }
+          if (result.cards && Array.isArray(result.cards)) {
+            for (let i = 0; i < result.cards.length; i++) {
+              const card = result.cards[i];
+              const content = `${card.interpretation}\n\n${card.keywords ? 'Anahtar Kelimeler: ' + card.keywords.join(', ') : ''}`;
+              boxes.push({
+                canvas: await renderSingleBox({ 
+                  title: card.position || `Kart ${i + 1}`, 
+                  content, 
+                  gradient: i % 2 === 0 ? 'blue' : 'purple' 
+                }),
+                height: 0
+              });
             }
-
-            if (!explanation) continue;
-
-            // Format title with value if available
-            const titleWithValue = topicData.value 
-              ? `${topicName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}: ${topicData.value}`
-              : topicName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-
-            const topicCanvas = await renderSingleBox({
-              title: titleWithValue,
-              content: explanation,
-              gradient: index % 2 === 0 ? 'blue' : 'purple'
+          }
+          if (result.advice) {
+            boxes.push({
+              canvas: await renderSingleBox({ title: 'Tavsiye', content: result.advice, gradient: 'blue' }),
+              height: 0
+            });
+          }
+          if (result.warnings) {
+            boxes.push({
+              canvas: await renderSingleBox({ title: 'Dikkat Edilmesi Gerekenler', content: result.warnings, gradient: 'purple' }),
+              height: 0
+            });
+          }
+        }
+        
+        // COFFEE FORTUNE ANALYSIS
+        else if (analysisType === 'coffee_fortune') {
+          if (result.overall) {
+            boxes.push({
+              canvas: await renderSingleBox({ title: 'Genel Değerlendirme', content: result.overall, gradient: 'purple' }),
+              height: 0
+            });
+          }
+          const sections = [
+            { key: 'love', title: 'Aşk ve İlişkiler' },
+            { key: 'career', title: 'Kariyer ve İş Hayatı' },
+            { key: 'finance', title: 'Finans ve Para' },
+            { key: 'health', title: 'Sağlık' },
+            { key: 'future', title: 'Gelecek' }
+          ];
+          for (let i = 0; i < sections.length; i++) {
+            const section = sections[i];
+            if (result[section.key]) {
+              boxes.push({
+                canvas: await renderSingleBox({ 
+                  title: section.title, 
+                  content: result[section.key], 
+                  gradient: i % 2 === 0 ? 'blue' : 'purple' 
+                }),
+                height: 0
+              });
+            }
+          }
+          if (result.symbols && Array.isArray(result.symbols) && result.symbols.length > 0) {
+            const symbolsText = result.symbols.map((s: any) => `${s.name}: ${s.meaning}`).join('\n\n');
+            boxes.push({
+              canvas: await renderSingleBox({ title: 'Görülen Semboller', content: symbolsText, gradient: 'purple' }),
+              height: 0
+            });
+          }
+        }
+        
+        // DREAM INTERPRETATION
+        else if (analysisType === 'dream') {
+          if (result.overall) {
+            boxes.push({
+              canvas: await renderSingleBox({ title: 'Genel Yorum', content: result.overall, gradient: 'purple' }),
+              height: 0
+            });
+          }
+          if (result.symbols && Array.isArray(result.symbols) && result.symbols.length > 0) {
+            const symbolsText = result.symbols.map((s: any) => `${s.symbol}: ${s.meaning}`).join('\n\n');
+            boxes.push({
+              canvas: await renderSingleBox({ title: 'Rüya Sembolleri', content: symbolsText, gradient: 'blue' }),
+              height: 0
+            });
+          }
+          const dreamSections = [
+            { key: 'psychological', title: 'Psikolojik Yorum' },
+            { key: 'spiritual', title: 'Manevi Yorum' },
+            { key: 'future_signs', title: 'Gelecek İşaretleri' },
+            { key: 'advice', title: 'Tavsiyeler' }
+          ];
+          for (let i = 0; i < dreamSections.length; i++) {
+            const section = dreamSections[i];
+            if (result[section.key]) {
+              boxes.push({
+                canvas: await renderSingleBox({ 
+                  title: section.title, 
+                  content: result[section.key], 
+                  gradient: i % 2 === 0 ? 'purple' : 'blue' 
+                }),
+                height: 0
+              });
+            }
+          }
+          if (result.warnings) {
+            boxes.push({
+              canvas: await renderSingleBox({ title: 'Uyarılar', content: result.warnings, gradient: 'purple' }),
+              height: 0
+            });
+          }
+        }
+        
+        // PALMISTRY ANALYSIS
+        else if (analysisType === 'palmistry') {
+          if (result.overall) {
+            boxes.push({
+              canvas: await renderSingleBox({ title: 'Genel Değerlendirme', content: result.overall, gradient: 'purple' }),
+              height: 0
+            });
+          }
+          const palmSections = [
+            { key: 'life_line', title: 'Hayat Çizgisi' },
+            { key: 'head_line', title: 'Akıl Çizgisi' },
+            { key: 'heart_line', title: 'Kalp Çizgisi' },
+            { key: 'fate_line', title: 'Kader Çizgisi' },
+            { key: 'personality', title: 'Kişilik Özellikleri' },
+            { key: 'career', title: 'Kariyer ve Başarı' },
+            { key: 'relationships', title: 'İlişkiler' },
+            { key: 'health', title: 'Sağlık' },
+            { key: 'future_signs', title: 'Gelecek İşaretleri' }
+          ];
+          for (let i = 0; i < palmSections.length; i++) {
+            const section = palmSections[i];
+            if (result[section.key]) {
+              boxes.push({
+                canvas: await renderSingleBox({ 
+                  title: section.title, 
+                  content: result[section.key], 
+                  gradient: i % 2 === 0 ? 'blue' : 'purple' 
+                }),
+                height: 0
+              });
+            }
+          }
+        }
+        
+        // DAILY HOROSCOPE
+        else if (analysisType === 'daily_horoscope') {
+          if (result.daily_energy) {
+            boxes.push({
+              canvas: await renderSingleBox({ title: 'Günlük Enerji', content: result.daily_energy, gradient: 'purple' }),
+              height: 0
+            });
+          }
+          const horoscopeSections = [
+            { key: 'love', title: 'Aşk ve İlişkiler' },
+            { key: 'career', title: 'Kariyer' },
+            { key: 'money', title: 'Para ve Finans' },
+            { key: 'health', title: 'Sağlık' }
+          ];
+          for (let i = 0; i < horoscopeSections.length; i++) {
+            const section = horoscopeSections[i];
+            if (result[section.key]) {
+              boxes.push({
+                canvas: await renderSingleBox({ 
+                  title: section.title, 
+                  content: result[section.key], 
+                  gradient: i % 2 === 0 ? 'blue' : 'purple' 
+                }),
+                height: 0
+              });
+            }
+          }
+          if (result.lucky_color || result.lucky_number) {
+            const luckyInfo = `${result.lucky_color ? 'Şanslı Renk: ' + result.lucky_color : ''}\n${result.lucky_number ? 'Şanslı Sayı: ' + result.lucky_number : ''}`;
+            boxes.push({
+              canvas: await renderSingleBox({ title: 'Şanslı Öğeler', content: luckyInfo.trim(), gradient: 'purple' }),
+              height: 0
+            });
+          }
+          if (result.advice) {
+            boxes.push({
+              canvas: await renderSingleBox({ title: 'Günün Tavsiyesi', content: result.advice, gradient: 'blue' }),
+              height: 0
+            });
+          }
+        }
+        
+        // COMPATIBILITY ANALYSIS
+        else if (analysisType === 'compatibility') {
+          if (result.overall_summary) {
+            const scoreText = result.overall_compatibility_score 
+              ? `Uyumluluk Skoru: %${result.overall_compatibility_score}\n\n${result.overall_summary}`
+              : result.overall_summary;
+            boxes.push({
+              canvas: await renderSingleBox({ title: 'Genel Uyumluluk', content: scoreText, gradient: 'purple' }),
+              height: 0
+            });
+          }
+          if (result.person1_analysis) {
+            boxes.push({
+              canvas: await renderSingleBox({ title: 'Kişi 1 Analizi', content: result.person1_analysis, gradient: 'blue' }),
+              height: 0
+            });
+          }
+          if (result.person2_analysis) {
+            boxes.push({
+              canvas: await renderSingleBox({ title: 'Kişi 2 Analizi', content: result.person2_analysis, gradient: 'purple' }),
+              height: 0
+            });
+          }
+          if (result.compatibility_areas && Array.isArray(result.compatibility_areas)) {
+            for (let i = 0; i < result.compatibility_areas.length; i++) {
+              const area = result.compatibility_areas[i];
+              const areaText = `Skor: %${area.compatibilityScore}\n\nGüçlü Yönler:\n${area.strengths}\n\nZorluklar:\n${area.challenges}\n\nÖneriler:\n${area.recommendations}`;
+              boxes.push({
+                canvas: await renderSingleBox({ 
+                  title: area.name, 
+                  content: areaText, 
+                  gradient: i % 2 === 0 ? 'blue' : 'purple' 
+                }),
+                height: 0
+              });
+            }
+          }
+        }
+        
+        // BIRTH CHART ANALYSIS
+        else if (analysisType === 'birth_chart') {
+          if (result.general_evaluation) {
+            boxes.push({
+              canvas: await renderSingleBox({ title: 'Genel Değerlendirme', content: result.general_evaluation, gradient: 'purple' }),
+              height: 0
+            });
+          }
+          if (result.planetary_positions && Array.isArray(result.planetary_positions)) {
+            const planetsText = result.planetary_positions.map((p: any) => 
+              `${p.planet}: ${p.sign}${p.house ? ` (${p.house}. Ev)` : ''}\n${p.interpretation || ''}`
+            ).join('\n\n');
+            boxes.push({
+              canvas: await renderSingleBox({ title: 'Gezegen Pozisyonları', content: planetsText, gradient: 'blue' }),
+              height: 0
+            });
+          }
+          if (result.topics && typeof result.topics === 'object') {
+            let index = 0;
+            for (const [topicName, topicData] of Object.entries(result.topics) as [string, any][]) {
+              const content = [
+                topicData.overview,
+                topicData.features ? 'Özellikler:\n' + topicData.features : '',
+                topicData.strengths ? 'Güçlü Yönler:\n' + topicData.strengths : '',
+                topicData.warnings ? 'Dikkat Edilmesi Gerekenler:\n' + topicData.warnings : '',
+                topicData.recommendations ? 'Öneriler:\n' + topicData.recommendations : ''
+              ].filter(Boolean).join('\n\n');
+              
+              if (content) {
+                boxes.push({
+                  canvas: await renderSingleBox({ 
+                    title: topicName, 
+                    content, 
+                    gradient: index % 2 === 0 ? 'purple' : 'blue' 
+                  }),
+                  height: 0
+                });
+                index++;
+              }
+            }
+          }
+        }
+        
+        // NUMEROLOGY ANALYSIS (existing)
+        else if (result.overall_summary || result.topics) {
+          if (result.overall_summary) {
+            const summaryCanvas = await renderSingleBox({
+              title: 'Genel Değerlendirme',
+              content: result.overall_summary,
+              gradient: 'purple'
             });
             boxes.push({
-              canvas: topicCanvas,
-              height: (topicCanvas.height * imgWidth) / topicCanvas.width
+              canvas: summaryCanvas,
+              height: (summaryCanvas.height * imgWidth) / summaryCanvas.width
             });
-            index++;
+          }
+
+          setPdfProgress(40);
+          setPdfProgressStep("Konular oluşturuluyor...");
+
+          if (result.topics && typeof result.topics === 'object') {
+            let index = 0;
+            for (const [topicName, topicData] of Object.entries(result.topics) as [string, any][]) {
+              let explanation = '';
+              if (topicData.explanation) {
+                explanation = topicData.explanation;
+              } else {
+                const parts = [
+                  topicData.calculation,
+                  topicData.meaning,
+                  topicData.personal_interpretation,
+                  topicData.references
+                ].filter(Boolean);
+                explanation = parts.join('\n\n');
+              }
+
+              if (!explanation) continue;
+
+              const titleWithValue = topicData.value 
+                ? `${topicName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}: ${topicData.value}`
+                : topicName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+              const topicCanvas = await renderSingleBox({
+                title: titleWithValue,
+                content: explanation,
+                gradient: index % 2 === 0 ? 'blue' : 'purple'
+              });
+              boxes.push({
+                canvas: topicCanvas,
+                height: (topicCanvas.height * imgWidth) / topicCanvas.width
+              });
+              index++;
+            }
+          }
+        }
+
+        // Calculate actual heights for all boxes
+        for (let i = 0; i < boxes.length; i++) {
+          if (boxes[i].height === 0) {
+            boxes[i].height = (boxes[i].canvas.height * imgWidth) / boxes[i].canvas.width;
           }
         }
 
