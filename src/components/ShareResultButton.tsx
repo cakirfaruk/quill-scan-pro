@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Share2, Loader2, CheckSquare, Square, MessageCircle, Download, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,7 @@ export const ShareResultButton = ({
   contentRef,
   result
 }: ShareResultButtonProps) => {
+  const { user } = useAuth();
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [friends, setFriends] = useState<any[]>([]);
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
@@ -54,7 +56,26 @@ export const ShareResultButton = ({
   const [pdfGeneratedAt, setPdfGeneratedAt] = useState<Date | null>(null);
   const [pdfProgress, setPdfProgress] = useState(0);
   const [pdfProgressStep, setPdfProgressStep] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchAvatar = async () => {
+      if (!user?.id) return;
+      
+      const { data } = await supabase
+        .from('profiles')
+        .select('profile_photo')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (data?.profile_photo) {
+        setAvatarUrl(data.profile_photo);
+      }
+    };
+    
+    fetchAvatar();
+  }, [user?.id]);
 
   const loadFriends = async () => {
     setLoading(true);
@@ -210,8 +231,13 @@ export const ShareResultButton = ({
         });
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      const userName = user?.email?.split('@')[0] || 'Kullanıcı';
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const userName = currentUser?.email?.split('@')[0] || 'Kullanıcı';
+
+      // Generate share URL
+      const shareUrl = analysisId 
+        ? `${window.location.origin}/analysis/${analysisId}`
+        : window.location.href;
 
       setPdfProgress(10);
       setPdfProgressStep("PDF hazırlanıyor...");
@@ -223,8 +249,8 @@ export const ShareResultButton = ({
         format: 'a4'
       });
 
-      // Add cover page
-      addCoverPage(
+      // Add cover page with profile photo and QR code
+      await addCoverPage(
         pdf,
         title,
         new Date().toLocaleDateString('tr-TR', {
@@ -234,7 +260,9 @@ export const ShareResultButton = ({
           hour: '2-digit',
           minute: '2-digit'
         }),
-        userName
+        userName,
+        avatarUrl,
+        shareUrl
       );
 
       // Smart box rendering based on analysis type

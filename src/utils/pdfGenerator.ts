@@ -1,7 +1,8 @@
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import QRCode from "qrcode";
 
-export const PDF_VERSION = '5.0.0'; // Universal PDF generator with shared utilities
+export const PDF_VERSION = '5.1.0'; // Universal PDF generator with QR code and profile photo
 
 export const PDF_CONFIG = {
   pageWidth: 210,
@@ -44,14 +45,61 @@ export const encodeTurkishText = (text: string): string => {
     .replace(/ç/g, '\u00E7');
 };
 
-// Helper function to add cover page with logo
-export const addCoverPage = (pdf: jsPDF, title: string, date: string, userName: string = "Kullanıcı") => {
+// Helper function to add cover page with logo, profile photo and QR code
+export const addCoverPage = async (
+  pdf: jsPDF, 
+  title: string, 
+  date: string, 
+  userName: string = "Kullanıcı",
+  avatarUrl?: string | null,
+  shareUrl?: string
+) => {
   const pageWidth = 210;
   const pageHeight = 297;
   
   // Background gradient effect
   pdf.setFillColor(245, 243, 255);
   pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+  
+  // Profile photo (top center, above mystical symbol)
+  if (avatarUrl) {
+    try {
+      const avatarImg = new Image();
+      avatarImg.crossOrigin = "anonymous";
+      avatarImg.src = avatarUrl;
+      await new Promise<void>((resolve) => {
+        avatarImg.onload = () => resolve();
+        avatarImg.onerror = () => resolve();
+      });
+      
+      // Circular mask effect with border
+      const avatarSize = 20;
+      const avatarX = pageWidth / 2 - avatarSize / 2;
+      const avatarY = 35;
+      
+      // Border circle
+      pdf.setFillColor(139, 92, 246);
+      pdf.circle(pageWidth / 2, avatarY + avatarSize / 2, avatarSize / 2 + 1, 'F');
+      
+      // White background for circular mask
+      pdf.setFillColor(255, 255, 255);
+      pdf.circle(pageWidth / 2, avatarY + avatarSize / 2, avatarSize / 2, 'F');
+      
+      // Add avatar image
+      pdf.addImage(
+        avatarImg,
+        'JPEG',
+        avatarX,
+        avatarY,
+        avatarSize,
+        avatarSize,
+        undefined,
+        'FAST'
+      );
+    } catch (error) {
+      console.error('Avatar could not be added:', error);
+    }
+  }
   
   // Decorative circles (mystical symbol)
   pdf.setFillColor(139, 92, 246);
@@ -94,6 +142,38 @@ export const addCoverPage = (pdf: jsPDF, title: string, date: string, userName: 
   pdf.setFontSize(11);
   pdf.setTextColor(120, 120, 120);
   pdf.text(encodeTurkishText(date), pageWidth / 2, titleY + 25, { align: 'center' });
+  
+  // QR Code (bottom center, above footer)
+  if (shareUrl) {
+    try {
+      const qrCodeDataUrl = await QRCode.toDataURL(shareUrl, {
+        width: 400,
+        margin: 1,
+        color: {
+          dark: '#8B5CF6',
+          light: '#FFFFFF'
+        }
+      });
+      
+      const qrSize = 30;
+      const qrX = pageWidth / 2 - qrSize / 2;
+      const qrY = 220;
+      
+      // QR code background
+      pdf.setFillColor(255, 255, 255);
+      pdf.roundedRect(qrX - 2, qrY - 2, qrSize + 4, qrSize + 4, 3, 3, 'F');
+      
+      // Add QR code
+      pdf.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+      
+      // QR code label
+      pdf.setFontSize(9);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(encodeTurkishText('Analizi Paylaş'), pageWidth / 2, qrY + qrSize + 6, { align: 'center' });
+    } catch (error) {
+      console.error('QR code could not be generated:', error);
+    }
+  }
   
   // Footer with mystical elements
   pdf.setFillColor(139, 92, 246);
