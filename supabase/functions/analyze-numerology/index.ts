@@ -68,51 +68,88 @@ serve(async (req) => {
       throw new Error("Insufficient credits");
     }
 
-    const systemPrompt = `Sen bir numeroloji uzmanısın. Pisagor Felsefesi, İbn Arabi, Hint çakra sistemi ve Ezoterik Felsefe üzerine bilgin var. Rakamların ezoterik ve okültist anlamlarını biliyorsun. TAMAMEN TÜRKÇE yanıt verirsin.
+    const systemPrompt = `Sen profesyonel bir numeroloji uzmanısın. Pisagor Felsefesi, İbn Arabi'nin öğretileri, Hint çakra sistemi, İştar mitleri ve Ezoterik Felsefe konularında derin bilgiye sahipsin. Rakamların ezoterik, okültist ve mistik anlamlarını ustaca yorumlarsın.
 
-KRİTİK: Yanıtında her konu için YALNIZCA 'explanation' alanını kullan. BAŞKA ALAN KULLANMA!
+KRİTİK TALİMATLAR:
+1. HİÇBİR ŞEKILDE matematiksel hesaplama yöntemi GÖSTERME (örn: "1+6=7" gibi)
+2. Hesaplamaları arkaplanda yap ama metinde GİZLE
+3. Sadece YORUM ve ANLAM ver
+4. Her konu için TEK bir 'explanation' alanı kullan
+5. TAMAMEN TÜRKÇE yaz, zengin ve akıcı bir dille
 
-Numerolojide kullanılan Türk alfabesi rakam karşılıkları:
-1: A, J, S-Ş
-2: B, K, T
-3: C-Ç, L, U-Ü
-4: D, M, V
-5: E, N, W
-6: F, O-Ö, X
-7: G-Ğ, P, Y
-8: H, Q, Z
-9: I-İ, R
+YORUM YAPISI (Her explanation 4-5 paragraf olmalı):
 
-Her rakamın anlamları:
-- 1: Bir (Monad), kendinden var olan, yaratıcı güç
-- 2: İki (Düad), dualite, denge, Anne prensibi
-- 3: Üç (Triad), bilgelik, yaratım
-- 4: Dört (Tetrad), stabilite, düzen
-- 5: Beş (Pentad), değişim, hareket
-- 6: Altı (Heksad), denge, uyum
-- 7: Yedi, kemal, ruhaniyet
-- 8: Sekiz, güç, maddi dünya
-- 9: Dokuz, tamamlanma
+Paragraf 1 - Kişiye Özel Giriş:
+"[İsim]'ın [konu] analizi, [mistik öğretiye referans] ışığında incelendiğinde..."
+Kişinin bu konudaki özel durumunu VE rakamın anlamını birleştirerek başla.
 
-Analizlerini detaylı ve kişiye özel yap. Mistik yorumlar sun ve mitolojik referanslar kullan.`;
+Paragraf 2 - Derin Anlam ve Enerji:
+Rakamın/konunun evrensel enerjisini, sembolik anlamını, mitolojik/felsefi bağlantılarını açıkla.
+"Bu enerji..." veya "Bu sayı..." şeklinde devam et.
 
-    const userPrompt = `Aşağıdaki kişi için seçilen konularda numeroloji analizi yap:
+Paragraf 3 - Kişisel Yansımalar:
+Kişinin hayatında bu enerjinin nasıl tezahür ettiğini, güçlü ve zayıf yönlerini anlat.
+"[İsim] bu enerjiyle..." şeklinde kişiselleştir.
 
-İsim: ${fullName}
+Paragraf 4 - Mistik Perspektif:
+Pisagor, İbn Arabi, Hint çakraları, İştar veya Ezoterik felsefeden KONUYA ÖZEL referanslar ver.
+"Antik bilgelik..." veya "Mistik geleneklerde..." şeklinde başla.
+
+Paragraf 5 - Pratik Rehberlik:
+Kişiye özel tavsiyeler, yaşam dersleri ve gelişim önerileri sun.
+"Ömer Faruk için en önemli..." gibi KİŞİYE ÖZEL ol.
+
+YAZIM STİLİ:
+- Akıcı, şiirsel ama anlaşılır
+- Metaforlar ve semboller kullan
+- "Evrensel sevgi", "ruhsal yolculuk", "kozmik denge" gibi mistik terimler
+- Kişinin ismini sık kullan
+- Her cümle bilgi ve ilham dolu olsun
+
+ÖNEMLİ: Hesaplama sürecini ASLA gösterme! Sadece sonucu ve YORUMUNU ver!`;
+
+    const userPrompt = `${fullName} isimli kişi için numeroloji analizi yap.
+
 Doğum Tarihi: ${birthDate}
-
-Analiz Konuları:
+Analiz Edilecek Konular:
 ${selectedTopics.map((topic: string, i: number) => `${i + 1}. ${topic}`).join("\n")}
 
-ZORUNLU FORMAT: Her konu için TEK bir 'explanation' alanı dön. Başka alan kullanma!
+ÖNEMLİ KURALLAR:
+❌ HİÇBİR matematiksel hesaplama GÖSTERME (1+6=7 gibi formüller YASAK!)
+❌ "İlk olarak...", "Öncelikle...", "Hesaplama..." gibi açıklamalar YAPMA
+✅ Doğrudan YORUMA başla
+✅ Kişinin ismini (${fullName}) SIK SIK kullan
+✅ Mistik, derin ve ilham verici dil kullan
 
-Her 'explanation' alanında (3-4 paragraf):
-1. Paragraf: Hesaplama nasıl yapıldı
-2. Paragraf: Bu rakam ne anlama geliyor
-3. Paragraf: Kişiye özel yorumlar
-4. Paragraf: Pratik ipuçları ve tavsiyeler
+Her konu için 'explanation' alanında 4-5 UZUN paragraf yaz:
 
-Mistik, ilham verici ve kişiye özel açıklamalar yaz.`;
+1️⃣ GİRİŞ PARAGRAF (3-4 cümle): 
+"${fullName}'ın [konu adı] incelendiğinde..." şeklinde başla. Rakamın anlamını ve kişiye özel durumu DOĞRUDAN söyle.
+
+2️⃣ ENERJİ ve ANLAM PARAGRAF (4-5 cümle):
+Rakamın evrensel enerjisini, sembolik derinliğini, mitolojik bağlantılarını anlat. Rakamın özünü açıkla.
+
+3️⃣ KİŞİSEL YANSIMALAR PARAGRAF (4-5 cümle):
+${fullName}'ın hayatında bu enerjinin nasıl görüneceğini, güçlü-zayıf yönlerini, yaşam temalarını detaylandır.
+
+4️⃣ MİSTİK REFERANSLAR PARAGRAF (3-4 cümle):
+Pisagor felsefesi, İbn Arabi, Hint çakraları, İştar mitleri veya Ezoterik felsefeden KONUYA UYGUN referans ver.
+
+5️⃣ REHBERLİK PARAGRAF (3-4 cümle):
+${fullName} için kişiye özel tavsiyeler, yaşam dersleri ve pratik öneriler sun.
+
+ÖRNEK BAŞLANGIÇ (Dominant Rakamlar için):
+"${fullName}'ın numerolojik haritasında 9 rakamı güçlü bir şekilde öne çıkmaktadır. Bu dominant enerji, onun evrensel sevgiyle dolu bir ruha sahip olduğunu ve tamamlanma arayışının hayatının merkezi teması olduğunu gösterir..."
+
+YAZIM KURALLARI:
+- Her paragraf 3-5 cümle olmalı
+- Toplam 4-5 paragraf
+- Akıcı, poetik ama anlaşılır dil
+- Mistik terimler: "ruhsal yolculuk", "kozmik denge", "evrensel enerji"
+- Kişinin ismini her paragrafta EN AZ bir kez kullan
+- Metaforlar ve semboller kullan
+
+Şimdi ${fullName} için derin, mistik ve kişiye özel yorumlar yap!`;
 
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!lovableApiKey) {
@@ -127,7 +164,7 @@ Mistik, ilham verici ve kişiye özel açıklamalar yaz.`;
         properties: {
           explanation: { 
             type: "string", 
-            description: "YALNIZCA bu alanı kullan! 3-4 paragraf: (1) hesaplama yöntemi, (2) rakamın anlamı, (3) kişiye özel yorum, (4) pratik tavsiyeler. Mistik ve ilham verici dil kullan."
+            description: "HİÇBİR hesaplama formülü gösterme! 4-5 UZUN paragraf: (1) Kişiye özel giriş ve rakamın anlamı, (2) Evrensel enerji ve sembolik derinlik, (3) Kişisel yansımalar ve hayat temaları, (4) Mistik referanslar (Pisagor/İbn Arabi/Çakra/İştar), (5) Kişiye özel rehberlik ve tavsiyeler. Kişinin ismini sık kullan. Mistik, poetik ve ilham verici dil. Her paragraf 3-5 cümle."
           }
         },
         required: ["explanation"],
@@ -161,7 +198,7 @@ Mistik, ilham verici ve kişiye özel açıklamalar yaz.`;
                 properties: {
                   overall_summary: { 
                     type: "string", 
-                    description: "2-3 paragraf genel özet" 
+                    description: "4-5 UZUN paragraf genel özet. Kişinin ismini kullan. Numerolojik haritasının genel yapısını, baskın enerjileri, yaşam yolunu ve ruhsal görevini poetik bir dille anlat. Pisagor, İbn Arabi, çakra ve ezoterik felsefe referansları ekle. HİÇBİR hesaplama gösterme!" 
                   },
                   topics: {
                     type: "object",

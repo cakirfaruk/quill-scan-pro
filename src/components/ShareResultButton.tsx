@@ -179,67 +179,111 @@ export const ShareResultButton = ({
     window.open(whatsappUrl, "_blank");
   };
 
-  // Helper function to add cover page
+  // Helper to encode Turkish characters properly
+  const encodeTurkishText = (text: string): string => {
+    return text
+      .replace(/İ/g, 'İ') // Capital I with dot
+      .replace(/ı/g, 'ı') // Lowercase dotless i
+      .replace(/Ş/g, 'Ş')
+      .replace(/ş/g, 'ş')
+      .replace(/Ğ/g, 'Ğ')
+      .replace(/ğ/g, 'ğ')
+      .replace(/Ü/g, 'Ü')
+      .replace(/ü/g, 'ü')
+      .replace(/Ö/g, 'Ö')
+      .replace(/ö/g, 'ö')
+      .replace(/Ç/g, 'Ç')
+      .replace(/ç/g, 'ç');
+  };
+
+  // Helper function to add cover page with logo
   const addCoverPage = (pdf: jsPDF, title: string, date: string, userName: string = "Kullanıcı") => {
     const pageWidth = 210;
     const pageHeight = 297;
     
-    // Background gradient effect (using rectangles)
+    // Background gradient effect
     pdf.setFillColor(245, 243, 255);
     pdf.rect(0, 0, pageWidth, pageHeight, 'F');
     
-    // Decorative circle (logo placeholder)
+    // Decorative circles (mystical symbol)
     pdf.setFillColor(139, 92, 246);
-    pdf.circle(pageWidth / 2, 80, 20, 'F');
-    
-    // Inner circle
+    pdf.circle(pageWidth / 2, 80, 25, 'F');
     pdf.setFillColor(167, 139, 250);
-    pdf.circle(pageWidth / 2, 80, 12, 'F');
+    pdf.circle(pageWidth / 2, 80, 18, 'F');
+    pdf.setFillColor(196, 181, 253);
+    pdf.circle(pageWidth / 2, 80, 10, 'F');
     
-    // Title
-    pdf.setFontSize(28);
+    // Star decoration
+    pdf.setFillColor(255, 255, 255);
+    for (let i = 0; i < 5; i++) {
+      const angle = (i * 144 - 90) * Math.PI / 180;
+      const x = pageWidth / 2 + 8 * Math.cos(angle);
+      const y = 80 + 8 * Math.sin(angle);
+      pdf.circle(x, y, 1.5, 'F');
+    }
+    
+    // Title (with proper Turkish character encoding)
+    pdf.setFontSize(24);
     pdf.setTextColor(139, 92, 246);
-    pdf.text(title, pageWidth / 2, 130, { align: 'center' });
+    const titleLines = pdf.splitTextToSize(encodeTurkishText(title), 160);
+    let titleY = 130;
+    titleLines.forEach((line: string) => {
+      pdf.text(line, pageWidth / 2, titleY, { align: 'center' });
+      titleY += 8;
+    });
     
-    // Underline
+    // Decorative line
     pdf.setDrawColor(139, 92, 246);
-    pdf.setLineWidth(1);
-    pdf.line(50, 135, 160, 135);
+    pdf.setLineWidth(0.5);
+    pdf.line(60, titleY + 5, 150, titleY + 5);
     
     // User name
-    pdf.setFontSize(16);
+    pdf.setFontSize(14);
     pdf.setTextColor(100, 100, 100);
-    pdf.text(userName, pageWidth / 2, 150, { align: 'center' });
+    pdf.text(encodeTurkishText(userName), pageWidth / 2, titleY + 15, { align: 'center' });
     
     // Date
-    pdf.setFontSize(12);
+    pdf.setFontSize(11);
     pdf.setTextColor(120, 120, 120);
-    pdf.text(date, pageWidth / 2, 160, { align: 'center' });
+    pdf.text(encodeTurkishText(date), pageWidth / 2, titleY + 25, { align: 'center' });
     
-    // Footer
+    // Footer with mystical elements
+    pdf.setFillColor(139, 92, 246);
+    pdf.circle(30, 275, 2, 'F');
+    pdf.circle(180, 275, 2, 'F');
+    
     pdf.setFontSize(10);
     pdf.setTextColor(150, 150, 150);
-    pdf.text('Astro Social', pageWidth / 2, 270, { align: 'center' });
+    pdf.text('Astro Social', pageWidth / 2, 273, { align: 'center' });
     pdf.setFontSize(8);
-    pdf.text(`v${PDF_VERSION}`, pageWidth / 2, 275, { align: 'center' });
+    pdf.text(`v${PDF_VERSION}`, pageWidth / 2, 278, { align: 'center' });
   };
 
-  // Helper function to add page numbers
+  // Helper function to add page numbers and logo
   const addPageNumbers = (pdf: jsPDF, currentPage: number, totalPages: number) => {
+    const pageWidth = 210;
+    
+    // Small logo/icon in top right corner
+    pdf.setFillColor(139, 92, 246);
+    pdf.circle(pageWidth - 15, 15, 4, 'F');
+    pdf.setFillColor(196, 181, 253);
+    pdf.circle(pageWidth - 15, 15, 2, 'F');
+    
+    // Page info at bottom
     pdf.setFontSize(9);
     pdf.setTextColor(150, 150, 150);
     pdf.text(
-      `Sayfa ${currentPage} / ${totalPages}`,
-      210 / 2,
-      290,
+      encodeTurkishText(`Sayfa ${currentPage} / ${totalPages}`),
+      pageWidth / 2,
+      287,
       { align: 'center' }
     );
     pdf.text(
-      new Date().toLocaleDateString('tr-TR'),
-      20,
-      290
+      encodeTurkishText(new Date().toLocaleDateString('tr-TR')),
+      15,
+      287
     );
-    pdf.text('Astro Social', 190, 290, { align: 'right' });
+    pdf.text('Astro Social', pageWidth - 15, 287, { align: 'right' });
   };
 
   const generatePDF = async () => {
@@ -290,44 +334,78 @@ export const ShareResultButton = ({
           line-height: 1.6;
         `;
 
-        // Build full HTML content manually
+        // Build full HTML content manually with better styling
         const contentDiv = document.createElement('div');
         contentDiv.setAttribute('data-pdf-content', 'true');
-        contentDiv.style.cssText = 'width: 100%; display: flex; flex-direction: column; gap: 20px;';
+        contentDiv.style.cssText = `
+          width: 100%; 
+          display: flex; 
+          flex-direction: column; 
+          gap: 24px;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        `;
 
         // Add overall summary if exists
         if (result.overall_summary) {
           const summaryDiv = document.createElement('div');
           summaryDiv.style.cssText = `
-            padding: 24px;
-            background: linear-gradient(to bottom right, #f3e8ff, #e9d5ff);
-            border-radius: 12px;
-            border: 2px solid #d8b4fe;
+            padding: 28px;
+            background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+            border-radius: 16px;
+            border: 3px solid #d8b4fe;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 16px rgba(139, 92, 246, 0.1);
+            page-break-inside: avoid;
+            break-inside: avoid;
+          `;
+          
+          const summaryTitle = document.createElement('h3');
+          summaryTitle.style.cssText = `
+            font-size: 22px; 
+            font-weight: 700; 
+            color: #581c87; 
             margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
           `;
-          summaryDiv.innerHTML = `
-            <h3 style="font-size: 20px; font-weight: 700; color: #581c87; margin-bottom: 12px;">
-              Genel Değerlendirme
-            </h3>
-            <p style="font-size: 14px; color: #1f2937; white-space: pre-wrap; line-height: 1.8;">
-              ${result.overall_summary}
-            </p>
+          summaryTitle.innerHTML = `
+            <span style="
+              width: 8px; 
+              height: 8px; 
+              background: #8b5cf6; 
+              border-radius: 50%; 
+              display: inline-block;
+            "></span>
+            Genel Değerlendirme
           `;
+          
+          const summaryText = document.createElement('p');
+          summaryText.style.cssText = `
+            font-size: 15px; 
+            color: #1f2937; 
+            white-space: pre-wrap; 
+            line-height: 1.9;
+            text-align: justify;
+          `;
+          summaryText.textContent = result.overall_summary;
+          
+          summaryDiv.appendChild(summaryTitle);
+          summaryDiv.appendChild(summaryText);
           contentDiv.appendChild(summaryDiv);
         }
 
-        // Add all topics
+        // Add all topics with enhanced styling
         if (result.topics && typeof result.topics === 'object') {
           const topicEntries = Object.entries(result.topics);
           console.log(`📝 Rendering ${topicEntries.length} topics to PDF`);
 
-          topicEntries.forEach(([topicName, topicData]: [string, any]) => {
-            // Get explanation text from various possible fields
+          topicEntries.forEach(([topicName, topicData]: [string, any], index: number) => {
+            // Get explanation text
             let explanation = '';
             if (topicData.explanation) {
               explanation = topicData.explanation;
             } else {
-              // Combine all available fields
               const parts = [
                 topicData.calculation,
                 topicData.meaning,
@@ -342,23 +420,78 @@ export const ShareResultButton = ({
               return;
             }
 
+            // Gradient colors - alternate between blue and purple themes
+            const isBlue = index % 2 === 0;
+            const gradientStart = isBlue ? '#dbeafe' : '#ede9fe';
+            const gradientEnd = isBlue ? '#bfdbfe' : '#ddd6fe';
+            const borderColor = isBlue ? '#93c5fd' : '#c4b5fd';
+            const textColor = isBlue ? '#1e3a8a' : '#5b21b6';
+
             const topicDiv = document.createElement('div');
             topicDiv.style.cssText = `
-              padding: 20px;
-              background: linear-gradient(to right, #dbeafe, #bfdbfe);
-              border-radius: 10px;
-              border: 2px solid #93c5fd;
-              margin-bottom: 12px;
+              padding: 24px;
+              background: linear-gradient(135deg, ${gradientStart} 0%, ${gradientEnd} 100%);
+              border-radius: 14px;
+              border: 2.5px solid ${borderColor};
+              margin-bottom: 16px;
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
               page-break-inside: avoid;
+              break-inside: avoid;
+              position: relative;
+              overflow: hidden;
             `;
-            topicDiv.innerHTML = `
-              <h4 style="font-size: 16px; font-weight: 600; color: #1e3a8a; margin-bottom: 10px;">
-                ${topicName}
-              </h4>
-              <p style="font-size: 13px; color: #374151; white-space: pre-wrap; line-height: 1.7;">
-                ${explanation}
-              </p>
+            
+            // Decorative corner element
+            const corner = document.createElement('div');
+            corner.style.cssText = `
+              position: absolute;
+              top: -20px;
+              right: -20px;
+              width: 60px;
+              height: 60px;
+              background: ${borderColor};
+              opacity: 0.3;
+              border-radius: 50%;
             `;
+            topicDiv.appendChild(corner);
+            
+            const topicTitle = document.createElement('h4');
+            topicTitle.style.cssText = `
+              font-size: 17px; 
+              font-weight: 600; 
+              color: ${textColor}; 
+              margin-bottom: 14px;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              position: relative;
+              z-index: 1;
+            `;
+            topicTitle.innerHTML = `
+              <span style="
+                width: 6px; 
+                height: 6px; 
+                background: ${textColor}; 
+                border-radius: 50%; 
+                display: inline-block;
+              "></span>
+              ${topicName}
+            `;
+            
+            const topicText = document.createElement('p');
+            topicText.style.cssText = `
+              font-size: 14px; 
+              color: #374151; 
+              white-space: pre-wrap; 
+              line-height: 1.8;
+              text-align: justify;
+              position: relative;
+              z-index: 1;
+            `;
+            topicText.textContent = explanation;
+            
+            topicDiv.appendChild(topicTitle);
+            topicDiv.appendChild(topicText);
             contentDiv.appendChild(topicDiv);
           });
         }
