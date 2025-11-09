@@ -891,6 +891,11 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
                   </div>
                   <h4 className="text-xs sm:text-sm font-semibold text-foreground">
                     {topicName}
+                    {topicData.value && (
+                      <span className="ml-2 text-primary font-bold">
+                        {topicData.value}
+                      </span>
+                    )}
                   </h4>
                 </div>
                 <p className="text-xs sm:text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">

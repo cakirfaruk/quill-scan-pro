@@ -162,12 +162,16 @@ YAZIM KURALLARI:
       topicProperties[topic] = {
         type: "object",
         properties: {
+          value: {
+            type: "string",
+            description: "Hesaplanan sayısal değer. Örnek: '1', '9 (3 kez)', '11 (özel)', '22 (özel)'. Sadece sonucu yaz, hesaplama sürecini gösterme!"
+          },
           explanation: { 
             type: "string", 
             description: "⚠️ ZORUNLU UZUNLUK: EN AZ 800 karakter! ⚠️ HİÇBİR hesaplama formülü gösterme! 5 UZUN paragraf (her biri EN AZ 4 cümle, her cümle EN AZ 15 kelime): (1) Kişiye özel giriş ve rakamın anlamı, (2) Evrensel enerji ve sembolik derinlik, (3) Kişisel yansımalar ve hayat temaları, (4) Mistik referanslar (Pisagor/İbn Arabi/Çakra/İştar), (5) Kişiye özel rehberlik ve tavsiyeler. Kişinin ismini sık kullan. Mistik, poetik ve ilham verici dil. KISA PARAGRAFLAR YASAK!"
           }
         },
-        required: ["explanation"],
+        required: ["value", "explanation"],
         additionalProperties: false
       };
     });
@@ -303,12 +307,16 @@ YAZIM KURALLARI:
         proTopicProperties[topic] = {
           type: "object",
           properties: {
+            value: {
+              type: "string",
+              description: "Hesaplanan sayısal değer. Örnek: '1', '9 (3 kez)', '11 (özel)', '22 (özel)'. Sadece sonucu yaz!"
+            },
             explanation: { 
               type: "string", 
               description: "⚠️ KRİTİK: EN AZ 1000 karakter ZORUNLU! ⚠️ HİÇBİR hesaplama formülü gösterme! 5 ÇOK UZUN paragraf (her biri EN AZ 5 cümle, her cümle EN AZ 20 kelime): (1) Kişiye özel detaylı giriş ve rakamın derin anlamı, (2) Evrensel enerji, sembolik derinlik ve kozmik bağlantılar, (3) Kapsamlı kişisel yansımalar, güçlü/zayıf yönler ve hayat temaları, (4) Detaylı mistik referanslar (Pisagor/İbn Arabi/Çakra/İştar/Ezoterik), (5) Kişiye özel rehberlik, tavsiyeler ve ruhsal yol haritası. Kişinin ismini çok sık kullan. Çok mistik, poetik ve ilham verici dil. Her paragraf derin ve zengin içerikli olmalı!"
             }
           },
-          required: ["explanation"],
+          required: ["value", "explanation"],
           additionalProperties: false
         };
       });
@@ -414,8 +422,12 @@ YAZIM KURALLARI:
               for (const [topicName, topicData] of Object.entries(proResult.topics)) {
                 if (analysisResult.topics[topicName]) {
                   const newExplanation = (topicData as any).explanation;
+                  const newValue = (topicData as any).value;
                   console.log(`Merged topic "${topicName}": ${newExplanation.length} chars (was ${analysisResult.topics[topicName].explanation.length} chars)`);
                   analysisResult.topics[topicName].explanation = newExplanation;
+                  if (newValue) {
+                    analysisResult.topics[topicName].value = newValue;
+                  }
                 }
               }
             }
