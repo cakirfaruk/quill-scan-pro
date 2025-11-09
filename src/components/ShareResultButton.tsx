@@ -12,7 +12,30 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
 // PDF Generator Version - Increment this when making changes to PDF generation
-const PDF_VERSION = '3.0.0';
+const PDF_VERSION = '4.0.0'; // Smart box rendering with proper page breaks
+
+const PDF_CONFIG = {
+  pageWidth: 210,
+  pageHeight: 297,
+  margins: {
+    top: 35,
+    bottom: 30,
+    left: 20,
+    right: 20
+  },
+  footer: {
+    y: 275
+  },
+  contentArea: {
+    maxHeight: 240
+  },
+  fonts: {
+    summaryTitle: 26,
+    summaryText: 17,
+    topicTitle: 20,
+    topicText: 16
+  }
+};
 
 interface ShareResultButtonProps {
   content: string;
@@ -182,18 +205,19 @@ export const ShareResultButton = ({
   // Helper to encode Turkish characters properly
   const encodeTurkishText = (text: string): string => {
     return text
-      .replace(/İ/g, 'İ') // Capital I with dot
-      .replace(/ı/g, 'ı') // Lowercase dotless i
-      .replace(/Ş/g, 'Ş')
-      .replace(/ş/g, 'ş')
-      .replace(/Ğ/g, 'Ğ')
-      .replace(/ğ/g, 'ğ')
-      .replace(/Ü/g, 'Ü')
-      .replace(/ü/g, 'ü')
-      .replace(/Ö/g, 'Ö')
-      .replace(/ö/g, 'ö')
-      .replace(/Ç/g, 'Ç')
-      .replace(/ç/g, 'ç');
+      .normalize('NFC')
+      .replace(/İ/g, '\u0130')
+      .replace(/ı/g, '\u0131')
+      .replace(/Ş/g, '\u015E')
+      .replace(/ş/g, '\u015F')
+      .replace(/Ğ/g, '\u011E')
+      .replace(/ğ/g, '\u011F')
+      .replace(/Ü/g, '\u00DC')
+      .replace(/ü/g, '\u00FC')
+      .replace(/Ö/g, '\u00D6')
+      .replace(/ö/g, '\u00F6')
+      .replace(/Ç/g, '\u00C7')
+      .replace(/ç/g, '\u00E7');
   };
 
   // Helper function to add cover page with logo
@@ -260,30 +284,103 @@ export const ShareResultButton = ({
   };
 
   // Helper function to add page numbers and logo
-  const addPageNumbers = (pdf: jsPDF, currentPage: number, totalPages: number) => {
-    const pageWidth = 210;
+  const addPageNumbers = async (pdf: jsPDF, currentPage: number, totalPages: number) => {
+    // Add logo
+    try {
+      const logoSize = 8;
+      const logoImg = new Image();
+      logoImg.src = '/icon-192.png';
+      await new Promise<void>((resolve) => {
+        logoImg.onload = () => resolve();
+        logoImg.onerror = () => resolve();
+      });
+      pdf.addImage(
+        logoImg,
+        'PNG',
+        PDF_CONFIG.pageWidth - 15,
+        10,
+        logoSize,
+        logoSize
+      );
+    } catch (error) {
+      console.error('Logo could not be added:', error);
+    }
     
-    // Small logo/icon in top right corner
-    pdf.setFillColor(139, 92, 246);
-    pdf.circle(pageWidth - 15, 15, 4, 'F');
-    pdf.setFillColor(196, 181, 253);
-    pdf.circle(pageWidth - 15, 15, 2, 'F');
-    
-    // Page info at bottom
-    pdf.setFontSize(9);
-    pdf.setTextColor(150, 150, 150);
+    // Page number
+    pdf.setFontSize(10);
+    pdf.setTextColor(120, 120, 120);
+    const pageText = encodeTurkishText(`Sayfa ${currentPage} / ${totalPages}`);
     pdf.text(
-      encodeTurkishText(`Sayfa ${currentPage} / ${totalPages}`),
-      pageWidth / 2,
-      287,
+      pageText,
+      PDF_CONFIG.pageWidth / 2,
+      PDF_CONFIG.footer.y,
       { align: 'center' }
     );
-    pdf.text(
-      encodeTurkishText(new Date().toLocaleDateString('tr-TR')),
-      15,
-      287
-    );
-    pdf.text('Astro Social', pageWidth - 15, 287, { align: 'right' });
+    
+    // Date
+    const dateText = encodeTurkishText(new Date().toLocaleDateString('tr-TR'));
+    pdf.text(dateText, 15, PDF_CONFIG.footer.y);
+    
+    // App name
+    pdf.text('Astro Social', PDF_CONFIG.pageWidth - 15, PDF_CONFIG.footer.y, { align: 'right' });
+  };
+
+  // Helper to render a single box
+  const renderSingleBox = async (config: {
+    title: string;
+    content: string;
+    gradient: 'blue' | 'purple';
+  }): Promise<HTMLCanvasElement> => {
+    const boxDiv = document.createElement('div');
+    boxDiv.style.width = '794px';
+    boxDiv.style.padding = '30px';
+    boxDiv.style.backgroundColor = '#ffffff';
+    boxDiv.style.fontFamily = 'Arial, sans-serif';
+    boxDiv.style.position = 'absolute';
+    boxDiv.style.left = '-9999px';
+
+    const gradientColors = config.gradient === 'blue' 
+      ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1))'
+      : 'linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(236, 72, 153, 0.1))';
+
+    const borderColor = config.gradient === 'blue' ? '#3b82f6' : '#9333ea';
+
+    boxDiv.innerHTML = `
+      <div style="
+        background: ${gradientColors};
+        border-left: 4px solid ${borderColor};
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      ">
+        <h2 style="
+          color: #1f2937;
+          font-size: ${PDF_CONFIG.fonts.topicTitle}px;
+          font-weight: bold;
+          margin: 0 0 16px 0;
+          padding-bottom: 12px;
+          border-bottom: 2px solid ${borderColor};
+        ">${encodeTurkishText(config.title)}</h2>
+        <div style="
+          color: #374151;
+          font-size: ${PDF_CONFIG.fonts.topicText}px;
+          line-height: 1.6;
+          white-space: pre-wrap;
+        ">${encodeTurkishText(config.content)}</div>
+      </div>
+    `;
+
+    document.body.appendChild(boxDiv);
+    const canvas = await html2canvas(boxDiv, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff'
+    });
+    document.body.removeChild(boxDiv);
+
+    return canvas;
   };
 
   const generatePDF = async () => {
@@ -291,7 +388,7 @@ export const ShareResultButton = ({
     setPdfProgress(0);
     setPdfProgressStep("İçerik hazırlanıyor...");
     
-    const timestamp = Date.now(); // For unique file naming
+    const timestamp = Date.now();
     
     try {
       console.log(`📄 PDF Generator v${PDF_VERSION} - Timestamp: ${timestamp}`);
@@ -301,7 +398,6 @@ export const ShareResultButton = ({
         description: "Bu işlem birkaç saniye sürebilir...",
       });
 
-      // Debug: Log the result structure
       if (result) {
         console.log("📊 Analysis Result Structure:", {
           hasOverallSummary: !!result.overall_summary,
@@ -311,97 +407,62 @@ export const ShareResultButton = ({
         });
       }
 
-      // Get current user for cover page
       const { data: { user } } = await supabase.auth.getUser();
       const userName = user?.email?.split('@')[0] || 'Kullanıcı';
 
       setPdfProgress(10);
-      setPdfProgressStep("Tüm içerik oluşturuluyor...");
+      setPdfProgressStep("PDF hazırlanıyor...");
 
-      // If we have the result object, build HTML manually for complete content
+      // Create PDF
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // Add cover page
+      addCoverPage(
+        pdf,
+        title,
+        new Date().toLocaleDateString('tr-TR', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        userName
+      );
+
+      // If we have the result object, use smart box rendering
       if (result && (result.overall_summary || result.topics)) {
-        // Create off-screen container with full content
-        const container = document.createElement('div');
-        container.style.cssText = `
-          position: absolute;
-          left: -9999px;
-          top: 0;
-          width: 1200px;
-          padding: 60px;
-          background: white;
-          font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-          color: #1a1a1a;
-          line-height: 1.6;
-        `;
+        setPdfProgress(20);
+        setPdfProgressStep("İçerik kutuları oluşturuluyor...");
 
-        // Build full HTML content manually with better styling
-        const contentDiv = document.createElement('div');
-        contentDiv.setAttribute('data-pdf-content', 'true');
-        contentDiv.style.cssText = `
-          width: 100%; 
-          display: flex; 
-          flex-direction: column; 
-          gap: 24px;
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        `;
+        // Collect all boxes to render
+        const boxes: Array<{ canvas: HTMLCanvasElement; height: number }> = [];
+        const imgWidth = 170; // A4 width minus margins
 
-        // Add overall summary if exists
+        // Overall Summary
         if (result.overall_summary) {
-          const summaryDiv = document.createElement('div');
-          summaryDiv.style.cssText = `
-            padding: 28px;
-            background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
-            border-radius: 16px;
-            border: 3px solid #d8b4fe;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 16px rgba(139, 92, 246, 0.1);
-            page-break-inside: avoid;
-            break-inside: avoid;
-          `;
-          
-          const summaryTitle = document.createElement('h3');
-          summaryTitle.style.cssText = `
-            font-size: 22px; 
-            font-weight: 700; 
-            color: #581c87; 
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-          `;
-          summaryTitle.innerHTML = `
-            <span style="
-              width: 8px; 
-              height: 8px; 
-              background: #8b5cf6; 
-              border-radius: 50%; 
-              display: inline-block;
-            "></span>
-            Genel Değerlendirme
-          `;
-          
-          const summaryText = document.createElement('p');
-          summaryText.style.cssText = `
-            font-size: 15px; 
-            color: #1f2937; 
-            white-space: pre-wrap; 
-            line-height: 1.9;
-            text-align: justify;
-          `;
-          summaryText.textContent = result.overall_summary;
-          
-          summaryDiv.appendChild(summaryTitle);
-          summaryDiv.appendChild(summaryText);
-          contentDiv.appendChild(summaryDiv);
+          const summaryCanvas = await renderSingleBox({
+            title: 'Genel Değerlendirme',
+            content: result.overall_summary,
+            gradient: 'purple'
+          });
+          boxes.push({
+            canvas: summaryCanvas,
+            height: (summaryCanvas.height * imgWidth) / summaryCanvas.width
+          });
         }
 
-        // Add all topics with enhanced styling
-        if (result.topics && typeof result.topics === 'object') {
-          const topicEntries = Object.entries(result.topics);
-          console.log(`📝 Rendering ${topicEntries.length} topics to PDF`);
+        setPdfProgress(40);
+        setPdfProgressStep("Konular oluşturuluyor...");
 
-          topicEntries.forEach(([topicName, topicData]: [string, any], index: number) => {
-            // Get explanation text
+        // Topics
+        if (result.topics && typeof result.topics === 'object') {
+          let index = 0;
+          for (const [topicName, topicData] of Object.entries(result.topics) as [string, any][]) {
             let explanation = '';
             if (topicData.explanation) {
               explanation = topicData.explanation;
@@ -415,180 +476,70 @@ export const ShareResultButton = ({
               explanation = parts.join('\n\n');
             }
 
-            if (!explanation) {
-              console.warn(`⚠️ No content for topic: ${topicName}`);
-              return;
-            }
+            if (!explanation) continue;
 
-            // Gradient colors - alternate between blue and purple themes
-            const isBlue = index % 2 === 0;
-            const gradientStart = isBlue ? '#dbeafe' : '#ede9fe';
-            const gradientEnd = isBlue ? '#bfdbfe' : '#ddd6fe';
-            const borderColor = isBlue ? '#93c5fd' : '#c4b5fd';
-            const textColor = isBlue ? '#1e3a8a' : '#5b21b6';
-
-            const topicDiv = document.createElement('div');
-            topicDiv.style.cssText = `
-              padding: 24px;
-              background: linear-gradient(135deg, ${gradientStart} 0%, ${gradientEnd} 100%);
-              border-radius: 14px;
-              border: 2.5px solid ${borderColor};
-              margin-bottom: 16px;
-              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-              page-break-inside: avoid;
-              break-inside: avoid;
-              position: relative;
-              overflow: hidden;
-            `;
-            
-            // Decorative corner element
-            const corner = document.createElement('div');
-            corner.style.cssText = `
-              position: absolute;
-              top: -20px;
-              right: -20px;
-              width: 60px;
-              height: 60px;
-              background: ${borderColor};
-              opacity: 0.3;
-              border-radius: 50%;
-            `;
-            topicDiv.appendChild(corner);
-            
-            const topicTitle = document.createElement('h4');
-            topicTitle.style.cssText = `
-              font-size: 17px; 
-              font-weight: 600; 
-              color: ${textColor}; 
-              margin-bottom: 14px;
-              display: flex;
-              align-items: center;
-              gap: 8px;
-              position: relative;
-              z-index: 1;
-            `;
-            topicTitle.innerHTML = `
-              <span style="
-                width: 6px; 
-                height: 6px; 
-                background: ${textColor}; 
-                border-radius: 50%; 
-                display: inline-block;
-              "></span>
-              ${topicName}
-            `;
-            
-            const topicText = document.createElement('p');
-            topicText.style.cssText = `
-              font-size: 14px; 
-              color: #374151; 
-              white-space: pre-wrap; 
-              line-height: 1.8;
-              text-align: justify;
-              position: relative;
-              z-index: 1;
-            `;
-            topicText.textContent = explanation;
-            
-            topicDiv.appendChild(topicTitle);
-            topicDiv.appendChild(topicText);
-            contentDiv.appendChild(topicDiv);
-          });
+            const topicCanvas = await renderSingleBox({
+              title: topicName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+              content: explanation,
+              gradient: index % 2 === 0 ? 'blue' : 'purple'
+            });
+            boxes.push({
+              canvas: topicCanvas,
+              height: (topicCanvas.height * imgWidth) / topicCanvas.width
+            });
+            index++;
+          }
         }
 
-        container.appendChild(contentDiv);
-        document.body.appendChild(container);
-
-        setPdfProgress(40);
-        setPdfProgressStep("Görsel oluşturuluyor...");
-
-        // Wait for rendering
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        // Capture with html2canvas
-        const canvas = await html2canvas(contentDiv, {
-          scale: 3,
-          backgroundColor: '#ffffff',
-          logging: true,
-          useCORS: true,
-          allowTaint: true,
-          width: contentDiv.scrollWidth,
-          height: contentDiv.scrollHeight,
-          windowWidth: 1200,
-          windowHeight: contentDiv.scrollHeight,
-          onclone: (clonedDoc) => {
-            const clonedContainer = clonedDoc.querySelector('[data-pdf-content]');
-            if (clonedContainer) {
-              // Force all elements to be visible
-              clonedContainer.querySelectorAll('*').forEach((el: any) => {
-                el.style.display = 'block';
-                el.style.visibility = 'visible';
-                el.style.opacity = '1';
-                el.style.maxHeight = 'none';
-                el.style.overflow = 'visible';
-              });
-            }
-          }
-        });
-
         setPdfProgress(60);
-        setPdfProgressStep("PDF dosyası oluşturuluyor...");
+        setPdfProgressStep("Sayfalar düzenleniyor...");
 
-        // Create PDF
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pageWidth = 210;
-        const pageHeight = 297;
-        const margin = 20;
+        // Calculate total pages
+        let estimatedPages = 2; // Start with cover page + first content page
+        let tempY = PDF_CONFIG.margins.top;
+        for (const box of boxes) {
+          const remainingSpace = PDF_CONFIG.contentArea.maxHeight - tempY;
+          if (box.height > remainingSpace && tempY > PDF_CONFIG.margins.top) {
+            estimatedPages++;
+            tempY = PDF_CONFIG.margins.top;
+          }
+          tempY += box.height + 10;
+        }
+        const totalPages = estimatedPages;
 
-        // Add cover page
-        addCoverPage(
-          pdf,
-          title,
-          new Date().toLocaleDateString('tr-TR', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          }),
-          userName
-        );
+        setPdfProgress(75);
+        setPdfProgressStep("PDF oluşturuluyor...");
 
-        // Add content pages
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        const imgWidth = pageWidth - (2 * margin);
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        const totalPages = Math.ceil(imgHeight / (pageHeight - (2 * margin))) + 1; // +1 for cover
+        // Place boxes with smart page breaking
+        let currentY = PDF_CONFIG.margins.top;
+        let currentPage = 2;
 
-        let yOffset = 0;
-        let currentPage = 2; // Start from page 2 (after cover)
+        pdf.addPage();
+        await addPageNumbers(pdf, currentPage, totalPages);
 
-        while (yOffset < imgHeight) {
-          pdf.addPage();
-          
-          const sourceY = (yOffset / imgHeight) * canvas.height;
-          const sourceHeight = Math.min(
-            ((pageHeight - 2 * margin) / imgHeight) * canvas.height,
-            canvas.height - sourceY
-          );
+        for (const box of boxes) {
+          const boxHeight = box.height;
+          const remainingSpace = PDF_CONFIG.contentArea.maxHeight - currentY;
 
-          // Add image section
+          // If box doesn't fit, start new page
+          if (boxHeight > remainingSpace && currentY > PDF_CONFIG.margins.top) {
+            pdf.addPage();
+            currentPage++;
+            await addPageNumbers(pdf, currentPage, totalPages);
+            currentY = PDF_CONFIG.margins.top;
+          }
+
+          // Add box to current page
           pdf.addImage(
-            canvas.toDataURL('image/jpeg', 0.95),
+            box.canvas.toDataURL('image/jpeg', 0.95),
             'JPEG',
-            margin,
-            margin - (yOffset * (pageWidth - 2 * margin)) / imgWidth,
+            PDF_CONFIG.margins.left,
+            currentY,
             imgWidth,
-            imgHeight,
-            undefined,
-            'FAST'
+            boxHeight
           );
 
-          // Add page numbers
-          addPageNumbers(pdf, currentPage, totalPages);
-          
-          yOffset += pageHeight - (2 * margin);
-          currentPage++;
+          currentY += boxHeight + 10; // 10mm gap between boxes
         }
 
         setPdfProgress(90);
@@ -597,9 +548,6 @@ export const ShareResultButton = ({
         // Save as blob
         const pdfBlob = pdf.output('blob');
         setPdfBlob(pdfBlob);
-
-        // Cleanup
-        document.body.removeChild(container);
 
         setPdfProgress(100);
         setPdfProgressStep("Tamamlandı!");
