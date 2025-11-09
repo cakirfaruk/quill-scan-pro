@@ -234,10 +234,10 @@ export const ShareResultButton = ({
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       const userName = currentUser?.email?.split('@')[0] || 'Kullanıcı';
 
-      // Generate share URL
+      // Generate share URL with custom domain
       const shareUrl = analysisId 
-        ? `${window.location.origin}/analysis/${analysisId}`
-        : window.location.href;
+        ? `https://analiz.sebanyazilim.com/analysis/${analysisId}`
+        : `https://analiz.sebanyazilim.com${window.location.pathname}`;
 
       setPdfProgress(10);
       setPdfProgressStep("PDF hazırlanıyor...");
