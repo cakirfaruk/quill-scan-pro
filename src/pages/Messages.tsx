@@ -1,46 +1,32 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useDraft } from "@/hooks/use-draft";
-import { Loader2, Send, Search, ArrowLeft, FileText, Smile, Paperclip, Ban, Users, Phone, Video, Clock, MessageSquare, UserPlus, Heart, Save, Mic, Image as ImageIcon } from "lucide-react";
+import { Loader2, Mic, Image as ImageIcon, Clock } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { useIsMobile } from "@/hooks/use-mobile";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { soundEffects } from "@/utils/soundEffects";
-import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { GifPicker } from "@/components/GifPicker";
 import { useLongPress } from "@/hooks/use-gestures";
 import { logError } from "@/utils/analytics";
 import { LazyVideoCallDialog, LazyScheduleMessageDialog, LazyForwardMessageDialog } from "@/utils/lazyImports";
-import { formatDistanceToNow } from "date-fns";
-import { tr } from "date-fns/locale";
 import { playRingtone, vibrate, vibrateShort, showBrowserNotification } from "@/utils/callNotifications";
 import { requestNotificationPermission, subscribeToPushNotifications, checkNotificationPermission } from "@/utils/pushNotifications";
 import { SkeletonConversationList } from "@/components/SkeletonConversation";
-import { EmptyState } from "@/components/ui/empty-state";
-import { NoMessagesIllustration, NoConversationIllustration } from "@/components/EmptyStateIllustrations";
-import { Suspense } from "react";
 import { useEnhancedOfflineSync } from "@/hooks/use-enhanced-offline-sync";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { useOptimisticUI } from "@/hooks/use-optimistic-ui";
-import { SyncStatusBadge } from "@/components/SyncStatusBadge";
 import { useOfflineCache } from "@/hooks/use-offline-cache";
-import { OptimizedMessageList } from "@/components/OptimizedMessageList";
-import { TypingIndicator } from "@/components/TypingIndicator";
-import { AnimatePresence } from "framer-motion";
-import { Pin } from "lucide-react";
+import { ConversationList } from "@/components/ConversationList";
+import { MessageArea } from "@/components/MessageArea";
+import { MessageInput } from "@/components/MessageInput";
 
 interface Friend {
   user_id: string;
@@ -1912,127 +1898,6 @@ const Messages = () => {
     );
   }
 
-  // Conversation Item Component
-  const ConversationItem = ({ conv, selected, onClick }: any) => {
-    const isGroup = conv.type === 'group';
-    const displayName = isGroup ? conv.group?.name : (conv.friend?.full_name || conv.friend?.username);
-    const displayPhoto = isGroup ? conv.group?.photo_url : conv.friend?.profile_photo;
-    const displayUsername = isGroup ? `${conv.group?.member_count || 0} üye` : `@${conv.friend?.username}`;
-    
-    const lastMessageText = isGroup 
-      ? (conv.lastMessage ? `${conv.lastMessageSenderName}: ${conv.lastMessage.content}` : "Henüz mesaj yok")
-      : (conv.lastMessage?.content || "");
-    
-    const lastMessageTime = conv.lastMessage?.created_at 
-      ? formatDistanceToNow(new Date(conv.lastMessage.created_at), { addSuffix: true, locale: tr })
-      : "";
-
-    return (
-      <div
-        className={`p-3 rounded-lg cursor-pointer transition-colors hover:bg-accent/50 relative ${
-          selected ? "bg-accent" : ""
-        }`}
-        onClick={onClick}
-      >
-        {conv.isPinned && (
-          <Pin className="absolute top-2 right-2 w-3 h-3 text-primary" />
-        )}
-        <div className="flex items-start gap-3">
-          <div className="relative">
-            <Avatar className="w-12 h-12">
-              <AvatarImage src={displayPhoto || undefined} />
-              <AvatarFallback className="bg-gradient-primary text-primary-foreground">
-                {isGroup ? <Users className="w-6 h-6" /> : displayName?.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            {!isGroup && conv.friend?.is_online && (
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-card"></span>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-0.5">
-              <p className="font-medium truncate">{displayName}</p>
-              <span className="text-xs text-muted-foreground">{lastMessageTime}</span>
-            </div>
-            <p className="text-xs text-muted-foreground mb-1">{displayUsername}</p>
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground truncate flex-1">
-                {lastMessageText.substring(0, 50)}
-              </p>
-              {conv.unreadCount > 0 && (
-                <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs ml-2">
-                  {conv.unreadCount}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Message Search Result Item Component
-  const MessageSearchResultItem = ({ result }: { result: MessageSearchResult }) => {
-    const isGroup = result.conversationType === 'group';
-    const displayName = isGroup 
-      ? result.group?.name 
-      : (result.friend?.full_name || result.friend?.username);
-    const displayPhoto = isGroup ? result.group?.photo_url : result.friend?.profile_photo;
-    
-    const messageTime = formatDistanceToNow(new Date(result.message.created_at), { 
-      addSuffix: true, 
-      locale: tr 
-    });
-
-    const handleClick = () => {
-      if (isGroup) {
-        navigate(`/groups/${result.conversationId}`);
-      } else if (result.friend) {
-        setSelectedFriend(result.friend);
-        setSelectedCategory(result.message.message_category);
-        loadMessages(result.friend.user_id);
-        setSearchMode("conversations");
-        setSearchQuery("");
-      }
-    };
-
-    // Highlight search query in message content
-    const highlightText = (text: string) => {
-      if (!searchQuery) return text;
-      const parts = text.split(new RegExp(`(${searchQuery})`, 'gi'));
-      return parts.map((part, i) => 
-        part.toLowerCase() === searchQuery.toLowerCase() 
-          ? <mark key={i} className="bg-primary/20">{part}</mark>
-          : part
-      );
-    };
-
-    return (
-      <div
-        className="p-3 rounded-lg cursor-pointer transition-colors hover:bg-accent/50"
-        onClick={handleClick}
-      >
-        <div className="flex items-start gap-3">
-          <Avatar className="w-10 h-10">
-            <AvatarImage src={displayPhoto || undefined} />
-            <AvatarFallback className="bg-gradient-primary text-primary-foreground text-sm">
-              {isGroup ? <Users className="w-5 h-5" /> : displayName?.substring(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-1">
-              <p className="font-medium text-sm truncate">{displayName}</p>
-              <span className="text-xs text-muted-foreground">{messageTime}</span>
-            </div>
-            <p className="text-sm text-foreground/80 line-clamp-2">
-              {highlightText(result.message.content)}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="page-container-mobile bg-gradient-subtle">
       <Header />
@@ -2045,592 +1910,85 @@ const Messages = () => {
         </div>
 
         <div className="grid md:grid-cols-3 gap-4 h-[calc(100vh-220px)]">
-          {/* Conversations List */}
-          <Card className={`md:col-span-1 p-4 ${isMobile && selectedFriend ? 'hidden' : ''}`}>
-            <div className="mb-4 space-y-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder={searchMode === "conversations" ? "Konuşmalarda ara..." : "Mesajlarda ara..."}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              
-              <div className="flex gap-2">
-                <Button
-                  variant={searchMode === "conversations" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSearchMode("conversations")}
-                  className="flex-1 text-xs"
-                >
-                  Konuşmalar
-                </Button>
-                <Button
-                  variant={searchMode === "messages" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSearchMode("messages")}
-                  className="flex-1 text-xs"
-                >
-                  Mesajlar
-                </Button>
-              </div>
-            </div>
+          {/* Conversations List Component */}
+          <ConversationList
+            conversations={conversations}
+            selectedFriend={selectedFriend}
+            searchQuery={searchQuery}
+            searchMode={searchMode}
+            messageSearchResults={messageSearchResults}
+            isSearching={isSearching}
+            activeTab={activeTab}
+            isMobile={isMobile}
+            onSearchQueryChange={setSearchQuery}
+            onSearchModeChange={setSearchMode}
+            onActiveTabChange={setActiveTab}
+            onConversationSelect={(friend, category) => {
+              setSelectedFriend(friend);
+              setSelectedCategory(category);
+              loadMessages(friend.user_id);
+            }}
+            onPinConversation={handlePinConversation}
+          />
 
-            {/* Message Search Results */}
-            {searchMode === "messages" && searchQuery && (
-              <ScrollArea className="h-[calc(100vh-380px)]">
-                {isSearching ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                  </div>
-                ) : messageSearchResults.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Search className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      "{searchQuery}" için sonuç bulunamadı
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-xs text-muted-foreground px-1 mb-2">
-                      {messageSearchResults.length} mesaj bulundu
-                    </p>
-                    {messageSearchResults.map((result, idx) => (
-                      <MessageSearchResultItem key={idx} result={result} />
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
-            )}
+          {/* Message Area Component */}
+          <MessageArea
+            selectedFriend={selectedFriend}
+            selectedCategory={selectedCategory}
+            messages={messages}
+            pinnedMessages={pinnedMessages}
+            currentUserId={currentUserId}
+            isMobile={isMobile}
+            isOtherUserTyping={isOtherUserTyping}
+            translatedMessages={translatedMessages}
+            showTranslation={showTranslation}
+            translatingMessageId={translatingMessageId}
+            preferredLanguage={preferredLanguage}
+            autoTranslateEnabled={autoTranslateEnabled}
+            languageNames={languageNames}
+            onDeselectFriend={() => setSelectedFriend(null)}
+            onStartCall={startCall}
+            onReplyToMessage={handleReplyToMessage}
+            onDeleteMessage={handleDeleteMessage}
+            onPinMessage={handlePinMessage}
+            onForwardMessage={handleForwardMessage}
+            onTranslateMessage={handleTranslateMessage}
+            onAnalysisClick={(analysis: any) => handleAnalysisClick(analysis.analysis_id, analysis.analysis_type)}
+            setShowTranslation={setShowTranslation}
+          />
 
-            {/* Conversation Tabs */}
-            {searchMode === "conversations" && (
-              <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="w-full">
-                <TabsList className="grid w-full grid-cols-4 mb-4">
-                  <TabsTrigger value="friends" className="text-xs">
-                    Arkadaş
-                    {friendUnreadCount > 0 && (
-                      <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px]">
-                        {friendUnreadCount}
-                      </span>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger value="matches" className="text-xs">
-                    Eşleşme
-                    {matchUnreadCount > 0 && (
-                      <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px]">
-                        {matchUnreadCount}
-                      </span>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger value="groups" className="text-xs">
-                    Gruplar
-                  </TabsTrigger>
-                  <TabsTrigger value="other" className="text-xs">
-                    Diğer
-                    {otherUnreadCount > 0 && (
-                      <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px]">
-                        {otherUnreadCount}
-                      </span>
-                    )}
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="friends" className="mt-0">
-                  <ScrollArea className="h-[calc(100vh-380px)]">
-                    <div className="space-y-2">
-                      {friendConversations.length === 0 ? (
-                        <div className="py-8 px-4">
-                          <EmptyState
-                            icon={UserPlus}
-                            title="Mesaj yok"
-                            description="Henüz arkadaşlarınızdan mesaj almadınız. Yeni arkadaşlar bulun ve sohbete başlayın!"
-                            actionLabel="Arkadaş Bul"
-                            onAction={() => navigate("/discovery")}
-                            illustration={<NoMessagesIllustration />}
-                            variant="gradient"
-                          />
-                        </div>
-                      ) : (
-                        friendConversations.map((conv) => (
-                          <div key={conv.id} className="relative group">
-                            <ConversationItem
-                              conv={conv}
-                              selected={selectedFriend?.user_id === conv.id}
-                              onClick={() => {
-                                setSelectedFriend(conv.friend!);
-                                setSelectedCategory(conv.category!);
-                                loadMessages(conv.friend!.user_id);
-                              }}
-                            />
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handlePinConversation(conv);
-                              }}
-                            >
-                              <Pin className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </ScrollArea>
-                </TabsContent>
-
-                <TabsContent value="matches" className="mt-0">
-                  <ScrollArea className="h-[calc(100vh-380px)]">
-                    <div className="space-y-2">
-                      {matchConversations.length === 0 ? (
-                        <div className="py-8 px-4">
-                          <EmptyState
-                            icon={Heart}
-                            title="Eşleşme yok"
-                            description="Henüz eşleşmenizden mesaj almadınız. Match bölümünden yeni insanlarla eşleşin!"
-                            actionLabel="Eşleşmeleri Gör"
-                            onAction={() => navigate("/match")}
-                          />
-                        </div>
-                      ) : (
-                        matchConversations.map((conv) => (
-                          <div key={conv.id} className="relative group">
-                            <ConversationItem
-                              conv={conv}
-                              selected={selectedFriend?.user_id === conv.id}
-                              onClick={() => {
-                                setSelectedFriend(conv.friend!);
-                                setSelectedCategory(conv.category!);
-                                loadMessages(conv.friend!.user_id);
-                              }}
-                            />
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handlePinConversation(conv);
-                              }}
-                            >
-                              <Pin className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </ScrollArea>
-                </TabsContent>
-
-                <TabsContent value="groups" className="mt-0">
-                  <ScrollArea className="h-[calc(100vh-380px)]">
-                    <div className="space-y-2">
-                      {groupConversations.length === 0 ? (
-                        <div className="py-8 px-4">
-                          <EmptyState
-                            icon={Users}
-                            title="Grup yok"
-                            description="Henüz hiçbir gruba üye değilsiniz. Grup oluşturun veya gruplara katılın!"
-                            actionLabel="Gruplara Git"
-                            onAction={() => navigate("/groups")}
-                          />
-                        </div>
-                      ) : (
-                        groupConversations.map((conv) => (
-                          <div key={conv.id} className="relative group">
-                            <ConversationItem
-                              conv={conv}
-                              selected={false}
-                              onClick={() => navigate(`/groups/${conv.id}`)}
-                            />
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handlePinConversation(conv);
-                              }}
-                            >
-                              <Pin className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </ScrollArea>
-                </TabsContent>
-
-                <TabsContent value="other" className="mt-0">
-                  <ScrollArea className="h-[calc(100vh-380px)]">
-                    <div className="space-y-2">
-                      {otherConversations.length === 0 ? (
-                        <div className="py-8 px-4">
-                          <EmptyState
-                            icon={MessageSquare}
-                            title="Mesaj yok"
-                            description="Henüz diğer mesajlarınız yok."
-                          />
-                        </div>
-                      ) : (
-                        otherConversations.map((conv) => (
-                          <div key={conv.id} className="relative group">
-                            <ConversationItem
-                              conv={conv}
-                              selected={selectedFriend?.user_id === conv.id}
-                              onClick={() => {
-                                setSelectedFriend(conv.friend!);
-                                setSelectedCategory(conv.category!);
-                                loadMessages(conv.friend!.user_id);
-                              }}
-                            />
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handlePinConversation(conv);
-                              }}
-                            >
-                              <Pin className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </ScrollArea>
-                </TabsContent>
-              </Tabs>
-            )}
-          </Card>
-
-          {/* Messages Panel */}
-          <Card className={`md:col-span-2 flex flex-col ${isMobile && !selectedFriend ? 'hidden' : ''}`}>
-            {selectedFriend ? (
-              <>
-                {/* Chat Header */}
-                <div className="p-4 border-b flex items-center gap-3">
-                  {isMobile && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setSelectedFriend(null)}
-                    >
-                      <ArrowLeft className="w-5 h-5" />
-                    </Button>
-                  )}
-                  <div className="relative">
-                    <Avatar 
-                      className="w-10 h-10 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
-                      onClick={() => {
-                        if (selectedCategory === "other") {
-                          navigate(`/match?userId=${selectedFriend.user_id}`);
-                        } else {
-                          navigate(`/profile/${selectedFriend.username}`);
-                        }
-                      }}
-                    >
-                      <AvatarImage src={selectedFriend.profile_photo} />
-                      <AvatarFallback className="bg-gradient-primary text-primary-foreground">
-                        {selectedFriend.username.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    {selectedFriend.is_online && (
-                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-card"></span>
-                    )}
-                  </div>
-                  <div 
-                    className="cursor-pointer hover:opacity-80 transition-opacity flex-1"
-                    onClick={() => {
-                      if (selectedCategory === "other") {
-                        navigate(`/match?userId=${selectedFriend.user_id}`);
-                      } else {
-                        navigate(`/profile/${selectedFriend.username}`);
-                      }
-                    }}
-                  >
-                    <p className="font-medium">
-                      {selectedFriend.full_name || selectedFriend.username}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs text-muted-foreground">@{selectedFriend.username}</p>
-                      {selectedFriend.is_online ? (
-                        <span className="text-xs text-green-500">• Çevrimiçi</span>
-                      ) : selectedFriend.last_seen && (
-                        <span className="text-xs text-muted-foreground">
-                          • {(() => {
-                            const diff = Date.now() - new Date(selectedFriend.last_seen).getTime();
-                            const minutes = Math.floor(diff / 60000);
-                            const hours = Math.floor(minutes / 60);
-                            const days = Math.floor(hours / 24);
-                            if (days > 0) return `${days} gün önce`;
-                            if (hours > 0) return `${hours} saat önce`;
-                            if (minutes > 0) return `${minutes} dk önce`;
-                            return 'Az önce';
-                          })()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    {selectedCategory !== "other" && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => startCall("audio")}
-                          title="Sesli Arama"
-                        >
-                          <Phone className="w-5 h-5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => startCall("video")}
-                          title="Görüntülü Arama"
-                        >
-                          <Video className="w-5 h-5" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                  
-                  {selectedCategory === "other" && (
-                    <div className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Ban className="w-3 h-3" />
-                      <span>Cevap verilemez</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Messages */}
-                <ScrollArea className="flex-1 p-4 will-change-transform">
-                  <div className="space-y-4">
-                    <OptimizedMessageList
-                      messages={messages}
-                      currentUserId={currentUserId}
-                      selectedFriend={selectedFriend}
-                      pinnedMessages={pinnedMessages}
-                      translatedMessages={translatedMessages}
-                      showTranslation={showTranslation}
-                      translatingMessageId={translatingMessageId}
-                      preferredLanguage={preferredLanguage}
-                      autoTranslateEnabled={autoTranslateEnabled}
-                      languageNames={languageNames}
-                      onReplyToMessage={handleReplyToMessage}
-                      onDeleteMessage={handleDeleteMessage}
-                      onPinMessage={handlePinMessage}
-                      onForwardMessage={handleForwardMessage}
-                      onTranslateMessage={handleTranslateMessage}
-                      onAnalysisClick={handleAnalysisClick}
-                      setShowTranslation={setShowTranslation}
-                    />
-
-                    {/* Typing Indicator */}
-                    <AnimatePresence>
-                      {isOtherUserTyping && <TypingIndicator />}
-                    </AnimatePresence>
-                  </div>
-                </ScrollArea>
-
-                {/* Message Input */}
-                {selectedCategory === "other" ? (
-                  <div className="p-4 border-t bg-muted/50">
-                    <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm py-2">
-                      <Ban className="w-4 h-4" />
-                      <p>Bu kişiyle mesajlaşmak için eşleşmeniz veya arkadaş olmanız gerekiyor</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-4 border-t space-y-3">
-                    {/* Reply Preview */}
-                    {replyingTo && (
-                      <div className="flex items-start gap-2 p-3 bg-primary/5 border-l-2 border-primary rounded-lg">
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-semibold text-primary mb-1">
-                            {replyingTo.sender_id === currentUserId ? "Kendine" : selectedFriend?.full_name || selectedFriend?.username}'ye yanıt veriyorsun
-                          </div>
-                          <div className="text-sm opacity-70 truncate">
-                            {replyingTo.content.replace(/\[.*?\]/g, '').substring(0, 60)}
-                            {replyingTo.content.length > 60 && '...'}
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setReplyingTo(null)}
-                          className="h-6 w-6 p-0"
-                        >
-                          ✕
-                        </Button>
-                      </div>
-                    )}
-                    
-                    {/* Voice Recorder */}
-                    {showVoiceRecorder ? (
-                      <VoiceRecorder
-                        onSend={handleSendVoiceMessage}
-                        onCancel={() => setShowVoiceRecorder(false)}
-                      />
-                    ) : (
-                      <>
-                        {/* File Preview */}
-                        {attachedFile && (
-                          <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                            <div className="flex-1">
-                              <p className="text-sm font-medium truncate">{attachedFile.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {(attachedFile.size / 1024).toFixed(2)} KB
-                              </p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={removeAttachment}
-                            >
-                              ✕
-                            </Button>
-                          </div>
-                        )}
-                        
-                        <div className="flex gap-1 md:gap-2 items-center">
-                          {/* Draft indicator - Hidden on mobile */}
-                          {draft.hasDraft && draft.lastSaved && (
-                            <div className="hidden md:flex items-center gap-1 text-xs text-muted-foreground mr-2">
-                              <Save className="w-3 h-3" />
-                              <span>
-                                {new Date(draft.lastSaved).toLocaleTimeString('tr-TR', { 
-                                  hour: '2-digit', 
-                                  minute: '2-digit' 
-                                })}
-                              </span>
-                            </div>
-                          )}
-                          
-                          {/* Emoji Picker */}
-                          <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
-                            <PopoverTrigger asChild>
-                              <Button variant="ghost" size="icon" type="button" className="h-8 w-8 md:h-10 md:w-10">
-                                <Smile className="w-4 h-4 md:w-5 md:h-5" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-full p-0 border-0" align="start">
-                              <EmojiPicker onEmojiClick={onEmojiClick} />
-                            </PopoverContent>
-                          </Popover>
-
-                          {/* File Attachment */}
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*,video/*,.pdf,.doc,.docx"
-                            onChange={handleFileSelect}
-                            className="hidden"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="h-8 w-8 md:h-10 md:w-10"
-                          >
-                            <Paperclip className="w-4 h-4 md:w-5 md:h-5" />
-                          </Button>
-
-                          {/* Message Input */}
-                          <Textarea
-                            ref={messageInputRef}
-                            placeholder="Mesajınızı yazın..."
-                            value={newMessage}
-                            onChange={handleTextareaChange}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault();
-                                handleSendMessage();
-                              }
-                            }}
-                            className="flex-1 min-w-0 min-h-[40px] max-h-[120px] resize-none"
-                            rows={1}
-                            {...longPressHandlers}
-                          />
-                           
-                          {/* Additional Options */}
-                          <div className="flex gap-1 md:gap-2">
-                            {/* Voice Recorder Button */}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              type="button"
-                              onClick={() => setShowVoiceRecorder(true)}
-                              className="h-8 w-8 md:h-10 md:w-10"
-                            >
-                              <Mic className="w-4 h-4 md:w-5 md:h-5" />
-                            </Button>
-
-                            {/* GIF Picker */}
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              type="button"
-                              onClick={() => setShowGifPicker(true)}
-                              className="h-8 w-8 md:h-10 md:w-10"
-                            >
-                              <ImageIcon className="w-4 h-4 md:w-5 md:h-5" />
-                            </Button>
-                            
-                            {/* Schedule Button - Desktop only */}
-                            {selectedCategory === "friend" && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setScheduleDialogOpen(true)}
-                                title="Mesaj Zamanla"
-                                className="hidden md:flex h-8 w-8 md:h-10 md:w-10"
-                              >
-                                <Clock className="w-4 h-4 md:w-5 md:h-5" />
-                              </Button>
-                            )}
-                          </div>
-                          
-                          {/* Send Button */}
-                          <Button
-                            onClick={handleSendMessage}
-                            disabled={(!newMessage.trim() && !attachedFile) || isSending}
-                            size="icon"
-                            className="h-8 w-8 md:h-10 md:w-10 shrink-0"
-                          >
-                            {isSending ? (
-                              <Loader2 className="w-3 h-3 md:w-4 md:h-4 animate-spin" />
-                            ) : (
-                              <Send className="w-3 h-3 md:w-4 md:h-4" />
-                            )}
-                          </Button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="flex items-center justify-center h-full p-8">
-                <EmptyState
-                  icon={MessageSquare}
-                  title="Bir konuşma seçin"
-                  description="Mesajlaşmaya başlamak için sol taraftan bir kişi veya grup seçin. Yeni arkadaşlar edinmek için keşfet bölümünü ziyaret edebilirsiniz."
-                  actionLabel="Arkadaş Bul"
-                  onAction={() => navigate("/discovery")}
-                  illustration={<NoConversationIllustration />}
-                  variant="gradient"
-                />
-              </div>
-            )}
-          </Card>
+          {/* Message Input Component */}
+          <div className={`md:col-span-2 ${isMobile && !selectedFriend ? 'hidden' : ''} ${!selectedFriend ? 'hidden' : ''}`}>
+            <MessageInput
+              selectedFriend={selectedFriend}
+              selectedCategory={selectedCategory}
+              currentUserId={currentUserId}
+              newMessage={newMessage}
+              isSending={isSending}
+              showEmojiPicker={showEmojiPicker}
+              attachedFile={attachedFile}
+              attachedFilePreview={attachedFilePreview}
+              showVoiceRecorder={showVoiceRecorder}
+              replyingTo={replyingTo}
+              draftInfo={{
+                hasDraft: draft.hasDraft,
+                lastSaved: draft.lastSaved instanceof Date ? draft.lastSaved.getTime() : draft.lastSaved,
+              }}
+              longPressHandlers={longPressHandlers}
+              onMessageChange={handleTextareaChange}
+              onSendMessage={handleSendMessage}
+              onEmojiClick={onEmojiClick}
+              onFileSelect={handleFileSelect}
+              onRemoveAttachment={removeAttachment}
+              onCancelReply={() => setReplyingTo(null)}
+              onSendVoiceMessage={handleSendVoiceMessage}
+              onOpenGifPicker={() => setShowGifPicker(true)}
+              onOpenScheduleDialog={() => setScheduleDialogOpen(true)}
+              setShowEmojiPicker={setShowEmojiPicker}
+              setShowVoiceRecorder={setShowVoiceRecorder}
+              messageInputRef={messageInputRef}
+            />
+          </div>
         </div>
 
         {/* Analysis Detail Dialog */}
