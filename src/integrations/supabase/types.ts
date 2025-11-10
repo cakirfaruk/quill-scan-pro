@@ -2200,6 +2200,8 @@ export type Database = {
       }
       posts: {
         Row: {
+          analysis_data: Json | null
+          analysis_type: string | null
           content: string | null
           created_at: string | null
           id: string
@@ -2216,6 +2218,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          analysis_data?: Json | null
+          analysis_type?: string | null
           content?: string | null
           created_at?: string | null
           id?: string
@@ -2232,6 +2236,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          analysis_data?: Json | null
+          analysis_type?: string | null
           content?: string | null
           created_at?: string | null
           id?: string
