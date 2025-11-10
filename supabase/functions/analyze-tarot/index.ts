@@ -144,35 +144,30 @@ Seçilen Kartlar:
 ${cardsText}
 
 Her kart için:
-1. Kartın genel anlamını detaylı açıkla
-2. Düz ve ters pozisyonlarındaki anlamları açıkla
-3. Bu pozisyondaki önemini belirt
-4. Soru ile ilişkisini yorumla
+1. Kartın genel anlamını detaylı açıkla (2-3 paragraf)
+2. Düz ve ters pozisyonlarındaki anlamları açıkla (2 paragraf)
+3. Bu pozisyondaki önemini belirt (2 paragraf)
+4. Soru ile ilişkisini yorumla (2-3 paragraf)
 
 Sonunda:
-- Genel özet ver
-- Tavsiyeler sun
-- Dikkat edilmesi gerekenleri belirt
+- Genel özet ver (3-4 paragraf)
+- Tavsiyeler sun (2-3 paragraf)
+- Dikkat edilmesi gerekenleri belirt (2 paragraf)
 
-ÖNEMLİ KURALLAR:
-- Yorumlar mistik, derin ve rehberlik edici olsun
-- Her bölüm (cards[].interpretation, overall, advice, warnings) için:
-  * Minimum: 100 kelime veya 1000 karakter
-  * Maximum: 270 kelime veya 2200 karakter
-- Bu limitler içinde kalarak zengin ve anlamlı içerik üret
+ÖNEMLİ: Yorumlar mistik, derin ve rehberlik edici olsun. Her kart için ne kadar detay gerekiyorsa o kadar yaz, içerik zengin ve kapsamlı olmalı.
 
 JSON formatında şu yapıda cevap ver:
 {
   "cards": [
     {
       "position": "Pozisyon adı",
-      "interpretation": "Detaylı yorum (100-270 kelime, 1000-2200 karakter)",
+      "interpretation": "Detaylı ve kapsamlı yorum",
       "keywords": ["anahtar", "kelimeler"]
     }
   ],
-  "overall": "Genel özet ve yorum (100-270 kelime, 1000-2200 karakter)",
-  "advice": "Tavsiyeler (100-270 kelime, 1000-2200 karakter)",
-  "warnings": "Dikkat edilmesi gerekenler (100-270 kelime, 1000-2200 karakter)"
+  "overall": "Genel özet ve detaylı yorum",
+  "advice": "Detaylı tavsiyeler",
+  "warnings": "Dikkat edilmesi gerekenler"
 }`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
