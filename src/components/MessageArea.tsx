@@ -187,9 +187,8 @@ export const MessageArea = ({
           </div>
 
           {/* Messages */}
-          <ScrollArea className="flex-1 p-4 will-change-transform">
-            <div className="space-y-4">
-              <OptimizedMessageList
+          <div className="flex-1 overflow-hidden will-change-transform p-4">
+            <OptimizedMessageList
                 messages={messages}
                 currentUserId={currentUserId}
                 selectedFriend={selectedFriend}
@@ -213,8 +212,7 @@ export const MessageArea = ({
               <AnimatePresence>
                 {isOtherUserTyping && <TypingIndicator />}
               </AnimatePresence>
-            </div>
-          </ScrollArea>
+          </div>
         </>
       ) : (
         <div className="flex items-center justify-center h-full p-8">

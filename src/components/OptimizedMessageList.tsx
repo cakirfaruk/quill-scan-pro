@@ -1,5 +1,6 @@
 import { memo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Virtuoso } from "react-virtuoso";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -104,9 +105,13 @@ export const OptimizedMessageList = memo(({
         </motion.div>
       )}
 
-      {/* Messages */}
-      <AnimatePresence mode="popLayout">
-        {messages.map((msg, index) => {
+      {/* Virtualized Messages List */}
+      <Virtuoso
+        data={messages}
+        initialTopMostItemIndex={messages.length - 1}
+        followOutput="smooth"
+        alignToBottom
+        itemContent={(index, msg) => {
           const isAnalysisShare = msg.analysis_id;
           const isVoiceMessage = msg.content.includes("[VOICE_MESSAGE:");
           const isGif = msg.content.includes("[GIF:");
@@ -423,8 +428,8 @@ export const OptimizedMessageList = memo(({
               </SwipeableMessage>
             </motion.div>
           );
-        })}
-      </AnimatePresence>
+        }}
+      />
 
       {/* Simple Media Viewer Dialog */}
       <Dialog open={mediaViewerOpen} onOpenChange={setMediaViewerOpen}>
