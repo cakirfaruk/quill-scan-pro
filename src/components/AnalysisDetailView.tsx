@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Heart, User, Sparkles, Moon, Hand, Coffee, Star, Zap, FileText } from "lucide-react";
 import { ShareResultButton } from "@/components/ShareResultButton";
+import { AnalysisShareActions } from "@/components/AnalysisShareActions";
 
 interface CompatibilityArea {
   name: string;
@@ -17,9 +18,10 @@ interface CompatibilityArea {
 interface AnalysisDetailViewProps {
   result: any;
   analysisType: string;
+  analysisId?: string;
 }
 
-export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewProps) => {
+export const AnalysisDetailView = ({ result, analysisType, analysisId }: AnalysisDetailViewProps) => {
   // Helper function to format content for sharing
   const formatShareContent = (section: string, content: string) => {
     return `${section}\n\n${content}`;
@@ -118,11 +120,20 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
             content={`${result.overall || ''}\n\n${result.cards ? result.cards.map((c: any) => `${c.position}: ${c.interpretation}`).join('\n\n') : ''}`}
             result={result}
             analysisType="tarot"
+            analysisId={analysisId}
             size="default"
             variant="default"
             className="w-full"
           />
         </Card>
+
+        {/* Share to Feed and Messages */}
+        <AnalysisShareActions
+          analysisType="tarot"
+          analysisResult={result}
+          title="Tarot Falı"
+          analysisId={analysisId}
+        />
       </div>
     );
   }
@@ -237,11 +248,20 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
             content={`${result.overall || ''}`}
             result={result}
             analysisType="coffee_fortune"
+            analysisId={analysisId}
             size="default"
             variant="default"
             className="w-full"
           />
         </Card>
+
+        {/* Share Actions */}
+        <AnalysisShareActions
+          analysisType="coffee_fortune"
+          analysisResult={result}
+          title="Kahve Falı"
+          analysisId={analysisId}
+        />
       </div>
     );
   }
@@ -356,11 +376,20 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
             content={`${result.overall || ''}`}
             result={result}
             analysisType="dream"
+            analysisId={analysisId}
             size="default"
             variant="default"
             className="w-full"
           />
         </Card>
+
+        {/* Share Actions */}
+        <AnalysisShareActions
+          analysisType="dream"
+          analysisResult={result}
+          title="Rüya Yorumu"
+          analysisId={analysisId}
+        />
       </div>
     );
   }
@@ -518,11 +547,20 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
             content={`${result.overall || ''}`}
             result={result}
             analysisType="palmistry"
+            analysisId={analysisId}
             size="default"
             variant="default"
             className="w-full"
           />
         </Card>
+
+        {/* Share Actions */}
+        <AnalysisShareActions
+          analysisType="palmistry"
+          analysisResult={result}
+          title="El Falı"
+          analysisId={analysisId}
+        />
       </div>
     );
   }
@@ -645,11 +683,20 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
             content={`${result.general || result.daily_energy || ''}`}
             result={result}
             analysisType="daily_horoscope"
+            analysisId={analysisId}
             size="default"
             variant="default"
             className="w-full"
           />
         </Card>
+
+        {/* Share Actions */}
+        <AnalysisShareActions
+          analysisType="daily_horoscope"
+          analysisResult={result}
+          title="Günlük Burç"
+          analysisId={analysisId}
+        />
       </div>
     );
   }
@@ -762,11 +809,20 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
             content={`${result.overallSummary || result.overall_summary || ''}`}
             result={result}
             analysisType="compatibility"
+            analysisId={analysisId}
             size="default"
             variant="default"
             className="w-full"
           />
         </Card>
+
+        {/* Share Actions */}
+        <AnalysisShareActions
+          analysisType="compatibility"
+          analysisResult={result}
+          title="Uyumluluk Analizi"
+          analysisId={analysisId}
+        />
       </div>
     );
   }
@@ -918,11 +974,20 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
             content={`${result.genel_degerlendirme || result.general_evaluation || ''}`}
             result={result}
             analysisType="birth_chart"
+            analysisId={analysisId}
             size="default"
             variant="default"
             className="w-full"
           />
         </Card>
+
+        {/* Share Actions */}
+        <AnalysisShareActions
+          analysisType="birth_chart"
+          analysisResult={result}
+          title="Doğum Haritası"
+          analysisId={analysisId}
+        />
       </div>
     );
   }
@@ -1052,11 +1117,20 @@ export const AnalysisDetailView = ({ result, analysisType }: AnalysisDetailViewP
             title="Numeroloji Analizi - Tam Rapor"
             content={`${result.overall_summary || ''}\n\n${result.topics ? Object.entries(result.topics).map(([name, data]: [string, any]) => `${name}: ${data.explanation || ''}`).join('\n\n') : ''}`}
             result={result}
+            analysisId={analysisId}
             size="default"
             variant="default"
             className="w-full"
           />
         </Card>
+
+        {/* Share Actions */}
+        <AnalysisShareActions
+          analysisType="numerology"
+          analysisResult={result}
+          title="Numeroloji Analizi"
+          analysisId={analysisId}
+        />
       </div>
     );
   }
