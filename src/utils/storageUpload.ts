@@ -115,10 +115,49 @@ interface VideoCompressionOptions {
   onProgress?: (progress: number) => void;
 }
 
+interface VideoCompressionResult {
+  compressedVideo: Blob;
+  thumbnail: string; // Base64 data URL
+}
+
 const QUALITY_SETTINGS = {
   high: { bitrate: 5000000, scale: 1 },      // 5 Mbps, original size
   medium: { bitrate: 2500000, scale: 0.75 }, // 2.5 Mbps, 75% size
   low: { bitrate: 1000000, scale: 0.5 },     // 1 Mbps, 50% size
+};
+
+/**
+ * Generate thumbnail from video at specified time
+ */
+export const generateVideoThumbnail = async (
+  file: File,
+  timeInSeconds: number = 1
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.currentTime = timeInSeconds;
+    
+    video.onloadeddata = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      const thumbnail = canvas.toDataURL('image/jpeg', 0.8);
+      URL.revokeObjectURL(video.src);
+      resolve(thumbnail);
+    };
+    
+    video.onerror = () => {
+      URL.revokeObjectURL(video.src);
+      reject(new Error('Failed to generate thumbnail'));
+    };
+    
+    video.src = URL.createObjectURL(file);
+  });
 };
 
 /**
@@ -127,12 +166,20 @@ const QUALITY_SETTINGS = {
 export const compressVideo = async (
   file: File,
   options: VideoCompressionOptions
-): Promise<Blob> => {
+): Promise<VideoCompressionResult> => {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video');
     video.preload = 'metadata';
+    let thumbnail: string | null = null;
     
     video.onloadedmetadata = async () => {
+      // Generate thumbnail from first frame
+      try {
+        thumbnail = await generateVideoThumbnail(file, 0.5);
+      } catch (error) {
+        console.error('Thumbnail generation failed:', error);
+      }
+      
       video.currentTime = 0;
       
       video.onseeked = async () => {
@@ -169,7 +216,10 @@ export const compressVideo = async (
           mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
           mediaRecorder.onstop = () => {
             const blob = new Blob(chunks, { type: 'video/webm' });
-            resolve(blob);
+            resolve({
+              compressedVideo: blob,
+              thumbnail: thumbnail || '' // Return empty string if thumbnail generation failed
+            });
           };
           
           mediaRecorder.start();

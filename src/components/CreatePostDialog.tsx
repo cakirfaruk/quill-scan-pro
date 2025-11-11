@@ -92,7 +92,11 @@ export const CreatePostDialog = ({
   const [isCompressing, setIsCompressing] = useState(false);
   const [content, setContent] = useState(prefilledContent?.content || "");
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
-  const [mediaPreviews, setMediaPreviews] = useState<Array<{ url: string; type: "photo" | "video" }>>(
+  const [mediaPreviews, setMediaPreviews] = useState<Array<{ 
+    url: string; 
+    type: "photo" | "video";
+    thumbnail?: string;
+  }>>(
     prefilledContent?.mediaUrl ? [{ url: prefilledContent.mediaUrl, type: prefilledContent.mediaType || "photo" }] : []
   );
   const [isLoading, setIsLoading] = useState(false);
@@ -208,7 +212,7 @@ export const CreatePostDialog = ({
     }
 
     const validFiles: File[] = [];
-    const newPreviews: Array<{ url: string; type: "photo" | "video" }> = [];
+    const newPreviews: Array<{ url: string; type: "photo" | "video"; thumbnail?: string }> = [];
     let hasVerticalVideo = false;
 
     // Process files sequentially to detect video orientation
@@ -226,19 +230,23 @@ export const CreatePostDialog = ({
       let processedFile = file;
       const type = file.type.startsWith("video") ? "video" : "photo";
 
+      let videoThumbnail: string | undefined;
+
       // Compress video files
       if (type === "video") {
         setIsCompressing(true);
         setCompressionProgress(0);
 
         try {
-          const compressedBlob = await compressVideo(file, { 
+          const result = await compressVideo(file, { 
             quality: videoQuality,
             onProgress: (progress) => {
               setCompressionProgress(progress);
             }
           });
-          processedFile = new File([compressedBlob], file.name, { type: 'video/webm' });
+          
+          processedFile = new File([result.compressedVideo], file.name, { type: 'video/webm' });
+          videoThumbnail = result.thumbnail;
           
           const originalSize = (file.size / (1024 * 1024)).toFixed(2);
           const compressedSize = (processedFile.size / (1024 * 1024)).toFixed(2);
@@ -272,7 +280,11 @@ export const CreatePostDialog = ({
         reader.readAsDataURL(processedFile);
       });
 
-      newPreviews.push({ url, type });
+      newPreviews.push({ 
+        url, 
+        type,
+        thumbnail: videoThumbnail 
+      });
 
       // Detect video orientation
       if (file.type.startsWith("video")) {
@@ -760,6 +772,7 @@ export const CreatePostDialog = ({
                                 ) : (
                                   <video
                                     src={mediaPreviews[0].url}
+                                    poster={mediaPreviews[0].thumbnail}
                                     controls
                                     className="w-full max-h-96"
                                   />
@@ -797,6 +810,7 @@ export const CreatePostDialog = ({
                                         ) : (
                                           <video
                                             src={media.url}
+                                            poster={media.thumbnail}
                                             controls
                                             className="w-full max-h-96"
                                           />
@@ -844,10 +858,18 @@ export const CreatePostDialog = ({
                                         />
                                       ) : (
                                         <div className="w-full h-full flex items-center justify-center relative">
-                                          <video
-                                            src={media.url}
-                                            className="w-full h-full object-cover"
-                                          />
+                                          {media.thumbnail ? (
+                                            <img
+                                              src={media.thumbnail}
+                                              alt={`Video thumbnail ${index + 1}`}
+                                              className="w-full h-full object-cover"
+                                            />
+                                          ) : (
+                                            <video
+                                              src={media.url}
+                                              className="w-full h-full object-cover"
+                                            />
+                                          )}
                                           <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                                             <Video className="w-6 h-6 text-white" />
                                           </div>
