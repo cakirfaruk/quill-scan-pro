@@ -36,6 +36,7 @@ import {
   Settings,
   RefreshCw,
   Clock,
+  Upload,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
@@ -50,6 +51,20 @@ import { Slider } from "@/components/ui/slider";
 import { z } from "zod";
 import type { VideoQuality } from "@/utils/storageUpload";
 import { compressVideo, generateVideoThumbnail } from "@/utils/storageUpload";
+
+// Validation schema for thumbnail image
+const thumbnailImageSchema = z.object({
+  file: z.instanceof(File)
+    .refine((file) => file.type.startsWith('image/'), {
+      message: "Sadece resim dosyaları yüklenebilir"
+    })
+    .refine((file) => file.size <= 5 * 1024 * 1024, {
+      message: "Resim boyutu maksimum 5MB olabilir"
+    })
+    .refine((file) => ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type), {
+      message: "Sadece JPG, PNG veya WebP formatları desteklenir"
+    })
+});
 import { useEnhancedOfflineSync } from "@/hooks/use-enhanced-offline-sync";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { useOptimisticUI } from "@/hooks/use-optimistic-ui";
@@ -102,7 +117,10 @@ export const CreatePostDialog = ({
   const [thumbnailTime, setThumbnailTime] = useState<number>(0.5);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [livePreviewUrl, setLivePreviewUrl] = useState<string>("");
+  const [customThumbnailFile, setCustomThumbnailFile] = useState<File | null>(null);
+  const [customThumbnailPreview, setCustomThumbnailPreview] = useState<string>("");
   const thumbnailVideoRef = useRef<HTMLVideoElement>(null);
+  const customThumbnailInputRef = useRef<HTMLInputElement>(null);
   const [content, setContent] = useState(prefilledContent?.content || "");
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaPreviews, setMediaPreviews] = useState<Array<{ 
@@ -428,6 +446,10 @@ export const CreatePostDialog = ({
     const mediaFile = mediaFiles[videoIndex];
     if (!mediaFile || !mediaFile.type.startsWith('video/')) return;
 
+    // Reset custom thumbnail
+    setCustomThumbnailFile(null);
+    setCustomThumbnailPreview("");
+
     // Get video duration and create preview URL
     const video = document.createElement('video');
     video.preload = 'metadata';
@@ -442,6 +464,65 @@ export const CreatePostDialog = ({
     setLivePreviewUrl(URL.createObjectURL(mediaFile));
     setThumbnailPickerIndex(videoIndex);
     setShowThumbnailPicker(true);
+  };
+
+  const handleCustomThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate the uploaded image
+    const validation = thumbnailImageSchema.safeParse({ file });
+    
+    if (!validation.success) {
+      toast({
+        title: "Geçersiz Dosya",
+        description: validation.error.errors[0].message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create preview URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const imageUrl = e.target?.result as string;
+      setCustomThumbnailFile(file);
+      setCustomThumbnailPreview(imageUrl);
+      
+      toast({
+        title: "Özel Küçük Resim Yüklendi",
+        description: "Kaydetmek için 'Kaydet' butonuna tıklayın",
+      });
+    };
+    reader.readAsDataURL(file);
+
+    // Reset file input
+    if (e.target) {
+      e.target.value = "";
+    }
+  };
+
+  const handleSaveCustomThumbnail = () => {
+    if (thumbnailPickerIndex === null) return;
+
+    if (customThumbnailPreview) {
+      // Use custom uploaded thumbnail
+      setMediaPreviews(prev => prev.map((media, idx) => 
+        idx === thumbnailPickerIndex 
+          ? { ...media, thumbnail: customThumbnailPreview }
+          : media
+      ));
+
+      toast({
+        title: "Küçük Resim Kaydedildi",
+        description: "Özel küçük resim uygulandı",
+      });
+    } else {
+      // Use frame from video
+      handleRegenerateThumbnail(thumbnailPickerIndex, thumbnailTime);
+    }
+
+    setShowThumbnailPicker(false);
   };
 
   // Update video current time when slider changes
@@ -1278,52 +1359,124 @@ export const CreatePostDialog = ({
           <div className="space-y-4">
             {/* Preview */}
             {thumbnailPickerIndex !== null && mediaPreviews[thumbnailPickerIndex] && (
-              <div className="space-y-3">
-                {/* Live Video Preview */}
+              <div className="space-y-4">
+                {/* Current Preview */}
                 <div className="relative rounded-lg overflow-hidden bg-black">
-                  <video
-                    ref={thumbnailVideoRef}
-                    src={livePreviewUrl}
-                    className="w-full max-h-64 object-contain"
-                    onLoadedMetadata={(e) => {
-                      const video = e.currentTarget;
-                      video.currentTime = thumbnailTime;
-                    }}
-                  />
+                  {customThumbnailPreview ? (
+                    <img
+                      src={customThumbnailPreview}
+                      alt="Custom thumbnail preview"
+                      className="w-full max-h-64 object-contain"
+                    />
+                  ) : (
+                    <video
+                      ref={thumbnailVideoRef}
+                      src={livePreviewUrl}
+                      className="w-full max-h-64 object-contain"
+                      onLoadedMetadata={(e) => {
+                        const video = e.currentTarget;
+                        video.currentTime = thumbnailTime;
+                      }}
+                    />
+                  )}
                   <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
-                    <Video className="w-3 h-3" />
-                    Canlı Önizleme
+                    {customThumbnailPreview ? (
+                      <>
+                        <ImageIcon className="w-3 h-3" />
+                        Özel Küçük Resim
+                      </>
+                    ) : (
+                      <>
+                        <Video className="w-3 h-3" />
+                        Canlı Önizleme
+                      </>
+                    )}
                   </div>
                 </div>
 
-                {/* Timeline Scrubber */}
-                <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-center justify-between text-sm">
-                    <Label>Zaman Çizelgesi</Label>
-                    <span className="text-muted-foreground font-mono">
-                      {thumbnailTime.toFixed(1)}s / {videoDuration.toFixed(1)}s
+                {/* Option 1: Select from Video */}
+                {!customThumbnailPreview && (
+                  <div className="space-y-3 p-4 bg-muted/50 rounded-lg border">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-medium flex items-center gap-2">
+                        <Video className="w-4 h-4" />
+                        Videodan Kare Seç
+                      </Label>
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {thumbnailTime.toFixed(1)}s / {videoDuration.toFixed(1)}s
+                      </span>
+                    </div>
+                    <Slider
+                      value={[thumbnailTime]}
+                      onValueChange={handleThumbnailTimeChange}
+                      max={videoDuration}
+                      step={0.1}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <RefreshCw className="w-3 h-3" />
+                      Video üzerinde kaydırarak istediğiniz kareyi seçin
+                    </p>
+                  </div>
+                )}
+
+                {/* Divider with "VEYA" */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      veya
                     </span>
                   </div>
-                  <Slider
-                    value={[thumbnailTime]}
-                    onValueChange={handleThumbnailTimeChange}
-                    max={videoDuration}
-                    step={0.1}
-                    className="w-full"
+                </div>
+
+                {/* Option 2: Upload Custom Image */}
+                <div className="space-y-3 p-4 bg-muted/50 rounded-lg border">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <Upload className="w-4 h-4" />
+                    Özel Resim Yükle
+                  </Label>
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={() => customThumbnailInputRef.current?.click()}
+                  >
+                    <Upload className="w-4 h-4" />
+                    {customThumbnailPreview ? "Farklı Resim Yükle" : "Galeriden Resim Seç"}
+                  </Button>
+                  <input
+                    ref={customThumbnailInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    className="hidden"
+                    onChange={handleCustomThumbnailUpload}
                   />
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <RefreshCw className="w-3 h-3" />
-                    Video üzerinde kaydırarak istediğiniz kareyi seçin
+                  <p className="text-xs text-muted-foreground">
+                    JPG, PNG veya WebP formatı • Maksimum 5MB
                   </p>
+                  
+                  {customThumbnailPreview && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-destructive hover:text-destructive"
+                      onClick={() => {
+                        setCustomThumbnailPreview("");
+                        setCustomThumbnailFile(null);
+                      }}
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Özel Resmi Kaldır
+                    </Button>
+                  )}
                 </div>
 
                 {/* Actions */}
                 <div className="flex items-center gap-2">
                   <Button
-                    onClick={() => {
-                      handleRegenerateThumbnail(thumbnailPickerIndex, thumbnailTime);
-                      setShowThumbnailPicker(false);
-                    }}
+                    onClick={handleSaveCustomThumbnail}
                     className="flex-1 gap-2"
                   >
                     <Check className="w-4 h-4" />
@@ -1334,6 +1487,8 @@ export const CreatePostDialog = ({
                     onClick={() => {
                       setShowThumbnailPicker(false);
                       setThumbnailPickerIndex(null);
+                      setCustomThumbnailPreview("");
+                      setCustomThumbnailFile(null);
                       if (livePreviewUrl) {
                         URL.revokeObjectURL(livePreviewUrl);
                         setLivePreviewUrl("");
