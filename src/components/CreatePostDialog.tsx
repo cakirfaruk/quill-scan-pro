@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,6 +33,8 @@ import {
   Maximize2,
   MapPin,
   Film,
+  Settings,
+  RefreshCw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
@@ -41,9 +45,10 @@ import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
 import { z } from "zod";
 import type { VideoQuality } from "@/utils/storageUpload";
-import { compressVideo } from "@/utils/storageUpload";
+import { compressVideo, generateVideoThumbnail } from "@/utils/storageUpload";
 import { useEnhancedOfflineSync } from "@/hooks/use-enhanced-offline-sync";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { useOptimisticUI } from "@/hooks/use-optimistic-ui";
@@ -90,6 +95,13 @@ export const CreatePostDialog = ({
   const [videoQuality, setVideoQuality] = useState<VideoQuality>('medium');
   const [compressionProgress, setCompressionProgress] = useState<number>(0);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [showThumbnailPicker, setShowThumbnailPicker] = useState(false);
+  const [thumbnailPickerIndex, setThumbnailPickerIndex] = useState<number | null>(null);
+  const [videoDuration, setVideoDuration] = useState<number>(0);
+  const [thumbnailTime, setThumbnailTime] = useState<number>(0.5);
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+  const [livePreviewUrl, setLivePreviewUrl] = useState<string>("");
+  const thumbnailVideoRef = useRef<HTMLVideoElement>(null);
   const [content, setContent] = useState(prefilledContent?.content || "");
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaPreviews, setMediaPreviews] = useState<Array<{ 
@@ -320,6 +332,11 @@ export const CreatePostDialog = ({
     if (fileInputRef.current && mediaPreviews.length === 1) {
       fileInputRef.current.value = "";
     }
+    // Close thumbnail picker if the video being edited is removed
+    if (thumbnailPickerIndex === index) {
+      setShowThumbnailPicker(false);
+      setThumbnailPickerIndex(null);
+    }
   };
 
   const handleMoveMedia = (fromIndex: number, toIndex: number) => {
@@ -346,6 +363,62 @@ export const CreatePostDialog = ({
 
   const handleAddMoreMedia = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleRegenerateThumbnail = async (videoIndex: number, timeInSeconds: number) => {
+    const mediaFile = mediaFiles[videoIndex];
+    if (!mediaFile || !mediaFile.type.startsWith('video/')) return;
+
+    try {
+      const newThumbnail = await generateVideoThumbnail(mediaFile, timeInSeconds);
+      
+      // Update the thumbnail for this specific video
+      setMediaPreviews(prev => prev.map((media, idx) => 
+        idx === videoIndex 
+          ? { ...media, thumbnail: newThumbnail }
+          : media
+      ));
+
+      toast({
+        title: "Küçük Resim Güncellendi",
+        description: "Video önizleme resmi değiştirildi",
+      });
+    } catch (error) {
+      console.error('Failed to regenerate thumbnail:', error);
+      toast({
+        title: "Hata",
+        description: "Küçük resim oluşturulamadı",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleOpenThumbnailPicker = async (videoIndex: number) => {
+    const mediaFile = mediaFiles[videoIndex];
+    if (!mediaFile || !mediaFile.type.startsWith('video/')) return;
+
+    // Get video duration and create preview URL
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      setVideoDuration(video.duration);
+      setThumbnailTime(video.duration * 0.5); // Start at 50%
+      URL.revokeObjectURL(video.src);
+    };
+    video.src = URL.createObjectURL(mediaFile);
+
+    // Set live preview URL
+    setLivePreviewUrl(URL.createObjectURL(mediaFile));
+    setThumbnailPickerIndex(videoIndex);
+    setShowThumbnailPicker(true);
+  };
+
+  // Update video current time when slider changes
+  const handleThumbnailTimeChange = (value: number[]) => {
+    setThumbnailTime(value[0]);
+    if (thumbnailVideoRef.current) {
+      thumbnailVideoRef.current.currentTime = value[0];
+    }
   };
 
   const handleEmojiClick = (emojiData: EmojiClickData) => {
@@ -777,6 +850,20 @@ export const CreatePostDialog = ({
                                     className="w-full max-h-96"
                                   />
                                 )}
+                                
+                                {/* Edit Thumbnail Button (for videos) */}
+                                {mediaPreviews[0].type === "video" && (
+                                  <Button
+                                    size="icon"
+                                    variant="secondary"
+                                    className="absolute top-2 left-2 rounded-full"
+                                    onClick={() => handleOpenThumbnailPicker(0)}
+                                    title="Küçük resmi düzenle"
+                                  >
+                                    <ImageIcon className="w-4 h-4" />
+                                  </Button>
+                                )}
+                                
                                 <Button
                                   size="icon"
                                   variant="secondary"
@@ -879,6 +966,22 @@ export const CreatePostDialog = ({
 
                                     {/* Controls Overlay */}
                                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                                      {/* Edit Thumbnail (Videos Only) */}
+                                      {media.type === "video" && (
+                                        <Button
+                                          size="icon"
+                                          variant="secondary"
+                                          className="h-7 w-7 rounded-full"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenThumbnailPicker(index);
+                                          }}
+                                          title="Küçük resmi düzenle"
+                                        >
+                                          <ImageIcon className="w-3 h-3" />
+                                        </Button>
+                                      )}
+                                      
                                       {/* Move Up */}
                                       {index > 0 && (
                                         <Button
@@ -1104,6 +1207,89 @@ export const CreatePostDialog = ({
                 </motion.div>
               )}
             </AnimatePresence>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Thumbnail Picker Dialog */}
+      <Dialog open={showThumbnailPicker} onOpenChange={setShowThumbnailPicker}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ImageIcon className="w-5 h-5" />
+              Video Küçük Resmi Seç
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Preview */}
+            {thumbnailPickerIndex !== null && mediaPreviews[thumbnailPickerIndex] && (
+              <div className="space-y-3">
+                {/* Live Video Preview */}
+                <div className="relative rounded-lg overflow-hidden bg-black">
+                  <video
+                    ref={thumbnailVideoRef}
+                    src={livePreviewUrl}
+                    className="w-full max-h-64 object-contain"
+                    onLoadedMetadata={(e) => {
+                      const video = e.currentTarget;
+                      video.currentTime = thumbnailTime;
+                    }}
+                  />
+                  <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+                    <Video className="w-3 h-3" />
+                    Canlı Önizleme
+                  </div>
+                </div>
+
+                {/* Timeline Scrubber */}
+                <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-center justify-between text-sm">
+                    <Label>Zaman Çizelgesi</Label>
+                    <span className="text-muted-foreground font-mono">
+                      {thumbnailTime.toFixed(1)}s / {videoDuration.toFixed(1)}s
+                    </span>
+                  </div>
+                  <Slider
+                    value={[thumbnailTime]}
+                    onValueChange={handleThumbnailTimeChange}
+                    max={videoDuration}
+                    step={0.1}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <RefreshCw className="w-3 h-3" />
+                    Video üzerinde kaydırarak istediğiniz kareyi seçin
+                  </p>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => {
+                      handleRegenerateThumbnail(thumbnailPickerIndex, thumbnailTime);
+                      setShowThumbnailPicker(false);
+                    }}
+                    className="flex-1 gap-2"
+                  >
+                    <Check className="w-4 h-4" />
+                    Kaydet
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowThumbnailPicker(false);
+                      setThumbnailPickerIndex(null);
+                      if (livePreviewUrl) {
+                        URL.revokeObjectURL(livePreviewUrl);
+                        setLivePreviewUrl("");
+                      }
+                    }}
+                  >
+                    İptal
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
