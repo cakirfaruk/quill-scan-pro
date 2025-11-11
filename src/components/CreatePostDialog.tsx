@@ -160,7 +160,31 @@ export const CreatePostDialog = ({
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Detect video orientation (aspect ratio)
+  const detectVideoOrientation = (file: File): Promise<'vertical' | 'horizontal' | 'square'> => {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => {
+        URL.revokeObjectURL(video.src);
+        const aspectRatio = video.videoWidth / video.videoHeight;
+        if (aspectRatio < 0.8) {
+          resolve('vertical'); // Dik video (9:16 veya daha dar)
+        } else if (aspectRatio > 1.2) {
+          resolve('horizontal'); // Yatay video
+        } else {
+          resolve('square'); // Kare video
+        }
+      };
+      video.onerror = () => {
+        URL.revokeObjectURL(video.src);
+        resolve('square'); // Hata durumunda kare olarak kabul et
+      };
+      video.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
@@ -176,8 +200,10 @@ export const CreatePostDialog = ({
 
     const validFiles: File[] = [];
     const newPreviews: Array<{ url: string; type: "photo" | "video" }> = [];
+    let hasVerticalVideo = false;
 
-    files.forEach((file) => {
+    // Process files sequentially to detect video orientation
+    for (const file of files) {
       // Check file size (max 50MB)
       if (file.size > 50 * 1024 * 1024) {
         toast({
@@ -185,25 +211,46 @@ export const CreatePostDialog = ({
           description: `${file.name} çok büyük. Maksimum dosya boyutu 50MB olabilir.`,
           variant: "destructive",
         });
-        return;
+        continue;
       }
 
       validFiles.push(file);
 
       // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const url = e.target?.result as string;
-        const type = file.type.startsWith("video") ? "video" : "photo";
-        newPreviews.push({ url, type });
-        
-        if (newPreviews.length === validFiles.length) {
-          setMediaPreviews([...mediaPreviews, ...newPreviews]);
-          setMediaFiles([...mediaFiles, ...validFiles]);
+      const url = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          resolve(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+      });
+
+      const type = file.type.startsWith("video") ? "video" : "photo";
+      newPreviews.push({ url, type });
+
+      // Detect video orientation
+      if (file.type.startsWith("video")) {
+        const orientation = await detectVideoOrientation(file);
+        if (orientation === 'vertical') {
+          hasVerticalVideo = true;
         }
-      };
-      reader.readAsDataURL(file);
-    });
+      }
+    }
+
+    // Update state
+    setMediaPreviews([...mediaPreviews, ...newPreviews]);
+    setMediaFiles([...mediaFiles, ...validFiles]);
+
+    // Auto-set post type based on video orientation
+    if (hasVerticalVideo) {
+      setPostType('reels');
+      toast({
+        title: "Reels Tespit Edildi 🎬",
+        description: "Dikey videonuz Reels olarak paylaşılacak!",
+      });
+    } else if (newPreviews.some(p => p.type === 'video')) {
+      setPostType('video');
+    }
   };
 
   const handleRemoveMedia = (index: number) => {
@@ -556,8 +603,13 @@ export const CreatePostDialog = ({
                             {username.substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <div>
+                        <div className="flex-1">
                           <p className="font-semibold">{username}</p>
+                          {postType === 'reels' && mediaPreviews.some(m => m.type === 'video') && (
+                            <Badge variant="secondary" className="gap-1 mt-1">
+                              🎬 Bu video Reels olarak paylaşılacak
+                            </Badge>
+                          )}
                         </div>
                       </div>
 
