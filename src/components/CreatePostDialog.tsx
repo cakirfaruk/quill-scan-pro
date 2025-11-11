@@ -639,11 +639,12 @@ export const CreatePostDialog = ({
             }
             
             uploadedUrls.push(uploadedUrl);
-          } catch (uploadError) {
+          } catch (uploadError: any) {
             console.error('Upload error:', uploadError);
+            const errorMessage = uploadError?.message || `${file.name} yüklenemedi`;
             toast({
               title: "Yükleme Hatası",
-              description: `${file.name} yüklenemedi`,
+              description: errorMessage,
               variant: "destructive",
             });
             setIsLoading(false);

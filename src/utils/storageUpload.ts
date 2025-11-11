@@ -51,7 +51,28 @@ export const uploadToStorage = async (
       fileToUpload = await compressImage(file, 1920, 0.8);
     }
 
-    const fileExt = file.name.split('.').pop();
+    // Determine correct file extension based on MIME type
+    let fileExt = file.name.split('.').pop();
+    if (file.type === 'video/webm') {
+      fileExt = 'webm';
+    } else if (file.type.startsWith('video/')) {
+      // Keep original extension for other video types
+      fileExt = file.name.split('.').pop();
+    }
+
+    // Check file size limits
+    const fileSizeMB = fileToUpload.size / (1024 * 1024);
+    const bucketLimits = {
+      posts: 50,
+      stories: 20,
+      profiles: 5,
+      videos: 500
+    };
+    
+    if (fileSizeMB > bucketLimits[bucket]) {
+      throw new Error(`Dosya boyutu ${bucketLimits[bucket]}MB limitini aşıyor (${fileSizeMB.toFixed(2)}MB)`);
+    }
+
     const fileName = `${userId}/${Date.now()}.${fileExt}`;
 
     const { data, error } = await supabase.storage
@@ -61,19 +82,25 @@ export const uploadToStorage = async (
         upsert: false
       });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Storage upload error details:', error);
+      throw new Error(error.message || 'Yükleme başarısız');
+    }
 
     // Get signed URL (1 year expiry for user content)
     const { data: signedData, error: signedError } = await supabase.storage
       .from(bucket)
       .createSignedUrl(data.path, 31536000); // 365 days
 
-    if (signedError) throw signedError;
+    if (signedError) {
+      console.error('Signed URL error:', signedError);
+      throw new Error('URL oluşturulamadı');
+    }
 
     return signedData.signedUrl;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Storage upload error:', error);
-    return null;
+    throw error; // Throw instead of returning null
   }
 };
 
