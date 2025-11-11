@@ -35,6 +35,7 @@ import {
   Film,
   Settings,
   RefreshCw,
+  Clock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
@@ -108,6 +109,7 @@ export const CreatePostDialog = ({
     url: string; 
     type: "photo" | "video";
     thumbnail?: string;
+    duration?: number;
   }>>(
     prefilledContent?.mediaUrl ? [{ url: prefilledContent.mediaUrl, type: prefilledContent.mediaType || "photo" }] : []
   );
@@ -209,6 +211,30 @@ export const CreatePostDialog = ({
     });
   };
 
+  const getVideoDuration = (file: File): Promise<number> => {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => {
+        const duration = video.duration;
+        URL.revokeObjectURL(video.src);
+        resolve(duration);
+      };
+      video.onerror = () => {
+        URL.revokeObjectURL(video.src);
+        resolve(0);
+      };
+      video.src = URL.createObjectURL(file);
+    });
+  };
+
+  // Format duration to MM:SS
+  const formatDuration = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
@@ -224,7 +250,7 @@ export const CreatePostDialog = ({
     }
 
     const validFiles: File[] = [];
-    const newPreviews: Array<{ url: string; type: "photo" | "video"; thumbnail?: string }> = [];
+    const newPreviews: Array<{ url: string; type: "photo" | "video"; thumbnail?: string; duration?: number }> = [];
     let hasVerticalVideo = false;
 
     // Process files sequentially to detect video orientation
@@ -243,6 +269,7 @@ export const CreatePostDialog = ({
       const type = file.type.startsWith("video") ? "video" : "photo";
 
       let videoThumbnail: string | undefined;
+      let videoDurationValue: number | undefined;
 
       // Compress video files
       if (type === "video") {
@@ -250,6 +277,9 @@ export const CreatePostDialog = ({
         setCompressionProgress(0);
 
         try {
+          // Get video duration before compression
+          videoDurationValue = await getVideoDuration(file);
+          
           const result = await compressVideo(file, { 
             quality: videoQuality,
             onProgress: (progress) => {
@@ -295,7 +325,8 @@ export const CreatePostDialog = ({
       newPreviews.push({ 
         url, 
         type,
-        thumbnail: videoThumbnail 
+        thumbnail: videoThumbnail,
+        duration: videoDurationValue
       });
 
       // Detect video orientation
@@ -851,6 +882,14 @@ export const CreatePostDialog = ({
                                   />
                                 )}
                                 
+                                {/* Duration Badge (for videos) */}
+                                {mediaPreviews[0].type === "video" && mediaPreviews[0].duration && (
+                                  <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {formatDuration(mediaPreviews[0].duration)}
+                                  </div>
+                                )}
+                                
                                 {/* Edit Thumbnail Button (for videos) */}
                                 {mediaPreviews[0].type === "video" && (
                                   <Button
@@ -902,6 +941,15 @@ export const CreatePostDialog = ({
                                             className="w-full max-h-96"
                                           />
                                         )}
+                                        
+                                        {/* Duration Badge (for videos) */}
+                                        {media.type === "video" && media.duration && (
+                                          <div className="absolute bottom-2 left-2 bg-black/80 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+                                            <Clock className="w-3 h-3" />
+                                            {formatDuration(media.duration)}
+                                          </div>
+                                        )}
+                                        
                                         <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs">
                                           {index + 1} / {mediaPreviews.length}
                                         </div>
@@ -960,6 +1008,13 @@ export const CreatePostDialog = ({
                                           <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                                             <Video className="w-6 h-6 text-white" />
                                           </div>
+                                          {/* Duration Badge */}
+                                          {media.duration && (
+                                            <div className="absolute bottom-1 right-1 bg-black/90 text-white text-[10px] px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                              <Clock className="w-2.5 h-2.5" />
+                                              {formatDuration(media.duration)}
+                                            </div>
+                                          )}
                                         </div>
                                       )}
                                     </div>
