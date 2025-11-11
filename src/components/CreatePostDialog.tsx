@@ -50,7 +50,7 @@ import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import { z } from "zod";
 import type { VideoQuality } from "@/utils/storageUpload";
-import { compressVideo, generateVideoThumbnail } from "@/utils/storageUpload";
+import { compressVideo, generateVideoThumbnail, uploadToStorage } from "@/utils/storageUpload";
 
 // Validation schema for thumbnail image
 const thumbnailImageSchema = z.object({
@@ -273,23 +273,13 @@ export const CreatePostDialog = ({
 
     // Process files sequentially to detect video orientation
     for (const file of files) {
-      // Check file size (max 50MB)
-      if (file.size > 50 * 1024 * 1024) {
-        toast({
-          title: "Dosya çok büyük",
-          description: `${file.name} çok büyük. Maksimum dosya boyutu 50MB olabilir.`,
-          variant: "destructive",
-        });
-        continue;
-      }
-
       let processedFile = file;
       const type = file.type.startsWith("video") ? "video" : "photo";
 
       let videoThumbnail: string | undefined;
       let videoDurationValue: number | undefined;
 
-      // Compress video files
+      // Compress video files - ALWAYS compress videos regardless of size
       if (type === "video") {
         setIsCompressing(true);
         setCompressionProgress(0);
@@ -298,8 +288,23 @@ export const CreatePostDialog = ({
           // Get video duration before compression
           videoDurationValue = await getVideoDuration(file);
           
+          // Auto-select quality based on file size
+          const fileSizeMB = file.size / (1024 * 1024);
+          let autoQuality: VideoQuality = videoQuality;
+          
+          // Override quality for very large files
+          if (fileSizeMB > 200) {
+            autoQuality = 'low';
+            toast({
+              title: "Büyük Video Tespit Edildi",
+              description: "Video otomatik olarak düşük kalitede sıkıştırılacak",
+            });
+          } else if (fileSizeMB > 100) {
+            autoQuality = 'medium';
+          }
+          
           const result = await compressVideo(file, { 
-            quality: videoQuality,
+            quality: autoQuality,
             onProgress: (progress) => {
               setCompressionProgress(progress);
             }
@@ -320,9 +325,12 @@ export const CreatePostDialog = ({
           console.error('Video compression failed:', error);
           toast({
             title: "Sıkıştırma Başarısız",
-            description: "Orijinal video kullanılacak",
+            description: "Video yüklenemedi, lütfen tekrar deneyin",
             variant: "destructive",
           });
+          setIsCompressing(false);
+          setCompressionProgress(0);
+          continue; // Skip this file
         } finally {
           setIsCompressing(false);
           setCompressionProgress(0);
@@ -614,13 +622,43 @@ export const CreatePostDialog = ({
         return;
       }
 
-      // Create post with media arrays and location
+      // Upload media files to storage first
+      const uploadedUrls: string[] = [];
+      
+      if (mediaFiles.length > 0) {
+        for (let i = 0; i < mediaFiles.length; i++) {
+          const file = mediaFiles[i];
+          const mediaType = mediaPreviews[i]?.type || 'photo';
+          
+          try {
+            const bucket = postType === 'reels' ? 'videos' : (mediaType === 'video' ? 'videos' : 'posts');
+            const uploadedUrl = await uploadToStorage(file, bucket, userId);
+            
+            if (!uploadedUrl) {
+              throw new Error(`${file.name} yüklenemedi`);
+            }
+            
+            uploadedUrls.push(uploadedUrl);
+          } catch (uploadError) {
+            console.error('Upload error:', uploadError);
+            toast({
+              title: "Yükleme Hatası",
+              description: `${file.name} yüklenemedi`,
+              variant: "destructive",
+            });
+            setIsLoading(false);
+            return;
+          }
+        }
+      }
+
+      // Create post with uploaded URLs
       const { data: postData, error: postError } = await supabase
         .from("posts")
         .insert({
           user_id: userId,
           content: content.trim(),
-          media_urls: mediaPreviews.length > 0 ? mediaPreviews.map(m => m.url) : null,
+          media_urls: uploadedUrls.length > 0 ? uploadedUrls : null,
           media_types: mediaPreviews.length > 0 ? mediaPreviews.map(m => m.type) : null,
           post_type: postType,
           location_name: locationName || null,
@@ -734,9 +772,9 @@ export const CreatePostDialog = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[95vh] sm:max-h-[90vh] p-0 gap-0 overflow-hidden">
+        <DialogContent className="max-w-2xl max-h-[95vh] sm:max-h-[90vh] p-0 gap-0 overflow-hidden flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b">
+          <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b">
             {step !== "select" && (
               <Button
                 variant="ghost"
@@ -773,7 +811,7 @@ export const CreatePostDialog = ({
 
 
           {/* Content */}
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-y-auto">
             <AnimatePresence mode="wait">
               {/* Step 1: Selection */}
               {step === "select" && (
@@ -836,8 +874,7 @@ export const CreatePostDialog = ({
                   exit={{ opacity: 0, x: -20 }}
                   className="h-full"
                 >
-                  <ScrollArea className="h-[calc(95vh-120px)]">
-                    <div className="p-6 space-y-4">
+                  <div className="p-6 space-y-4">
                       {/* User Info */}
                       <div className="flex items-center gap-3">
                         <Avatar className="w-10 h-10">
@@ -1044,11 +1081,11 @@ export const CreatePostDialog = ({
                             )}
                           </div>
 
-                          {/* Media Editor - Thumbnails Grid */}
+                           {/* Media Editor - Thumbnails Grid */}
                           {mediaPreviews.length > 1 && (
                             <div className="space-y-2">
                               <Label className="text-sm">Medya Düzenle ({mediaPreviews.length}/10)</Label>
-                              <div className="grid grid-cols-5 gap-2">
+                              <div className="grid grid-cols-5 gap-2 max-h-[300px] overflow-y-auto pr-2">
                                 {mediaPreviews.map((media, index) => (
                                   <div
                                     key={index}
@@ -1339,7 +1376,6 @@ export const CreatePostDialog = ({
                         )}
                       </div>
                     </div>
-                  </ScrollArea>
                 </motion.div>
               )}
             </AnimatePresence>
