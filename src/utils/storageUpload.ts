@@ -112,6 +112,7 @@ interface VideoCompressionOptions {
   quality: VideoQuality;
   maxWidth?: number;
   maxHeight?: number;
+  onProgress?: (progress: number) => void;
 }
 
 const QUALITY_SETTINGS = {
@@ -173,13 +174,23 @@ export const compressVideo = async (
           
           mediaRecorder.start();
           
-          // Play video and draw frames
+          // Play video and draw frames with progress tracking
           video.play();
           const drawFrame = () => {
             if (!video.paused && !video.ended) {
               ctx.drawImage(video, 0, 0, width, height);
+              
+              // Report progress
+              if (options.onProgress && video.duration) {
+                const progress = Math.min(Math.round((video.currentTime / video.duration) * 100), 99);
+                options.onProgress(progress);
+              }
+              
               requestAnimationFrame(drawFrame);
             } else {
+              if (options.onProgress) {
+                options.onProgress(100);
+              }
               mediaRecorder.stop();
               URL.revokeObjectURL(video.src);
             }

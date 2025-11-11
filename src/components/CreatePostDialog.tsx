@@ -40,6 +40,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import { z } from "zod";
 import type { VideoQuality } from "@/utils/storageUpload";
 import { compressVideo } from "@/utils/storageUpload";
@@ -87,6 +88,8 @@ export const CreatePostDialog = ({
   const [step, setStep] = useState<"select" | "capture" | "edit" | "share">("select");
   const [postType, setPostType] = useState<"photo" | "video" | "reels">("photo");
   const [videoQuality, setVideoQuality] = useState<VideoQuality>('medium');
+  const [compressionProgress, setCompressionProgress] = useState<number>(0);
+  const [isCompressing, setIsCompressing] = useState(false);
   const [content, setContent] = useState(prefilledContent?.content || "");
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaPreviews, setMediaPreviews] = useState<Array<{ url: string; type: "photo" | "video" }>>(
@@ -225,13 +228,16 @@ export const CreatePostDialog = ({
 
       // Compress video files
       if (type === "video") {
-        toast({
-          title: "Video İşleniyor...",
-          description: "Video sıkıştırılıyor, lütfen bekleyin",
-        });
+        setIsCompressing(true);
+        setCompressionProgress(0);
 
         try {
-          const compressedBlob = await compressVideo(file, { quality: videoQuality });
+          const compressedBlob = await compressVideo(file, { 
+            quality: videoQuality,
+            onProgress: (progress) => {
+              setCompressionProgress(progress);
+            }
+          });
           processedFile = new File([compressedBlob], file.name, { type: 'video/webm' });
           
           const originalSize = (file.size / (1024 * 1024)).toFixed(2);
@@ -249,6 +255,9 @@ export const CreatePostDialog = ({
             description: "Orijinal video kullanılacak",
             variant: "destructive",
           });
+        } finally {
+          setIsCompressing(false);
+          setCompressionProgress(0);
         }
       }
 
@@ -682,37 +691,56 @@ export const CreatePostDialog = ({
                             />
                           </div>
 
-                          {/* Video Quality Selector */}
-                          <div className="p-3 bg-accent/50 rounded-lg border">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-medium text-sm">Video Kalitesi</p>
-                                <p className="text-xs text-muted-foreground">Yükleme hızını optimize edin</p>
+                          {/* Video Compression Progress */}
+                          {isCompressing && (
+                            <div className="p-4 bg-primary/5 rounded-lg border border-primary/20 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <Label className="text-sm font-medium flex items-center gap-2">
+                                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                                  Video Sıkıştırılıyor...
+                                </Label>
+                                <span className="text-sm font-semibold text-primary">{compressionProgress}%</span>
                               </div>
-                              <Select value={videoQuality} onValueChange={(value: VideoQuality) => setVideoQuality(value)}>
-                                <SelectTrigger className="w-32">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="high">
-                                    <span className="flex items-center gap-2">
-                                      ⚡ Yüksek
-                                    </span>
-                                  </SelectItem>
-                                  <SelectItem value="medium">
-                                    <span className="flex items-center gap-2">
-                                      ✨ Orta
-                                    </span>
-                                  </SelectItem>
-                                  <SelectItem value="low">
-                                    <span className="flex items-center gap-2">
-                                      🚀 Düşük
-                                    </span>
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
+                              <Progress value={compressionProgress} className="h-2" />
+                              <p className="text-xs text-muted-foreground">
+                                Lütfen bekleyin, video işleniyor
+                              </p>
                             </div>
-                          </div>
+                          )}
+
+                          {/* Video Quality Selector */}
+                          {!isCompressing && (
+                            <div className="p-3 bg-accent/50 rounded-lg border">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="font-medium text-sm">Video Kalitesi</p>
+                                  <p className="text-xs text-muted-foreground">Yükleme hızını optimize edin</p>
+                                </div>
+                                <Select value={videoQuality} onValueChange={(value: VideoQuality) => setVideoQuality(value)}>
+                                  <SelectTrigger className="w-32">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="high">
+                                      <span className="flex items-center gap-2">
+                                        ⚡ Yüksek
+                                      </span>
+                                    </SelectItem>
+                                    <SelectItem value="medium">
+                                      <span className="flex items-center gap-2">
+                                        ✨ Orta
+                                      </span>
+                                    </SelectItem>
+                                    <SelectItem value="low">
+                                      <span className="flex items-center gap-2">
+                                        🚀 Düşük
+                                      </span>
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
 
