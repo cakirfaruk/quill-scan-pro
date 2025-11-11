@@ -111,6 +111,9 @@ export const CreatePostDialog = ({
   const [videoQuality, setVideoQuality] = useState<VideoQuality>('medium');
   const [compressionProgress, setCompressionProgress] = useState<number>(0);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [currentUploadFile, setCurrentUploadFile] = useState<string>("");
   const [showThumbnailPicker, setShowThumbnailPicker] = useState(false);
   const [thumbnailPickerIndex, setThumbnailPickerIndex] = useState<number | null>(null);
   const [videoDuration, setVideoDuration] = useState<number>(0);
@@ -626,13 +629,20 @@ export const CreatePostDialog = ({
       const uploadedUrls: string[] = [];
       
       if (mediaFiles.length > 0) {
+        setIsUploading(true);
+        
         for (let i = 0; i < mediaFiles.length; i++) {
           const file = mediaFiles[i];
           const mediaType = mediaPreviews[i]?.type || 'photo';
           
           try {
+            setCurrentUploadFile(`${file.name} (${i + 1}/${mediaFiles.length})`);
+            setUploadProgress(0);
+            
             const bucket = postType === 'reels' ? 'videos' : (mediaType === 'video' ? 'videos' : 'posts');
-            const uploadedUrl = await uploadToStorage(file, bucket, userId);
+            const uploadedUrl = await uploadToStorage(file, bucket, userId, (progress) => {
+              setUploadProgress(progress);
+            });
             
             if (!uploadedUrl) {
               throw new Error(`${file.name} yüklenemedi`);
@@ -648,9 +658,12 @@ export const CreatePostDialog = ({
               variant: "destructive",
             });
             setIsLoading(false);
+            setIsUploading(false);
             return;
           }
         }
+        
+        setIsUploading(false);
       }
 
       // Create post with uploaded URLs
@@ -939,6 +952,23 @@ export const CreatePostDialog = ({
                               <Progress value={compressionProgress} className="h-2" />
                               <p className="text-xs text-muted-foreground">
                                 Lütfen bekleyin, video işleniyor
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Upload Progress */}
+                          {isUploading && (
+                            <div className="p-4 bg-green-500/5 rounded-lg border border-green-500/20 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <Label className="text-sm font-medium flex items-center gap-2">
+                                  <Loader2 className="h-4 w-4 animate-spin text-green-600" />
+                                  Yükleniyor...
+                                </Label>
+                                <span className="text-sm font-semibold text-green-600">{uploadProgress}%</span>
+                              </div>
+                              <Progress value={uploadProgress} className="h-2" />
+                              <p className="text-xs text-muted-foreground">
+                                {currentUploadFile}
                               </p>
                             </div>
                           )}

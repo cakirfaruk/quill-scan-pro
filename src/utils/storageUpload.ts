@@ -36,12 +36,13 @@ const compressImage = async (file: File, maxWidth: number = 1920, quality: numbe
 };
 
 /**
- * Upload file to Supabase Storage
+ * Upload file to Supabase Storage with progress tracking
  */
 export const uploadToStorage = async (
   file: File,
   bucket: 'posts' | 'stories' | 'profiles' | 'videos',
-  userId: string
+  userId: string,
+  onProgress?: (progress: number) => void
 ): Promise<string | null> => {
   try {
     let fileToUpload: File | Blob = file;
@@ -75,22 +76,78 @@ export const uploadToStorage = async (
 
     const fileName = `${userId}/${Date.now()}.${fileExt}`;
 
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(fileName, fileToUpload, {
-        cacheControl: '3600',
-        upsert: false
+    // Upload with progress tracking using XMLHttpRequest
+    if (onProgress) {
+      const uploadPromise = new Promise<string>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        
+        // Track upload progress
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const percentComplete = Math.round((e.loaded / e.total) * 100);
+            onProgress(percentComplete);
+          }
+        });
+
+        xhr.addEventListener('load', async () => {
+          if (xhr.status === 200) {
+            try {
+              const response = JSON.parse(xhr.responseText);
+              if (response.Key) {
+                resolve(response.Key);
+              } else {
+                reject(new Error('Upload başarısız - yanıt formatı hatalı'));
+              }
+            } catch (e) {
+              reject(new Error('Upload yanıtı işlenemedi'));
+            }
+          } else {
+            reject(new Error(`Upload başarısız - HTTP ${xhr.status}`));
+          }
+        });
+
+        xhr.addEventListener('error', () => {
+          reject(new Error('Ağ hatası - yükleme başarısız'));
+        });
+
+        xhr.addEventListener('abort', () => {
+          reject(new Error('Yükleme iptal edildi'));
+        });
+
+        // Get upload URL and token
+        const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+        const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        
+        xhr.open('POST', `${SUPABASE_URL}/storage/v1/object/${bucket}/${fileName}`);
+        xhr.setRequestHeader('Authorization', `Bearer ${SUPABASE_KEY}`);
+        xhr.setRequestHeader('apikey', SUPABASE_KEY);
+        xhr.setRequestHeader('Content-Type', fileToUpload.type || 'application/octet-stream');
+        xhr.setRequestHeader('cache-control', '3600');
+        
+        xhr.send(fileToUpload);
       });
 
-    if (error) {
-      console.error('Storage upload error details:', error);
-      throw new Error(error.message || 'Yükleme başarısız');
+      await uploadPromise;
+      onProgress(100);
+    } else {
+      // Standard upload without progress tracking
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(fileName, fileToUpload, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error('Storage upload error details:', error);
+        throw new Error(error.message || 'Yükleme başarısız');
+      }
     }
 
     // Get signed URL (1 year expiry for user content)
     const { data: signedData, error: signedError } = await supabase.storage
       .from(bucket)
-      .createSignedUrl(data.path, 31536000); // 365 days
+      .createSignedUrl(fileName, 31536000); // 365 days
 
     if (signedError) {
       console.error('Signed URL error:', signedError);
