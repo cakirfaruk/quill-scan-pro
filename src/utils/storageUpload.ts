@@ -104,6 +104,100 @@ export const deleteFromStorage = async (
 };
 
 /**
+ * Video compression quality presets
+ */
+export type VideoQuality = 'high' | 'medium' | 'low';
+
+interface VideoCompressionOptions {
+  quality: VideoQuality;
+  maxWidth?: number;
+  maxHeight?: number;
+}
+
+const QUALITY_SETTINGS = {
+  high: { bitrate: 5000000, scale: 1 },      // 5 Mbps, original size
+  medium: { bitrate: 2500000, scale: 0.75 }, // 2.5 Mbps, 75% size
+  low: { bitrate: 1000000, scale: 0.5 },     // 1 Mbps, 50% size
+};
+
+/**
+ * Compress video using HTML5 Canvas and MediaRecorder
+ */
+export const compressVideo = async (
+  file: File,
+  options: VideoCompressionOptions
+): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    
+    video.onloadedmetadata = async () => {
+      video.currentTime = 0;
+      
+      video.onseeked = async () => {
+        try {
+          const settings = QUALITY_SETTINGS[options.quality];
+          const canvas = document.createElement('canvas');
+          
+          // Calculate dimensions
+          let width = video.videoWidth * settings.scale;
+          let height = video.videoHeight * settings.scale;
+          
+          if (options.maxWidth && width > options.maxWidth) {
+            height = (height * options.maxWidth) / width;
+            width = options.maxWidth;
+          }
+          if (options.maxHeight && height > options.maxHeight) {
+            width = (width * options.maxHeight) / height;
+            height = options.maxHeight;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d')!;
+          const stream = canvas.captureStream();
+          
+          // Set up MediaRecorder
+          const mediaRecorder = new MediaRecorder(stream, {
+            mimeType: 'video/webm;codecs=vp9',
+            videoBitsPerSecond: settings.bitrate,
+          });
+          
+          const chunks: Blob[] = [];
+          mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+          mediaRecorder.onstop = () => {
+            const blob = new Blob(chunks, { type: 'video/webm' });
+            resolve(blob);
+          };
+          
+          mediaRecorder.start();
+          
+          // Play video and draw frames
+          video.play();
+          const drawFrame = () => {
+            if (!video.paused && !video.ended) {
+              ctx.drawImage(video, 0, 0, width, height);
+              requestAnimationFrame(drawFrame);
+            } else {
+              mediaRecorder.stop();
+              URL.revokeObjectURL(video.src);
+            }
+          };
+          drawFrame();
+          
+        } catch (error) {
+          reject(error);
+        }
+      };
+    };
+    
+    video.onerror = reject;
+    video.src = URL.createObjectURL(file);
+  });
+};
+
+/**
  * Convert base64 to File object
  */
 export const base64ToFile = (base64: string, filename: string): File => {

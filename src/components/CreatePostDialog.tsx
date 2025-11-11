@@ -39,7 +39,10 @@ import { PhotoCaptureEditor } from "@/components/PhotoCaptureEditor";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { z } from "zod";
+import type { VideoQuality } from "@/utils/storageUpload";
+import { compressVideo } from "@/utils/storageUpload";
 import { useEnhancedOfflineSync } from "@/hooks/use-enhanced-offline-sync";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { useOptimisticUI } from "@/hooks/use-optimistic-ui";
@@ -83,6 +86,7 @@ export const CreatePostDialog = ({
 }: CreatePostDialogProps) => {
   const [step, setStep] = useState<"select" | "capture" | "edit" | "share">("select");
   const [postType, setPostType] = useState<"photo" | "video" | "reels">("photo");
+  const [videoQuality, setVideoQuality] = useState<VideoQuality>('medium');
   const [content, setContent] = useState(prefilledContent?.content || "");
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaPreviews, setMediaPreviews] = useState<Array<{ url: string; type: "photo" | "video" }>>(
@@ -216,7 +220,39 @@ export const CreatePostDialog = ({
         continue;
       }
 
-      validFiles.push(file);
+      let processedFile = file;
+      const type = file.type.startsWith("video") ? "video" : "photo";
+
+      // Compress video files
+      if (type === "video") {
+        toast({
+          title: "Video İşleniyor...",
+          description: "Video sıkıştırılıyor, lütfen bekleyin",
+        });
+
+        try {
+          const compressedBlob = await compressVideo(file, { quality: videoQuality });
+          processedFile = new File([compressedBlob], file.name, { type: 'video/webm' });
+          
+          const originalSize = (file.size / (1024 * 1024)).toFixed(2);
+          const compressedSize = (processedFile.size / (1024 * 1024)).toFixed(2);
+          const savings = ((1 - processedFile.size / file.size) * 100).toFixed(0);
+          
+          toast({
+            title: "Video Sıkıştırıldı ✓",
+            description: `${originalSize}MB → ${compressedSize}MB (${savings}% tasarruf)`,
+          });
+        } catch (error) {
+          console.error('Video compression failed:', error);
+          toast({
+            title: "Sıkıştırma Başarısız",
+            description: "Orijinal video kullanılacak",
+            variant: "destructive",
+          });
+        }
+      }
+
+      validFiles.push(processedFile);
 
       // Create preview
       const url = await new Promise<string>((resolve) => {
@@ -224,10 +260,9 @@ export const CreatePostDialog = ({
         reader.onload = (e) => {
           resolve(e.target?.result as string);
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(processedFile);
       });
 
-      const type = file.type.startsWith("video") ? "video" : "photo";
       newPreviews.push({ url, type });
 
       // Detect video orientation
@@ -612,38 +647,72 @@ export const CreatePostDialog = ({
 
                       {/* Video/Reels Toggle */}
                       {mediaPreviews.some(m => m.type === 'video') && (
-                        <div className="flex items-center justify-between p-3 bg-accent/50 rounded-lg border">
-                          <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-full ${postType === 'reels' ? 'bg-primary/10' : 'bg-muted'}`}>
-                              {postType === 'reels' ? (
-                                <Film className="w-5 h-5 text-primary" />
-                              ) : (
-                                <Video className="w-5 h-5 text-muted-foreground" />
-                              )}
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between p-3 bg-accent/50 rounded-lg border">
+                            <div className="flex items-center gap-3">
+                              <div className={`p-2 rounded-full ${postType === 'reels' ? 'bg-primary/10' : 'bg-muted'}`}>
+                                {postType === 'reels' ? (
+                                  <Film className="w-5 h-5 text-primary" />
+                                ) : (
+                                  <Video className="w-5 h-5 text-muted-foreground" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {postType === 'reels' ? 'Reels Olarak Paylaş' : 'Normal Video Olarak Paylaş'}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {postType === 'reels' 
+                                    ? 'Videolar Reels sayfasında görünecek' 
+                                    : 'Videolar akış sayfasında görünecek'}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium text-sm">
-                                {postType === 'reels' ? 'Reels Olarak Paylaş' : 'Normal Video Olarak Paylaş'}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {postType === 'reels' 
-                                  ? 'Videolar Reels sayfasında görünecek' 
-                                  : 'Videolar akış sayfasında görünecek'}
-                              </p>
+                            <Switch
+                              checked={postType === 'reels'}
+                              onCheckedChange={(checked) => {
+                                setPostType(checked ? 'reels' : 'video');
+                                toast({
+                                  title: checked ? "Reels Modu 🎬" : "Video Modu 📹",
+                                  description: checked 
+                                    ? "Video Reels olarak paylaşılacak" 
+                                    : "Video normal gönderi olarak paylaşılacak",
+                                });
+                              }}
+                            />
+                          </div>
+
+                          {/* Video Quality Selector */}
+                          <div className="p-3 bg-accent/50 rounded-lg border">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-sm">Video Kalitesi</p>
+                                <p className="text-xs text-muted-foreground">Yükleme hızını optimize edin</p>
+                              </div>
+                              <Select value={videoQuality} onValueChange={(value: VideoQuality) => setVideoQuality(value)}>
+                                <SelectTrigger className="w-32">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="high">
+                                    <span className="flex items-center gap-2">
+                                      ⚡ Yüksek
+                                    </span>
+                                  </SelectItem>
+                                  <SelectItem value="medium">
+                                    <span className="flex items-center gap-2">
+                                      ✨ Orta
+                                    </span>
+                                  </SelectItem>
+                                  <SelectItem value="low">
+                                    <span className="flex items-center gap-2">
+                                      🚀 Düşük
+                                    </span>
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
                           </div>
-                          <Switch
-                            checked={postType === 'reels'}
-                            onCheckedChange={(checked) => {
-                              setPostType(checked ? 'reels' : 'video');
-                              toast({
-                                title: checked ? "Reels Modu 🎬" : "Video Modu 📹",
-                                description: checked 
-                                  ? "Video Reels olarak paylaşılacak" 
-                                  : "Video normal gönderi olarak paylaşılacak",
-                              });
-                            }}
-                          />
                         </div>
                       )}
 
