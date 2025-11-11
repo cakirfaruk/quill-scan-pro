@@ -30,6 +30,7 @@ import {
   Plus,
   Maximize2,
   MapPin,
+  Film,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
@@ -37,6 +38,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { PhotoCaptureEditor } from "@/components/PhotoCaptureEditor";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
+import { Switch } from "@/components/ui/switch";
 import { z } from "zod";
 import { useEnhancedOfflineSync } from "@/hooks/use-enhanced-offline-sync";
 import { useNetworkStatus } from "@/hooks/use-network-status";
@@ -605,13 +607,45 @@ export const CreatePostDialog = ({
                         </Avatar>
                         <div className="flex-1">
                           <p className="font-semibold">{username}</p>
-                          {postType === 'reels' && mediaPreviews.some(m => m.type === 'video') && (
-                            <Badge variant="secondary" className="gap-1 mt-1">
-                              🎬 Bu video Reels olarak paylaşılacak
-                            </Badge>
-                          )}
                         </div>
                       </div>
+
+                      {/* Video/Reels Toggle */}
+                      {mediaPreviews.some(m => m.type === 'video') && (
+                        <div className="flex items-center justify-between p-3 bg-accent/50 rounded-lg border">
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-full ${postType === 'reels' ? 'bg-primary/10' : 'bg-muted'}`}>
+                              {postType === 'reels' ? (
+                                <Film className="w-5 h-5 text-primary" />
+                              ) : (
+                                <Video className="w-5 h-5 text-muted-foreground" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm">
+                                {postType === 'reels' ? 'Reels Olarak Paylaş' : 'Normal Video Olarak Paylaş'}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {postType === 'reels' 
+                                  ? 'Videolar Reels sayfasında görünecek' 
+                                  : 'Videolar akış sayfasında görünecek'}
+                              </p>
+                            </div>
+                          </div>
+                          <Switch
+                            checked={postType === 'reels'}
+                            onCheckedChange={(checked) => {
+                              setPostType(checked ? 'reels' : 'video');
+                              toast({
+                                title: checked ? "Reels Modu 🎬" : "Video Modu 📹",
+                                description: checked 
+                                  ? "Video Reels olarak paylaşılacak" 
+                                  : "Video normal gönderi olarak paylaşılacak",
+                              });
+                            }}
+                          />
+                        </div>
+                      )}
 
                       {/* Media Preview with Carousel */}
                       {mediaPreviews.length > 0 && (
