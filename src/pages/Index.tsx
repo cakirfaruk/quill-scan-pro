@@ -27,12 +27,38 @@ const Index = () => {
     checkAuth();
   }, []);
 
+  const safeReadOnboardingFlag = (userId: string) => {
+    if (typeof window === "undefined") return false;
+
+    try {
+      return Boolean(localStorage.getItem(`onboarding_${userId}`));
+    } catch (error) {
+      console.warn("Unable to read onboarding flag from storage", error);
+      return false;
+    }
+  };
+
+  const safeWriteOnboardingFlag = (userId: string) => {
+    if (typeof window === "undefined") return;
+
+    try {
+      localStorage.setItem(`onboarding_${userId}`, "true");
+    } catch (error) {
+      console.warn("Unable to persist onboarding flag", error);
+    }
+  };
+
   const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    // Check if user has seen onboarding
+    const { data, error } = await supabase.auth.getUser();
+
+    if (error) {
+      console.error("Failed to fetch user while checking auth", error);
+      return;
+    }
+
+    const user = data.user;
     if (user) {
-      const hasSeenOnboarding = localStorage.getItem(`onboarding_${user.id}`);
+      const hasSeenOnboarding = safeReadOnboardingFlag(user.id);
       if (!hasSeenOnboarding) {
         setShowOnboarding(true);
       }
@@ -40,13 +66,19 @@ const Index = () => {
     }
   };
 
-  const handleOnboardingComplete = () => {
+  const handleOnboardingComplete = async () => {
     setShowOnboarding(false);
-    const userId = supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user) {
-        localStorage.setItem(`onboarding_${data.session.user.id}`, 'true');
-      }
-    });
+
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error("Failed to fetch session while completing onboarding", error);
+      return;
+    }
+
+    const userId = data.session?.user?.id;
+    if (userId) {
+      safeWriteOnboardingFlag(userId);
+    }
   };
 
   // Show feed if logged in
