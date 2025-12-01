@@ -34,6 +34,10 @@ import { Virtuoso } from "react-virtuoso";
 import { Suspense } from "react";
 import { ShareResultButton } from "@/components/ShareResultButton";
 import { VirtualGiftsDialog } from "@/components/VirtualGiftsDialog";
+import { PostInsightsDialog } from "@/components/PostInsightsDialog";
+import { ShareableCard } from "@/components/ShareableCard";
+import { ProfileQRCode } from "@/components/ProfileQRCode";
+import { PhotoReorder } from "@/components/PhotoReorder";
 
 interface UserPhoto {
   id: string;
@@ -112,6 +116,9 @@ const Profile = () => {
   const [createCollectionDialogOpen, setCreateCollectionDialogOpen] = useState(false);
   const [statsDrawerOpen, setStatsDrawerOpen] = useState(false);
   const [giftDialogOpen, setGiftDialogOpen] = useState(false);
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [photoReorderOpen, setPhotoReorderOpen] = useState(false);
+  const [selectedPostForInsights, setSelectedPostForInsights] = useState<string | null>(null);
 
   // Ref for PDF generation from modal
   const analysisContentRef = useRef<HTMLDivElement>(null);
@@ -1363,6 +1370,9 @@ const Profile = () => {
           isOwnProfile={isOwnProfile}
           isBlocked={isBlocked}
           friendshipStatus={friendshipStatus}
+          onShowQR={() => setQrDialogOpen(true)}
+          onPhotoReorder={() => setPhotoReorderOpen(true)}
+          onSendGift={() => setGiftDialogOpen(true)}
           onAddFriend={handleSendFriendRequest}
           onCancelRequest={handleCancelFriendRequest}
           onAcceptRequest={handleAcceptFriendRequest}

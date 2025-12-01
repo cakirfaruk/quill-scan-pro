@@ -655,7 +655,11 @@ const Settings = () => {
                     onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
                     placeholder="Kendiniz hakkında kısa bir açıklama yazın..."
                     className="mt-2 min-h-[100px]"
+                    maxLength={300}
                   />
+                  <p className="text-xs text-muted-foreground text-right mt-1">
+                    {profile.bio?.length || 0}/300 karakter
+                  </p>
                 </div>
 
                 <div>
