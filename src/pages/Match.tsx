@@ -415,12 +415,8 @@ const Match = () => {
     if (!currentProfile || currentProfile.credits < creditsNeeded) {
       toast({
         title: "Yetersiz Kredi",
-        description: `Bu işlem için ${creditsNeeded} kredi gerekiyor`,
+        description: `Bu işlem için ${creditsNeeded} kredi gerekiyor. Kredi almak için ayarlara gidin.`,
         variant: "destructive",
-        action: {
-          label: "Kredi Al",
-          onClick: () => navigate("/credits"),
-        },
       });
       return;
     }
@@ -433,7 +429,7 @@ const Match = () => {
     try {
       // **ATOMİK İŞLEM** - RPC ile güvenli kredi düşürme
       const { data: deductResult, error: deductError } = await supabase.rpc(
-        "deduct_credits_atomic",
+        "deduct_credits_atomic" as any,
         {
           p_user_id: user.id,
           p_amount: creditsNeeded,
@@ -442,8 +438,8 @@ const Match = () => {
         }
       );
 
-      if (deductError || !deductResult) {
-        throw new Error("Kredi düşürme başarısız");
+      if (deductError || typeof deductResult !== 'number') {
+        throw new Error(deductError?.message || "Kredi düşürme başarısız");
       }
 
       // Insert swipe AFTER successful credit deduction
@@ -939,9 +935,17 @@ const Match = () => {
           <Card className="overflow-hidden h-full flex flex-col">
             <div className="relative h-[40vh] md:flex-1">
               <img
-                src={currentProfile.profile_photo || currentProfile.photos[0]?.photo_url || "/placeholder.svg"}
+                src={
+                  currentProfile.photos && currentProfile.photos.length > 0
+                    ? currentProfile.photos[0].photo_url
+                    : currentProfile.profile_photo || "/placeholder.svg"
+                }
                 alt={currentProfile.username}
                 className="w-full h-full object-cover transition-transform duration-500 pointer-events-none"
+                onError={(e) => {
+                  // Fallback to placeholder if image fails to load
+                  (e.target as HTMLImageElement).src = "/placeholder.svg";
+                }}
               />
               
               {/* Swipe indicators */}
