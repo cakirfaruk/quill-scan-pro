@@ -24,7 +24,7 @@ export const FooterSection = () => {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center">
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
-              <span className="text-2xl font-bold">MystikMatch</span>
+              <span className="text-2xl font-bold">Stellara</span>
             </div>
             <p className="text-muted-foreground mb-6 max-w-md">
               Evrenin enerjisi ile yürüyen, ruhunu anlayan insanlarla bağlantı kurmak için tasarlanmış platform.
@@ -127,7 +127,7 @@ export const FooterSection = () => {
           transition={{ delay: 0.3, duration: 0.8 }}
           className="pt-8 border-t border-border/50 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground"
         >
-          <p>© 2024 MystikMatch. Tüm hakları saklıdır.</p>
+          <p>© 2024 Stellara. Tüm hakları saklıdır.</p>
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-green-500" />
             <span>256-bit SSL Şifreleme</span>

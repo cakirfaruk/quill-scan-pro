@@ -124,8 +124,8 @@ export default defineConfig(({ mode }) => ({
       },
       
       manifest: {
-        name: 'Astro Social - Kendini Keşfet',
-        short_name: 'Astro Social',
+        name: 'Stellara - Kendini Keşfet',
+        short_name: 'Stellara',
         description: 'Analizler, Fallar, Kehanetler, Eşleşmeler',
         theme_color: '#8B5CF6',
         background_color: '#0F172A',
