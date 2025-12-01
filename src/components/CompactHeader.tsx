@@ -161,7 +161,7 @@ export const CompactHeader = () => {
               isMiniMode ? "text-base" : "text-lg"
             )}
           >
-            KAM
+            Stellara
           </span>
         </PreloadLink>
 
