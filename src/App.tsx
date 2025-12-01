@@ -23,6 +23,7 @@ import { OfflineCacheStatus } from "@/components/OfflineCacheStatus";
 import { InAppNotification } from "@/components/InAppNotification";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { clearOldCaches, forceServiceWorkerUpdate, checkAppVersion } from "@/utils/cacheManager";
+import { CookieConsent } from "@/components/CookieConsent";
 
 // Critical pages - load immediately (no lazy loading)
 import Index from "./pages/Index";
@@ -63,6 +64,9 @@ const NotificationCenter = lazyWithPreload(() => import("./pages/NotificationCen
 const DailyRewards = lazyWithPreload(() => import("./pages/DailyRewards"));
 const Badges = lazyWithPreload(() => import("./pages/Badges"));
 const TrendingHashtags = lazyWithPreload(() => import("./pages/TrendingHashtags"));
+const Privacy = lazyWithPreload(() => import("./pages/Privacy"));
+const Terms = lazyWithPreload(() => import("./pages/Terms"));
+const KVKK = lazyWithPreload(() => import("./pages/KVKK"));
 const NotFound = lazyWithPreload(() => import("./pages/NotFound"));
 
 // Route component map for preloading
@@ -363,6 +367,9 @@ const AppRoutes = () => {
               <Route path="/badges" element={<Badges />} />
               <Route path="/trending" element={<TrendingHashtags />} />
               <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/kvkk" element={<KVKK />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
       </Suspense>
@@ -406,6 +413,8 @@ const App = () => {
               <PermissionManager />
               <EnhancedOfflineIndicator />
               <PWAInstallPrompt />
+              <OfflineCacheStatus />
+              <CookieConsent />
               <AppRoutes />
             </ThemeProvider>
           </AuthProvider>
