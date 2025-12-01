@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { ScrollReveal } from "@/components/ScrollReveal";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { OptimizedImage } from "@/components/OptimizedImage";
 import { AnalysisPostCard } from "@/components/AnalysisPostCard";
+import { EditPostDialog } from "@/components/EditPostDialog";
 
 interface Post {
   id: string;
@@ -66,6 +67,7 @@ export const FeedPostCard = memo(({
 }: FeedPostCardProps) => {
   const navigate = useNavigate();
   const isOwnPost = currentUserId === post.user_id;
+  const [localContent, setLocalContent] = useState(post.content);
 
   return (
     <ScrollReveal direction="up" delay={0}>
@@ -119,23 +121,32 @@ export const FeedPostCard = memo(({
                 <Share2 className="w-4 h-4 mr-2" />
                 Paylaş
               </DropdownMenuItem>
-              {isOwnPost && onDelete && (
-                <DropdownMenuItem 
-                  onClick={() => onDelete(post.id)}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Gönderiyi Sil
-                </DropdownMenuItem>
+              {isOwnPost && (
+                <>
+                  <EditPostDialog
+                    postId={post.id}
+                    currentContent={localContent || ""}
+                    onUpdate={setLocalContent}
+                  />
+                  {onDelete && (
+                    <DropdownMenuItem 
+                      onClick={() => onDelete(post.id)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Gönderiyi Sil
+                    </DropdownMenuItem>
+                  )}
+                </>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
         {/* Content */}
-        {post.content && (
+        {localContent && (
           <div className="px-3 sm:px-4 pb-3">
-            <ParsedText text={post.content} />
+            <ParsedText text={localContent} />
           </div>
         )}
 
