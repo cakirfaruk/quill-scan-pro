@@ -90,31 +90,31 @@ export const FooterSection = () => {
             <h3 className="font-semibold mb-4">Yasal</h3>
             <ul className="space-y-3">
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/privacy"
                   className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
                 >
                   <Shield className="w-4 h-4" />
                   Gizlilik Politikası
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/terms"
                   className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
                 >
                   <FileText className="w-4 h-4" />
                   Kullanım Şartları
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/kvkk"
                   className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
                 >
-                  <Mail className="w-4 h-4" />
-                  İletişim
-                </a>
+                  <FileText className="w-4 h-4" />
+                  KVKK
+                </Link>
               </li>
             </ul>
           </div>
