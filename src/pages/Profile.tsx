@@ -1379,7 +1379,6 @@ const Profile = () => {
           onRejectRequest={handleRejectFriendRequest}
           onRemoveFriend={handleRemoveFriend}
           onMessage={() => navigate('/messages')}
-          onSendGift={() => setGiftDialogOpen(true)}
           onBlock={handleBlockUser}
           onUnblock={handleUnblockUser}
           onSettings={() => navigate('/settings')}
