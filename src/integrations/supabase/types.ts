@@ -2311,6 +2311,7 @@ export type Database = {
           is_online: boolean | null
           last_daily_claim: string | null
           last_seen: string | null
+          level: number | null
           looking_for: string[] | null
           preferred_language: string | null
           profile_photo: string | null
@@ -2319,6 +2320,7 @@ export type Database = {
           user_id: string
           username: string
           visibility: string | null
+          xp: number | null
           zodiac_sign: string | null
         }
         Insert: {
@@ -2338,6 +2340,7 @@ export type Database = {
           is_online?: boolean | null
           last_daily_claim?: string | null
           last_seen?: string | null
+          level?: number | null
           looking_for?: string[] | null
           preferred_language?: string | null
           profile_photo?: string | null
@@ -2346,6 +2349,7 @@ export type Database = {
           user_id: string
           username: string
           visibility?: string | null
+          xp?: number | null
           zodiac_sign?: string | null
         }
         Update: {
@@ -2365,6 +2369,7 @@ export type Database = {
           is_online?: boolean | null
           last_daily_claim?: string | null
           last_seen?: string | null
+          level?: number | null
           looking_for?: string[] | null
           preferred_language?: string | null
           profile_photo?: string | null
@@ -2373,6 +2378,7 @@ export type Database = {
           user_id?: string
           username?: string
           visibility?: string | null
+          xp?: number | null
           zodiac_sign?: string | null
         }
         Relationships: []
