@@ -728,6 +728,37 @@ const Feed = () => {
     }
   }, [allPosts.length]);
 
+  const handleDeletePost = async (postId: string) => {
+    if (!userId) return;
+    
+    try {
+      soundEffects.playClick();
+      
+      const { error } = await supabase
+        .from("posts")
+        .delete()
+        .eq("id", postId)
+        .eq("user_id", userId); // Sadece kendi postunu silebilir
+
+      if (error) throw error;
+
+      toast({
+        title: "Başarılı",
+        description: "Gönderi silindi",
+      });
+
+      // Cache'i invalidate et
+      queryClient.invalidateQueries({ queryKey: ['feed', 'optimized'] });
+    } catch (error: any) {
+      soundEffects.playError();
+      toast({
+        title: "Hata",
+        description: "Gönderi silinemedi",
+        variant: "destructive",
+      });
+    }
+  };
+
   const renderComment = (comment: Comment) => (
     <FeedCommentItem
       key={comment.id}
@@ -741,10 +772,12 @@ const Feed = () => {
     <FeedPostCard
       key={post.id}
       post={post}
+      currentUserId={userId}
       onLike={handleLike}
       onComment={handleOpenComments}
       onShare={handleOpenShareDialog}
       onSave={handleSave}
+      onDelete={handleDeletePost}
       isLikeLoading={pendingLikes.has(post.id)}
       onMediaClick={(media, index) => {
         setSelectedMedia(media);
@@ -752,7 +785,7 @@ const Feed = () => {
         setMediaViewerOpen(true);
       }}
     />
-  ), [handleLike, handleSave, pendingLikes]);
+  ), [handleLike, handleSave, handleDeletePost, pendingLikes, userId]);
 
   if (loading) {
     return (
