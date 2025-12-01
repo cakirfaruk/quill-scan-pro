@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Gift, Flame, Star, Trophy, Coins, Check, Lock } from "lucide-react";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
+import { ReferralCard } from "@/components/ReferralCard";
 
 interface DailyReward {
   day: number;
@@ -352,6 +353,15 @@ export default function DailyRewards() {
             </Card>
           </motion.div>
         )}
+
+        {/* Referral Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <ReferralCard />
+        </motion.div>
 
         {/* Info Card */}
         <Card>

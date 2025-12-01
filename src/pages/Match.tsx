@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { SkeletonCard } from "@/components/ui/enhanced-skeleton";
+import { IceBreakerQuestions } from "@/components/IceBreakerQuestions";
 
 // Import tarot card images
 import cardBackImg from "@/assets/tarot/card-back.png";
@@ -1469,6 +1470,17 @@ const Match = () => {
                 <h3 className="font-semibold mb-2">Genel Özet</h3>
                 <p className="text-sm">{compatibilityData.details.overallSummary}</p>
               </div>
+
+              {/* Ice Breaker Questions */}
+              {currentProfile && (
+                <IceBreakerQuestions
+                  matchedUserId={currentProfile.user_id}
+                  onSendMessage={(message) => {
+                    navigate(`/messages?userId=${currentProfile.user_id}&message=${encodeURIComponent(message)}`);
+                    setShowCompatibility(false);
+                  }}
+                />
+              )}
 
               <Button
                 className="w-full"
