@@ -2303,11 +2303,13 @@ export type Database = {
           created_at: string
           credits: number
           current_location: string | null
+          daily_streak: number | null
           full_name: string | null
           gender: string | null
           id: string
           interests: string[] | null
           is_online: boolean | null
+          last_daily_claim: string | null
           last_seen: string | null
           looking_for: string[] | null
           preferred_language: string | null
@@ -2328,11 +2330,13 @@ export type Database = {
           created_at?: string
           credits?: number
           current_location?: string | null
+          daily_streak?: number | null
           full_name?: string | null
           gender?: string | null
           id?: string
           interests?: string[] | null
           is_online?: boolean | null
+          last_daily_claim?: string | null
           last_seen?: string | null
           looking_for?: string[] | null
           preferred_language?: string | null
@@ -2353,11 +2357,13 @@ export type Database = {
           created_at?: string
           credits?: number
           current_location?: string | null
+          daily_streak?: number | null
           full_name?: string | null
           gender?: string | null
           id?: string
           interests?: string[] | null
           is_online?: boolean | null
+          last_daily_claim?: string | null
           last_seen?: string | null
           looking_for?: string[] | null
           preferred_language?: string | null
