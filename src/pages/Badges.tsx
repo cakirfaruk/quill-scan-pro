@@ -64,9 +64,11 @@ export default function Badges() {
 
       if (userBadgesError) throw userBadgesError;
 
-      const earnedBadgeIds = new Set(userBadges?.map(ub => ub.badge_id) || []);
+      // Type assertion since types haven't regenerated yet
+      const typedUserBadges = userBadges as any[];
+      const earnedBadgeIds = new Set(typedUserBadges?.map(ub => ub.badge_id) || []);
       const earnedBadgesMap = new Map(
-        userBadges?.map(ub => [ub.badge_id, { earned_at: ub.earned_at, progress: ub.progress }]) || []
+        typedUserBadges?.map(ub => [ub.badge_id, { earned_at: ub.earned_at, progress: ub.progress }]) || []
       );
 
       // Load user stats
@@ -85,7 +87,7 @@ export default function Badges() {
 
       setBadges(enrichedBadges);
       setStats({
-        earned: userBadges?.length || 0,
+        earned: typedUserBadges?.length || 0,
         total: allBadges?.length || 0,
         xp: profile?.xp || 0,
         level: profile?.level || 1,
