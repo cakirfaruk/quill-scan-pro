@@ -1110,6 +1110,55 @@ export type Database = {
           },
         ]
       }
+      gift_transactions: {
+        Row: {
+          created_at: string | null
+          gift_id: string
+          id: string
+          message: string | null
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          gift_id: string
+          id?: string
+          message?: string | null
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          created_at?: string | null
+          gift_id?: string
+          id?: string
+          message?: string | null
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gift_transactions_gift_id_fkey"
+            columns: ["gift_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_gifts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gift_transactions_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "gift_transactions_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       group_announcements: {
         Row: {
           content: string
@@ -2222,6 +2271,42 @@ export type Database = {
           },
         ]
       }
+      post_views: {
+        Row: {
+          id: string
+          post_id: string
+          user_id: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          user_id?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          user_id?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_views_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_views_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           analysis_data: Json | null
@@ -2237,6 +2322,7 @@ export type Database = {
           media_url: string | null
           media_urls: string[] | null
           post_type: string | null
+          quoted_post_id: string | null
           shares_count: number | null
           updated_at: string | null
           user_id: string
@@ -2255,6 +2341,7 @@ export type Database = {
           media_url?: string | null
           media_urls?: string[] | null
           post_type?: string | null
+          quoted_post_id?: string | null
           shares_count?: number | null
           updated_at?: string | null
           user_id: string
@@ -2273,11 +2360,19 @@ export type Database = {
           media_url?: string | null
           media_urls?: string[] | null
           post_type?: string | null
+          quoted_post_id?: string | null
           shares_count?: number | null
           updated_at?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "posts_quoted_post_id_fkey"
+            columns: ["quoted_post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "posts_user_id_fkey"
             columns: ["user_id"]
@@ -2343,6 +2438,7 @@ export type Database = {
           looking_for: string[] | null
           preferred_language: string | null
           profile_photo: string | null
+          referral_code: string | null
           show_in_matches: boolean
           updated_at: string
           user_id: string
@@ -2376,6 +2472,7 @@ export type Database = {
           looking_for?: string[] | null
           preferred_language?: string | null
           profile_photo?: string | null
+          referral_code?: string | null
           show_in_matches?: boolean
           updated_at?: string
           user_id: string
@@ -2409,6 +2506,7 @@ export type Database = {
           looking_for?: string[] | null
           preferred_language?: string | null
           profile_photo?: string | null
+          referral_code?: string | null
           show_in_matches?: boolean
           updated_at?: string
           user_id?: string
@@ -2475,6 +2573,51 @@ export type Database = {
           window_start?: string
         }
         Relationships: []
+      }
+      referrals: {
+        Row: {
+          bonus_claimed: boolean | null
+          bonus_credits: number | null
+          created_at: string | null
+          id: string
+          referral_code: string
+          referred_user_id: string
+          referrer_user_id: string
+        }
+        Insert: {
+          bonus_claimed?: boolean | null
+          bonus_credits?: number | null
+          created_at?: string | null
+          id?: string
+          referral_code: string
+          referred_user_id: string
+          referrer_user_id: string
+        }
+        Update: {
+          bonus_claimed?: boolean | null
+          bonus_credits?: number | null
+          created_at?: string | null
+          id?: string
+          referral_code?: string
+          referred_user_id?: string
+          referrer_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referred_user_id_fkey"
+            columns: ["referred_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_user_id_fkey"
+            columns: ["referrer_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       saved_posts: {
         Row: {
@@ -2547,6 +2690,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      scheduled_posts: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: string
+          media_types: string[] | null
+          media_urls: string[] | null
+          scheduled_for: string
+          sent: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          media_types?: string[] | null
+          media_urls?: string[] | null
+          scheduled_for: string
+          sent?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          media_types?: string[] | null
+          media_urls?: string[] | null
+          scheduled_for?: string
+          sent?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       search_history: {
         Row: {
@@ -3232,6 +3419,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      virtual_gifts: {
+        Row: {
+          cost_credits: number
+          created_at: string | null
+          icon: string
+          id: string
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          cost_credits: number
+          created_at?: string | null
+          icon: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          cost_credits?: number
+          created_at?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
       }
     }
     Views: {
