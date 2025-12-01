@@ -2324,17 +2324,21 @@ export type Database = {
           birth_date: string | null
           birth_place: string | null
           birth_time: string | null
+          boost_end_time: string | null
           created_at: string
           credits: number
           current_location: string | null
           daily_streak: number | null
+          daily_swipes_remaining: number | null
           full_name: string | null
           gender: string | null
           id: string
           interests: string[] | null
           is_online: boolean | null
+          is_premium: boolean | null
           last_daily_claim: string | null
           last_seen: string | null
+          last_swipe_reset: string | null
           level: number | null
           looking_for: string[] | null
           preferred_language: string | null
@@ -2353,17 +2357,21 @@ export type Database = {
           birth_date?: string | null
           birth_place?: string | null
           birth_time?: string | null
+          boost_end_time?: string | null
           created_at?: string
           credits?: number
           current_location?: string | null
           daily_streak?: number | null
+          daily_swipes_remaining?: number | null
           full_name?: string | null
           gender?: string | null
           id?: string
           interests?: string[] | null
           is_online?: boolean | null
+          is_premium?: boolean | null
           last_daily_claim?: string | null
           last_seen?: string | null
+          last_swipe_reset?: string | null
           level?: number | null
           looking_for?: string[] | null
           preferred_language?: string | null
@@ -2382,17 +2390,21 @@ export type Database = {
           birth_date?: string | null
           birth_place?: string | null
           birth_time?: string | null
+          boost_end_time?: string | null
           created_at?: string
           credits?: number
           current_location?: string | null
           daily_streak?: number | null
+          daily_swipes_remaining?: number | null
           full_name?: string | null
           gender?: string | null
           id?: string
           interests?: string[] | null
           is_online?: boolean | null
+          is_premium?: boolean | null
           last_daily_claim?: string | null
           last_seen?: string | null
+          last_swipe_reset?: string | null
           level?: number | null
           looking_for?: string[] | null
           preferred_language?: string | null
@@ -3281,6 +3293,7 @@ export type Database = {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
       }
+      reset_daily_swipes: { Args: never; Returns: undefined }
       send_scheduled_messages: { Args: never; Returns: undefined }
       update_trending_search: {
         Args: { search_query: string }
