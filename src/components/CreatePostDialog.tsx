@@ -114,6 +114,9 @@ export const CreatePostDialog = ({
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState(false);
   const [currentUploadFile, setCurrentUploadFile] = useState<string>("");
+  const [totalUploadProgress, setTotalUploadProgress] = useState<number>(0);
+  const [currentFileIndex, setCurrentFileIndex] = useState<number>(0);
+  const [totalFiles, setTotalFiles] = useState<number>(0);
   const [showThumbnailPicker, setShowThumbnailPicker] = useState(false);
   const [thumbnailPickerIndex, setThumbnailPickerIndex] = useState<number | null>(null);
   const [videoDuration, setVideoDuration] = useState<number>(0);
@@ -630,18 +633,24 @@ export const CreatePostDialog = ({
       
       if (mediaFiles.length > 0) {
         setIsUploading(true);
+        const totalFileCount = mediaFiles.length;
+        setTotalFiles(totalFileCount);
         
-        for (let i = 0; i < mediaFiles.length; i++) {
-          const file = mediaFiles[i];
-          const mediaType = mediaPreviews[i]?.type || 'photo';
-          
-          try {
-            setCurrentUploadFile(`${file.name} (${i + 1}/${mediaFiles.length})`);
+        try {
+          for (let i = 0; i < mediaFiles.length; i++) {
+            const file = mediaFiles[i];
+            const mediaType = mediaPreviews[i]?.type || 'photo';
+            
+            setCurrentFileIndex(i + 1);
+            setCurrentUploadFile(file.name);
             setUploadProgress(0);
             
             const bucket = postType === 'reels' ? 'videos' : (mediaType === 'video' ? 'videos' : 'posts');
             const uploadedUrl = await uploadToStorage(file, bucket, userId, (progress) => {
               setUploadProgress(progress);
+              // Calculate total progress across all files
+              const totalProgress = ((i * 100) + progress) / totalFileCount;
+              setTotalUploadProgress(Math.round(totalProgress));
             });
             
             if (!uploadedUrl) {
@@ -649,21 +658,31 @@ export const CreatePostDialog = ({
             }
             
             uploadedUrls.push(uploadedUrl);
-          } catch (uploadError: any) {
-            console.error('Upload error:', uploadError);
-            const errorMessage = uploadError?.message || `${file.name} yüklenemedi`;
-            toast({
-              title: "Yükleme Hatası",
-              description: errorMessage,
-              variant: "destructive",
-            });
-            setIsLoading(false);
-            setIsUploading(false);
-            return;
           }
+        } catch (uploadError: any) {
+          console.error('Upload error:', uploadError);
+          const errorMessage = uploadError?.message || "Dosya yüklenemedi";
+          toast({
+            title: "Yükleme Hatası",
+            description: errorMessage,
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          setIsUploading(false);
+          setUploadProgress(0);
+          setTotalUploadProgress(0);
+          setCurrentFileIndex(0);
+          setTotalFiles(0);
+          setCurrentUploadFile("");
+          return;
+        } finally {
+          setIsUploading(false);
+          setUploadProgress(0);
+          setTotalUploadProgress(0);
+          setCurrentFileIndex(0);
+          setTotalFiles(0);
+          setCurrentUploadFile("");
         }
-        
-        setIsUploading(false);
       }
 
       // Create post with uploaded URLs
@@ -958,18 +977,27 @@ export const CreatePostDialog = ({
 
                           {/* Upload Progress */}
                           {isUploading && (
-                            <div className="p-4 bg-green-500/5 rounded-lg border border-green-500/20 space-y-3">
-                              <div className="flex items-center justify-between">
-                                <Label className="text-sm font-medium flex items-center gap-2">
-                                  <Loader2 className="h-4 w-4 animate-spin text-green-600" />
-                                  Yükleniyor...
-                                </Label>
-                                <span className="text-sm font-semibold text-green-600">{uploadProgress}%</span>
+                            <div className="space-y-3">
+                              {/* Total Progress */}
+                              <div className="p-4 bg-green-500/5 rounded-lg border border-green-500/20 space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <Label className="text-sm font-medium flex items-center gap-2">
+                                    <Loader2 className="h-4 w-4 animate-spin text-green-600" />
+                                    Dosya {currentFileIndex}/{totalFiles} yükleniyor
+                                  </Label>
+                                  <span className="text-sm font-semibold text-green-600">{totalUploadProgress}%</span>
+                                </div>
+                                <Progress value={totalUploadProgress} className="h-2" />
                               </div>
-                              <Progress value={uploadProgress} className="h-2" />
-                              <p className="text-xs text-muted-foreground">
-                                {currentUploadFile}
-                              </p>
+                              
+                              {/* Individual File Progress */}
+                              <div className="px-4">
+                                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                                  <span className="truncate max-w-[70%]">{currentUploadFile}</span>
+                                  <span>{uploadProgress}%</span>
+                                </div>
+                                <Progress value={uploadProgress} className="h-1" />
+                              </div>
                             </div>
                           )}
 
