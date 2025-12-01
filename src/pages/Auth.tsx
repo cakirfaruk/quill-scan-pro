@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, Loader2 } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { z } from "zod";
+import { Link } from "react-router-dom";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const authSchema = z.object({
   username: z.string()
@@ -33,6 +35,7 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -196,15 +199,15 @@ const Auth = () => {
       <Card className="w-full max-w-md p-8 shadow-elegant">
         <div className="flex items-center justify-center mb-8">
           <div className="p-3 bg-gradient-primary rounded-lg">
-            <FileText className="w-8 h-8 text-primary-foreground" />
+            <Sparkles className="w-8 h-8 text-primary-foreground" />
           </div>
         </div>
 
         <h1 className="text-3xl font-bold text-center mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-          El Yazısı Analizi
+          Stellara
         </h1>
         <p className="text-center text-muted-foreground mb-8">
-          Grafolog AI ile profesyonel analiz
+          Yıldızların Rehberliğinde Keşfet
         </p>
 
         <Tabs defaultValue="signin" className="w-full">
@@ -348,10 +351,24 @@ const Auth = () => {
                 />
               </div>
 
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  id="terms"
+                  checked={acceptedTerms}
+                  onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
+                />
+                <label htmlFor="terms" className="text-sm text-muted-foreground">
+                  <Link to="/terms" className="text-primary hover:underline">Kullanım Şartları</Link>
+                  'nı ve{" "}
+                  <Link to="/privacy" className="text-primary hover:underline">Gizlilik Politikası</Link>
+                  'nı okudum ve kabul ediyorum.
+                </label>
+              </div>
+
               <Button
                 type="submit"
                 className="w-full bg-gradient-primary hover:opacity-90"
-                disabled={isLoading}
+                disabled={isLoading || !acceptedTerms}
               >
                 {isLoading ? (
                   <>

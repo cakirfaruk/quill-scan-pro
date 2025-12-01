@@ -82,6 +82,14 @@ export const FooterSection = () => {
                   Kredi Paketleri
                 </Link>
               </li>
+              <li>
+                <Link
+                  to="/contact"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  İletişim
+                </Link>
+              </li>
             </ul>
           </div>
 
