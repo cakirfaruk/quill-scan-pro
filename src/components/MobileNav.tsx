@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Plus, Video, Sparkles, Heart, Menu, Coffee, Moon, Hand, Star, Target, Calendar, FileText, History } from "lucide-react";
+import { Home, Plus, Video, Sparkles, Heart, Menu, Coffee, Moon, Hand, Star, Target, Calendar, FileText, History, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PreloadLink } from "@/components/PreloadLink";
 import { useState, useEffect, Suspense } from "react";
@@ -62,6 +62,7 @@ export const MobileNav = () => {
   ];
 
   const quickMenuItems = [
+    { icon: Gift, label: "Günlük Ödüller", path: "/daily-rewards" },
     { icon: History, label: "Analiz Geçmişi", path: "/analysis-history" },
     { icon: Sparkles, label: "Tarot", path: "/tarot" },
     { icon: Coffee, label: "Kahve Falı", path: "/coffee-fortune" },

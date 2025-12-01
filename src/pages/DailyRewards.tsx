@@ -185,7 +185,7 @@ export default function DailyRewards() {
   const levelProgress = (currentLevelXP / 100) * 100;
 
   return (
-    <div className="page-container-mobile bg-gradient-subtle min-h-screen">
+    <div className="page-container-mobile bg-gradient-subtle min-h-screen pb-20">
       <Header />
       <div className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
         {/* Header Card with Level */}
@@ -197,22 +197,23 @@ export default function DailyRewards() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-2xl flex items-center gap-2">
-                    <Gift className="w-7 h-7 text-primary" />
-                    Günlük Ödüller & Görevler
+                  <CardTitle className="text-xl sm:text-2xl flex items-center gap-2">
+                    <Gift className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
+                    <span className="hidden sm:inline">Günlük Ödüller & Görevler</span>
+                    <span className="sm:hidden">Ödüller & Görevler</span>
                   </CardTitle>
-                  <CardDescription className="mt-2">
+                  <CardDescription className="mt-2 text-xs sm:text-sm">
                     Her gün giriş yap, görevleri tamamla, kredi ve XP kazan!
                   </CardDescription>
                 </div>
-                <div className="text-right space-y-2">
-                  <Badge variant="secondary" className="block">
-                    <Coins className="w-4 h-4 mr-1" />
-                    {userCredits} Kredi
+                <div className="flex sm:flex-col gap-2 sm:text-right">
+                  <Badge variant="secondary" className="text-xs whitespace-nowrap">
+                    <Coins className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                    {userCredits}
                   </Badge>
-                  <Badge variant="outline" className="block">
-                    <Trophy className="w-4 h-4 mr-1" />
-                    Seviye {userLevel}
+                  <Badge variant="outline" className="text-xs whitespace-nowrap">
+                    <Trophy className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                    Lv {userLevel}
                   </Badge>
                 </div>
               </div>
