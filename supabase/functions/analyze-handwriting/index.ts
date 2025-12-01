@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.78.0";
+import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts'
 
 const allTopics = [
   "Marjlar (Sol, Sağ, Üst, Alt)",
@@ -76,6 +77,31 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       throw new Error("Unauthorized");
+    }
+    
+    // Rate limiting for AI analysis
+    const rateLimitResult = await checkRateLimit(
+      supabase,
+      user.id,
+      {
+        ...RateLimitPresets.ANALYSIS,
+        endpoint: 'analyze-handwriting',
+      }
+    );
+
+    if (!rateLimitResult.allowed) {
+      return new Response(JSON.stringify({ 
+        error: 'Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin.',
+        resetAt: rateLimitResult.resetAt
+      }), {
+        status: 429,
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.resetAt.toISOString(),
+        }
+      });
     }
     
     // Check if specific topics are selected or full analysis

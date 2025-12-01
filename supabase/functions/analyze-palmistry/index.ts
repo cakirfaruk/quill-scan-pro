@@ -1,7 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.78.0';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,26 +10,6 @@ const corsHeaders = {
 };
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-
-// Rate limiting map
-const rateLimits = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(userId: string): boolean {
-  const now = Date.now();
-  const limit = rateLimits.get(userId);
-  
-  if (!limit || now > limit.resetAt) {
-    rateLimits.set(userId, { count: 1, resetAt: now + 60000 }); // 1 minute window
-    return true;
-  }
-  
-  if (limit.count >= 10) { // 10 requests per minute
-    return false;
-  }
-  
-  limit.count++;
-  return true;
-}
 
 // Input validation schema - max 10MB base64 image
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
@@ -75,11 +56,28 @@ serve(async (req) => {
       });
     }
 
-    // Rate limiting
-    if (!checkRateLimit(user.id)) {
-      return new Response(JSON.stringify({ error: 'Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin.' }), {
+    // Rate limiting using shared utility
+    const rateLimitResult = await checkRateLimit(
+      supabaseClient,
+      user.id,
+      {
+        ...RateLimitPresets.ANALYSIS,
+        endpoint: 'analyze-palmistry',
+      }
+    );
+
+    if (!rateLimitResult.allowed) {
+      return new Response(JSON.stringify({ 
+        error: 'Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin.',
+        resetAt: rateLimitResult.resetAt
+      }), {
         status: 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.resetAt.toISOString(),
+        }
       });
     }
 
