@@ -20,6 +20,9 @@ import { UserBehaviorAnalysis } from "@/components/admin/UserBehaviorAnalysis";
 import { RealtimeIndicator } from "@/components/admin/RealtimeIndicator";
 import { LiveActivityFeed } from "@/components/admin/LiveActivityFeed";
 import { AlertSettings } from "@/components/admin/AlertSettings";
+import { RealTimeStats } from "@/components/admin/RealTimeStats";
+import { SystemHealth } from "@/components/admin/SystemHealth";
+import { PopularFeatures } from "@/components/admin/PopularFeatures";
 import { useRealtimeAnalytics } from "@/hooks/use-realtime-analytics";
 import { z } from "zod";
 
@@ -508,6 +511,14 @@ const Admin = () => {
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">
+          {/* Real-time Stats */}
+          <RealTimeStats />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SystemHealth />
+            <PopularFeatures />
+          </div>
+          
           <AnalyticsOverview />
           <div className="grid gap-6 lg:grid-cols-2">
             <EventsChart />
