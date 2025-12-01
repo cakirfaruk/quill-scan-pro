@@ -85,6 +85,12 @@ const Match = () => {
   const [shareType, setShareType] = useState<"area" | "full" | "tarot">("area");
   const [selectedArea, setSelectedArea] = useState<any>(null);
   const [specificUserId, setSpecificUserId] = useState<string | null>(null);
+  
+  // Premium features state
+  const [lastSwipe, setLastSwipe] = useState<{index: number, profile: MatchProfile, action: string} | null>(null);
+  const [canUndo, setCanUndo] = useState(false);
+  const [boostActive, setBoostActive] = useState(false);
+  const [boostEndTime, setBoostEndTime] = useState<Date | null>(null);
 
   // Card swipe gestures for mobile
   const cardGestures = useCardGestures({
@@ -400,6 +406,218 @@ const Match = () => {
   // **GÜÇLE RACE CONDITION ÖNLEME** - Swipe kilidi
   const [isSwipeInProgress, setIsSwipeInProgress] = useState(false);
 
+  // Premium feature handlers
+  const handleSuperLike = async () => {
+    if (!user || currentIndex >= profiles.length || isSwipeInProgress) return;
+    
+    const creditsNeeded = 10;
+    const { data: currentProfile } = await supabase
+      .from("profiles")
+      .select("credits")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!currentProfile || currentProfile.credits < creditsNeeded) {
+      toast({
+        title: "Yetersiz Kredi",
+        description: `Super Like için ${creditsNeeded} kredi gerekiyor.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSwipeInProgress(true);
+    const targetProfile = profiles[currentIndex];
+
+    try {
+      const { data: deductResult, error: deductError } = await supabase.rpc(
+        "deduct_credits_atomic" as any,
+        {
+          p_user_id: user.id,
+          p_amount: creditsNeeded,
+          p_transaction_type: "super_like",
+          p_description: `Super Like - ${targetProfile.username}`,
+        }
+      );
+
+      if (deductError || typeof deductResult !== 'number') throw new Error("Kredi düşürme başarısız");
+
+      const { error: swipeError } = await supabase
+        .from("swipes")
+        .insert({
+          user_id: user.id,
+          target_user_id: targetProfile.user_id,
+          action: "super_like",
+          credits_used: creditsNeeded,
+        });
+
+      if (swipeError) throw swipeError;
+
+      setCredits(deductResult);
+      
+      // Save for undo
+      setLastSwipe({ index: currentIndex, profile: targetProfile, action: "super_like" });
+      setCanUndo(true);
+
+      // Check mutual match
+      const { data: mutualSwipe } = await supabase
+        .from("swipes")
+        .select("*")
+        .eq("user_id", targetProfile.user_id)
+        .eq("target_user_id", user.id)
+        .eq("action", "like")
+        .maybeSingle();
+
+      if (mutualSwipe) {
+        const [user1, user2] = [user.id, targetProfile.user_id].sort();
+        await supabase.from("matches").upsert({
+          user1_id: user1,
+          user2_id: user2,
+          matched_at: new Date().toISOString(),
+        });
+
+        toast({
+          title: "⚡ Super Eşleşme!",
+          description: `${targetProfile.full_name || targetProfile.username} ile eşleştiniz!`,
+        });
+      }
+
+      setCurrentIndex(prev => prev + 1);
+      toast({
+        title: "⚡ Super Like Gönderildi!",
+        description: "Özel ilginiz iletildi!",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSwipeInProgress(false);
+    }
+  };
+
+  const handleBoost = async () => {
+    if (!user || boostActive) return;
+    
+    const creditsNeeded = 20;
+    const { data: currentProfile } = await supabase
+      .from("profiles")
+      .select("credits")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!currentProfile || currentProfile.credits < creditsNeeded) {
+      toast({
+        title: "Yetersiz Kredi",
+        description: `Boost için ${creditsNeeded} kredi gerekiyor.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data: deductResult, error: deductError } = await supabase.rpc(
+        "deduct_credits_atomic" as any,
+        {
+          p_user_id: user.id,
+          p_amount: creditsNeeded,
+          p_transaction_type: "boost",
+          p_description: "Profil Boost - 30 dakika",
+        }
+      );
+
+      if (deductError || typeof deductResult !== 'number') throw new Error("Kredi düşürme başarısız");
+
+      setCredits(deductResult);
+      setBoostActive(true);
+      
+      const endTime = new Date();
+      endTime.setMinutes(endTime.getMinutes() + 30);
+      setBoostEndTime(endTime);
+
+      toast({
+        title: "🚀 Boost Aktif!",
+        description: "Profilin 30 dakika boyunca öne çıkarıldı!",
+      });
+
+      setTimeout(() => {
+        setBoostActive(false);
+        setBoostEndTime(null);
+        toast({
+          title: "Boost Sona Erdi",
+          description: "Boost süreniz doldu.",
+        });
+      }, 30 * 60 * 1000);
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUndo = async () => {
+    if (!user || !lastSwipe || !canUndo) return;
+    
+    const creditsNeeded = 5;
+    const { data: currentProfile } = await supabase
+      .from("profiles")
+      .select("credits")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!currentProfile || currentProfile.credits < creditsNeeded) {
+      toast({
+        title: "Yetersiz Kredi",
+        description: `Geri al için ${creditsNeeded} kredi gerekiyor.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data: deductResult, error: deductError } = await supabase.rpc(
+        "deduct_credits_atomic" as any,
+        {
+          p_user_id: user.id,
+          p_amount: creditsNeeded,
+          p_transaction_type: "undo_swipe",
+          p_description: "Swipe Geri Al",
+        }
+      );
+
+      if (deductError || typeof deductResult !== 'number') throw new Error("Kredi düşürme başarısız");
+
+      // Delete last swipe
+      const { error: deleteError } = await supabase
+        .from("swipes")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("target_user_id", lastSwipe.profile.user_id);
+
+      if (deleteError) throw deleteError;
+
+      setCredits(deductResult);
+      setCurrentIndex(lastSwipe.index);
+      setCanUndo(false);
+      setLastSwipe(null);
+
+      toast({
+        title: "↩️ Geri Alındı",
+        description: "Son işleminiz geri alındı.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSwipe = async (action: "like" | "pass") => {
     if (!user || currentIndex >= profiles.length || isSwipeInProgress) return;
 
@@ -456,6 +674,10 @@ const Match = () => {
 
       // Update local credits
       setCredits(deductResult);
+      
+      // Save for undo
+      setLastSwipe({ index: currentIndex, profile: targetProfile, action });
+      setCanUndo(true);
 
       // Check for mutual match
       if (action === "like") {
@@ -1099,6 +1321,80 @@ const Match = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
+        
+        {/* Premium Action Buttons */}
+        <div className="py-3 px-4 space-y-3">
+          {/* Main action buttons */}
+          <div className="flex items-center justify-center gap-4">
+            <Button
+              variant="outline"
+              size="icon"
+              className="w-16 h-16 rounded-full hover:bg-destructive/10 hover:border-destructive transition-all"
+              onClick={() => handleSwipe("pass")}
+              disabled={isSwipeInProgress}
+            >
+              <X className="w-8 h-8 text-destructive" />
+            </Button>
+            
+            <Button
+              variant="default"
+              size="icon"
+              className="w-20 h-20 rounded-full bg-gradient-primary shadow-lg hover:scale-110 transition-transform"
+              onClick={() => handleSwipe("like")}
+              disabled={isSwipeInProgress}
+            >
+              <Heart className="w-10 h-10" />
+            </Button>
+          </div>
+
+          {/* Premium buttons */}
+          <div className="flex items-center justify-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-1"
+              onClick={handleUndo}
+              disabled={!canUndo || isSwipeInProgress}
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span className="text-xs">Geri Al</span>
+              <Badge variant="secondary" className="text-[10px] px-1">5₭</Badge>
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              className={`flex-1 gap-1 ${boostActive ? 'bg-primary/10 border-primary' : ''}`}
+              onClick={handleBoost}
+              disabled={boostActive}
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span className="text-xs">{boostActive ? 'Aktif' : 'Boost'}</span>
+              {!boostActive && <Badge variant="secondary" className="text-[10px] px-1">20₭</Badge>}
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-1 bg-gradient-to-r from-primary/20 to-accent/20 border-primary"
+              onClick={handleSuperLike}
+              disabled={isSwipeInProgress}
+            >
+              <Zap className="w-4 h-4 text-primary" />
+              <span className="text-xs font-semibold">Super</span>
+              <Badge variant="secondary" className="text-[10px] px-1">10₭</Badge>
+            </Button>
+          </div>
+          
+          {boostActive && boostEndTime && (
+            <div className="text-center">
+              <Badge variant="default" className="text-xs bg-primary">
+                <TrendingUp className="w-3 h-3 mr-1" />
+                Boost aktif - {Math.ceil((boostEndTime.getTime() - Date.now()) / 60000)} dk kaldı
+              </Badge>
+            </div>
+          )}
         </div>
       </div>
 
