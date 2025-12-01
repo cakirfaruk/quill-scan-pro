@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { 
-  Home, Search, Plus, Video, Sparkles, Shield, Coins, MessageCircle, Menu, Heart, History
+  Home, Search, Plus, Video, Sparkles, Shield, Coins, MessageCircle, Menu, Heart, History, Gift
 } from "lucide-react";
 import { PreloadLink } from "@/components/PreloadLink";
 import { Button } from "@/components/ui/button";
@@ -279,6 +279,22 @@ export const CompactHeader = () => {
                   <History className="w-4 h-4" />
                   Geçmiş
                 </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem 
+                  onClick={() => navigate("/daily-rewards")}
+                  className={cn(
+                    "gap-2 cursor-pointer bg-gradient-to-r from-orange-500/10 to-yellow-500/10 hover:from-orange-500/20 hover:to-yellow-500/20",
+                    location.pathname === "/daily-rewards" && "bg-primary/10 text-primary font-medium"
+                  )}
+                >
+                  <Gift className="w-4 h-4 text-orange-500" />
+                  <span className="flex items-center gap-2">
+                    Günlük Ödüller
+                    <span className="text-xs bg-orange-500 text-white px-1.5 py-0.5 rounded-full">Ücretsiz!</span>
+                  </span>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -306,6 +322,23 @@ export const CompactHeader = () => {
                   "font-semibold text-primary transition-all duration-300",
                   isMiniMode ? "text-xs" : "text-sm"
                 )}>{credits}</span>
+              </Button>
+
+              {/* Daily Rewards - Desktop Only */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/daily-rewards")}
+                className={cn(
+                  "gap-1.5 px-2 sm:px-3 transition-all duration-300 hidden sm:flex",
+                  isMiniMode ? "h-7 sm:h-8" : "h-8 sm:h-9"
+                )}
+                title="Günlük Ücretsiz Kredi"
+              >
+                <Gift className={cn(
+                  "text-orange-500 transition-all duration-300 animate-bounce",
+                  isMiniMode ? "w-3.5 h-3.5" : "w-4 h-4"
+                )} />
               </Button>
 
               {/* Search - Mobile Only */}
