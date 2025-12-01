@@ -555,6 +555,18 @@ const Match = () => {
           matched_at: new Date().toISOString(),
         });
 
+        // Send match notifications
+        try {
+          await supabase.functions.invoke('send-match-notification', {
+            body: { 
+              user1_id: user.id, 
+              user2_id: targetProfile.user_id 
+            }
+          });
+        } catch (notifError) {
+          console.error('Failed to send match notification:', notifError);
+        }
+
         toast({
           title: "⚡ Super Eşleşme!",
           description: `${targetProfile.full_name || targetProfile.username} ile eşleştiniz!`,

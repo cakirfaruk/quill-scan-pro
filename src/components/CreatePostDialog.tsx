@@ -38,6 +38,7 @@ import {
   Clock,
   Upload,
   FileImage,
+  Calendar,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
@@ -85,10 +86,12 @@ interface CreatePostDialogProps {
   profilePhoto: string | null;
   onPostCreated?: () => void;
   prefilledContent?: {
-    type: "analysis" | "photo";
+    type: "analysis" | "photo" | "quote";
     content?: string;
     mediaUrl?: string;
     mediaType?: "photo" | "video";
+    quotedPostId?: string;
+    quotedPostData?: any;
   };
 }
 
@@ -152,6 +155,9 @@ export const CreatePostDialog = ({
   const [locationName, setLocationName] = useState("");
   const [locationLatitude, setLocationLatitude] = useState<number | null>(null);
   const [locationLongitude, setLocationLongitude] = useState<number | null>(null);
+  const [scheduledAt, setScheduledAt] = useState<Date | null>(null);
+  const [quotedPostId, setQuotedPostId] = useState<string | null>(prefilledContent?.quotedPostId || null);
+  const [quotedPostData, setQuotedPostData] = useState<any>(prefilledContent?.quotedPostData || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const carouselApiRef = useRef<any>(null);
   const { toast } = useToast();
@@ -690,25 +696,49 @@ export const CreatePostDialog = ({
       }
 
       // Create post with uploaded URLs
-      const { data: postData, error: postError } = await supabase
-        .from("posts")
-        .insert({
-          user_id: userId,
-          content: content.trim(),
-          media_urls: uploadedUrls.length > 0 ? uploadedUrls : null,
-          media_types: mediaPreviews.length > 0 ? mediaPreviews.map(m => m.type) : null,
-          post_type: postType,
-          location_name: locationName || null,
-          location_latitude: locationLatitude,
-          location_longitude: locationLongitude,
-        })
-        .select()
-        .single();
+      if (scheduledAt && scheduledAt > new Date()) {
+        // Create scheduled post
+        const { error: scheduledError } = await supabase
+          .from("scheduled_posts")
+          .insert({
+            user_id: userId,
+            content: content.trim(),
+            media_urls: uploadedUrls.length > 0 ? uploadedUrls : null,
+            media_types: mediaPreviews.length > 0 ? mediaPreviews.map(m => m.type) : null,
+            scheduled_for: scheduledAt.toISOString(),
+            shared_post_id: quotedPostId,
+          });
 
-      if (postError) throw postError;
+        if (scheduledError) throw scheduledError;
 
-      // Process hashtags
-      for (const tag of hashtags) {
+        toast({
+          title: "Başarılı",
+          description: `Gönderi ${scheduledAt.toLocaleString('tr-TR')} tarihinde paylaşılacak`,
+        });
+      } else {
+        // Create immediate post
+        const { data: postData, error: postError } = await supabase
+          .from("posts")
+          .insert({
+            user_id: userId,
+            content: content.trim(),
+            media_urls: uploadedUrls.length > 0 ? uploadedUrls : null,
+            media_types: mediaPreviews.length > 0 ? mediaPreviews.map(m => m.type) : null,
+            post_type: postType,
+            location_name: locationName || null,
+            location_latitude: locationLatitude,
+            location_longitude: locationLongitude,
+            shared_post_id: quotedPostId,
+          })
+          .select()
+          .single();
+
+        if (postError) throw postError;
+
+        if (postError) throw postError;
+
+        // Process hashtags
+        for (const tag of hashtags) {
         try {
           // Get or create hashtag
           const { data: hashtagData } = await supabase
@@ -725,11 +755,11 @@ export const CreatePostDialog = ({
           }
         } catch (error) {
           console.error("Error processing hashtag:", tag, error);
+          }
         }
-      }
 
-      // Process mentions
-      for (const username of mentions) {
+        // Process mentions
+        for (const username of mentions) {
         try {
           // Get user ID from username
           const { data: userData } = await supabase
@@ -749,13 +779,14 @@ export const CreatePostDialog = ({
           }
         } catch (error) {
           console.error("Error processing mention:", username, error);
+          }
         }
-      }
 
-      toast({
-        title: "Başarılı",
-        description: "Gönderi oluşturuldu",
-      });
+        toast({
+          title: "Başarılı",
+          description: "Gönderi oluşturuldu",
+        });
+      }
 
       // Clear draft after successful post
       draft.clearDraft();
