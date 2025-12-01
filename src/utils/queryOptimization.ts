@@ -81,6 +81,12 @@ export async function fetchPostsKeyset(
       media_types,
       created_at,
       user_id,
+      shares_count,
+      location_name,
+      location_latitude,
+      location_longitude,
+      analysis_type,
+      analysis_data,
       profiles!posts_user_id_fkey (
         user_id,
         username,

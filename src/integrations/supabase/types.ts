@@ -3216,6 +3216,15 @@ export type Database = {
         }
         Returns: string
       }
+      deduct_credits_atomic: {
+        Args: {
+          p_amount: number
+          p_description: string
+          p_transaction_type: string
+          p_user_id: string
+        }
+        Returns: number
+      }
       delete_expired_stories: { Args: never; Returns: undefined }
       has_role: {
         Args: {
