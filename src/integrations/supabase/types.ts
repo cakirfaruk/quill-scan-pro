@@ -2669,6 +2669,8 @@ export type Database = {
           created_at: string | null
           endpoint: string
           id: string
+          ip_address: string | null
+          last_request_at: string | null
           request_count: number
           user_id: string
           window_start: string
@@ -2677,6 +2679,8 @@ export type Database = {
           created_at?: string | null
           endpoint: string
           id?: string
+          ip_address?: string | null
+          last_request_at?: string | null
           request_count?: number
           user_id: string
           window_start?: string
@@ -2685,6 +2689,8 @@ export type Database = {
           created_at?: string | null
           endpoint?: string
           id?: string
+          ip_address?: string | null
+          last_request_at?: string | null
           request_count?: number
           user_id?: string
           window_start?: string

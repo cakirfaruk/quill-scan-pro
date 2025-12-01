@@ -53,41 +53,29 @@ serve(async (req) => {
       });
     }
 
-    // Database-backed rate limiting
-    const rateLimitWindow = 60000; // 1 minute
-    const rateLimitMax = 10;
-    const now = new Date();
-    const windowStart = new Date(now.getTime() - rateLimitWindow);
+    // Rate limiting using shared utility
+    const rateLimitResult = await checkRateLimit(
+      supabaseClient,
+      user.id,
+      {
+        ...RateLimitPresets.ANALYSIS,
+        endpoint: 'analyze-tarot',
+      }
+    );
 
-    const { data: rateLimit } = await supabaseClient
-      .from('rate_limits')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('endpoint', 'analyze-tarot')
-      .gte('window_start', windowStart.toISOString())
-      .single();
-
-    if (rateLimit && rateLimit.request_count >= rateLimitMax) {
-      return new Response(JSON.stringify({ error: 'Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin.' }), {
+    if (!rateLimitResult.allowed) {
+      return new Response(JSON.stringify({ 
+        error: 'Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin.',
+        resetAt: rateLimitResult.resetAt
+      }), {
         status: 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.resetAt.toISOString(),
+        }
       });
-    }
-
-    if (rateLimit) {
-      await supabaseClient
-        .from('rate_limits')
-        .update({ request_count: rateLimit.request_count + 1 })
-        .eq('id', rateLimit.id);
-    } else {
-      await supabaseClient
-        .from('rate_limits')
-        .insert({ 
-          user_id: user.id, 
-          endpoint: 'analyze-tarot', 
-          request_count: 1, 
-          window_start: now.toISOString() 
-        });
     }
 
     const body = await req.json();

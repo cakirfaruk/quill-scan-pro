@@ -1,7 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.78.0";
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts'
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,6 +54,31 @@ serve(async (req) => {
 
     if (!user) {
       throw new Error("Unauthorized");
+    }
+
+    // Rate limiting for AI analysis
+    const rateLimitResult = await checkRateLimit(
+      supabaseClient,
+      user.id,
+      {
+        ...RateLimitPresets.ANALYSIS,
+        endpoint: 'analyze-numerology',
+      }
+    );
+
+    if (!rateLimitResult.allowed) {
+      return new Response(JSON.stringify({ 
+        error: 'Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin.',
+        resetAt: rateLimitResult.resetAt
+      }), {
+        status: 429,
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.resetAt.toISOString(),
+        }
+      });
     }
 
     const { data: profile, error: profileError } = await supabaseClient
