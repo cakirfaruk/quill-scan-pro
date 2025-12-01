@@ -24,7 +24,11 @@ interface Mission {
   reward_claimed?: boolean;
 }
 
-export function DailyMissionsWidget() {
+interface DailyMissionsWidgetProps {
+  compact?: boolean;
+}
+
+export function DailyMissionsWidget({ compact = false }: DailyMissionsWidgetProps) {
   const { toast } = useToast();
   const [missions, setMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,7 +114,7 @@ export function DailyMissionsWidget() {
 
       if (profile) {
         const newXP = (profile.xp || 0) + mission.xp_reward;
-        const newLevel = Math.floor(newXP / 100) + 1; // Simple leveling: 100 XP per level
+        const newLevel = Math.floor(newXP / 100) + 1;
 
         await supabase
           .from("profiles")
@@ -178,62 +182,65 @@ export function DailyMissionsWidget() {
   const completedCount = missions.filter(m => m.completed).length;
   const totalCount = missions.length;
   const completionPercentage = (completedCount / totalCount) * 100;
+  const displayMissions = missions.slice(0, compact ? 3 : 4);
 
   return (
-    <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background">
-      <CardHeader>
+    <Card className={compact ? "" : "border-primary/20 bg-gradient-to-br from-primary/5 to-background"}>
+      <CardHeader className={compact ? "pb-3" : ""}>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-primary" />
+          <CardTitle className={`flex items-center gap-2 ${compact ? "text-sm" : ""}`}>
+            <Trophy className={compact ? "w-4 h-4" : "w-5 h-5"} />
             Günlük Görevler
           </CardTitle>
-          <Badge variant="secondary">
+          <Badge variant="secondary" className={compact ? "text-xs" : ""}>
             {completedCount}/{totalCount}
           </Badge>
         </div>
-        <Progress value={completionPercentage} className="mt-3" />
+        {!compact && <Progress value={completionPercentage} className="mt-3" />}
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className={compact ? "space-y-2 pt-0" : "space-y-3"}>
         <AnimatePresence>
-          {missions.slice(0, 4).map((mission) => (
+          {displayMissions.map((mission) => (
             <motion.div
               key={mission.id}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               className={`
-                p-3 rounded-lg border transition-all
+                ${compact ? "p-3" : "p-3"} rounded-lg border transition-all
                 ${mission.completed ? 'bg-green-500/10 border-green-500/30' : 'bg-card border-border'}
               `}
             >
               <div className="flex items-start gap-3">
-                <div className="text-2xl">{mission.icon}</div>
+                <div className={compact ? "text-xl" : "text-2xl"}>{mission.icon}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-semibold text-sm">{mission.title}</h4>
+                    <h4 className={`font-semibold ${compact ? "text-xs" : "text-sm"}`}>{mission.title}</h4>
                     {mission.completed && (
-                      <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      <Check className={`${compact ? "w-3 h-3" : "w-4 h-4"} text-green-500 flex-shrink-0`} />
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    {mission.description}
-                  </p>
+                  {!compact && (
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {mission.description}
+                    </p>
+                  )}
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 text-xs">
+                    <div className={`flex items-center gap-3 ${compact ? "text-[10px]" : "text-xs"}`}>
                       <span className="flex items-center gap-1">
-                        <Coins className="w-3 h-3 text-yellow-500" />
+                        <Coins className={compact ? "w-2.5 h-2.5" : "w-3 h-3"} />
                         {mission.credit_reward}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Zap className="w-3 h-3 text-blue-500" />
-                        {mission.xp_reward} XP
+                        <Zap className={compact ? "w-2.5 h-2.5" : "w-3 h-3"} />
+                        {mission.xp_reward}
                       </span>
                     </div>
                     {mission.completed && !mission.reward_claimed && (
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 text-xs"
+                        className={compact ? "h-6 text-[10px] px-2" : "h-7 text-xs"}
                         onClick={() => handleClaimReward(mission)}
                         disabled={claiming === mission.id}
                       >
@@ -244,7 +251,7 @@ export function DailyMissionsWidget() {
                   {!mission.completed && (
                     <Progress 
                       value={(mission.current_progress || 0) / mission.target_count * 100} 
-                      className="h-1.5 mt-2"
+                      className={compact ? "h-1 mt-1.5" : "h-1.5 mt-2"}
                     />
                   )}
                 </div>
@@ -253,13 +260,15 @@ export function DailyMissionsWidget() {
           ))}
         </AnimatePresence>
         
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() => window.location.href = "/daily-rewards"}
-        >
-          Tüm Görevleri Gör
-        </Button>
+        {!compact && (
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => window.location.href = "/daily-rewards"}
+          >
+            Tüm Görevleri Gör
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

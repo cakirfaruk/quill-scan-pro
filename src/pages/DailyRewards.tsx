@@ -1,47 +1,47 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Gift, Coins, Trophy, Star, Calendar, Flame } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Gift, Flame, Star, Trophy, Coins, Check, Lock, Target, Zap } from "lucide-react";
-import { motion } from "framer-motion";
-import confetti from "canvas-confetti";
-import { ReferralCard } from "@/components/ReferralCard";
 import { DailyMissionsWidget } from "@/components/DailyMissionsWidget";
 import { WeeklyChallengesCard } from "@/components/WeeklyChallengesCard";
+import { ReferralCard } from "@/components/ReferralCard";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import confetti from "canvas-confetti";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
 interface DailyReward {
   day: number;
   credits: number;
   bonus?: string;
-  claimed: boolean;
 }
 
-const DAILY_REWARDS: Omit<DailyReward, "claimed">[] = [
+const DAILY_REWARDS: DailyReward[] = [
   { day: 1, credits: 5 },
   { day: 2, credits: 10 },
   { day: 3, credits: 15 },
   { day: 4, credits: 20 },
-  { day: 5, credits: 25, bonus: "🎁 Bonus!" },
+  { day: 5, credits: 25, bonus: "+5 XP" },
   { day: 6, credits: 30 },
-  { day: 7, credits: 50, bonus: "🏆 Haftalık Bonus!" },
+  { day: 7, credits: 50, bonus: "🎁 Bonus" },
 ];
 
-export default function DailyRewards() {
+const DailyRewards = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
   const [streak, setStreak] = useState(0);
   const [lastClaim, setLastClaim] = useState<string | null>(null);
-  const [todayClaimed, setTodayClaimed] = useState(false);
   const [userCredits, setUserCredits] = useState(0);
   const [userLevel, setUserLevel] = useState(1);
-  const [userXP, setUserXP] = useState(0);
+  const [currentLevelXP, setCurrentLevelXP] = useState(0);
 
   useEffect(() => {
     loadUserData();
@@ -50,6 +50,7 @@ export default function DailyRewards() {
   const loadUserData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      
       if (!user) {
         navigate("/auth");
         return;
@@ -64,401 +65,304 @@ export default function DailyRewards() {
       if (error) throw error;
 
       if (profile) {
-        setUserCredits(profile.credits);
+        setUserCredits(profile.credits || 0);
         setStreak(profile.daily_streak || 0);
         setLastClaim(profile.last_daily_claim);
         setUserLevel(profile.level || 1);
-        setUserXP(profile.xp || 0);
-
-        // Check if already claimed today
-        if (profile.last_daily_claim) {
-          const lastClaimDate = new Date(profile.last_daily_claim);
-          const today = new Date();
-          const isSameDay = lastClaimDate.toDateString() === today.toDateString();
-          setTodayClaimed(isSameDay);
-        }
+        setCurrentLevelXP(profile.xp || 0);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error loading user data:", error);
-      toast({
-        title: "Hata",
-        description: "Veriler yüklenirken bir hata oluştu",
-        variant: "destructive",
-      });
+      toast.error("Veriler yüklenirken bir hata oluştu");
     } finally {
       setLoading(false);
     }
   };
 
   const handleClaimReward = async () => {
-    if (todayClaimed) return;
+    if (hasClaimed) {
+      toast.info("Bugünkü ödülünü zaten aldın!");
+      return;
+    }
 
     setClaiming(true);
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) throw new Error("Kullanıcı bulunamadı");
 
+      const now = new Date();
+      const today = now.toISOString().split('T')[0];
+      
       // Calculate new streak
       let newStreak = 1;
       if (lastClaim) {
         const lastClaimDate = new Date(lastClaim);
-        const today = new Date();
-        const daysDiff = Math.floor((today.getTime() - lastClaimDate.getTime()) / (1000 * 60 * 60 * 24));
+        const diffTime = now.getTime() - lastClaimDate.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         
-        if (daysDiff === 1) {
-          newStreak = (streak % 7) + 1;
-        } else if (daysDiff > 1) {
+        if (diffDays === 1) {
+          newStreak = streak + 1;
+        } else if (diffDays > 1) {
           newStreak = 1;
         }
       }
 
-      const todayReward = DAILY_REWARDS[(newStreak - 1) % 7];
-      const creditsToAdd = todayReward.credits;
+      const currentDay = ((newStreak - 1) % 7);
+      const reward = DAILY_REWARDS[currentDay];
 
-      // Update profile
-      const { error: updateError } = await supabase
+      // Update user profile
+      const { error: profileError } = await supabase
         .from("profiles")
         .update({
-          credits: userCredits + creditsToAdd,
+          credits: userCredits + reward.credits,
           daily_streak: newStreak,
-          last_daily_claim: new Date().toISOString(),
+          last_daily_claim: today,
         })
         .eq("user_id", user.id);
 
-      if (updateError) throw updateError;
+      if (profileError) throw profileError;
 
-      // Log transaction
-      await supabase.from("credit_transactions").insert({
-        user_id: user.id,
-        amount: creditsToAdd,
-        transaction_type: "daily_reward",
-        description: `Gün ${newStreak} günlük ödülü`,
-      });
+      // Log the transaction
+      const { error: transactionError } = await supabase
+        .from("credit_transactions")
+        .insert({
+          user_id: user.id,
+          amount: reward.credits,
+          transaction_type: "daily_login",
+          description: `Gün ${reward.day} günlük giriş ödülü`,
+        });
 
-      // Update state
-      setUserCredits(userCredits + creditsToAdd);
-      setStreak(newStreak);
-      setLastClaim(new Date().toISOString());
-      setTodayClaimed(true);
+      if (transactionError) throw transactionError;
 
-      // Celebration effects
+      // Trigger confetti
       confetti({
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 },
       });
 
-      toast({
-        title: "Ödül Alındı! 🎉",
-        description: `${creditsToAdd} kredi kazandınız!`,
+      toast.success(`${reward.credits} kredi kazandın! 🎉`, {
+        description: reward.bonus ? `Bonus: ${reward.bonus}` : undefined,
       });
-    } catch (error: any) {
+
+      // Reload data
+      await loadUserData();
+    } catch (error) {
       console.error("Error claiming reward:", error);
-      toast({
-        title: "Hata",
-        description: "Ödül alınırken bir hata oluştu",
-        variant: "destructive",
-      });
+      toast.error("Ödül alınırken bir hata oluştu");
     } finally {
       setClaiming(false);
     }
   };
 
+  const hasClaimed = (() => {
+    if (!lastClaim) return false;
+    const today = new Date().toISOString().split('T')[0];
+    return lastClaim === today;
+  })();
+
+  const currentDay = ((streak - 1) % 7);
+
   if (loading) {
     return (
-      <div className="page-container-mobile bg-gradient-subtle">
-        <Header />
-        <div className="container mx-auto px-4 py-8 max-w-2xl">
-          <Card>
-            <CardContent className="p-12 text-center">
-              <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
 
-  const currentDay = (streak % 7) || 7;
-  const xpToNextLevel = userLevel * 100;
-  const currentLevelXP = userXP % 100;
   const levelProgress = (currentLevelXP / 100) * 100;
 
   return (
     <div className="page-container-mobile bg-gradient-subtle min-h-screen pb-20">
       <Header />
-      <div className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
-        {/* Header Card with Level */}
+      <div className="container mx-auto px-4 py-4 max-w-4xl space-y-4">
+        {/* Compact Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
         >
-          <Card className="bg-gradient-to-br from-primary/10 via-accent/5 to-background border-primary/20">
-            <CardHeader>
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-xl sm:text-2xl flex items-center gap-2">
-                    <Gift className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
-                    <span className="hidden sm:inline">Günlük Ödüller & Görevler</span>
-                    <span className="sm:hidden">Ödüller & Görevler</span>
-                  </CardTitle>
-                  <CardDescription className="mt-2 text-xs sm:text-sm">
-                    Her gün giriş yap, görevleri tamamla, kredi ve XP kazan!
-                  </CardDescription>
-                </div>
-                <div className="flex sm:flex-col gap-2 sm:text-right">
-                  <Badge variant="secondary" className="text-xs whitespace-nowrap">
-                    <Coins className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Gift className="w-5 h-5 text-primary" />
+                  Ödüller & Görevler
+                </CardTitle>
+                <div className="flex gap-2">
+                  <Badge variant="secondary" className="text-xs">
+                    <Coins className="w-3 h-3 mr-1" />
                     {userCredits}
                   </Badge>
-                  <Badge variant="outline" className="text-xs whitespace-nowrap">
-                    <Trophy className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                  <Badge variant="outline" className="text-xs">
+                    <Trophy className="w-3 h-3 mr-1" />
                     Lv {userLevel}
                   </Badge>
                 </div>
               </div>
-              <div className="mt-4">
-                <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-muted-foreground">Seviye İlerlemesi</span>
-                  <span className="font-semibold">{currentLevelXP} / {xpToNextLevel} XP</span>
-                </div>
-                <Progress value={levelProgress} className="h-2" />
-              </div>
             </CardHeader>
-          </Card>
-        </motion.div>
-
-        {/* Daily Missions Widget */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <DailyMissionsWidget />
-        </motion.div>
-
-        {/* Weekly Challenges */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-        >
-          <WeeklyChallengesCard />
-        </motion.div>
-
-        {/* Streak Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Card className="border-orange-200 dark:border-orange-900">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl">
-                    <Flame className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg">{streak} Günlük Giriş Serisi</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {streak === 7 ? "Mükemmel! 🎉" : `Hedefe ${7 - streak} gün kaldı`}
-                    </p>
-                  </div>
+            <CardContent className="pt-0">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Seviye {userLevel}</span>
+                  <span>{currentLevelXP}/100 XP</span>
                 </div>
-                <Trophy className="w-8 h-8 text-yellow-500" />
+                <Progress value={levelProgress} className="h-1.5" />
               </div>
-              <Progress value={(streak / 7) * 100} className="h-3" />
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Daily Login Rewards Grid */}
-        <div>
-          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-            <Target className="w-5 h-5 text-primary" />
-            Günlük Giriş Ödülleri
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {DAILY_REWARDS.map((reward, index) => {
-              const dayNumber = index + 1;
-              const isCurrentDay = dayNumber === currentDay && !todayClaimed;
-              const isPastDay = dayNumber < currentDay || (streak >= 7 && dayNumber <= currentDay);
-              const isClaimed = isPastDay || (dayNumber === currentDay && todayClaimed);
-              const isLocked = dayNumber > currentDay && !(streak >= 7 && dayNumber === 1);
-
-              return (
-                <motion.div
-                  key={dayNumber}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.3 + index * 0.05 }}
-                >
-                  <Card
-                    className={`
-                      relative overflow-hidden transition-all duration-300
-                      ${isCurrentDay ? "border-primary border-2 shadow-lg shadow-primary/20 scale-105" : ""}
-                      ${isClaimed ? "bg-muted/50" : ""}
-                      ${isLocked ? "opacity-60" : ""}
-                    `}
-                  >
-                    <CardContent className="p-4 text-center">
-                      <div className="flex flex-col items-center gap-2">
-                        {isClaimed && (
-                          <div className="absolute top-2 right-2">
-                            <div className="bg-green-500 rounded-full p-1">
-                              <Check className="w-3 h-3 text-white" />
-                            </div>
-                          </div>
-                        )}
-                        {isLocked && (
-                          <Lock className="w-8 h-8 text-muted-foreground mb-2" />
-                        )}
-                        {!isLocked && (
-                          <>
-                            <div className={`
-                              text-2xl font-bold
-                              ${isCurrentDay ? "text-primary" : ""}
-                              ${isClaimed ? "text-green-500" : ""}
-                            `}>
-                              Gün {dayNumber}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Coins className={`w-4 h-4 ${isCurrentDay ? "text-primary" : "text-yellow-500"}`} />
-                              <span className="font-semibold">{reward.credits}</span>
-                            </div>
-                            {reward.bonus && (
-                              <Badge variant="secondary" className="text-xs">
-                                {reward.bonus}
-                              </Badge>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Claim Button */}
-        {!todayClaimed && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
-            <Card className="bg-gradient-to-br from-primary/10 to-accent/5 border-primary/30">
-              <CardContent className="p-6">
-                <Button
-                  onClick={handleClaimReward}
-                  disabled={claiming}
-                  size="lg"
-                  className="w-full text-lg gap-2"
-                >
-                  {claiming ? (
-                    <>
-                      <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
-                      Alınıyor...
-                    </>
-                  ) : (
-                    <>
-                      <Star className="w-5 h-5" />
-                      Bugünün Giriş Ödülünü Al ({DAILY_REWARDS[(currentDay - 1) % 7].credits} Kredi)
-                    </>
-                  )}
-                </Button>
-                <p className="text-center text-sm text-muted-foreground mt-3">
-                  Her gün giriş yaparak serinizi sürdürün ve daha fazla ödül kazanın!
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {todayClaimed && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/5 border-green-500/30">
-              <CardContent className="p-6 text-center">
-                <div className="inline-block p-4 bg-green-500/20 rounded-full mb-3">
-                  <Check className="w-8 h-8 text-green-500" />
-                </div>
-                <h3 className="font-bold text-lg mb-2">Bugünün Giriş Ödülü Alındı! ✅</h3>
-                <p className="text-muted-foreground">
-                  Yarın tekrar gelin ve serinizi sürdürün! Görevleri tamamlamaya devam edin.
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* Referral Card */}
+        {/* Tabs */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
         >
-          <ReferralCard />
-        </motion.div>
+          <Tabs defaultValue="rewards" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="rewards" className="text-xs">
+                <Gift className="w-3 h-3 mr-1" />
+                Ödüller
+              </TabsTrigger>
+              <TabsTrigger value="missions" className="text-xs">
+                <Star className="w-3 h-3 mr-1" />
+                Görevler
+              </TabsTrigger>
+              <TabsTrigger value="bonus" className="text-xs">
+                <Flame className="w-3 h-3 mr-1" />
+                Bonus
+              </TabsTrigger>
+            </TabsList>
 
-        {/* Info Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Nasıl Çalışır?</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg h-fit">
-                <Gift className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h4 className="font-semibold mb-1">Günlük Giriş Ödülleri</h4>
-                <p className="text-sm text-muted-foreground">
-                  Her gün uygulamaya giriş yapın ve ücretsiz kredi kazanın
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <div className="p-2 bg-blue-500/10 rounded-lg h-fit">
-                <Target className="w-5 h-5 text-blue-500" />
-              </div>
-              <div>
-                <h4 className="font-semibold mb-1">Günlük Görevler</h4>
-                <p className="text-sm text-muted-foreground">
-                  Görevleri tamamlayın, kredi ve XP kazanın, seviye atlayın
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <div className="p-2 bg-purple-500/10 rounded-lg h-fit">
-                <Trophy className="w-5 h-5 text-purple-500" />
-              </div>
-              <div>
-                <h4 className="font-semibold mb-1">Haftalık Meydan Okumalar</h4>
-                <p className="text-sm text-muted-foreground">
-                  Haftalık zorlukları tamamlayın ve büyük ödüller kazanın
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <div className="p-2 bg-orange-500/10 rounded-lg h-fit">
-                <Flame className="w-5 h-5 text-orange-500" />
-              </div>
-              <div>
-                <h4 className="font-semibold mb-1">Seri Yapın</h4>
-                <p className="text-sm text-muted-foreground">
-                  Ardışık günlerde giriş yaparak daha fazla kredi kazanın
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            {/* Rewards Tab */}
+            <TabsContent value="rewards" className="space-y-4 mt-4">
+              {/* Streak and Claim Combined */}
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                        <Flame className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold text-primary">{streak}</div>
+                        <div className="text-xs text-muted-foreground">Gün Serisi</div>
+                      </div>
+                    </div>
+                    {!hasClaimed ? (
+                      <Button
+                        onClick={handleClaimReward}
+                        disabled={claiming}
+                        size="sm"
+                        className="h-10"
+                      >
+                        {claiming ? (
+                          <>
+                            <LoadingSpinner className="mr-2" />
+                            Alınıyor...
+                          </>
+                        ) : (
+                          <>
+                            <Gift className="w-4 h-4 mr-1" />
+                            Ödülü Al
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <Badge variant="secondary" className="bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/20">
+                        ✓ Alındı
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex gap-1">
+                    {[...Array(7)].map((_, i) => (
+                      <div
+                        key={i}
+                        className={`flex-1 h-1.5 rounded-full ${
+                          i < streak % 7 ? "bg-primary" : "bg-muted"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Horizontal Scroll for Daily Rewards */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    7 Günlük Ödüller
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pb-4">
+                  <ScrollArea className="w-full">
+                    <div className="flex gap-3 pb-2">
+                      {DAILY_REWARDS.map((reward) => {
+                        const dayIndex = reward.day - 1;
+                        const isCurrentDay = dayIndex === currentDay;
+                        const isClaimed = dayIndex < streak;
+
+                        return (
+                          <Card
+                            key={reward.day}
+                            className={`flex-shrink-0 w-24 relative transition-all ${
+                              isCurrentDay
+                                ? "border-primary shadow-md scale-105"
+                                : isClaimed
+                                  ? "border-green-500/50 bg-green-50/50 dark:bg-green-950/50"
+                                  : "border-muted"
+                            }`}
+                          >
+                            <CardContent className="p-3 text-center">
+                              {isClaimed && (
+                                <div className="absolute -top-1.5 -right-1.5 bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                                  ✓
+                                </div>
+                              )}
+                              <div className="text-xs font-medium mb-2">Gün {reward.day}</div>
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                <Coins className="w-3 h-3 text-primary" />
+                                <span className="text-sm font-bold">{reward.credits}</span>
+                              </div>
+                              {reward.bonus && (
+                                <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                                  <Star className="w-2 h-2 mr-0.5" />
+                                  {reward.bonus}
+                                </Badge>
+                              )}
+                              {isCurrentDay && (
+                                <div className="text-[10px] text-primary mt-1 font-medium">Bugün</div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                    <ScrollBar orientation="horizontal" />
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Missions Tab */}
+            <TabsContent value="missions" className="space-y-4 mt-4">
+              <DailyMissionsWidget compact />
+            </TabsContent>
+
+            {/* Bonus Tab */}
+            <TabsContent value="bonus" className="space-y-4 mt-4">
+              <WeeklyChallengesCard />
+              <ReferralCard />
+            </TabsContent>
+          </Tabs>
+        </motion.div>
       </div>
     </div>
   );
-}
+};
+
+export default DailyRewards;
