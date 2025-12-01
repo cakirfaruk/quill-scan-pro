@@ -67,6 +67,7 @@ const TrendingHashtags = lazyWithPreload(() => import("./pages/TrendingHashtags"
 const Privacy = lazyWithPreload(() => import("./pages/Privacy"));
 const Terms = lazyWithPreload(() => import("./pages/Terms"));
 const KVKK = lazyWithPreload(() => import("./pages/KVKK"));
+const Contact = lazyWithPreload(() => import("./pages/Contact"));
 const NotFound = lazyWithPreload(() => import("./pages/NotFound"));
 
 // Route component map for preloading
@@ -102,6 +103,7 @@ const routeComponents: { [path: string]: any } = {
   '/daily-rewards': DailyRewards,
   '/badges': Badges,
   '/trending': TrendingHashtags,
+  '/contact': Contact,
 };
 
 // Optimized QueryClient with AGGRESSIVE cache settings
@@ -367,9 +369,10 @@ const AppRoutes = () => {
               <Route path="/badges" element={<Badges />} />
               <Route path="/trending" element={<TrendingHashtags />} />
               <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/kvkk" element={<KVKK />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/kvkk" element={<KVKK />} />
+          <Route path="/contact" element={<Contact />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
       </Suspense>

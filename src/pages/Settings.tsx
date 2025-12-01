@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX, LogOut, Phone, RotateCcw, Shield, Eye, Palette, FileText, ShieldCheck, Database } from "lucide-react";
+import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX, LogOut, Phone, RotateCcw, Shield, Eye, Palette, FileText, ShieldCheck, Database, Download, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { requestNotificationPermission } from "@/utils/notifications";
 import { subscribeToPushNotifications } from "@/utils/pushNotifications";
@@ -24,6 +24,8 @@ import { PermissionSettings } from "@/components/PermissionSettings";
 import { OfflineCacheStatus } from "@/components/OfflineCacheStatus";
 import { PushNotificationSettings } from "@/components/PushNotificationSettings";
 import { performFullCacheRefresh } from "@/utils/cacheManager";
+import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
+import { ExportDataButton } from "@/components/ExportDataButton";
 
 const Settings = () => {
   const [profile, setProfile] = useState({
@@ -756,6 +758,27 @@ const Settings = () => {
                   <p className="text-xs text-muted-foreground mt-1">
                     E-posta değiştirdiğinizde doğrulama linki gönderilecektir
                   </p>
+                </div>
+
+                <div className="pt-6 border-t">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Database className="w-5 h-5" />
+                    Veri ve Gizlilik
+                  </h3>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Verilerinizi JSON formatında indirin veya hesabınızı kalıcı olarak silin.
+                      </p>
+                      <ExportDataButton />
+                    </div>
+                    <div className="pt-3 border-t">
+                      <p className="text-sm text-destructive mb-3 font-medium">
+                        ⚠️ Tehlikeli İşlem: Bu işlem geri alınamaz!
+                      </p>
+                      <DeleteAccountDialog />
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
