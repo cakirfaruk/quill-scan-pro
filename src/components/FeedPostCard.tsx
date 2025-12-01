@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, MapPin, Loader2 } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, MapPin, Trash2, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { ParsedText } from "@/components/ParsedText";
@@ -43,24 +43,29 @@ interface Post {
 
 interface FeedPostCardProps {
   post: Post;
+  currentUserId?: string;
   onLike: (postId: string, hasLiked: boolean) => void;
   onComment: (post: Post) => void;
   onShare: (post: Post) => void;
   onSave: (postId: string, hasSaved: boolean) => void;
+  onDelete?: (postId: string) => void;
   onMediaClick: (media: { url: string; type: "photo" | "video" }[], index: number) => void;
   isLikeLoading?: boolean;
 }
 
 export const FeedPostCard = memo(({ 
-  post, 
+  post,
+  currentUserId,
   onLike, 
   onComment, 
   onShare, 
   onSave,
+  onDelete,
   onMediaClick,
   isLikeLoading = false,
 }: FeedPostCardProps) => {
   const navigate = useNavigate();
+  const isOwnPost = currentUserId === post.user_id;
 
   return (
     <ScrollReveal direction="up" delay={0}>
@@ -114,6 +119,15 @@ export const FeedPostCard = memo(({
                 <Share2 className="w-4 h-4 mr-2" />
                 Paylaş
               </DropdownMenuItem>
+              {isOwnPost && onDelete && (
+                <DropdownMenuItem 
+                  onClick={() => onDelete(post.id)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Gönderiyi Sil
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
