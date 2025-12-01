@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.78.0';
+import { createLogger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,17 +23,24 @@ interface CronJobLog {
   status: 'success' | 'failed' | 'running';
 }
 
+const logger = createLogger('auto-scale-cron-jobs');
+
 Deno.serve(async (req) => {
+  const startTime = performance.now();
+  const requestId = crypto.randomUUID();
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    logger.success({ requestId, action: 'request_received' });
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log('Starting auto-scale check for cron jobs...');
+    logger.success({ requestId, action: 'starting_auto_scale_check' });
 
     // Get all jobs with auto-scaling enabled
     const { data: jobs, error: jobsError } = await supabase
@@ -42,12 +50,12 @@ Deno.serve(async (req) => {
       .eq('enabled', true);
 
     if (jobsError) {
-      console.error('Error fetching jobs:', jobsError);
+      await logger.error('Error fetching jobs', { requestId, error: jobsError });
       throw jobsError;
     }
 
     if (!jobs || jobs.length === 0) {
-      console.log('No jobs with auto-scaling enabled');
+      logger.success({ requestId, action: 'no_jobs_found' });
       return new Response(
         JSON.stringify({ message: 'No jobs with auto-scaling enabled', scaled: [] }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -57,7 +65,7 @@ Deno.serve(async (req) => {
     const scaledJobs = [];
 
     for (const job of jobs as CronJob[]) {
-      console.log(`Checking job: ${job.name}`);
+      logger.success({ requestId, action: 'checking_job', jobName: job.name });
 
       // Get last 20 executions for this job
       const { data: logs, error: logsError } = await supabase
@@ -68,12 +76,12 @@ Deno.serve(async (req) => {
         .limit(20);
 
       if (logsError) {
-        console.error(`Error fetching logs for ${job.name}:`, logsError);
+        await logger.error(`Error fetching logs for ${job.name}`, { requestId, jobName: job.name, error: logsError });
         continue;
       }
 
       if (!logs || logs.length < 5) {
-        console.log(`Not enough data for ${job.name} (${logs?.length || 0} logs)`);
+        logger.success({ requestId, action: 'insufficient_data', jobName: job.name, logCount: logs?.length || 0 });
         continue;
       }
 
@@ -81,7 +89,7 @@ Deno.serve(async (req) => {
       const successCount = (logs as CronJobLog[]).filter(log => log.status === 'success').length;
       const successRate = (successCount / logs.length) * 100;
 
-      console.log(`Job ${job.name}: ${successRate.toFixed(2)}% success rate (${successCount}/${logs.length})`);
+      logger.success({ requestId, action: 'calculated_success_rate', jobName: job.name, successRate: successRate.toFixed(2), successCount, totalLogs: logs.length });
 
       let newInterval = job.current_interval_seconds;
       let action = 'no_change';
@@ -107,7 +115,7 @@ Deno.serve(async (req) => {
 
       // Update if interval changed
       if (newInterval !== job.current_interval_seconds) {
-        console.log(`Scaling ${job.name}: ${job.current_interval_seconds}s -> ${newInterval}s`);
+        logger.success({ requestId, action: 'scaling_job', jobName: job.name, oldInterval: job.current_interval_seconds, newInterval });
 
         // Convert interval to cron schedule
         const cronSchedule = intervalToCron(newInterval);
@@ -119,7 +127,7 @@ Deno.serve(async (req) => {
         }).single();
 
         if (cronError) {
-          console.error(`Error updating pg_cron for ${job.name}:`, cronError);
+          await logger.error(`Error updating pg_cron for ${job.name}`, { requestId, jobName: job.name, error: cronError });
           // Continue anyway and update our table
         }
 
@@ -134,9 +142,11 @@ Deno.serve(async (req) => {
           .eq('id', job.id);
 
         if (updateError) {
-          console.error(`Error updating job ${job.name}:`, updateError);
+          await logger.error(`Error updating job ${job.name}`, { requestId, jobName: job.name, error: updateError });
           continue;
         }
+        
+        logger.success({ requestId, action: 'job_scaled', jobName: job.name, newInterval, successRate: successRate.toFixed(2) });
 
         scaledJobs.push({
           job_name: job.name,
@@ -154,7 +164,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`Auto-scaling complete. Scaled ${scaledJobs.length} jobs.`);
+    const duration = performance.now() - startTime;
+    logger.performance(duration, true);
+    logger.success({ 
+      requestId, 
+      action: 'auto_scaling_completed',
+      scaledCount: scaledJobs.length,
+      totalChecked: jobs.length,
+      duration: `${duration.toFixed(2)}ms` 
+    });
 
     return new Response(
       JSON.stringify({
@@ -166,7 +184,12 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in auto-scale-cron-jobs:', error);
+    const duration = performance.now() - startTime;
+    await logger.critical(error as Error, {
+      requestId,
+      duration: `${duration.toFixed(2)}ms`
+    });
+    logger.performance(duration, false, (error as Error).constructor.name);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return new Response(
       JSON.stringify({ error: errorMessage }),

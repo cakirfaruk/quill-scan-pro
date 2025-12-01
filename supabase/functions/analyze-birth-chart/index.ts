@@ -1,7 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.78.0";
-import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts'
+import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts';
+import { createLogger } from '../_shared/logger.ts';
 
 const birthChartTopics = [
   "Güneş Burcu (Kişilik)",
@@ -24,16 +25,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const logger = createLogger('analyze-birth-chart');
+
 serve(async (req) => {
+  const startTime = performance.now();
+  const requestId = crypto.randomUUID();
+  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    logger.success({ requestId, action: 'request_received' });
     const { fullName, birthDate, birthTime, birthPlace, selectedTopics, chartData } = await req.json();
     
     // Validate inputs
     if (!fullName || typeof fullName !== 'string' || fullName.trim().length < 2 || fullName.trim().length > 100) {
+      await logger.warning('Invalid fullName', { requestId, fullName });
       return new Response(
         JSON.stringify({ error: "Geçersiz isim" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -68,8 +76,11 @@ serve(async (req) => {
       );
     }
     
+    logger.success({ requestId, action: 'validation_passed' });
+    
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
+      await logger.warning('Missing authorization header', { requestId });
       return new Response(
         JSON.stringify({ error: "Kimlik doğrulama gerekli" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -86,8 +97,11 @@ serve(async (req) => {
     
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
+      await logger.error('Authentication failed', { requestId, error: userError });
       throw new Error("Unauthorized");
     }
+    
+    logger.success({ requestId, action: 'user_authenticated', userId: user.id });
     
     // Rate limiting for AI analysis
     const rateLimitResult = await checkRateLimit(
@@ -100,7 +114,8 @@ serve(async (req) => {
     );
 
     if (!rateLimitResult.allowed) {
-      return new Response(JSON.stringify({ 
+      await logger.warning('Rate limit exceeded', { requestId, userId: user.id });
+      return new Response(JSON.stringify({
         error: 'Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin.',
         resetAt: rateLimitResult.resetAt
       }), {
@@ -123,10 +138,14 @@ serve(async (req) => {
       .single();
     
     if (profileError || !profile) {
+      await logger.error('Profile not found', { requestId, userId: user.id });
       throw new Error("Profile not found");
     }
     
+    logger.success({ requestId, action: 'profile_fetched', credits: profile.credits, required: creditsNeeded });
+    
     if (profile.credits < creditsNeeded) {
+      await logger.warning('Insufficient credits', { requestId, userId: user.id, available: profile.credits, required: creditsNeeded });
       return new Response(
         JSON.stringify({ 
           error: "Insufficient credits", 
@@ -142,10 +161,11 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
+      await logger.error('LOVABLE_API_KEY not configured', { requestId });
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
-    console.log("Starting birth chart analysis...");
+    logger.success({ requestId, action: 'starting_ai_analysis', topics: selectedTopics.length });
     
     // Use chart data calculated on client-side
     const latitude = chartData?.latitude || 40.1917;
@@ -253,7 +273,7 @@ Yanıtını Türkçe ve JSON formatında ver:
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
+      await logger.error('AI Gateway error', { requestId, userId: user.id, status: response.status, error: errorText });
       
       if (response.status === 429) {
         return new Response(
@@ -279,7 +299,7 @@ Yanıtını Türkçe ve JSON formatında ver:
     }
 
     const data = await response.json();
-    console.log("Birth chart analysis completed successfully");
+    logger.success({ requestId, action: 'ai_analysis_completed', userId: user.id });
     
     let analysisResult;
     try {
@@ -295,12 +315,12 @@ Yanıtını Türkçe ve JSON formatında ver:
       
       analysisResult = JSON.parse(jsonStr);
     } catch (e) {
-      console.error("Failed to parse JSON response:", e);
+      await logger.error('Failed to parse AI response', { requestId, userId: user.id, error: e });
       // Try to use raw content as fallback
       try {
         analysisResult = JSON.parse(data.choices[0].message.content);
       } catch (e2) {
-        console.error("Second parse attempt failed:", e2);
+        await logger.error('Second parse attempt failed', { requestId, userId: user.id, error: e2 });
         throw new Error("AI yanıtı beklenmeyen formatta. Lütfen tekrar deneyin.");
       }
     }
@@ -312,7 +332,9 @@ Yanıtını Türkçe ve JSON formatında ver:
       .eq("user_id", user.id);
     
     if (updateError) {
-      console.error("Error updating credits:", updateError);
+      await logger.error('Error updating credits', { requestId, userId: user.id, error: updateError });
+    } else {
+      logger.success({ requestId, action: 'credits_deducted', userId: user.id, amount: creditsNeeded });
     }
     
     // Save analysis to database
@@ -335,11 +357,25 @@ Yanıtını Türkçe ve JSON formatında ver:
       description: `Doğum haritası analizi (${creditsNeeded} kredi)`,
     });
 
+    const duration = performance.now() - startTime;
+    logger.performance(duration, true);
+    logger.success({ 
+      requestId, 
+      action: 'request_completed', 
+      userId: user.id,
+      duration: `${duration.toFixed(2)}ms` 
+    });
+
     return new Response(JSON.stringify(analysisResult), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error in analyze-birth-chart function:", error);
+    const duration = performance.now() - startTime;
+    await logger.critical(error as Error, {
+      requestId,
+      duration: `${duration.toFixed(2)}ms`
+    });
+    logger.performance(duration, false, (error as Error).constructor.name);
     const errorMessage = error instanceof Error ? error.message : "Analiz sırasında bir hata oluştu";
     return new Response(
       JSON.stringify({ error: errorMessage }),

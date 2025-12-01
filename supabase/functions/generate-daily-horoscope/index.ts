@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { createLogger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,13 +9,18 @@ const corsHeaders = {
 };
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+const logger = createLogger('generate-daily-horoscope');
 
 serve(async (req) => {
+  const startTime = performance.now();
+  const requestId = crypto.randomUUID();
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    logger.success({ requestId, action: 'request_received' });
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Authorization header gerekli' }), {
@@ -33,14 +39,14 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !user) {
-      console.error('Auth error:', userError);
+      await logger.error('Authentication failed', { requestId, error: userError });
       return new Response(JSON.stringify({ error: 'Yetkisiz erişim' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('Daily horoscope request');
+    logger.success({ requestId, action: 'user_authenticated', userId: user.id });
 
     // Get user profile for birth info
     const { data: profile } = await supabaseClient
@@ -50,11 +56,14 @@ serve(async (req) => {
       .single();
 
     if (!profile || profile.credits < 10) {
+      await logger.warning('Insufficient credits', { requestId, userId: user.id, available: profile?.credits });
       return new Response(JSON.stringify({ error: 'Yetersiz kredi' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    
+    logger.success({ requestId, action: 'credits_verified', userId: user.id });
 
     // Check if already got horoscope today
     const today = new Date().toISOString().split('T')[0];
@@ -190,7 +199,9 @@ JSON formatında şu yapıda cevap ver:
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error in generate-daily-horoscope function:', error);
+    const duration = performance.now() - startTime;
+    await logger.critical(error as Error, { requestId, duration: `${duration.toFixed(2)}ms` });
+    logger.performance(duration, false, (error as Error).constructor.name);
     return new Response(JSON.stringify({ 
       error: error instanceof Error ? error.message : 'Bilinmeyen hata' 
     }), {

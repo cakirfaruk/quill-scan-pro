@@ -2,12 +2,15 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.78.0";
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
-import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts'
+import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts';
+import { createLogger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const logger = createLogger('analyze-numerology');
 
 // Input validation schema
 const numerologySchema = z.object({
@@ -20,16 +23,22 @@ const numerologySchema = z.object({
 });
 
 serve(async (req) => {
+  const startTime = performance.now();
+  const requestId = crypto.randomUUID();
+  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    logger.success({ requestId, action: 'request_received' });
+    
     const body = await req.json();
 
     // Validate inputs with Zod
     const validation = numerologySchema.safeParse(body);
     if (!validation.success) {
+      await logger.warning('Validation failed', { requestId, error: validation.error });
       return new Response(
         JSON.stringify({ error: "Geçersiz veri formatı" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -53,8 +62,11 @@ serve(async (req) => {
     } = await supabaseClient.auth.getUser();
 
     if (!user) {
+      await logger.error('Authentication failed - no user', { requestId });
       throw new Error("Unauthorized");
     }
+    
+    logger.success({ requestId, action: 'user_authenticated', userId: user.id });
 
     // Rate limiting for AI analysis
     const rateLimitResult = await checkRateLimit(
@@ -87,10 +99,16 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .single();
 
-    if (profileError) throw profileError;
+    if (profileError) {
+      await logger.error('Profile fetch error', { requestId, userId: user.id, error: profileError });
+      throw profileError;
+    }
 
     const creditsNeeded = selectedTopics.length;
+    logger.success({ requestId, action: 'profile_fetched', userId: user.id, credits: profile.credits, required: creditsNeeded });
+    
     if (profile.credits < creditsNeeded) {
+      await logger.warning('Insufficient credits', { requestId, userId: user.id, available: profile.credits, required: creditsNeeded });
       throw new Error("Insufficient credits");
     }
 

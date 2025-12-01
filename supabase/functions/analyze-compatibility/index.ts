@@ -1,7 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.78.0";
-import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts'
+import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts';
+import { createLogger } from '../_shared/logger.ts';
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
@@ -10,12 +11,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const logger = createLogger('analyze-compatibility');
+
 serve(async (req) => {
+  const startTime = performance.now();
+  const requestId = crypto.randomUUID();
+  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    logger.success({ requestId, action: 'request_received' });
     const { 
       image1, 
       image2, 
@@ -33,12 +40,14 @@ serve(async (req) => {
     } = await req.json();
 
     if (!LOVABLE_API_KEY) {
+      await logger.error('LOVABLE_API_KEY not configured', { requestId });
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
     // Get authorization token
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
+      await logger.warning('Missing authorization header', { requestId });
       return new Response(JSON.stringify({ error: 'Yetkisiz erişim' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -57,6 +66,7 @@ serve(async (req) => {
     // Verify user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
+      await logger.error('Authentication failed', { requestId, error: userError });
       return new Response(JSON.stringify({ error: 'Yetkisiz erişim' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -104,8 +114,11 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    
+    logger.success({ requestId, action: 'user_authenticated', userId: user.id });
 
     if (profile.credits < requiredCredits) {
+      await logger.warning('Insufficient credits', { requestId, userId: user.id, available: profile.credits, required: requiredCredits });
       return new Response(
         JSON.stringify({ 
           error: "Yetersiz kredi", 
@@ -119,7 +132,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Analyzing compatibility with types: ${analysisTypes.join(", ")}...`);
+    logger.success({ requestId, action: 'starting_compatibility_analysis', userId: user.id, types: analysisTypes.join(", ") });
 
     let systemPrompt = `Sen profesyonel bir ilişki danışmanı ve uyum analistisin. İki kişi arasındaki uyumu ÇOK DETAYLI ve KAPSAMLI bir şekilde değerlendiriyorsun. TAMAMEN TÜRKÇE yanıt verirsin, hiçbir İngilizce kelime kullanmazsın.
 
@@ -226,7 +239,7 @@ SADECE AŞAĞIDAKİ JSON FORMATINDA YANITLA:
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Lovable AI error:", response.status, errorText);
+      await logger.error('Lovable AI error', { requestId, userId: user.id, status: response.status, error: errorText });
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Çok fazla istek. Lütfen daha sonra tekrar deneyin." }), {
@@ -248,14 +261,13 @@ SADECE AŞAĞIDAKİ JSON FORMATINDA YANITLA:
     }
 
     const responseText = await response.text();
-    console.log("Raw AI response text:", responseText.substring(0, 500));
+    logger.success({ requestId, action: 'ai_response_received', userId: user.id });
 
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (parseError) {
-      console.error("Failed to parse AI response:", parseError);
-      console.error("Response was:", responseText);
+      await logger.error('Failed to parse AI response', { requestId, userId: user.id, error: parseError });
       return new Response(JSON.stringify({ error: 'İşlem başarısız oldu. Lütfen tekrar deneyin.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -312,10 +324,10 @@ SADECE AŞAĞIDAKİ JSON FORMATINDA YANITLA:
           categories: {},
           advice: "Detaylı analiz için lütfen tekrar deneyin."
         };
-        console.log("⚠ Using fallback structure");
+        await logger.warning('Using fallback structure for AI response', { requestId, userId: user.id });
       }
     }
-    console.log("Compatibility analysis completed successfully");
+    logger.success({ requestId, action: 'analysis_parsing_completed', userId: user.id });
 
     // Deduct credits and save analysis
     const { error: updateError } = await supabase
@@ -324,7 +336,9 @@ SADECE AŞAĞIDAKİ JSON FORMATINDA YANITLA:
       .eq("user_id", user.id);
 
     if (updateError) {
-      console.error("Error updating credits:", updateError);
+      await logger.error('Error updating credits', { requestId, userId: user.id, error: updateError });
+    } else {
+      logger.success({ requestId, action: 'credits_deducted', userId: user.id, amount: requiredCredits });
     }
 
     // Save compatibility analysis
@@ -344,7 +358,7 @@ SADECE AŞAĞIDAKİ JSON FORMATINDA YANITLA:
       });
 
     if (historyError) {
-      console.error("Error saving compatibility analysis:", historyError);
+      await logger.error('Error saving compatibility analysis', { requestId, userId: user.id, error: historyError });
     }
 
     // Record transaction
@@ -355,11 +369,24 @@ SADECE AŞAĞIDAKİ JSON FORMATINDA YANITLA:
       description: `Uyum analizi (${analysisTypes.join(", ")}) - ${requiredCredits} kredi`,
     });
 
+    const duration = performance.now() - startTime;
+    logger.performance(duration, true);
+    logger.success({ 
+      requestId, 
+      action: 'request_completed',
+      duration: `${duration.toFixed(2)}ms` 
+    });
+
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
-    console.error("Error in analyze-compatibility function:", error);
+    const duration = performance.now() - startTime;
+    await logger.critical(error as Error, {
+      requestId,
+      duration: `${duration.toFixed(2)}ms`
+    });
+    logger.performance(duration, false, (error as Error).constructor.name);
     return new Response(
       JSON.stringify({ error: 'İşlem başarısız oldu. Lütfen tekrar deneyin.' }),
       {

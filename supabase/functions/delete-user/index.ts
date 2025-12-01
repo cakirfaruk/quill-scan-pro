@@ -1,18 +1,25 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.78.0'
 import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts'
+import { createLogger } from '../_shared/logger.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const logger = createLogger('delete-user');
+
 Deno.serve(async (req) => {
+  const startTime = performance.now();
+  const requestId = crypto.randomUUID();
+  
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
+    logger.success({ requestId, action: 'request_received' });
     const authHeader = req.headers.get('Authorization')!
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -163,7 +170,9 @@ Deno.serve(async (req) => {
       throw deleteError
     }
 
-    console.log(`User ${userId} successfully deleted`)
+    const duration = performance.now() - startTime;
+    logger.performance(duration, true);
+    logger.success({ requestId, action: 'user_deleted', userId, duration: `${duration.toFixed(2)}ms` });
 
     return new Response(JSON.stringify({ 
       success: true,
@@ -172,7 +181,9 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (error: any) {
-    console.error('Error deleting user:', error)
+    const duration = performance.now() - startTime;
+    await logger.critical(error as Error, { requestId, duration: `${duration.toFixed(2)}ms` });
+    logger.performance(duration, false, (error as Error).constructor.name);
     return new Response(JSON.stringify({ 
       error: 'Kullanıcı silinirken hata oluştu',
       details: error.message 
