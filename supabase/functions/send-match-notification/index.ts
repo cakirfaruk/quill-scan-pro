@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.78.0";
+import { checkIPRateLimit, getClientIP, RateLimitPresets } from '../_shared/rateLimit.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,15 +13,36 @@ serve(async (req) => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // IP-based rate limiting for notification spam prevention
+    const clientIP = getClientIP(req);
+    const rateLimitResult = await checkIPRateLimit(
+      supabase,
+      clientIP,
+      {
+        ...RateLimitPresets.NOTIFICATION,
+        endpoint: 'send-match-notification',
+      }
+    );
+
+    if (!rateLimitResult.allowed) {
+      return new Response(JSON.stringify({ 
+        error: 'Too many notification requests',
+        resetAt: rateLimitResult.resetAt
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     const { user1_id, user2_id, match_id } = await req.json();
 
     if (!user1_id || !user2_id || !match_id) {
       throw new Error('Missing required fields');
     }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
 
     console.log(`Sending match notifications for match: ${match_id}`);
 

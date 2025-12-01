@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.78.0";
+import { checkIPRateLimit, getClientIP, RateLimitPresets } from '../_shared/rateLimit.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,6 +30,27 @@ serve(async (req) => {
     console.log('Send call notification function called');
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // IP-based rate limiting for call notification spam prevention
+    const clientIP = getClientIP(req);
+    const rateLimitResult = await checkIPRateLimit(
+      supabase,
+      clientIP,
+      {
+        ...RateLimitPresets.NOTIFICATION,
+        endpoint: 'send-call-notification',
+      }
+    );
+
+    if (!rateLimitResult.allowed) {
+      return new Response(JSON.stringify({ 
+        error: 'Too many call notification requests',
+        resetAt: rateLimitResult.resetAt
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     const { receiverId, callerName, callerPhoto, callType, callId } = await req.json() as CallNotificationRequest;
 
