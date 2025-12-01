@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
-import { Share2, MessageCircle, Copy, FileDown } from "lucide-react";
+import { Share2, MessageCircle, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ShareAnalysisToFeedButton } from "./ShareAnalysisToFeedButton";
 import { ShareAnalysisToMessagesButton } from "./ShareAnalysisToMessagesButton";
@@ -9,7 +9,7 @@ interface LongPressShareMenuProps {
   children: React.ReactNode;
   content: string;
   sectionTitle: string;
-  analysisType: string;
+  analysisType?: string;
   analysisResult?: any;
   analysisId?: string;
 }
@@ -47,24 +47,40 @@ export const LongPressShareMenu = ({
             <Copy className="w-4 h-4 mr-2" />
             Bu Bölümü Kopyala
           </ContextMenuItem>
-          <ContextMenuItem onClick={() => setShowFeedDialog(true)}>
-            <Share2 className="w-4 h-4 mr-2" />
-            Feed'de Paylaş
-          </ContextMenuItem>
-          <ContextMenuItem onClick={() => setShowMessageDialog(true)}>
-            <MessageCircle className="w-4 h-4 mr-2" />
-            Mesajla Paylaş
-          </ContextMenuItem>
+          {analysisType && (
+            <>
+              <ContextMenuItem onClick={() => setShowFeedDialog(true)}>
+                <Share2 className="w-4 h-4 mr-2" />
+                Feed'de Paylaş
+              </ContextMenuItem>
+              <ContextMenuItem onClick={() => setShowMessageDialog(true)}>
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Mesajla Paylaş
+              </ContextMenuItem>
+            </>
+          )}
         </ContextMenuContent>
       </ContextMenu>
 
       {/* Hidden share buttons that will be triggered programmatically */}
-      {showFeedDialog && (
+      {showFeedDialog && analysisType && (
         <div className="hidden">
           <ShareAnalysisToFeedButton
             analysisType={analysisType}
             analysisResult={{ ...analysisResult, selectedSection: { title: sectionTitle, content } }}
             title={`${sectionTitle}`}
+            variant="outline"
+            size="sm"
+          />
+        </div>
+      )}
+      
+      {showMessageDialog && analysisType && analysisId && (
+        <div className="hidden">
+          <ShareAnalysisToMessagesButton
+            analysisId={analysisId}
+            analysisType={analysisType}
+            title={sectionTitle}
             variant="outline"
             size="sm"
           />

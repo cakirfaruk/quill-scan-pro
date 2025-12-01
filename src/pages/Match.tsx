@@ -571,6 +571,21 @@ const Match = () => {
 
       setShowCompatibility(true);
 
+      // **ATOMİK İŞLEM** - RPC ile güvenli kredi düşürme (uyum analizi için)
+      const { data: deductResult, error: deductError } = await supabase.rpc(
+        "deduct_credits_atomic" as any,
+        {
+          p_user_id: user.id,
+          p_amount: creditsNeeded,
+          p_transaction_type: "compatibility_analysis",
+          p_description: `${currentProfile.full_name || currentProfile.username} ile uyumluluk analizi`,
+        }
+      );
+
+      if (deductError || typeof deductResult !== 'number') {
+        throw new Error(deductError?.message || "Kredi düşürme başarısız");
+      }
+
       // Call compatibility analysis edge function
       const { data, error } = await supabase.functions.invoke("analyze-compatibility", {
         body: {
@@ -634,22 +649,8 @@ const Match = () => {
           });
       }
 
-      // Deduct credits
-      const { error: creditError } = await supabase
-        .from("profiles")
-        .update({ credits: credits - creditsNeeded })
-        .eq("user_id", user.id);
-
-      if (creditError) throw creditError;
-
-      await supabase.from("credit_transactions").insert({
-        user_id: user.id,
-        amount: -creditsNeeded,
-        transaction_type: "compatibility_check",
-        description: "Uyum detayı görüntüleme",
-      });
-
-      setCredits(credits - creditsNeeded);
+      // Update local credits with the result from RPC
+      setCredits(deductResult);
 
       toast({
         title: "Uyum Analizi Tamamlandı",
@@ -693,6 +694,21 @@ const Match = () => {
     setTarotLoading(true);
 
     try {
+      // **ATOMİK İŞLEM** - RPC ile güvenli kredi düşürme (tarot için)
+      const { data: deductResult, error: deductError } = await supabase.rpc(
+        "deduct_credits_atomic" as any,
+        {
+          p_user_id: user.id,
+          p_amount: creditsNeeded,
+          p_transaction_type: "tarot_reading",
+          p_description: `${currentProfile.full_name || currentProfile.username} ile tarot falı`,
+        }
+      );
+
+      if (deductError || typeof deductResult !== 'number') {
+        throw new Error(deductError?.message || "Kredi düşürme başarısız");
+      }
+
       // Call tarot analysis
       const { data, error } = await supabase.functions.invoke("analyze-tarot", {
         body: {
@@ -728,7 +744,9 @@ const Match = () => {
         selectedCards: selectedTarotCards,
         question: tarotQuestion
       });
-      loadCredits(user.id);
+      
+      // Update local credits with the result from RPC
+      setCredits(deductResult);
       
       toast({
         title: "Tarot Falı Tamamlandı",

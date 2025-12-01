@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ChevronDown, ChevronRight, CheckCircle2, AlertCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { ShareResultButton } from "@/components/ShareResultButton";
+import { LongPressShareMenu } from "@/components/LongPressShareMenu";
 
 export interface SubTopic {
   name: string;
@@ -55,19 +56,24 @@ export const AnalysisResults = ({ result }: AnalysisResultsProps) => {
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Overall Summary Card */}
-      <Card className="p-3 bg-gradient-to-br from-primary/5 via-accent/5 to-background border border-primary/20">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="p-1.5 bg-gradient-to-br from-primary to-primary-glow rounded-lg flex-shrink-0">
-            <CheckCircle2 className="w-4 h-4 text-primary-foreground" />
+      <LongPressShareMenu
+        content={result.overallSummary}
+        sectionTitle="Özet"
+      >
+        <Card className="p-3 bg-gradient-to-br from-primary/5 via-accent/5 to-background border border-primary/20">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="p-1.5 bg-gradient-to-br from-primary to-primary-glow rounded-lg flex-shrink-0">
+              <CheckCircle2 className="w-4 h-4 text-primary-foreground" />
+            </div>
+            <h2 className="text-sm font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Özet
+            </h2>
           </div>
-          <h2 className="text-sm font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Özet
-          </h2>
-        </div>
-        <p className="text-xs leading-relaxed text-foreground">
-          {result.overallSummary}
-        </p>
-      </Card>
+          <p className="text-xs leading-relaxed text-foreground">
+            {result.overallSummary}
+          </p>
+        </Card>
+      </LongPressShareMenu>
 
       {/* Topics Grid */}
       <div className="space-y-3">
@@ -144,37 +150,42 @@ export const AnalysisResults = ({ result }: AnalysisResultsProps) => {
                       </button>
 
                       {isExpanded && (
-                        <div className="px-2 pb-2 space-y-1.5">
-                          <div className="pl-3 space-y-1">
-                            <div>
-                               <p className="text-xs font-semibold text-muted-foreground mb-0.5">
-                                Bulgu
-                              </p>
-                              <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap">
-                                {subTopic.finding}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-xs font-semibold text-muted-foreground mb-0.5">
-                                Yorum
-                              </p>
-                              <p className="text-xs text-foreground leading-relaxed whitespace-pre-wrap">
-                                {subTopic.interpretation}
-                              </p>
-                              
-                              {/* Share button for this subtopic */}
-                              <div className="mt-2 pt-2 border-t border-border">
-                                <ShareResultButton
-                                  title={`${topic.name} - ${subTopic.name}`}
-                                  content={`**${subTopic.name}**\n\nBulgu: ${subTopic.finding}\n\nYorum: ${subTopic.interpretation}`}
-                                  size="sm"
-                                  variant="ghost"
-                                  className="w-full"
-                                />
+                        <LongPressShareMenu
+                          content={`**Bulgu:** ${subTopic.finding}\n\n**Yorum:** ${subTopic.interpretation}`}
+                          sectionTitle={`${topic.name} - ${subTopic.name}`}
+                        >
+                          <div className="px-2 pb-2 space-y-1.5">
+                            <div className="pl-3 space-y-1">
+                              <div>
+                                 <p className="text-xs font-semibold text-muted-foreground mb-0.5">
+                                  Bulgu
+                                </p>
+                                <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap">
+                                  {subTopic.finding}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground mb-0.5">
+                                  Yorum
+                                </p>
+                                <p className="text-xs text-foreground leading-relaxed whitespace-pre-wrap">
+                                  {subTopic.interpretation}
+                                </p>
+                                
+                                {/* Share button for this subtopic */}
+                                <div className="mt-2 pt-2 border-t border-border">
+                                  <ShareResultButton
+                                    title={`${topic.name} - ${subTopic.name}`}
+                                    content={`**${subTopic.name}**\n\nBulgu: ${subTopic.finding}\n\nYorum: ${subTopic.interpretation}`}
+                                    size="sm"
+                                    variant="ghost"
+                                    className="w-full"
+                                  />
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
+                        </LongPressShareMenu>
                       )}
                     </div>
                   );
