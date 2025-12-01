@@ -2938,6 +2938,7 @@ export type Database = {
           earned_at: string | null
           id: string
           is_displayed: boolean | null
+          progress: number | null
           user_id: string
         }
         Insert: {
@@ -2945,6 +2946,7 @@ export type Database = {
           earned_at?: string | null
           id?: string
           is_displayed?: boolean | null
+          progress?: number | null
           user_id: string
         }
         Update: {
@@ -2952,6 +2954,7 @@ export type Database = {
           earned_at?: string | null
           id?: string
           is_displayed?: boolean | null
+          progress?: number | null
           user_id?: string
         }
         Relationships: [
