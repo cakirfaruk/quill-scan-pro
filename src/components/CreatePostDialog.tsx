@@ -1481,6 +1481,103 @@ export const CreatePostDialog = ({
                             </Button>
                           </div>
                         )}
+                       </div>
+
+                      {/* Scheduled Post UI */}
+                      <div className="space-y-2 border-t pt-4">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium flex items-center gap-2">
+                            <Calendar className="w-4 h-4" />
+                            Gönderi Zamanla
+                          </Label>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (scheduledAt) {
+                                setScheduledAt(null);
+                              } else {
+                                const tomorrow = new Date();
+                                tomorrow.setDate(tomorrow.getDate() + 1);
+                                tomorrow.setHours(12, 0, 0, 0);
+                                setScheduledAt(tomorrow);
+                              }
+                            }}
+                          >
+                            {scheduledAt ? "İptal Et" : "Zamanla"}
+                          </Button>
+                        </div>
+                        
+                        <AnimatePresence>
+                          {scheduledAt && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="space-y-2"
+                            >
+                              <div className="grid gap-2">
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      className="w-full justify-start text-left font-normal"
+                                    >
+                                      <Calendar className="mr-2 h-4 w-4" />
+                                      {scheduledAt 
+                                        ? new Date(scheduledAt).toLocaleDateString("tr-TR", {
+                                            weekday: "long",
+                                            year: "numeric",
+                                            month: "long",
+                                            day: "numeric",
+                                          })
+                                        : "Tarih seç"}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="start">
+                                    <div className="p-3">
+                                      <input
+                                        type="date"
+                                        className="w-full p-2 border rounded"
+                                        value={scheduledAt ? scheduledAt.toISOString().split('T')[0] : ''}
+                                        min={new Date().toISOString().split('T')[0]}
+                                        onChange={(e) => {
+                                          const newDate = new Date(e.target.value);
+                                          if (scheduledAt) {
+                                            newDate.setHours(scheduledAt.getHours());
+                                            newDate.setMinutes(scheduledAt.getMinutes());
+                                          } else {
+                                            newDate.setHours(12, 0);
+                                          }
+                                          setScheduledAt(newDate);
+                                        }}
+                                      />
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                                
+                                <div className="flex items-center gap-2">
+                                  <Clock className="h-4 w-4 text-muted-foreground" />
+                                  <input
+                                    type="time"
+                                    className="flex-1 p-2 border rounded text-sm"
+                                    value={scheduledAt 
+                                      ? `${String(scheduledAt.getHours()).padStart(2, '0')}:${String(scheduledAt.getMinutes()).padStart(2, '0')}`
+                                      : "12:00"}
+                                    onChange={(e) => {
+                                      const [hours, minutes] = e.target.value.split(":");
+                                      const newDate = scheduledAt ? new Date(scheduledAt) : new Date();
+                                      newDate.setHours(parseInt(hours));
+                                      newDate.setMinutes(parseInt(minutes));
+                                      setScheduledAt(newDate);
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </div>
                 </motion.div>
