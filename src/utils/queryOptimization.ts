@@ -87,11 +87,39 @@ export async function fetchPostsKeyset(
       location_longitude,
       analysis_type,
       analysis_data,
+      quoted_post_id,
+      shared_post_id,
       profiles!posts_user_id_fkey (
         user_id,
         username,
         full_name,
         profile_photo
+      ),
+      quoted_post:posts!quoted_post_id (
+        id,
+        content,
+        user_id,
+        media_urls,
+        media_types,
+        created_at,
+        profiles!posts_user_id_fkey (
+          username,
+          full_name,
+          profile_photo
+        )
+      ),
+      shared_post:posts!shared_post_id (
+        id,
+        content,
+        user_id,
+        media_urls,
+        media_types,
+        created_at,
+        profiles!posts_user_id_fkey (
+          username,
+          full_name,
+          profile_photo
+        )
       )
     `)
     .order('created_at', { ascending: false })

@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Settings, MapPin, Calendar, UserPlus, UserCheck, UserX, MessageCircle, Share2, Eye, ShieldOff, BarChart3, Gift } from "lucide-react";
+import { Settings, MapPin, Calendar, UserPlus, UserCheck, UserX, MessageCircle, Share2, Eye, ShieldOff, BarChart3, Gift, QrCode, Images } from "lucide-react";
 import { OnlineStatusBadge } from "@/components/OnlineStatusBadge";
 
 interface Profile {
@@ -152,10 +152,24 @@ export const ProfileHeader = memo(({
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
             {isOwnProfile ? (
-              <Button onClick={onSettings} size="sm" className="gap-2">
-                <Settings className="w-4 h-4" />
-                Profili Düzenle
-              </Button>
+              <>
+                <Button onClick={onSettings} size="sm" className="gap-2">
+                  <Settings className="w-4 h-4" />
+                  Profili Düzenle
+                </Button>
+                {onShowQR && (
+                  <Button onClick={onShowQR} size="sm" variant="outline" className="gap-2">
+                    <QrCode className="w-4 h-4" />
+                    QR Kod
+                  </Button>
+                )}
+                {onPhotoReorder && (
+                  <Button onClick={onPhotoReorder} size="sm" variant="outline" className="gap-2">
+                    <Images className="w-4 h-4" />
+                    Fotoğraf Sırala
+                  </Button>
+                )}
+              </>
             ) : (
               <>
                 {isBlocked ? (

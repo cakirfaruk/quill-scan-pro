@@ -738,6 +738,58 @@ const Feed = () => {
     setSelectedFriends(newSelection);
   };
 
+  const handleRepost = async (post: Post) => {
+    if (!userId) return;
+    
+    try {
+      soundEffects.playClick();
+      
+      // Create new post with shared_post_id
+      const { error } = await supabase
+        .from("posts")
+        .insert({
+          user_id: userId,
+          shared_post_id: post.id,
+          content: null,
+        });
+
+      if (error) throw error;
+
+      // Increment shares_count
+      const { error: updateError } = await supabase
+        .from("posts")
+        .update({ shares_count: (post.shares_count || 0) + 1 })
+        .eq("id", post.id);
+
+      if (updateError) {
+        console.warn("Failed to update shares count:", updateError);
+      }
+
+      toast({
+        title: "Başarılı",
+        description: "Gönderi yeniden paylaşıldı",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['feed', 'optimized'] });
+    } catch (error: any) {
+      soundEffects.playError();
+      toast({
+        title: "Hata",
+        description: "Gönderi paylaşılamadı",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleQuote = (post: Post) => {
+    if (!userId) return;
+    
+    // Open CreatePostDialog with quoted post data
+    setCreatePostOpen(true);
+    // Note: CreatePostDialog needs to accept quotedPostId and quotedPostData props
+    // This will be handled in CreatePostDialog component
+  };
+
   const handleLoadMore = useCallback(async () => {
     if (!userId || feedLoading) return;
     await loadMore(); // Use optimized hook's loadMore
@@ -811,6 +863,8 @@ const Feed = () => {
       onShare={handleOpenShareDialog}
       onSave={handleSave}
       onDelete={handleDeletePost}
+      onRepost={handleRepost}
+      onQuote={handleQuote}
       isLikeLoading={pendingLikes.has(post.id)}
       onMediaClick={(media, index) => {
         setSelectedMedia(media);
@@ -818,7 +872,7 @@ const Feed = () => {
         setMediaViewerOpen(true);
       }}
     />
-  ), [handleLike, handleSave, handleDeletePost, pendingLikes, userId]);
+  ), [handleLike, handleSave, handleDeletePost, handleRepost, handleQuote, pendingLikes, userId]);
 
   if (loading) {
     return (
