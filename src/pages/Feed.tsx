@@ -19,7 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Drawer, DrawerContent, DrawerHeader } from "@/components/ui/drawer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, RefreshCw, Folder, FolderPlus, Rss, Users, Sparkles, Search, Home, MessageCircle, Reply } from "lucide-react";
+import { Loader2, RefreshCw, Folder, FolderPlus, Rss, Users, Sparkles, Search, Home, MessageCircle, Reply, Filter, MapPin, Calendar, X } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { soundEffects } from "@/utils/soundEffects";
 import { StoriesBar } from "@/components/StoriesBar";
@@ -157,6 +157,13 @@ const Feed = () => {
   const [activeTab, setActiveTab] = useState<"friends" | "discover">("friends");
   const [feedError, setFeedError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  
+  // Advanced Filters
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterHashtag, setFilterHashtag] = useState("");
+  const [filterLocation, setFilterLocation] = useState("");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
 
   // **OPTIMIZED & ENRICHED POSTS** - useMemo ile cache'lenir
   const enrichedPosts = useMemo(() => {
@@ -190,8 +197,34 @@ const Feed = () => {
   // **FRIENDS POSTS** - Arkadaş postları filtrele
   const friendsPosts = useMemo(() => {
     const friendIds = new Set(friends.map(f => f.user_id));
-    return enrichedPosts.filter(p => friendIds.has(p.user_id) || p.user_id === userId);
-  }, [enrichedPosts, friends, userId]);
+    let filtered = enrichedPosts.filter(p => friendIds.has(p.user_id) || p.user_id === userId);
+    
+    // Apply filters
+    if (filterHashtag) {
+      filtered = filtered.filter(p => 
+        p.content?.toLowerCase().includes(`#${filterHashtag.toLowerCase().replace('#', '')}`)
+      );
+    }
+    
+    if (filterLocation) {
+      filtered = filtered.filter(p => 
+        p.location_name?.toLowerCase().includes(filterLocation.toLowerCase())
+      );
+    }
+    
+    if (filterDateFrom) {
+      const fromDate = new Date(filterDateFrom);
+      filtered = filtered.filter(p => new Date(p.created_at) >= fromDate);
+    }
+    
+    if (filterDateTo) {
+      const toDate = new Date(filterDateTo);
+      toDate.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(p => new Date(p.created_at) <= toDate);
+    }
+    
+    return filtered;
+  }, [enrichedPosts, friends, userId, filterHashtag, filterLocation, filterDateFrom, filterDateTo]);
 
   // Cache posts when online
   useEffect(() => {
@@ -825,14 +858,141 @@ const Feed = () => {
 
         {/* Stories Bar */}
         {userId && (
-          <ScrollReveal direction="down" delay={0.1}>
-            <Card className="mb-4 sm:mb-6 overflow-hidden">
-              <StoriesBar currentUserId={userId} />
-            </Card>
-          </ScrollReveal>
-        )}
+          <>
+            <ScrollReveal direction="down" delay={0.1}>
+              <Card className="mb-4 sm:mb-6 overflow-hidden">
+                <StoriesBar currentUserId={userId} />
+              </Card>
+            </ScrollReveal>
+            
+            {/* Advanced Filters */}
+            <ScrollReveal direction="down" delay={0.15}>
+              <Card className="mb-4 sm:mb-6 p-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="w-full justify-between"
+                >
+                  <span className="flex items-center gap-2">
+                    <Filter className="w-4 h-4" />
+                    İleri Seviye Filtreler
+                  </span>
+                  {(filterHashtag || filterLocation || filterDateFrom || filterDateTo) && (
+                    <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">
+                      Aktif
+                    </span>
+                  )}
+                </Button>
+                
+                <AnimatePresence>
+                  {showFilters && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="space-y-3 mt-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium flex items-center gap-2">
+                            <Search className="w-3 h-3" />
+                            Hashtag
+                          </label>
+                          <div className="relative">
+                            <Input
+                              placeholder="#teknoloji"
+                              value={filterHashtag}
+                              onChange={(e) => setFilterHashtag(e.target.value)}
+                            />
+                            {filterHashtag && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                                onClick={() => setFilterHashtag("")}
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium flex items-center gap-2">
+                            <MapPin className="w-3 h-3" />
+                            Lokasyon
+                          </label>
+                          <div className="relative">
+                            <Input
+                              placeholder="İstanbul"
+                              value={filterLocation}
+                              onChange={(e) => setFilterLocation(e.target.value)}
+                            />
+                            {filterLocation && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                                onClick={() => setFilterLocation("")}
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium flex items-center gap-2">
+                              <Calendar className="w-3 h-3" />
+                              Başlangıç
+                            </label>
+                            <Input
+                              type="date"
+                              value={filterDateFrom}
+                              onChange={(e) => setFilterDateFrom(e.target.value)}
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium flex items-center gap-2">
+                              <Calendar className="w-3 h-3" />
+                              Bitiş
+                            </label>
+                            <Input
+                              type="date"
+                              value={filterDateTo}
+                              onChange={(e) => setFilterDateTo(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => {
+                              setFilterHashtag("");
+                              setFilterLocation("");
+                              setFilterDateFrom("");
+                              setFilterDateTo("");
+                            }}
+                          >
+                            Temizle
+                          </Button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Card>
+            </ScrollReveal>
+        </>
+      )}
 
-        <div className="space-y-4">
+      <div className="space-y-4">
           {/* Loading State */}
           {(loading || feedLoading) && enrichedPosts.length === 0 ? (
             <div className="space-y-4">
