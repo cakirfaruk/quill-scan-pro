@@ -844,6 +844,54 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_missions: {
+        Row: {
+          action_type: string
+          category: string
+          created_at: string | null
+          credit_reward: number
+          description: string | null
+          icon: string
+          id: string
+          is_active: boolean | null
+          is_premium_only: boolean | null
+          sort_order: number | null
+          target_count: number
+          title: string
+          xp_reward: number
+        }
+        Insert: {
+          action_type: string
+          category: string
+          created_at?: string | null
+          credit_reward?: number
+          description?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean | null
+          is_premium_only?: boolean | null
+          sort_order?: number | null
+          target_count?: number
+          title: string
+          xp_reward?: number
+        }
+        Update: {
+          action_type?: string
+          category?: string
+          created_at?: string | null
+          credit_reward?: number
+          description?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean | null
+          is_premium_only?: boolean | null
+          sort_order?: number | null
+          target_count?: number
+          title?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
       dream_interpretations: {
         Row: {
           created_at: string
@@ -1808,6 +1856,44 @@ export type Database = {
           },
         ]
       }
+      mission_completions: {
+        Row: {
+          completed_at: string | null
+          credits_earned: number
+          id: string
+          mission_id: string | null
+          mission_type: string
+          user_id: string
+          xp_earned: number
+        }
+        Insert: {
+          completed_at?: string | null
+          credits_earned: number
+          id?: string
+          mission_id?: string | null
+          mission_type: string
+          user_id: string
+          xp_earned: number
+        }
+        Update: {
+          completed_at?: string | null
+          credits_earned?: number
+          id?: string
+          mission_id?: string | null
+          mission_type?: string
+          user_id?: string
+          xp_earned?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mission_completions_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "daily_missions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_preferences: {
         Row: {
           alert_severity_threshold: string
@@ -2450,6 +2536,7 @@ export type Database = {
           profile_photo: string | null
           referral_code: string | null
           show_in_matches: boolean
+          total_missions_completed: number | null
           updated_at: string
           user_id: string
           username: string
@@ -2484,6 +2571,7 @@ export type Database = {
           profile_photo?: string | null
           referral_code?: string | null
           show_in_matches?: boolean
+          total_missions_completed?: number | null
           updated_at?: string
           user_id: string
           username: string
@@ -2518,6 +2606,7 @@ export type Database = {
           profile_photo?: string | null
           referral_code?: string | null
           show_in_matches?: boolean
+          total_missions_completed?: number | null
           updated_at?: string
           user_id?: string
           username?: string
@@ -3200,6 +3289,56 @@ export type Database = {
           },
         ]
       }
+      user_mission_progress: {
+        Row: {
+          claimed_at: string | null
+          completed: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          current_progress: number | null
+          id: string
+          mission_date: string | null
+          mission_id: string | null
+          reward_claimed: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          current_progress?: number | null
+          id?: string
+          mission_date?: string | null
+          mission_id?: string | null
+          reward_claimed?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string | null
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          current_progress?: number | null
+          id?: string
+          mission_date?: string | null
+          mission_id?: string | null
+          reward_claimed?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_mission_progress_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "daily_missions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_photos: {
         Row: {
           created_at: string | null
@@ -3333,6 +3472,53 @@ export type Database = {
           },
         ]
       }
+      user_weekly_progress: {
+        Row: {
+          challenge_id: string | null
+          claimed_at: string | null
+          completed: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          progress_data: Json | null
+          reward_claimed: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          challenge_id?: string | null
+          claimed_at?: string | null
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          progress_data?: Json | null
+          reward_claimed?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string | null
+          claimed_at?: string | null
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          progress_data?: Json | null
+          reward_claimed?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_weekly_progress_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       video_calls: {
         Row: {
           caller_id: string
@@ -3456,6 +3642,59 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      weekly_challenges: {
+        Row: {
+          badge_reward: string | null
+          created_at: string | null
+          credit_reward: number
+          description: string | null
+          end_date: string
+          icon: string
+          id: string
+          is_active: boolean | null
+          requirements: Json
+          start_date: string
+          title: string
+          xp_reward: number
+        }
+        Insert: {
+          badge_reward?: string | null
+          created_at?: string | null
+          credit_reward?: number
+          description?: string | null
+          end_date: string
+          icon?: string
+          id?: string
+          is_active?: boolean | null
+          requirements?: Json
+          start_date: string
+          title: string
+          xp_reward?: number
+        }
+        Update: {
+          badge_reward?: string | null
+          created_at?: string | null
+          credit_reward?: number
+          description?: string | null
+          end_date?: string
+          icon?: string
+          id?: string
+          is_active?: boolean | null
+          requirements?: Json
+          start_date?: string
+          title?: string
+          xp_reward?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_challenges_badge_reward_fkey"
+            columns: ["badge_reward"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

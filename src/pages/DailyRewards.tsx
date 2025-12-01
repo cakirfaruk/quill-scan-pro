@@ -7,10 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, Flame, Star, Trophy, Coins, Check, Lock } from "lucide-react";
+import { Gift, Flame, Star, Trophy, Coins, Check, Lock, Target, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import { ReferralCard } from "@/components/ReferralCard";
+import { DailyMissionsWidget } from "@/components/DailyMissionsWidget";
+import { WeeklyChallengesCard } from "@/components/WeeklyChallengesCard";
 
 interface DailyReward {
   day: number;
@@ -38,6 +40,8 @@ export default function DailyRewards() {
   const [lastClaim, setLastClaim] = useState<string | null>(null);
   const [todayClaimed, setTodayClaimed] = useState(false);
   const [userCredits, setUserCredits] = useState(0);
+  const [userLevel, setUserLevel] = useState(1);
+  const [userXP, setUserXP] = useState(0);
 
   useEffect(() => {
     loadUserData();
@@ -53,7 +57,7 @@ export default function DailyRewards() {
 
       const { data: profile, error } = await supabase
         .from("profiles")
-        .select("credits, daily_streak, last_daily_claim")
+        .select("credits, daily_streak, last_daily_claim, level, xp")
         .eq("user_id", user.id)
         .single();
 
@@ -63,6 +67,8 @@ export default function DailyRewards() {
         setUserCredits(profile.credits);
         setStreak(profile.daily_streak || 0);
         setLastClaim(profile.last_daily_claim);
+        setUserLevel(profile.level || 1);
+        setUserXP(profile.xp || 0);
 
         // Check if already claimed today
         if (profile.last_daily_claim) {
@@ -100,10 +106,8 @@ export default function DailyRewards() {
         const daysDiff = Math.floor((today.getTime() - lastClaimDate.getTime()) / (1000 * 60 * 60 * 24));
         
         if (daysDiff === 1) {
-          // Consecutive day
           newStreak = (streak % 7) + 1;
         } else if (daysDiff > 1) {
-          // Streak broken
           newStreak = 1;
         }
       }
@@ -176,12 +180,15 @@ export default function DailyRewards() {
   }
 
   const currentDay = (streak % 7) || 7;
+  const xpToNextLevel = userLevel * 100;
+  const currentLevelXP = userXP % 100;
+  const levelProgress = (currentLevelXP / 100) * 100;
 
   return (
     <div className="page-container-mobile bg-gradient-subtle min-h-screen">
       <Header />
       <div className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
-        {/* Header Card */}
+        {/* Header Card with Level */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -192,28 +199,57 @@ export default function DailyRewards() {
                 <div>
                   <CardTitle className="text-2xl flex items-center gap-2">
                     <Gift className="w-7 h-7 text-primary" />
-                    Günlük Ödüller
+                    Günlük Ödüller & Görevler
                   </CardTitle>
                   <CardDescription className="mt-2">
-                    Her gün giriş yap, kredi kazan!
+                    Her gün giriş yap, görevleri tamamla, kredi ve XP kazan!
                   </CardDescription>
                 </div>
-                <div className="text-right">
-                  <Badge variant="secondary" className="mb-2">
+                <div className="text-right space-y-2">
+                  <Badge variant="secondary" className="block">
                     <Coins className="w-4 h-4 mr-1" />
                     {userCredits} Kredi
                   </Badge>
+                  <Badge variant="outline" className="block">
+                    <Trophy className="w-4 h-4 mr-1" />
+                    Seviye {userLevel}
+                  </Badge>
                 </div>
+              </div>
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <span className="text-muted-foreground">Seviye İlerlemesi</span>
+                  <span className="font-semibold">{currentLevelXP} / {xpToNextLevel} XP</span>
+                </div>
+                <Progress value={levelProgress} className="h-2" />
               </div>
             </CardHeader>
           </Card>
+        </motion.div>
+
+        {/* Daily Missions Widget */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <DailyMissionsWidget />
+        </motion.div>
+
+        {/* Weekly Challenges */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <WeeklyChallengesCard />
         </motion.div>
 
         {/* Streak Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.2 }}
         >
           <Card className="border-orange-200 dark:border-orange-900">
             <CardContent className="pt-6">
@@ -223,7 +259,7 @@ export default function DailyRewards() {
                     <Flame className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-lg">{streak} Günlük Seri</h3>
+                    <h3 className="font-bold text-lg">{streak} Günlük Giriş Serisi</h3>
                     <p className="text-sm text-muted-foreground">
                       {streak === 7 ? "Mükemmel! 🎉" : `Hedefe ${7 - streak} gün kaldı`}
                     </p>
@@ -236,68 +272,74 @@ export default function DailyRewards() {
           </Card>
         </motion.div>
 
-        {/* Daily Rewards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {DAILY_REWARDS.map((reward, index) => {
-            const dayNumber = index + 1;
-            const isCurrentDay = dayNumber === currentDay && !todayClaimed;
-            const isPastDay = dayNumber < currentDay || (streak >= 7 && dayNumber <= currentDay);
-            const isClaimed = isPastDay || (dayNumber === currentDay && todayClaimed);
-            const isLocked = dayNumber > currentDay && !(streak >= 7 && dayNumber === 1);
+        {/* Daily Login Rewards Grid */}
+        <div>
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <Target className="w-5 h-5 text-primary" />
+            Günlük Giriş Ödülleri
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {DAILY_REWARDS.map((reward, index) => {
+              const dayNumber = index + 1;
+              const isCurrentDay = dayNumber === currentDay && !todayClaimed;
+              const isPastDay = dayNumber < currentDay || (streak >= 7 && dayNumber <= currentDay);
+              const isClaimed = isPastDay || (dayNumber === currentDay && todayClaimed);
+              const isLocked = dayNumber > currentDay && !(streak >= 7 && dayNumber === 1);
 
-            return (
-              <motion.div
-                key={dayNumber}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <Card
-                  className={`
-                    relative overflow-hidden transition-all duration-300
-                    ${isCurrentDay ? "border-primary border-2 shadow-lg shadow-primary/20 scale-105" : ""}
-                    ${isClaimed ? "bg-muted/50" : ""}
-                    ${isLocked ? "opacity-60" : ""}
-                  `}
+              return (
+                <motion.div
+                  key={dayNumber}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.3 + index * 0.05 }}
                 >
-                  <CardContent className="p-4 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      {isClaimed && (
-                        <div className="absolute top-2 right-2">
-                          <div className="bg-green-500 rounded-full p-1">
-                            <Check className="w-3 h-3 text-white" />
+                  <Card
+                    className={`
+                      relative overflow-hidden transition-all duration-300
+                      ${isCurrentDay ? "border-primary border-2 shadow-lg shadow-primary/20 scale-105" : ""}
+                      ${isClaimed ? "bg-muted/50" : ""}
+                      ${isLocked ? "opacity-60" : ""}
+                    `}
+                  >
+                    <CardContent className="p-4 text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        {isClaimed && (
+                          <div className="absolute top-2 right-2">
+                            <div className="bg-green-500 rounded-full p-1">
+                              <Check className="w-3 h-3 text-white" />
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      {isLocked && (
-                        <Lock className="w-8 h-8 text-muted-foreground mb-2" />
-                      )}
-                      {!isLocked && (
-                        <>
-                          <div className={`
-                            text-2xl font-bold
-                            ${isCurrentDay ? "text-primary" : ""}
-                            ${isClaimed ? "text-green-500" : ""}
-                          `}>
-                            Gün {dayNumber}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Coins className={`w-4 h-4 ${isCurrentDay ? "text-primary" : "text-yellow-500"}`} />
-                            <span className="font-semibold">{reward.credits}</span>
-                          </div>
-                          {reward.bonus && (
-                            <Badge variant="secondary" className="text-xs">
-                              {reward.bonus}
-                            </Badge>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
+                        )}
+                        {isLocked && (
+                          <Lock className="w-8 h-8 text-muted-foreground mb-2" />
+                        )}
+                        {!isLocked && (
+                          <>
+                            <div className={`
+                              text-2xl font-bold
+                              ${isCurrentDay ? "text-primary" : ""}
+                              ${isClaimed ? "text-green-500" : ""}
+                            `}>
+                              Gün {dayNumber}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Coins className={`w-4 h-4 ${isCurrentDay ? "text-primary" : "text-yellow-500"}`} />
+                              <span className="font-semibold">{reward.credits}</span>
+                            </div>
+                            {reward.bonus && (
+                              <Badge variant="secondary" className="text-xs">
+                                {reward.bonus}
+                              </Badge>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Claim Button */}
@@ -305,7 +347,7 @@ export default function DailyRewards() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.6 }}
           >
             <Card className="bg-gradient-to-br from-primary/10 to-accent/5 border-primary/30">
               <CardContent className="p-6">
@@ -323,7 +365,7 @@ export default function DailyRewards() {
                   ) : (
                     <>
                       <Star className="w-5 h-5" />
-                      Bugünün Ödülünü Al ({DAILY_REWARDS[(currentDay - 1) % 7].credits} Kredi)
+                      Bugünün Giriş Ödülünü Al ({DAILY_REWARDS[(currentDay - 1) % 7].credits} Kredi)
                     </>
                   )}
                 </Button>
@@ -345,9 +387,9 @@ export default function DailyRewards() {
                 <div className="inline-block p-4 bg-green-500/20 rounded-full mb-3">
                   <Check className="w-8 h-8 text-green-500" />
                 </div>
-                <h3 className="font-bold text-lg mb-2">Bugünün Ödülü Alındı! ✅</h3>
+                <h3 className="font-bold text-lg mb-2">Bugünün Giriş Ödülü Alındı! ✅</h3>
                 <p className="text-muted-foreground">
-                  Yarın tekrar gelin ve serinizi sürdürün!
+                  Yarın tekrar gelin ve serinizi sürdürün! Görevleri tamamlamaya devam edin.
                 </p>
               </CardContent>
             </Card>
@@ -358,7 +400,7 @@ export default function DailyRewards() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.7 }}
         >
           <ReferralCard />
         </motion.div>
@@ -374,9 +416,31 @@ export default function DailyRewards() {
                 <Gift className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h4 className="font-semibold mb-1">Günlük Giriş</h4>
+                <h4 className="font-semibold mb-1">Günlük Giriş Ödülleri</h4>
                 <p className="text-sm text-muted-foreground">
                   Her gün uygulamaya giriş yapın ve ücretsiz kredi kazanın
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <div className="p-2 bg-blue-500/10 rounded-lg h-fit">
+                <Target className="w-5 h-5 text-blue-500" />
+              </div>
+              <div>
+                <h4 className="font-semibold mb-1">Günlük Görevler</h4>
+                <p className="text-sm text-muted-foreground">
+                  Görevleri tamamlayın, kredi ve XP kazanın, seviye atlayın
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <div className="p-2 bg-purple-500/10 rounded-lg h-fit">
+                <Trophy className="w-5 h-5 text-purple-500" />
+              </div>
+              <div>
+                <h4 className="font-semibold mb-1">Haftalık Meydan Okumalar</h4>
+                <p className="text-sm text-muted-foreground">
+                  Haftalık zorlukları tamamlayın ve büyük ödüller kazanın
                 </p>
               </div>
             </div>
@@ -388,17 +452,6 @@ export default function DailyRewards() {
                 <h4 className="font-semibold mb-1">Seri Yapın</h4>
                 <p className="text-sm text-muted-foreground">
                   Ardışık günlerde giriş yaparak daha fazla kredi kazanın
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <div className="p-2 bg-yellow-500/10 rounded-lg h-fit">
-                <Trophy className="w-5 h-5 text-yellow-500" />
-              </div>
-              <div>
-                <h4 className="font-semibold mb-1">7 Gün Tamamla</h4>
-                <p className="text-sm text-muted-foreground">
-                  7 günlük seriyi tamamlayıp 50 kredi bonus kazanın!
                 </p>
               </div>
             </div>
