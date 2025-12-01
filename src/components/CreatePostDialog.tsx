@@ -37,6 +37,7 @@ import {
   RefreshCw,
   Clock,
   Upload,
+  FileImage,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
@@ -51,6 +52,7 @@ import { Slider } from "@/components/ui/slider";
 import { z } from "zod";
 import type { VideoQuality } from "@/utils/storageUpload";
 import { compressVideo, generateVideoThumbnail, uploadToStorage } from "@/utils/storageUpload";
+import { GifPicker } from "@/components/GifPicker";
 
 // Validation schema for thumbnail image
 const thumbnailImageSchema = z.object({
@@ -107,7 +109,7 @@ export const CreatePostDialog = ({
   prefilledContent,
 }: CreatePostDialogProps) => {
   const [step, setStep] = useState<"select" | "capture" | "edit" | "share">("select");
-  const [postType, setPostType] = useState<"photo" | "video" | "reels">("photo");
+  const [postType, setPostType] = useState<"photo" | "video" | "reels" | "gif">("photo");
   const [videoQuality, setVideoQuality] = useState<VideoQuality>('medium');
   const [compressionProgress, setCompressionProgress] = useState<number>(0);
   const [isCompressing, setIsCompressing] = useState(false);
@@ -131,12 +133,14 @@ export const CreatePostDialog = ({
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaPreviews, setMediaPreviews] = useState<Array<{ 
     url: string; 
-    type: "photo" | "video";
+    type: "photo" | "video" | "gif";
     thumbnail?: string;
     duration?: number;
   }>>(
     prefilledContent?.mediaUrl ? [{ url: prefilledContent.mediaUrl, type: prefilledContent.mediaType || "photo" }] : []
   );
+  const [gifUrl, setGifUrl] = useState<string>("");
+  const [showGifPicker, setShowGifPicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showTagPicker, setShowTagPicker] = useState(false);
@@ -881,6 +885,19 @@ export const CreatePostDialog = ({
                         <p className="text-sm text-muted-foreground">Fotoğraf/Video seç (max 10)</p>
                       </div>
                     </button>
+                    
+                    <button
+                      onClick={() => setShowGifPicker(true)}
+                      className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg border-2 hover:border-primary hover:bg-accent transition-all group"
+                    >
+                      <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <FileImage className="w-10 h-10 text-primary" />
+                      </div>
+                      <div className="text-center">
+                        <h3 className="font-semibold text-lg mb-1">GIF</h3>
+                        <p className="text-sm text-muted-foreground">Animasyonlu GIF ekle</p>
+                      </div>
+                    </button>
                   </div>
                   <input
                     ref={fileInputRef}
@@ -1606,6 +1623,22 @@ export const CreatePostDialog = ({
         onCapture={handlePhotoCapture}
         title="Fotoğraf Çek"
         description="Kamera ile fotoğraf çekin veya galeriden seçin"
+      />
+      
+      {/* GIF Picker */}
+      <GifPicker
+        open={showGifPicker}
+        onOpenChange={setShowGifPicker}
+        onSelectGif={(url) => {
+          setGifUrl(url);
+          setMediaPreviews([{ url, type: "gif" }]);
+          setStep("share");
+          setShowGifPicker(false);
+          toast({
+            title: "GIF Eklendi",
+            description: "GIF gönderinize eklendi",
+          });
+        }}
       />
     </>
   );
