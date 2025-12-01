@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createLogger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,13 +7,18 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const logger = createLogger('analyze-user-profile');
+
 Deno.serve(async (req) => {
+  const startTime = performance.now();
+  const requestId = crypto.randomUUID();
+  
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    console.log("🟢 [analyze-user-profile] Function started");
+    logger.success({ requestId, action: 'request_received' });
     
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -23,25 +29,23 @@ Deno.serve(async (req) => {
         },
       }
     );
-    console.log("✅ Supabase client created");
 
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     if (authError) {
-      console.error("❌ Auth error:", authError);
+      await logger.error('Authentication error', { requestId, error: authError });
       throw new Error(`Authentication failed: ${authError.message}`);
     }
     if (!user) {
-      console.error("❌ No user found");
+      await logger.error('No user found', { requestId });
       throw new Error("Not authenticated");
     }
-    console.log(`✅ User authenticated: ${user.id}`);
+    logger.success({ requestId, action: 'user_authenticated', userId: user.id });
 
     const { userId } = await req.json();
     const targetUserId = userId || user.id;
-    console.log(`🔍 Analyzing profile for user: ${targetUserId}`);
+    logger.success({ requestId, action: 'target_user_identified', targetUserId });
 
     // Fetch user profile
-    console.log("📥 Fetching profile data...");
     const { data: profile, error: profileError } = await supabaseClient
       .from("profiles")
       .select("*")
@@ -49,13 +53,12 @@ Deno.serve(async (req) => {
       .single();
     
     if (profileError) {
-      console.error("❌ Error fetching profile:", profileError);
+      await logger.error('Error fetching profile', { requestId, userId: user.id, targetUserId, error: profileError });
       throw new Error(`Failed to fetch profile: ${profileError.message}`);
     }
-    console.log(`✅ Profile fetched: ${profile?.username}`);
+    logger.success({ requestId, action: 'profile_fetched', username: profile?.username });
 
     // Fetch user's posts (last 10)
-    console.log("📥 Fetching posts...");
     const { data: posts, error: postsError } = await supabaseClient
       .from("posts")
       .select("content, created_at, media_type")
@@ -64,13 +67,13 @@ Deno.serve(async (req) => {
       .limit(10);
     
     if (postsError) {
-      console.warn("⚠️ Error fetching posts (non-critical):", postsError);
+      await logger.warning('Error fetching posts (non-critical)', { requestId, targetUserId, error: postsError });
     } else {
-      console.log(`✅ Fetched ${posts?.length || 0} posts`);
+      logger.success({ requestId, action: 'posts_fetched', count: posts?.length || 0 });
     }
 
     // Fetch user's analyses
-    console.log("📥 Fetching analyses...");
+    logger.success({ requestId, action: 'fetching_analyses', targetUserId });
     const analyses: any[] = [];
     
     // Birth chart
@@ -117,10 +120,9 @@ Deno.serve(async (req) => {
       dreams.forEach(d => analyses.push({ type: "dream", result: d.interpretation, description: d.dream_description, created_at: d.created_at }));
     }
 
-    console.log(`✅ Collected ${analyses.length} analyses`);
+    logger.success({ requestId, action: 'analyses_collected', count: analyses.length });
 
     // Fetch friends count
-    console.log("📥 Fetching friends count...");
     const { count: friendsCount, error: friendsError } = await supabaseClient
       .from("friends")
       .select("*", { count: "exact", head: true })
@@ -128,9 +130,9 @@ Deno.serve(async (req) => {
       .eq("status", "accepted");
     
     if (friendsError) {
-      console.warn("⚠️ Error fetching friends (non-critical):", friendsError);
+      await logger.warning('Error fetching friends (non-critical)', { requestId, targetUserId, error: friendsError });
     } else {
-      console.log(`✅ Friends count: ${friendsCount || 0}`);
+      logger.success({ requestId, action: 'friends_count_fetched', count: friendsCount || 0 });
     }
 
     // Prepare data summary for AI
@@ -148,10 +150,10 @@ Deno.serve(async (req) => {
     };
 
     // Call Lovable AI
-    console.log("🤖 Calling AI for analysis...");
+    logger.success({ requestId, action: 'calling_ai', targetUserId });
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!lovableApiKey) {
-      console.error("❌ LOVABLE_API_KEY not configured");
+      await logger.error('LOVABLE_API_KEY not configured', { requestId });
       throw new Error("AI service not configured");
     }
 
@@ -208,21 +210,22 @@ Her bölümü detaylı ve samimi bir dille yaz. Pozitif ve yapıcı ol.`;
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error("❌ AI API Error:", {
+      await logger.error('AI API Error', { 
+        requestId, 
+        userId: user.id,
         status: aiResponse.status,
-        statusText: aiResponse.statusText,
-        body: errorText
+        error: errorText
       });
       throw new Error(`AI API error: ${aiResponse.status} - ${errorText}`);
     }
 
     const aiData = await aiResponse.json();
     const analysis = aiData.choices[0].message.content;
-    console.log("✅ AI analysis completed");
+    logger.success({ requestId, action: 'ai_analysis_completed', userId: user.id });
 
     // Calculate credits (50 credits for profile analysis)
     const creditsUsed = 50;
-    console.log(`💳 Checking credits (required: ${creditsUsed})...`);
+    logger.success({ requestId, action: 'checking_credits', userId: user.id, required: creditsUsed });
 
     // Check if user has enough credits
     const { data: profileData, error: creditCheckError } = await supabaseClient
@@ -232,25 +235,23 @@ Her bölümü detaylı ve samimi bir dille yaz. Pozitif ve yapıcı ol.`;
       .single();
 
     if (creditCheckError) {
-      console.error("❌ Error checking credits:", creditCheckError);
+      await logger.error('Error checking credits', { requestId, userId: user.id, error: creditCheckError });
       throw new Error(`Failed to check credits: ${creditCheckError.message}`);
     }
 
     if (!profileData || profileData.credits < creditsUsed) {
-      console.warn(`⚠️ Insufficient credits: has ${profileData?.credits || 0}, needs ${creditsUsed}`);
+      await logger.warning('Insufficient credits', { requestId, userId: user.id, available: profileData?.credits || 0, required: creditsUsed });
       throw new Error("Yetersiz kredi. Profil analizi için 50 kredi gereklidir.");
     }
-    console.log(`✅ User has ${profileData.credits} credits`);
+    logger.success({ requestId, action: 'credits_verified', userId: user.id, credits: profileData.credits });
 
     // Deduct credits
-    console.log("💳 Deducting credits...");
     const { error: deductError } = await supabaseClient
       .from("profiles")
       .update({ credits: profileData.credits - creditsUsed })
       .eq("user_id", user.id);
 
     // Log credit transaction
-    console.log("📝 Logging transaction...");
     const { error: transactionError } = await supabaseClient.from("credit_transactions").insert({
       user_id: user.id,
       amount: -creditsUsed,
@@ -259,13 +260,20 @@ Her bölümü detaylı ve samimi bir dille yaz. Pozitif ve yapıcı ol.`;
     });
 
     if (transactionError) {
-      console.error("❌ Error logging transaction:", transactionError);
-      // Non-critical, continue
+      await logger.warning('Error logging transaction (non-critical)', { requestId, userId: user.id, error: transactionError });
     } else {
-      console.log("✅ Transaction logged");
+      logger.success({ requestId, action: 'transaction_logged', userId: user.id });
     }
 
-    console.log("🎉 Profile analysis completed successfully!");
+    const duration = performance.now() - startTime;
+    logger.performance(duration, true);
+    logger.success({ 
+      requestId, 
+      action: 'request_completed',
+      userId: user.id,
+      duration: `${duration.toFixed(2)}ms` 
+    });
+    
     return new Response(
       JSON.stringify({
         analysis,
@@ -276,11 +284,12 @@ Her bölümü detaylı ve samimi bir dille yaz. Pozitif ve yapıcı ol.`;
       }
     );
   } catch (error) {
-    console.error("❌ ERROR in analyze-user-profile:", {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : undefined,
+    const duration = performance.now() - startTime;
+    await logger.critical(error as Error, {
+      requestId,
+      duration: `${duration.toFixed(2)}ms`
     });
+    logger.performance(duration, false, (error as Error).constructor.name);
     
     // Determine user-friendly error message
     let userMessage = 'İşlem başarısız oldu. Lütfen tekrar deneyin.';

@@ -2,7 +2,8 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.78.0';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
-import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts'
+import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts';
+import { createLogger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,6 +11,7 @@ const corsHeaders = {
 };
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+const logger = createLogger('interpret-dream');
 
 // Input validation schema
 const dreamSchema = z.object({
@@ -17,11 +19,15 @@ const dreamSchema = z.object({
 });
 
 serve(async (req) => {
+  const startTime = performance.now();
+  const requestId = crypto.randomUUID();
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    logger.success({ requestId, action: 'request_received' });
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Authorization header gerekli' }), {

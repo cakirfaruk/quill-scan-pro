@@ -1,17 +1,24 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import postgres from "https://deno.land/x/postgresjs@v3.4.4/mod.js";
+import { createLogger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const logger = createLogger('manage-cron-job');
+
 serve(async (req) => {
+  const startTime = performance.now();
+  const requestId = crypto.randomUUID();
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    logger.success({ requestId, action: 'request_received' });
     const { action, jobId, jobName, schedule, command } = await req.json();
 
     // Connect to database using postgres directly
@@ -91,6 +98,10 @@ serve(async (req) => {
 
     await sql.end();
 
+    const duration = performance.now() - startTime;
+    logger.performance(duration, true);
+    logger.success({ requestId, action: 'request_completed', duration: `${duration.toFixed(2)}ms` });
+
     return new Response(
       JSON.stringify(result),
       { 
@@ -100,7 +111,9 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error managing cron job:', error);
+    const duration = performance.now() - startTime;
+    await logger.critical(error as Error, { requestId, duration: `${duration.toFixed(2)}ms` });
+    logger.performance(duration, false, (error as Error).constructor.name);
     return new Response(
       JSON.stringify({ error: (error as Error).message }),
       { 

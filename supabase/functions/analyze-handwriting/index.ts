@@ -1,7 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.78.0";
-import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts'
+import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts';
+import { createLogger } from '../_shared/logger.ts';
 
 const allTopics = [
   "Marjlar (Sol, Sağ, Üst, Alt)",
@@ -24,12 +25,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const logger = createLogger('analyze-handwriting');
+
 serve(async (req) => {
+  const startTime = performance.now();
+  const requestId = crypto.randomUUID();
+  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    logger.success({ requestId, action: 'request_received' });
     const { image, selectedTopics } = await req.json();
 
     // Validate inputs
@@ -76,8 +83,11 @@ serve(async (req) => {
     // Verify user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
+      await logger.error('Authentication failed', { requestId, error: userError });
       throw new Error("Unauthorized");
     }
+    
+    logger.success({ requestId, action: 'user_authenticated', userId: user.id });
     
     // Rate limiting for AI analysis
     const rateLimitResult = await checkRateLimit(
@@ -117,10 +127,14 @@ serve(async (req) => {
       .single();
     
     if (profileError || !profile) {
+      await logger.error('Profile not found', { requestId, userId: user.id });
       throw new Error("Profile not found");
     }
     
+    logger.success({ requestId, action: 'profile_fetched', userId: user.id, credits: profile.credits, required: creditsNeeded });
+    
     if (profile.credits < creditsNeeded) {
+      await logger.warning('Insufficient credits', { requestId, userId: user.id, available: profile.credits, required: creditsNeeded });
       return new Response(
         JSON.stringify({ 
           error: "Insufficient credits", 
@@ -136,10 +150,11 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
+      await logger.error('LOVABLE_API_KEY not configured', { requestId });
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
-    console.log("Starting handwriting analysis...");
+    logger.success({ requestId, action: 'starting_ai_analysis', userId: user.id, topics: topicsToAnalyze.length });
 
     const systemPrompt = `Sen profesyonel bir grafoloji uzmanısın. El yazısı analizi konusunda derin bilgiye sahipsin. TAMAMEN TÜRKÇE yanıt verirsin, hiçbir İngilizce kelime kullanmazsın. 
     
@@ -276,7 +291,7 @@ Yanıtını JSON formatında ver:
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
+      await logger.error('AI Gateway error', { requestId, userId: user.id, status: response.status, error: errorText });
       
       if (response.status === 429) {
         return new Response(
@@ -304,13 +319,13 @@ Yanıtını JSON formatında ver:
     const data = await response.json();
     const content = data.choices[0].message.content;
     
-    console.log("Analysis completed successfully");
+    logger.success({ requestId, action: 'ai_analysis_completed', userId: user.id });
     
     let analysisResult;
     try {
       analysisResult = JSON.parse(content);
     } catch (e) {
-      console.error("Failed to parse JSON response:", e);
+      await logger.error('Failed to parse JSON response', { requestId, userId: user.id, error: e });
       throw new Error("AI yanıtı beklenmeyen formatta. Lütfen tekrar deneyin.");
     }
 
@@ -321,7 +336,9 @@ Yanıtını JSON formatında ver:
       .eq("user_id", user.id);
     
     if (updateError) {
-      console.error("Error updating credits:", updateError);
+      await logger.error('Error updating credits', { requestId, userId: user.id, error: updateError });
+    } else {
+      logger.success({ requestId, action: 'credits_deducted', userId: user.id, amount: creditsNeeded });
     }
     
     // Save analysis to history
@@ -342,11 +359,24 @@ Yanıtını JSON formatında ver:
       description: `El yazısı analizi (${creditsNeeded} kredi)`,
     });
 
+    const duration = performance.now() - startTime;
+    logger.performance(duration, true);
+    logger.success({ 
+      requestId, 
+      action: 'request_completed',
+      duration: `${duration.toFixed(2)}ms` 
+    });
+
     return new Response(JSON.stringify(analysisResult), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error in analyze-handwriting function:", error);
+    const duration = performance.now() - startTime;
+    await logger.critical(error as Error, {
+      requestId,
+      duration: `${duration.toFixed(2)}ms`
+    });
+    logger.performance(duration, false, (error as Error).constructor.name);
     const errorMessage = error instanceof Error ? error.message : "Analiz sırasında bir hata oluştu";
     return new Response(
       JSON.stringify({ error: errorMessage }),
