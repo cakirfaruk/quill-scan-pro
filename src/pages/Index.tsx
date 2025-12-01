@@ -7,9 +7,12 @@ import { Card, CardDescription, CardHeader, CardTitle, CardContent } from "@/com
 import { Brain, Target, Sparkles, Heart, Users, MessageCircle, Moon, Coffee, Hand, Star, Calendar, FileText, Zap, Shield, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useParallax } from "@/hooks/use-parallax";
+import { DailyMissionsWidget } from "@/components/DailyMissionsWidget";
+import { MissionProgressBar } from "@/components/MissionProgressBar";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   
   const heroRef = useRef<HTMLElement>(null);
   const bgLeftRef = useRef<HTMLDivElement>(null);
@@ -20,7 +23,7 @@ const Index = () => {
   const bgRightOffset = useParallax(bgRightRef, { speed: 0.4, direction: "up" });
 
   useEffect(() => {
-    // Check if user is logged in and redirect to feed
+    // Check if user is logged in
     const checkAuth = async () => {
       try {
         const { data: { user }, error } = await supabase.auth.getUser();
@@ -29,8 +32,8 @@ const Index = () => {
           return;
         }
         if (user) {
-          console.log("User logged in, redirecting to feed");
-          navigate("/feed");
+          console.log("User logged in");
+          setIsLoggedIn(true);
         }
       } catch (error) {
         console.error("Index auth check failed:", error);
@@ -43,8 +46,15 @@ const Index = () => {
   return (
     <div className="page-container bg-gradient-to-b from-background via-primary/5 to-background overflow-hidden">
       <Header />
+      {isLoggedIn && <MissionProgressBar />}
       
       <main className="container mx-auto px-4 py-4">
+        {/* Daily Missions Widget for logged in users */}
+        {isLoggedIn && (
+          <section className="mb-8">
+            <DailyMissionsWidget />
+          </section>
+        )}
         {/* Hero Section */}
         <section 
           ref={heroRef}

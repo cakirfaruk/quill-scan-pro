@@ -1092,7 +1092,7 @@ export const CreatePostDialog = ({
                           <div className="relative">
                             {mediaPreviews.length === 1 ? (
                               <div className="relative rounded-lg overflow-hidden bg-black">
-                                {mediaPreviews[0].type === "photo" ? (
+                                {mediaPreviews[0].type === "photo" || mediaPreviews[0].type === "gif" ? (
                                   <img
                                     src={mediaPreviews[0].url}
                                     alt="Preview"
@@ -1152,7 +1152,7 @@ export const CreatePostDialog = ({
                                   {mediaPreviews.map((media, index) => (
                                     <CarouselItem key={index}>
                                       <div className="relative rounded-lg overflow-hidden bg-black">
-                                        {media.type === "photo" ? (
+                                        {media.type === "photo" || media.type === "gif" ? (
                                           <img
                                             src={media.url}
                                             alt={`Preview ${index + 1}`}
@@ -1210,7 +1210,7 @@ export const CreatePostDialog = ({
                                   >
                                     {/* Thumbnail */}
                                     <div className="aspect-square bg-black">
-                                      {media.type === "photo" ? (
+                                      {media.type === "photo" || media.type === "gif" ? (
                                         <img
                                           src={media.url}
                                           alt={`Thumb ${index + 1}`}
