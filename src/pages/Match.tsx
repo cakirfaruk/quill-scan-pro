@@ -397,23 +397,56 @@ const Match = () => {
     }
   };
 
+  // **GÜÇLE RACE CONDITION ÖNLEME** - Swipe kilidi
+  const [isSwipeInProgress, setIsSwipeInProgress] = useState(false);
+
   const handleSwipe = async (action: "like" | "pass") => {
-    if (!user || currentIndex >= profiles.length) return;
+    if (!user || currentIndex >= profiles.length || isSwipeInProgress) return;
 
     const creditsNeeded = action === "like" ? 5 : 1;
-    if (credits < creditsNeeded) {
+    
+    // **GÜVENLİK: Gerçek zamanlı kredi kontrolü**
+    const { data: currentProfile } = await supabase
+      .from("profiles")
+      .select("credits")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!currentProfile || currentProfile.credits < creditsNeeded) {
       toast({
         title: "Yetersiz Kredi",
         description: `Bu işlem için ${creditsNeeded} kredi gerekiyor`,
         variant: "destructive",
+        action: {
+          label: "Kredi Al",
+          onClick: () => navigate("/credits"),
+        },
       });
       return;
     }
 
+    // **KİLİTLE** - Race condition önleme
+    setIsSwipeInProgress(true);
+
     const targetProfile = profiles[currentIndex];
 
     try {
-      // Insert swipe
+      // **ATOMİK İŞLEM** - RPC ile güvenli kredi düşürme
+      const { data: deductResult, error: deductError } = await supabase.rpc(
+        "deduct_credits_atomic",
+        {
+          p_user_id: user.id,
+          p_amount: creditsNeeded,
+          p_transaction_type: action === "like" ? "match_like" : "match_pass",
+          p_description: `Eşleşme - ${action === "like" ? "Beğen" : "Geç"}`,
+        }
+      );
+
+      if (deductError || !deductResult) {
+        throw new Error("Kredi düşürme başarısız");
+      }
+
+      // Insert swipe AFTER successful credit deduction
       const { error: swipeError } = await supabase
         .from("swipes")
         .insert({
@@ -425,23 +458,8 @@ const Match = () => {
 
       if (swipeError) throw swipeError;
 
-      // Deduct credits
-      const { error: creditError } = await supabase
-        .from("profiles")
-        .update({ credits: credits - creditsNeeded })
-        .eq("user_id", user.id);
-
-      if (creditError) throw creditError;
-
-      // Record transaction
-      await supabase.from("credit_transactions").insert({
-        user_id: user.id,
-        amount: -creditsNeeded,
-        transaction_type: action === "like" ? "match_like" : "match_pass",
-        description: `Eşleşme - ${action === "like" ? "Beğen" : "Geç"}`,
-      });
-
-      setCredits(credits - creditsNeeded);
+      // Update local credits
+      setCredits(deductResult);
 
       // Check for mutual match
       if (action === "like") {
@@ -456,15 +474,28 @@ const Match = () => {
         if (mutualSwipe) {
           // Create match
           const [user1, user2] = [user.id, targetProfile.user_id].sort();
-          await supabase.from("matches").insert({
+          
+          const { error: matchError } = await supabase.from("matches").upsert({
             user1_id: user1,
             user2_id: user2,
+            matched_at: new Date().toISOString(),
           });
 
-          toast({
-            title: "Eşleşme! 🎉",
-            description: `${targetProfile.full_name || targetProfile.username} ile eşleştiniz!`,
-          });
+          if (!matchError) {
+            toast({
+              title: "Eşleşme! 🎉",
+              description: `${targetProfile.full_name || targetProfile.username} ile eşleştiniz!`,
+            });
+
+            // **BİLDİRİM GÖNDER** - Karşı tarafa
+            await supabase.from("notifications").insert({
+              user_id: targetProfile.user_id,
+              type: "match",
+              title: "Yeni Eşleşme!",
+              message: `${user.user_metadata?.full_name || user.email} ile eşleştiniz`,
+              data: { matched_user_id: user.id },
+            });
+          }
         }
       }
 
@@ -474,9 +505,12 @@ const Match = () => {
       console.error("Error swiping:", error);
       toast({
         title: "Hata",
-        description: "İşlem sırasında bir hata oluştu",
+        description: error.message || "İşlem sırasında bir hata oluştu",
         variant: "destructive",
       });
+    } finally {
+      // **KİLİDİ KALDIR**
+      setIsSwipeInProgress(false);
     }
   };
 

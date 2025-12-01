@@ -13,6 +13,7 @@ import { DoubleTapLike } from "@/components/DoubleTapLike";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { OptimizedImage } from "@/components/OptimizedImage";
+import { AnalysisPostCard } from "@/components/AnalysisPostCard";
 
 interface Post {
   id: string;
@@ -25,6 +26,8 @@ interface Post {
   location_name?: string | null;
   location_latitude?: number | null;
   location_longitude?: number | null;
+  analysis_type?: string | null;
+  analysis_data?: any;
   profile: {
     username: string;
     full_name: string | null;
@@ -119,6 +122,16 @@ export const FeedPostCard = memo(({
         {post.content && (
           <div className="px-3 sm:px-4 pb-3">
             <ParsedText text={post.content} />
+          </div>
+        )}
+
+        {/* Analysis Post */}
+        {post.analysis_type && post.analysis_data && (
+          <div className="px-3 sm:px-4 pb-3">
+            <AnalysisPostCard 
+              analysisType={post.analysis_type}
+              analysisData={post.analysis_data}
+            />
           </div>
         )}
 
