@@ -35,6 +35,8 @@ interface ProfileHeaderProps {
   onBlock: () => void;
   onUnblock: () => void;
   onSettings: () => void;
+  onShowQR?: () => void;
+  onPhotoReorder?: () => void;
   onFriendsClick: () => void;
   onViewDetailedStats?: () => void;
   postsCount: number;
@@ -60,6 +62,8 @@ export const ProfileHeader = memo(({
   onSettings,
   onFriendsClick,
   onViewDetailedStats,
+  onShowQR,
+  onPhotoReorder,
   postsCount,
   friendsCount,
   analysesCount

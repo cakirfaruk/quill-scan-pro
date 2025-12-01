@@ -8,13 +8,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Heart, X, Sparkles, Send, Loader2, Zap, RotateCcw, TrendingUp } from "lucide-react";
+import { Heart, X, Sparkles, Send, Loader2, Zap, RotateCcw, TrendingUp, Sliders } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { SkeletonCard } from "@/components/ui/enhanced-skeleton";
 import { IceBreakerQuestions } from "@/components/IceBreakerQuestions";
+import { MatchFiltersDialog, MatchFilters } from "@/components/MatchFiltersDialog";
+import { WhoLikedMe } from "@/components/WhoLikedMe";
 
 // Import tarot card images
 import cardBackImg from "@/assets/tarot/card-back.png";
@@ -92,6 +94,15 @@ const Match = () => {
   const [canUndo, setCanUndo] = useState(false);
   const [boostActive, setBoostActive] = useState(false);
   const [boostEndTime, setBoostEndTime] = useState<Date | null>(null);
+  const [showFiltersDialog, setShowFiltersDialog] = useState(false);
+  const [showWhoLikedMe, setShowWhoLikedMe] = useState(false);
+  const [filters, setFilters] = useState<MatchFilters>({
+    ageRange: [18, 99],
+    gender: "all",
+    zodiacSign: [],
+    element: [],
+    location: "",
+  });
 
   // Card swipe gestures for mobile
   const cardGestures = useCardGestures({
@@ -311,17 +322,16 @@ const Match = () => {
 
       const swipedUserIds = new Set(swipedData?.map(d => d.target_user_id) || []);
 
-      // Load all profiles (opposite gender if user has gender set)
+      // Load all profiles (filtered by gender)
       let query = supabase
         .from("profiles")
-        .select("user_id, username, full_name, profile_photo, bio, birth_date, gender")
+        .select("user_id, username, full_name, profile_photo, bio, birth_date, gender, current_location")
         .neq("user_id", userId)
         .eq("show_in_matches", true);
 
-      // Filter by opposite gender if user has gender
-      if (userProfile?.gender) {
-        const oppositeGender = userProfile.gender === "male" ? "female" : "male";
-        query = query.eq("gender", oppositeGender);
+      // Filter by gender if specified in filters
+      if (filters.gender !== "all") {
+        query = query.eq("gender", filters.gender);
       }
 
       const { data: profilesData } = await query;
@@ -332,7 +342,23 @@ const Match = () => {
       }
 
       // Filter out already swiped users
-      const availableProfiles = profilesData.filter(p => !swipedUserIds.has(p.user_id));
+      let availableProfiles = profilesData.filter(p => !swipedUserIds.has(p.user_id));
+
+      // Apply age filter
+      if (filters.ageRange[0] > 18 || filters.ageRange[1] < 99) {
+        availableProfiles = availableProfiles.filter(p => {
+          if (!p.birth_date) return false;
+          const age = new Date().getFullYear() - new Date(p.birth_date).getFullYear();
+          return age >= filters.ageRange[0] && age <= filters.ageRange[1];
+        });
+      }
+
+      // Apply location filter
+      if (filters.location) {
+        availableProfiles = availableProfiles.filter(p => 
+          p.current_location?.toLowerCase().includes(filters.location.toLowerCase())
+        );
+      }
 
       if (availableProfiles.length === 0) {
         setLoading(false);
@@ -391,7 +417,27 @@ const Match = () => {
         })
       );
 
-      setProfiles(enrichedProfiles);
+      // Apply zodiac sign filter if specified
+      let filteredProfiles = enrichedProfiles;
+      if (filters.zodiacSign.length > 0) {
+        filteredProfiles = enrichedProfiles.filter(p => {
+          if (!p.birth_date) return false;
+          const zodiac = getZodiacSign(new Date(p.birth_date));
+          return filters.zodiacSign.includes(zodiac);
+        });
+      }
+
+      // Apply element filter if specified
+      if (filters.element.length > 0) {
+        filteredProfiles = filteredProfiles.filter(p => {
+          if (!p.birth_date) return false;
+          const zodiac = getZodiacSign(new Date(p.birth_date));
+          const element = getZodiacElement(zodiac);
+          return filters.element.includes(element);
+        });
+      }
+
+      setProfiles(filteredProfiles);
     } catch (error: any) {
       console.error("Error loading profiles:", error);
       toast({
@@ -402,6 +448,38 @@ const Match = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Get zodiac sign from birth date
+  const getZodiacSign = (date: Date): string => {
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    
+    if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return "Koç";
+    if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return "Boğa";
+    if ((month === 5 && day >= 21) || (month === 6 && day <= 20)) return "İkizler";
+    if ((month === 6 && day >= 21) || (month === 7 && day <= 22)) return "Yengeç";
+    if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return "Aslan";
+    if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) return "Başak";
+    if ((month === 9 && day >= 23) || (month === 10 && day <= 22)) return "Terazi";
+    if ((month === 10 && day >= 23) || (month === 11 && day <= 21)) return "Akrep";
+    if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) return "Yay";
+    if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) return "Oğlak";
+    if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return "Kova";
+    return "Balık";
+  };
+
+  // Get element from zodiac sign
+  const getZodiacElement = (zodiac: string): string => {
+    if (["Koç", "Aslan", "Yay"].includes(zodiac)) return "Ateş";
+    if (["Yengeç", "Akrep", "Balık"].includes(zodiac)) return "Su";
+    if (["Boğa", "Başak", "Oğlak"].includes(zodiac)) return "Toprak";
+    return "Hava"; // İkizler, Terazi, Kova
+  };
+
+  const applyFilters = (newFilters: MatchFilters) => {
+    setFilters(newFilters);
+    loadProfiles(user!.id);
   };
 
   // **GÜÇLE RACE CONDITION ÖNLEME** - Swipe kilidi
@@ -1135,7 +1213,32 @@ const Match = () => {
     return (
       <div className="page-container-mobile bg-background">
         <Header />
-        <div className="container mx-auto px-4 py-4 max-w-md">
+        <div className="container mx-auto px-4 py-4 max-w-md space-y-4">
+          {/* Top Bar with Filters and Who Liked Me */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFiltersDialog(true)}
+              className="flex-1"
+            >
+              <Sliders className="w-4 h-4 mr-2" />
+              Filtreler
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowWhoLikedMe(!showWhoLikedMe)}
+              className="flex-1"
+            >
+              <Heart className="w-4 h-4 mr-2" />
+              Beğenenler
+            </Button>
+          </div>
+
+          {/* Who Liked Me Section */}
+          {showWhoLikedMe && <WhoLikedMe />}
+
           <div className="space-y-4 animate-fade-in">
             <SkeletonCard />
           </div>
@@ -1671,6 +1774,14 @@ const Match = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Filter Dialog */}
+      <MatchFiltersDialog
+        isOpen={showFiltersDialog}
+        onClose={() => setShowFiltersDialog(false)}
+        filters={filters}
+        onApply={applyFilters}
+      />
 
       {/* Tarot Result Dialog */}
       <Dialog open={showTarotResultDialog} onOpenChange={setShowTarotResultDialog}>
