@@ -90,7 +90,9 @@ const Auth = () => {
         throw error;
       }
 
-      console.log("Signup successful:", data.user?.email);
+      if (import.meta.env.DEV) {
+        console.log("Signup successful:", data.user?.email);
+      }
 
       // Show onboarding for new users
       setShowOnboarding(true);
@@ -141,7 +143,9 @@ const Auth = () => {
         throw error;
       }
 
-      console.log("Login successful:", data.user?.email);
+      if (import.meta.env.DEV) {
+        console.log("Login successful:", data.user?.email);
+      }
 
       toast({
         title: "Giriş başarılı!",
