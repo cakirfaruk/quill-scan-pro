@@ -40,14 +40,14 @@ const Auth = () => {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/");
+        navigate("/feed");
       }
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        navigate("/");
+        navigate("/feed");
       }
     });
 
@@ -375,7 +375,7 @@ const Auth = () => {
         open={showOnboarding} 
         onComplete={() => {
           setShowOnboarding(false);
-          navigate("/");
+          navigate("/feed");
         }}
       />
     </div>
