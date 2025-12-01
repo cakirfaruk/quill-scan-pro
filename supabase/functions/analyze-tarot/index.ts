@@ -2,7 +2,8 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.78.0';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
-import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts'
+import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts';
+import { createLogger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,12 +23,19 @@ const tarotSchema = z.object({
   })).min(1).max(10)
 });
 
+const logger = createLogger('analyze-tarot');
+
 serve(async (req) => {
+  const startTime = performance.now();
+  const requestId = crypto.randomUUID();
+  let userId: string | undefined;
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    logger.success({ requestId, action: 'request_received' });
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Authorization header gerekli' }), {
@@ -52,6 +60,8 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    userId = user.id; // Store userId for error logging
 
     // Rate limiting using shared utility
     const rateLimitResult = await checkRateLimit(
@@ -83,7 +93,11 @@ serve(async (req) => {
     // Validate input
     const validation = tarotSchema.safeParse(body);
     if (!validation.success) {
-      console.error('Validation error:', validation.error);
+      await logger.warning('Validation error', { 
+        requestId,
+        userId: user?.id,
+        errors: validation.error.errors 
+      });
       return new Response(JSON.stringify({ 
         error: 'Geçersiz veri formatı',
         details: validation.error.errors[0].message 
@@ -94,7 +108,12 @@ serve(async (req) => {
     }
 
     const { spreadType, question, selectedCards } = validation.data;
-    console.log('Tarot reading request:', { spreadType, question, cardsCount: selectedCards.length });
+    logger.success({ 
+      requestId, 
+      action: 'input_validated',
+      spreadType, 
+      cardsCount: selectedCards.length 
+    });
 
     // Check and deduct credits
     const { data: profile } = await supabaseClient
@@ -104,11 +123,19 @@ serve(async (req) => {
       .single();
 
     if (!profile || profile.credits < 30) {
+      await logger.warning('Insufficient credits', {
+        requestId,
+        userId: user.id,
+        currentCredits: profile?.credits || 0,
+        requiredCredits: 30
+      });
       return new Response(JSON.stringify({ error: 'Yetersiz kredi' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    logger.success({ requestId, action: 'credits_verified', credits: profile.credits });
 
     // Create detailed prompt based on spread type
     const spreadDescriptions: Record<string, string> = {
@@ -229,12 +256,22 @@ JSON formatında şu yapıda cevap ver:
       .single();
 
     if (saveError) {
-      console.error('Error saving reading:', saveError);
+      await logger.error('Error saving reading', {
+        requestId,
+        userId: user.id,
+        error: saveError
+      });
       return new Response(JSON.stringify({ error: 'Okuma kaydedilemedi' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    logger.success({ 
+      requestId, 
+      action: 'reading_saved', 
+      readingId: reading.id 
+    });
 
     // Record transaction
     await supabaseClient
@@ -247,13 +284,26 @@ JSON formatında şu yapıda cevap ver:
         reference_id: reading.id
       });
 
-    console.log('Tarot reading completed successfully');
+    const duration = performance.now() - startTime;
+    logger.performance(duration, true);
+    logger.success({ 
+      requestId, 
+      action: 'request_completed',
+      duration: `${duration.toFixed(2)}ms` 
+    });
 
     return new Response(JSON.stringify({ interpretation, readingId: reading.id }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error in analyze-tarot function:', error);
+    const duration = performance.now() - startTime;
+    await logger.critical(error as Error, {
+      requestId,
+      userId,
+      duration: `${duration.toFixed(2)}ms`,
+      stack: (error as Error).stack
+    });
+    logger.performance(duration, false, (error as Error).constructor.name);
     
     let errorMessage = "Tarot okuma sırasında bir hata oluştu";
     let statusCode = 500;
