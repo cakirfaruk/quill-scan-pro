@@ -23,6 +23,7 @@ import { AlertSettings } from "@/components/admin/AlertSettings";
 import { RealTimeStats } from "@/components/admin/RealTimeStats";
 import { SystemHealth } from "@/components/admin/SystemHealth";
 import { PopularFeatures } from "@/components/admin/PopularFeatures";
+import { UserManagement } from "@/components/admin/UserManagement";
 import { useRealtimeAnalytics } from "@/hooks/use-realtime-analytics";
 import { z } from "zod";
 
@@ -312,9 +313,13 @@ const Admin = () => {
             <Loader2 className="w-12 h-12 animate-spin text-primary" />
           </div>
         ) : (
-          <Tabs defaultValue="users" className="space-y-6">
+          <Tabs defaultValue="management" className="space-y-6">
             <div className="overflow-x-auto pb-2 mb-6">
-              <TabsList className="inline-flex w-auto min-w-full lg:grid lg:w-full lg:grid-cols-6 relative z-10 bg-card">
+              <TabsList className="inline-flex w-auto min-w-full lg:grid lg:w-full lg:grid-cols-7 relative z-10 bg-card">
+                <TabsTrigger value="management" className="gap-2 flex-shrink-0 px-4 py-2.5">
+                  <Shield className="w-4 h-4" />
+                  <span className="whitespace-nowrap">Yönetim</span>
+                </TabsTrigger>
                 <TabsTrigger value="users" className="gap-2 flex-shrink-0 px-4 py-2.5">
                   <Users className="w-4 h-4" />
                   <span className="whitespace-nowrap">Kullanıcılar</span>
@@ -341,6 +346,10 @@ const Admin = () => {
                 </TabsTrigger>
               </TabsList>
             </div>
+
+            <TabsContent value="management" className="space-y-6">
+              <UserManagement />
+            </TabsContent>
 
             <TabsContent value="users" className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

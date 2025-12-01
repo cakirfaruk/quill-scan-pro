@@ -2511,6 +2511,7 @@ export type Database = {
       profiles: {
         Row: {
           auto_translate_messages: boolean | null
+          ban_reason: string | null
           bio: string | null
           birth_date: string | null
           birth_place: string | null
@@ -2525,17 +2526,22 @@ export type Database = {
           gender: string | null
           id: string
           interests: string[] | null
+          is_banned: boolean | null
           is_online: boolean | null
           is_premium: boolean | null
+          is_suspended: boolean | null
           last_daily_claim: string | null
           last_seen: string | null
           last_swipe_reset: string | null
           level: number | null
           looking_for: string[] | null
+          moderation_notes: string | null
           preferred_language: string | null
           profile_photo: string | null
           referral_code: string | null
           show_in_matches: boolean
+          suspended_until: string | null
+          suspension_reason: string | null
           total_missions_completed: number | null
           updated_at: string
           user_id: string
@@ -2546,6 +2552,7 @@ export type Database = {
         }
         Insert: {
           auto_translate_messages?: boolean | null
+          ban_reason?: string | null
           bio?: string | null
           birth_date?: string | null
           birth_place?: string | null
@@ -2560,17 +2567,22 @@ export type Database = {
           gender?: string | null
           id?: string
           interests?: string[] | null
+          is_banned?: boolean | null
           is_online?: boolean | null
           is_premium?: boolean | null
+          is_suspended?: boolean | null
           last_daily_claim?: string | null
           last_seen?: string | null
           last_swipe_reset?: string | null
           level?: number | null
           looking_for?: string[] | null
+          moderation_notes?: string | null
           preferred_language?: string | null
           profile_photo?: string | null
           referral_code?: string | null
           show_in_matches?: boolean
+          suspended_until?: string | null
+          suspension_reason?: string | null
           total_missions_completed?: number | null
           updated_at?: string
           user_id: string
@@ -2581,6 +2593,7 @@ export type Database = {
         }
         Update: {
           auto_translate_messages?: boolean | null
+          ban_reason?: string | null
           bio?: string | null
           birth_date?: string | null
           birth_place?: string | null
@@ -2595,17 +2608,22 @@ export type Database = {
           gender?: string | null
           id?: string
           interests?: string[] | null
+          is_banned?: boolean | null
           is_online?: boolean | null
           is_premium?: boolean | null
+          is_suspended?: boolean | null
           last_daily_claim?: string | null
           last_seen?: string | null
           last_swipe_reset?: string | null
           level?: number | null
           looking_for?: string[] | null
+          moderation_notes?: string | null
           preferred_language?: string | null
           profile_photo?: string | null
           referral_code?: string | null
           show_in_matches?: boolean
+          suspended_until?: string | null
+          suspension_reason?: string | null
           total_missions_completed?: number | null
           updated_at?: string
           user_id?: string
@@ -3338,6 +3356,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_moderation_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          moderator_id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          moderator_id: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          moderator_id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_photos: {
         Row: {
