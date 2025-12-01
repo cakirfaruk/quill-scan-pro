@@ -2323,6 +2323,7 @@ export type Database = {
           media_urls: string[] | null
           post_type: string | null
           quoted_post_id: string | null
+          shared_post_id: string | null
           shares_count: number | null
           updated_at: string | null
           user_id: string
@@ -2342,6 +2343,7 @@ export type Database = {
           media_urls?: string[] | null
           post_type?: string | null
           quoted_post_id?: string | null
+          shared_post_id?: string | null
           shares_count?: number | null
           updated_at?: string | null
           user_id: string
@@ -2361,6 +2363,7 @@ export type Database = {
           media_urls?: string[] | null
           post_type?: string | null
           quoted_post_id?: string | null
+          shared_post_id?: string | null
           shares_count?: number | null
           updated_at?: string | null
           user_id?: string
@@ -2369,6 +2372,13 @@ export type Database = {
           {
             foreignKeyName: "posts_quoted_post_id_fkey"
             columns: ["quoted_post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_shared_post_id_fkey"
+            columns: ["shared_post_id"]
             isOneToOne: false
             referencedRelation: "posts"
             referencedColumns: ["id"]
