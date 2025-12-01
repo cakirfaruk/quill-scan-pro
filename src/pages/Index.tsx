@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { DailyMissionsWidget } from "@/components/DailyMissionsWidget";
 import { MissionProgressBar } from "@/components/MissionProgressBar";
+import { DashboardStats } from "@/components/DashboardStats";
+import { QuickActions } from "@/components/QuickActions";
+import { RecentActivity } from "@/components/RecentActivity";
+import { motion } from "framer-motion";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { ProblemSection } from "@/components/landing/ProblemSection";
 import { LiveDemoSection } from "@/components/landing/LiveDemoSection";
@@ -18,18 +19,40 @@ import { FooterSection } from "@/components/landing/FooterSection";
 
 const Index = () => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [userId, setUserId] = useState<string>("");
+  const [username, setUsername] = useState<string>("");
   const navigate = useNavigate();
 
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setIsLoggedIn(!!session);
+      setUserId(session?.user?.id || "");
+      
+      if (session?.user?.id) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("user_id", session.user.id)
+          .single();
+        setUsername(profile?.username || "");
+      }
     };
     
     checkSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setIsLoggedIn(!!session);
+      setUserId(session?.user?.id || "");
+      
+      if (session?.user?.id) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("user_id", session.user.id)
+          .single();
+        setUsername(profile?.username || "");
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -43,125 +66,38 @@ const Index = () => {
     );
   }
 
-  // Show dashboard for logged-in users
+  // Show personalized dashboard for logged-in users
   if (isLoggedIn) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5">
         <Header />
         <MissionProgressBar />
         
-        <main className="pt-16">
-          <div className="container px-4 py-4">
-            <DailyMissionsWidget />
+        <main className="pt-20 pb-24">
+          <div className="container px-4 py-6 max-w-7xl mx-auto space-y-8">
+            {/* Personalized Greeting */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center space-y-2"
+            >
+              <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                {username ? `Hoş Geldin, ${username}!` : 'Hoş Geldin!'} 🌟
+              </h1>
+              <p className="text-muted-foreground">
+                Bugün kendini keşfetmeye hazır mısın?
+              </p>
+            </motion.div>
+
+            {/* Compact Statistics */}
+            <DashboardStats userId={userId} />
+
+            {/* Quick Actions */}
+            <QuickActions userId={userId} />
+
+            {/* Recent Activity */}
+            <RecentActivity userId={userId} />
           </div>
-          
-          {/* Dashboard Content */}
-          <section className="py-12">
-            <div className="container px-4">
-              <h2 className="text-3xl font-bold mb-8">Analizlerimiz</h2>
-              
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <Card className="hover-scale cursor-pointer" onClick={() => navigate("/tarot")}>
-                  <CardContent className="pt-6">
-                    <div className="text-4xl mb-4">🔮</div>
-                    <h3 className="text-xl font-semibold mb-2">Tarot Falı</h3>
-                    <p className="text-muted-foreground">
-                      22 büyük arkana kartı ile geleceğini keşfet
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="hover-scale cursor-pointer" onClick={() => navigate("/coffee-fortune")}>
-                  <CardContent className="pt-6">
-                    <div className="text-4xl mb-4">☕</div>
-                    <h3 className="text-xl font-semibold mb-2">Kahve Falı</h3>
-                    <p className="text-muted-foreground">
-                      Fincanındaki işaretler ne anlatıyor?
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="hover-scale cursor-pointer" onClick={() => navigate("/dream-interpretation")}>
-                  <CardContent className="pt-6">
-                    <div className="text-4xl mb-4">💭</div>
-                    <h3 className="text-xl font-semibold mb-2">Rüya Tabiri</h3>
-                    <p className="text-muted-foreground">
-                      Rüyalarının gizli anlamlarını öğren
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="hover-scale cursor-pointer" onClick={() => navigate("/birth-chart")}>
-                  <CardContent className="pt-6">
-                    <div className="text-4xl mb-4">⭐</div>
-                    <h3 className="text-xl font-semibold mb-2">Doğum Haritası</h3>
-                    <p className="text-muted-foreground">
-                      Yıldızların sana ne söylediğini keşfet
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="hover-scale cursor-pointer" onClick={() => navigate("/numerology")}>
-                  <CardContent className="pt-6">
-                    <div className="text-4xl mb-4">🔢</div>
-                    <h3 className="text-xl font-semibold mb-2">Numeroloji</h3>
-                    <p className="text-muted-foreground">
-                      Sayıların gücünü keşfet, kader numaranı öğren
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="hover-scale cursor-pointer" onClick={() => navigate("/palmistry")}>
-                  <CardContent className="pt-6">
-                    <div className="text-4xl mb-4">🤲</div>
-                    <h3 className="text-xl font-semibold mb-2">El Falı</h3>
-                    <p className="text-muted-foreground">
-                      Avuçlarındaki çizgiler hayatını anlatıyor
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </section>
-
-          {/* Social Features */}
-          <section className="py-12 bg-muted/30">
-            <div className="container px-4">
-              <h2 className="text-3xl font-bold mb-8 text-center">Sosyal Özellikler</h2>
-              
-              <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-                <Card className="hover-scale cursor-pointer" onClick={() => navigate("/match")}>
-                  <CardContent className="pt-6 text-center">
-                    <div className="text-4xl mb-4">💕</div>
-                    <h3 className="text-xl font-semibold mb-2">Akıllı Eşleşme</h3>
-                    <p className="text-muted-foreground">
-                      Uyum puanına göre ideal eşini bul
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="hover-scale cursor-pointer" onClick={() => navigate("/messages")}>
-                  <CardContent className="pt-6 text-center">
-                    <div className="text-4xl mb-4">💬</div>
-                    <h3 className="text-xl font-semibold mb-2">Anında Mesajlaşma</h3>
-                    <p className="text-muted-foreground">
-                      Yeni insanlarla bağlantı kur
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="hover-scale cursor-pointer" onClick={() => navigate("/friends")}>
-                  <CardContent className="pt-6 text-center">
-                    <div className="text-4xl mb-4">👥</div>
-                    <h3 className="text-xl font-semibold mb-2">Arkadaşlık Ağı</h3>
-                    <p className="text-muted-foreground">
-                      Benzer ruhlarla tanış
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </section>
         </main>
       </div>
     );
