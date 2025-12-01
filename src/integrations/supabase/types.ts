@@ -1566,6 +1566,30 @@ export type Database = {
         }
         Relationships: []
       }
+      ice_breaker_questions: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          question: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          question: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          question?: string
+        }
+        Relationships: []
+      }
       matches: {
         Row: {
           compatibility_birth_chart: Json | null
