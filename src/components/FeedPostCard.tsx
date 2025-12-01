@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, MapPin, Trash2, Loader2 } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, MapPin, Trash2, Loader2, Repeat2, Quote, BarChart3 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { ParsedText } from "@/components/ParsedText";
@@ -15,6 +15,8 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { OptimizedImage } from "@/components/OptimizedImage";
 import { AnalysisPostCard } from "@/components/AnalysisPostCard";
 import { EditPostDialog } from "@/components/EditPostDialog";
+import { PostInsightsDialog } from "@/components/PostInsightsDialog";
+import { SharedPostCard } from "@/components/SharedPostCard";
 
 interface Post {
   id: string;
@@ -29,6 +31,8 @@ interface Post {
   location_longitude?: number | null;
   analysis_type?: string | null;
   analysis_data?: any;
+  shared_post_id?: string | null;
+  shared_post?: any;
   profile: {
     username: string;
     full_name: string | null;
@@ -51,6 +55,8 @@ interface FeedPostCardProps {
   onSave: (postId: string, hasSaved: boolean) => void;
   onDelete?: (postId: string) => void;
   onMediaClick: (media: { url: string; type: "photo" | "video" }[], index: number) => void;
+  onRepost?: (post: Post) => void;
+  onQuote?: (post: Post) => void;
   isLikeLoading?: boolean;
 }
 
@@ -63,11 +69,14 @@ export const FeedPostCard = memo(({
   onSave,
   onDelete,
   onMediaClick,
+  onRepost,
+  onQuote,
   isLikeLoading = false,
 }: FeedPostCardProps) => {
   const navigate = useNavigate();
   const isOwnPost = currentUserId === post.user_id;
   const [localContent, setLocalContent] = useState(post.content);
+  const [insightsOpen, setInsightsOpen] = useState(false);
 
   return (
     <ScrollReveal direction="up" delay={0}>
@@ -113,6 +122,18 @@ export const FeedPostCard = memo(({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {onRepost && !isOwnPost && (
+                <DropdownMenuItem onClick={() => onRepost(post)}>
+                  <Repeat2 className="w-4 h-4 mr-2" />
+                  Yeniden Paylaş
+                </DropdownMenuItem>
+              )}
+              {onQuote && !isOwnPost && (
+                <DropdownMenuItem onClick={() => onQuote(post)}>
+                  <Quote className="w-4 h-4 mr-2" />
+                  Alıntılayarak Paylaş
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => onSave(post.id, post.hasSaved)}>
                 <Bookmark className="w-4 h-4 mr-2" />
                 {post.hasSaved ? "Kaydedilenlerden Kaldır" : "Kaydet"}
@@ -123,6 +144,10 @@ export const FeedPostCard = memo(({
               </DropdownMenuItem>
               {isOwnPost && (
                 <>
+                  <DropdownMenuItem onClick={() => setInsightsOpen(true)}>
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    İstatistikler
+                  </DropdownMenuItem>
                   <EditPostDialog
                     postId={post.id}
                     currentContent={localContent || ""}
@@ -157,6 +182,13 @@ export const FeedPostCard = memo(({
               analysisType={post.analysis_type}
               analysisData={post.analysis_data}
             />
+          </div>
+        )}
+
+        {/* Quoted/Shared Post */}
+        {post.shared_post_id && post.shared_post && (
+          <div className="px-3 sm:px-4 pb-3">
+            <SharedPostCard data={post.shared_post} />
           </div>
         )}
 
@@ -310,6 +342,15 @@ export const FeedPostCard = memo(({
             </Button>
           </div>
         </div>
+
+        {/* Post Insights Dialog */}
+        {isOwnPost && (
+          <PostInsightsDialog
+            postId={post.id}
+            isOpen={insightsOpen}
+            onClose={() => setInsightsOpen(false)}
+          />
+        )}
       </Card>
     </ScrollReveal>
   );
