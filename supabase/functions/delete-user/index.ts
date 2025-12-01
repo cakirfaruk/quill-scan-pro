@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.78.0'
+import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,6 +26,31 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Rate limiting - sensitive operation
+    const rateLimitResult = await checkRateLimit(
+      supabaseClient,
+      user.id,
+      {
+        ...RateLimitPresets.SENSITIVE,
+        endpoint: 'delete-user',
+      }
+    )
+
+    if (!rateLimitResult.allowed) {
+      return new Response(JSON.stringify({ 
+        error: 'Çok fazla istek. Lütfen daha sonra tekrar deneyin.',
+        resetAt: rateLimitResult.resetAt
+      }), {
+        status: 429,
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.resetAt.toISOString(),
+        }
       })
     }
 
