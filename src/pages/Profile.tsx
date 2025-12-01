@@ -33,6 +33,7 @@ import { Breadcrumb } from "@/components/Breadcrumb";
 import { Virtuoso } from "react-virtuoso";
 import { Suspense } from "react";
 import { ShareResultButton } from "@/components/ShareResultButton";
+import { VirtualGiftsDialog } from "@/components/VirtualGiftsDialog";
 
 interface UserPhoto {
   id: string;
@@ -110,6 +111,7 @@ const Profile = () => {
   const [newCollectionDesc, setNewCollectionDesc] = useState("");
   const [createCollectionDialogOpen, setCreateCollectionDialogOpen] = useState(false);
   const [statsDrawerOpen, setStatsDrawerOpen] = useState(false);
+  const [giftDialogOpen, setGiftDialogOpen] = useState(false);
 
   // Ref for PDF generation from modal
   const analysisContentRef = useRef<HTMLDivElement>(null);
@@ -1367,6 +1369,7 @@ const Profile = () => {
           onRejectRequest={handleRejectFriendRequest}
           onRemoveFriend={handleRemoveFriend}
           onMessage={() => navigate('/messages')}
+          onSendGift={() => setGiftDialogOpen(true)}
           onBlock={handleBlockUser}
           onUnblock={handleUnblockUser}
           onSettings={() => navigate('/settings')}
@@ -1994,6 +1997,16 @@ const Profile = () => {
             totalLikes={profileStats.totalLikes}
             totalComments={profileStats.totalComments}
             profileViews={profileStats.profileViews}
+          />
+        )}
+
+        {/* Virtual Gifts Dialog */}
+        {!isOwnProfile && friendshipStatus === "accepted" && (
+          <VirtualGiftsDialog
+            isOpen={giftDialogOpen}
+            onClose={() => setGiftDialogOpen(false)}
+            receiverId={profile.user_id}
+            receiverName={profile.full_name || profile.username}
           />
         )}
       </main>

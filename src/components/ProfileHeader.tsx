@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Settings, MapPin, Calendar, UserPlus, UserCheck, UserX, MessageCircle, Share2, Eye, ShieldOff, BarChart3 } from "lucide-react";
+import { Settings, MapPin, Calendar, UserPlus, UserCheck, UserX, MessageCircle, Share2, Eye, ShieldOff, BarChart3, Gift } from "lucide-react";
 import { OnlineStatusBadge } from "@/components/OnlineStatusBadge";
 
 interface Profile {
@@ -31,6 +31,7 @@ interface ProfileHeaderProps {
   onRemoveFriend: () => void;
   onMessage: () => void;
   onShare?: () => void;
+  onSendGift?: () => void;
   onBlock: () => void;
   onUnblock: () => void;
   onSettings: () => void;
@@ -53,6 +54,7 @@ export const ProfileHeader = memo(({
   onRemoveFriend,
   onMessage,
   onShare,
+  onSendGift,
   onBlock,
   onUnblock,
   onSettings,
@@ -189,6 +191,12 @@ export const ProfileHeader = memo(({
                           <MessageCircle className="w-4 h-4" />
                           Mesaj Gönder
                         </Button>
+                        {onSendGift && (
+                          <Button onClick={onSendGift} size="sm" variant="outline" className="gap-2">
+                            <Gift className="w-4 h-4" />
+                            Hediye Gönder
+                          </Button>
+                        )}
                         <Button onClick={onRemoveFriend} size="sm" variant="outline" className="gap-2">
                           <UserX className="w-4 h-4" />
                           Arkadaşlıktan Çıkar
