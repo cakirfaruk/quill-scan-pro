@@ -1714,6 +1714,35 @@ export type Database = {
         }
         Relationships: []
       }
+      hidden_words: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+          word: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+          word: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+          word?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hidden_words_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       ice_breaker_questions: {
         Row: {
           category: string
@@ -2202,6 +2231,50 @@ export type Database = {
         }
         Relationships: []
       }
+      photo_verifications: {
+        Row: {
+          created_at: string
+          id: string
+          reference_photo_url: string
+          rejected_reason: string | null
+          selfie_url: string
+          updated_at: string
+          user_id: string
+          verification_status: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reference_photo_url: string
+          rejected_reason?: string | null
+          selfie_url: string
+          updated_at?: string
+          user_id: string
+          verification_status?: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reference_photo_url?: string
+          rejected_reason?: string | null
+          selfie_url?: string
+          updated_at?: string
+          user_id?: string
+          verification_status?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photo_verifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       poll_votes: {
         Row: {
           created_at: string | null
@@ -2625,6 +2698,7 @@ export type Database = {
           is_online: boolean | null
           is_premium: boolean | null
           is_suspended: boolean | null
+          is_verified: boolean | null
           last_daily_claim: string | null
           last_seen: string | null
           last_swipe_reset: string | null
@@ -2666,6 +2740,7 @@ export type Database = {
           is_online?: boolean | null
           is_premium?: boolean | null
           is_suspended?: boolean | null
+          is_verified?: boolean | null
           last_daily_claim?: string | null
           last_seen?: string | null
           last_swipe_reset?: string | null
@@ -2707,6 +2782,7 @@ export type Database = {
           is_online?: boolean | null
           is_premium?: boolean | null
           is_suspended?: boolean | null
+          is_verified?: boolean | null
           last_daily_claim?: string | null
           last_seen?: string | null
           last_swipe_reset?: string | null
