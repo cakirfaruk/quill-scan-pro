@@ -455,6 +455,42 @@ export type Database = {
           },
         ]
       }
+      close_friends: {
+        Row: {
+          created_at: string
+          friend_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          friend_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          friend_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "close_friends_friend_id_fkey"
+            columns: ["friend_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "close_friends_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       coffee_fortune_readings: {
         Row: {
           created_at: string
@@ -2680,6 +2716,7 @@ export type Database = {
         Row: {
           auto_translate_messages: boolean | null
           ban_reason: string | null
+          bff_mode_enabled: boolean | null
           bio: string | null
           birth_date: string | null
           birth_place: string | null
@@ -2704,6 +2741,7 @@ export type Database = {
           last_swipe_reset: string | null
           level: number | null
           looking_for: string[] | null
+          looking_for_bff: string[] | null
           moderation_notes: string | null
           preferred_language: string | null
           profile_photo: string | null
@@ -2722,6 +2760,7 @@ export type Database = {
         Insert: {
           auto_translate_messages?: boolean | null
           ban_reason?: string | null
+          bff_mode_enabled?: boolean | null
           bio?: string | null
           birth_date?: string | null
           birth_place?: string | null
@@ -2746,6 +2785,7 @@ export type Database = {
           last_swipe_reset?: string | null
           level?: number | null
           looking_for?: string[] | null
+          looking_for_bff?: string[] | null
           moderation_notes?: string | null
           preferred_language?: string | null
           profile_photo?: string | null
@@ -2764,6 +2804,7 @@ export type Database = {
         Update: {
           auto_translate_messages?: boolean | null
           ban_reason?: string | null
+          bff_mode_enabled?: boolean | null
           bio?: string | null
           birth_date?: string | null
           birth_place?: string | null
@@ -2788,6 +2829,7 @@ export type Database = {
           last_swipe_reset?: string | null
           level?: number | null
           looking_for?: string[] | null
+          looking_for_bff?: string[] | null
           moderation_notes?: string | null
           preferred_language?: string | null
           profile_photo?: string | null
@@ -3424,6 +3466,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      transit_notifications: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          is_read: boolean | null
+          notification_date: string
+          planet: string
+          sign: string
+          transit_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          is_read?: boolean | null
+          notification_date: string
+          planet: string
+          sign: string
+          transit_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          is_read?: boolean | null
+          notification_date?: string
+          planet?: string
+          sign?: string
+          transit_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transit_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       trending_searches: {
         Row: {
