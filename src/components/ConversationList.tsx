@@ -11,6 +11,7 @@ import { Search, Loader2, Users, UserPlus, Heart, MessageSquare, Pin } from "luc
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { NoMessagesIllustration, NoConversationIllustration } from "@/components/EmptyStateIllustrations";
+import { StreakBadge } from "@/components/FriendStreakIndicator";
 
 interface Friend {
   user_id: string;
@@ -58,6 +59,7 @@ interface ConversationListProps {
   isSearching: boolean;
   activeTab: "friends" | "matches" | "other" | "groups";
   isMobile: boolean;
+  currentUserId?: string;
   onSearchQueryChange: (query: string) => void;
   onSearchModeChange: (mode: "conversations" | "messages") => void;
   onActiveTabChange: (tab: "friends" | "matches" | "other" | "groups") => void;
@@ -74,6 +76,7 @@ export const ConversationList = ({
   isSearching,
   activeTab,
   isMobile,
+  currentUserId,
   onSearchQueryChange,
   onSearchModeChange,
   onActiveTabChange,
@@ -140,7 +143,12 @@ export const ConversationList = ({
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-0.5">
-              <p className="font-medium truncate">{displayName}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="font-medium truncate">{displayName}</p>
+                {!isGroup && conv.friend?.user_id && currentUserId && (
+                  <StreakBadge streak={0} isExpiring={false} />
+                )}
+              </div>
               <span className="text-xs text-muted-foreground">{lastMessageTime}</span>
             </div>
             <p className="text-xs text-muted-foreground mb-1">{displayUsername}</p>

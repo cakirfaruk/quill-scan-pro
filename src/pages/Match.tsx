@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Heart, X, Sparkles, Send, Loader2, Zap, RotateCcw, TrendingUp, Sliders } from "lucide-react";
+import { Heart, X, Sparkles, Send, Loader2, Zap, RotateCcw, TrendingUp, Sliders, MapPin, Share2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +17,8 @@ import { SkeletonCard } from "@/components/ui/enhanced-skeleton";
 import { IceBreakerQuestions } from "@/components/IceBreakerQuestions";
 import { MatchFiltersDialog, MatchFilters } from "@/components/MatchFiltersDialog";
 import { WhoLikedMe } from "@/components/WhoLikedMe";
+import { PassportDialog } from "@/components/PassportDialog";
+import { ShareMyDateDialog } from "@/components/ShareMyDateDialog";
 
 // Import tarot card images
 import cardBackImg from "@/assets/tarot/card-back.png";
@@ -96,6 +98,8 @@ const Match = () => {
   const [boostEndTime, setBoostEndTime] = useState<Date | null>(null);
   const [showFiltersDialog, setShowFiltersDialog] = useState(false);
   const [showWhoLikedMe, setShowWhoLikedMe] = useState(false);
+  const [showPassportDialog, setShowPassportDialog] = useState(false);
+  const [showShareDateDialog, setShowShareDateDialog] = useState(false);
   const [filters, setFilters] = useState<MatchFilters>({
     ageRange: [18, 99],
     gender: "all",
@@ -1913,6 +1917,26 @@ const Match = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Passport Dialog */}
+      {user && (
+        <PassportDialog
+          open={showPassportDialog}
+          onOpenChange={setShowPassportDialog}
+          userId={user.id}
+          credits={credits}
+          onCreditsChange={(newCredits) => setCredits(newCredits)}
+        />
+      )}
+
+      {/* Share My Date Dialog */}
+      {user && (
+        <ShareMyDateDialog
+          open={showShareDateDialog}
+          onOpenChange={setShowShareDateDialog}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 };

@@ -8,11 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Users, UserPlus, Loader2, Search, Check, X, User, Send } from "lucide-react";
+import { Users, UserPlus, Loader2, Search, Check, X, User, Send, Star } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { OnlineStatusBadge } from "@/components/OnlineStatusBadge";
 import { FriendSuggestions } from "@/components/FriendSuggestions";
 import { SkeletonList } from "@/components/ui/enhanced-skeleton";
+import { CloseFriendsManager } from "@/components/CloseFriendsManager";
+import { FriendStreakIndicator } from "@/components/FriendStreakIndicator";
 
 interface Profile {
   user_id: string;
@@ -332,13 +334,18 @@ const Friends = () => {
       <Header />
 
       <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 lg:py-12 max-w-5xl">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Arkadaşlarım
-          </h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-2">
-            Arkadaş ekleyin ve arkadaşlarınızla analiz yapın
-          </p>
+        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Arkadaşlarım
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-2">
+              Arkadaş ekleyin ve arkadaşlarınızla analiz yapın
+            </p>
+          </div>
+          {currentUserId && (
+            <CloseFriendsManager userId={currentUserId} />
+          )}
         </div>
 
         <Tabs defaultValue="friends" className="space-y-6">

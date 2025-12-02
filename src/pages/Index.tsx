@@ -7,6 +7,7 @@ import { DashboardStats } from "@/components/DashboardStats";
 import { QuickActions } from "@/components/QuickActions";
 import { RecentActivity } from "@/components/RecentActivity";
 import { LeaderboardWidget } from "@/components/LeaderboardWidget";
+import { TransitNotificationsCard } from "@/components/TransitNotificationsCard";
 import { motion } from "framer-motion";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { ProblemSection } from "@/components/landing/ProblemSection";
@@ -104,6 +105,9 @@ const Index = () => {
               {/* Leaderboard Widget */}
               <LeaderboardWidget />
             </div>
+
+            {/* Transit Notifications */}
+            {userId && <TransitNotificationsCard userId={userId} />}
           </div>
         </main>
       </div>
