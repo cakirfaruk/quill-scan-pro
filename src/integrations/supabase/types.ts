@@ -928,6 +928,67 @@ export type Database = {
         }
         Relationships: []
       }
+      date_shares: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          match_user_id: string
+          meeting_location: string | null
+          meeting_time: string | null
+          notes: string | null
+          shared_with_user_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          match_user_id: string
+          meeting_location?: string | null
+          meeting_time?: string | null
+          notes?: string | null
+          shared_with_user_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          match_user_id?: string
+          meeting_location?: string | null
+          meeting_time?: string | null
+          notes?: string | null
+          shared_with_user_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "date_shares_match_user_id_fkey"
+            columns: ["match_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "date_shares_shared_with_user_id_fkey"
+            columns: ["shared_with_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "date_shares_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       dream_interpretations: {
         Row: {
           created_at: string
@@ -2224,6 +2285,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      passport_locations: {
+        Row: {
+          activated_at: string
+          created_at: string
+          credits_used: number
+          expires_at: string
+          id: string
+          user_id: string
+          virtual_latitude: number | null
+          virtual_location: string
+          virtual_longitude: number | null
+        }
+        Insert: {
+          activated_at?: string
+          created_at?: string
+          credits_used?: number
+          expires_at: string
+          id?: string
+          user_id: string
+          virtual_latitude?: number | null
+          virtual_location: string
+          virtual_longitude?: number | null
+        }
+        Update: {
+          activated_at?: string
+          created_at?: string
+          credits_used?: number
+          expires_at?: string
+          id?: string
+          user_id?: string
+          virtual_latitude?: number | null
+          virtual_location?: string
+          virtual_longitude?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passport_locations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       performance_metrics: {
         Row: {

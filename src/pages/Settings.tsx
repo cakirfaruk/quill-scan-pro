@@ -26,8 +26,10 @@ import { PushNotificationSettings } from "@/components/PushNotificationSettings"
 import { performFullCacheRefresh } from "@/utils/cacheManager";
 import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 import { ExportDataButton } from "@/components/ExportDataButton";
+import { HiddenWordsSettings } from "@/components/HiddenWordsSettings";
 
 const Settings = () => {
+  const [userId, setUserId] = useState("");
   const [profile, setProfile] = useState({
     username: "",
     full_name: "",
@@ -97,6 +99,8 @@ const Settings = () => {
         navigate("/auth");
         return;
       }
+      
+      setUserId(user.id);
 
       const { data, error } = await supabase
         .from("profiles")
@@ -785,60 +789,64 @@ const Settings = () => {
           </TabsContent>
 
           <TabsContent value="security">
-            <Card>
-              <CardHeader>
-                <CardTitle>Güvenlik</CardTitle>
-                <CardDescription>
-                  Şifrenizi ve güvenlik ayarlarınızı yönetin
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <Label htmlFor="new_password">
-                    <Lock className="w-4 h-4 inline mr-2" />
-                    Yeni Şifre
-                  </Label>
-                  <Input
-                    id="new_password"
-                    type="password"
-                    value={passwords.newPassword}
-                    onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
-                    placeholder="En az 6 karakter"
-                    className="mt-2"
-                  />
-                </div>
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Güvenlik</CardTitle>
+                  <CardDescription>
+                    Şifrenizi ve güvenlik ayarlarınızı yönetin
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div>
+                    <Label htmlFor="new_password">
+                      <Lock className="w-4 h-4 inline mr-2" />
+                      Yeni Şifre
+                    </Label>
+                    <Input
+                      id="new_password"
+                      type="password"
+                      value={passwords.newPassword}
+                      onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
+                      placeholder="En az 6 karakter"
+                      className="mt-2"
+                    />
+                  </div>
 
-                <div>
-                  <Label htmlFor="confirm_password">
-                    <Lock className="w-4 h-4 inline mr-2" />
-                    Yeni Şifre (Tekrar)
-                  </Label>
-                  <Input
-                    id="confirm_password"
-                    type="password"
-                    value={passwords.confirmPassword}
-                    onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
-                    placeholder="Şifrenizi tekrar girin"
-                    className="mt-2"
-                  />
-                </div>
+                  <div>
+                    <Label htmlFor="confirm_password">
+                      <Lock className="w-4 h-4 inline mr-2" />
+                      Yeni Şifre (Tekrar)
+                    </Label>
+                    <Input
+                      id="confirm_password"
+                      type="password"
+                      value={passwords.confirmPassword}
+                      onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
+                      placeholder="Şifrenizi tekrar girin"
+                      className="mt-2"
+                    />
+                  </div>
 
-                <Button
-                  onClick={handleChangePassword}
-                  disabled={isSaving || !passwords.newPassword || !passwords.confirmPassword}
-                  className="w-full"
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Değiştiriliyor...
-                    </>
-                  ) : (
-                    "Şifreyi Değiştir"
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
+                  <Button
+                    onClick={handleChangePassword}
+                    disabled={isSaving || !passwords.newPassword || !passwords.confirmPassword}
+                    className="w-full"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Değiştiriliyor...
+                      </>
+                    ) : (
+                      "Şifreyi Değiştir"
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+              
+              {userId && <HiddenWordsSettings userId={userId} />}
+            </div>
           </TabsContent>
 
           <TabsContent value="notifications">
