@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Settings, MapPin, Calendar, UserPlus, UserCheck, UserX, MessageCircle, Share2, Eye, ShieldOff, BarChart3, Gift, QrCode, Images } from "lucide-react";
 import { OnlineStatusBadge } from "@/components/OnlineStatusBadge";
+import { LeagueBadge } from "@/components/LeagueBadge";
 
 interface Profile {
   user_id: string;
@@ -17,6 +18,8 @@ interface Profile {
   bio: string;
   gender: string;
   profile_photo: string;
+  xp?: number;
+  level?: number;
 }
 
 interface ProfileHeaderProps {
@@ -94,11 +97,16 @@ export const ProfileHeader = memo(({
         <div className="flex-1 text-center sm:text-left">
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 mb-2">
             <h1 className="text-xl sm:text-2xl font-bold">{profile.full_name || profile.username}</h1>
-            {profile.gender && (
-              <Badge variant="secondary">
-                {profile.gender === "male" ? "Erkek" : profile.gender === "female" ? "Kadın" : "Diğer"}
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {profile.xp !== undefined && (
+                <LeagueBadge xp={profile.xp} size="md" showLabel />
+              )}
+              {profile.gender && (
+                <Badge variant="secondary">
+                  {profile.gender === "male" ? "Erkek" : profile.gender === "female" ? "Kadın" : "Diğer"}
+                </Badge>
+              )}
+            </div>
           </div>
           <p className="text-sm text-muted-foreground mb-3">@{profile.username}</p>
 

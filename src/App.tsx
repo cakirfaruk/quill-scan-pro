@@ -64,6 +64,7 @@ const NotificationCenter = lazyWithPreload(() => import("./pages/NotificationCen
 const DailyRewards = lazyWithPreload(() => import("./pages/DailyRewards"));
 const Badges = lazyWithPreload(() => import("./pages/Badges"));
 const TrendingHashtags = lazyWithPreload(() => import("./pages/TrendingHashtags"));
+const Leaderboard = lazyWithPreload(() => import("./pages/Leaderboard"));
 const Privacy = lazyWithPreload(() => import("./pages/Privacy"));
 const Terms = lazyWithPreload(() => import("./pages/Terms"));
 const KVKK = lazyWithPreload(() => import("./pages/KVKK"));
@@ -103,6 +104,7 @@ const routeComponents: { [path: string]: any } = {
   '/daily-rewards': DailyRewards,
   '/badges': Badges,
   '/trending': TrendingHashtags,
+  '/leaderboard': Leaderboard,
   '/contact': Contact,
 };
 
@@ -368,6 +370,7 @@ const AppRoutes = () => {
               <Route path="/daily-rewards" element={<DailyRewards />} />
               <Route path="/badges" element={<Badges />} />
               <Route path="/trending" element={<TrendingHashtags />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />

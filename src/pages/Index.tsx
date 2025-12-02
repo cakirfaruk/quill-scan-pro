@@ -6,6 +6,7 @@ import { MissionProgressBar } from "@/components/MissionProgressBar";
 import { DashboardStats } from "@/components/DashboardStats";
 import { QuickActions } from "@/components/QuickActions";
 import { RecentActivity } from "@/components/RecentActivity";
+import { LeaderboardWidget } from "@/components/LeaderboardWidget";
 import { motion } from "framer-motion";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { ProblemSection } from "@/components/landing/ProblemSection";
@@ -95,8 +96,14 @@ const Index = () => {
             {/* Quick Actions */}
             <QuickActions userId={userId} />
 
-            {/* Recent Activity */}
-            <RecentActivity userId={userId} />
+            {/* Two Column Layout for Activity & Leaderboard */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Recent Activity */}
+              <RecentActivity userId={userId} />
+              
+              {/* Leaderboard Widget */}
+              <LeaderboardWidget />
+            </div>
           </div>
         </main>
       </div>
