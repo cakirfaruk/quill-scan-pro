@@ -1083,6 +1083,57 @@ export type Database = {
         }
         Relationships: []
       }
+      friend_streaks: {
+        Row: {
+          created_at: string
+          current_streak: number
+          friend_id: string
+          id: string
+          last_interaction_at: string
+          longest_streak: number
+          streak_started_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          friend_id: string
+          id?: string
+          last_interaction_at?: string
+          longest_streak?: number
+          streak_started_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          friend_id?: string
+          id?: string
+          last_interaction_at?: string
+          longest_streak?: number
+          streak_started_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friend_streaks_friend_id_fkey"
+            columns: ["friend_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "friend_streaks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       friend_suggestions: {
         Row: {
           common_interests: string[] | null
@@ -1686,6 +1737,50 @@ export type Database = {
           question?: string
         }
         Relationships: []
+      }
+      leaderboards: {
+        Row: {
+          created_at: string
+          id: string
+          period_end: string
+          period_start: string
+          period_type: string
+          rank: number | null
+          updated_at: string
+          user_id: string
+          xp_earned: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          period_end: string
+          period_start: string
+          period_type: string
+          rank?: number | null
+          updated_at?: string
+          user_id: string
+          xp_earned?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          period_end?: string
+          period_start?: string
+          period_type?: string
+          rank?: number | null
+          updated_at?: string
+          user_id?: string
+          xp_earned?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaderboards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       matches: {
         Row: {
@@ -3313,6 +3408,47 @@ export type Database = {
           },
         ]
       }
+      user_leagues: {
+        Row: {
+          created_at: string
+          current_league: string
+          demoted_at: string | null
+          id: string
+          league_xp: number
+          promoted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_league?: string
+          demoted_at?: string | null
+          id?: string
+          league_xp?: number
+          promoted_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_league?: string
+          demoted_at?: string | null
+          id?: string
+          league_xp?: number
+          promoted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_leagues_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_mission_progress: {
         Row: {
           claimed_at: string | null
@@ -3794,6 +3930,7 @@ export type Database = {
         Returns: number
       }
       delete_expired_stories: { Args: never; Returns: undefined }
+      get_league_for_xp: { Args: { xp: number }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
