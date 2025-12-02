@@ -3818,6 +3818,47 @@ export type Database = {
         }
         Relationships: []
       }
+      video_prompts: {
+        Row: {
+          created_at: string
+          duration_seconds: number
+          id: string
+          prompt_question: string | null
+          thumbnail_url: string | null
+          updated_at: string
+          user_id: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          prompt_question?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          prompt_question?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id?: string
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_prompts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       video_reactions: {
         Row: {
           created_at: string | null
@@ -3908,6 +3949,44 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      voice_prompts: {
+        Row: {
+          audio_url: string
+          created_at: string
+          duration_seconds: number
+          id: string
+          prompt_question: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          audio_url: string
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          prompt_question?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          audio_url?: string
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          prompt_question?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_prompts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       weekly_challenges: {
         Row: {
