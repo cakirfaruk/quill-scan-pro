@@ -27,6 +27,8 @@ import { performFullCacheRefresh } from "@/utils/cacheManager";
 import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 import { ExportDataButton } from "@/components/ExportDataButton";
 import { HiddenWordsSettings } from "@/components/HiddenWordsSettings";
+import { VoicePromptRecorder } from "@/components/VoicePromptRecorder";
+import { VideoPromptRecorder } from "@/components/VideoPromptRecorder";
 
 const Settings = () => {
   const [userId, setUserId] = useState("");
@@ -846,6 +848,40 @@ const Settings = () => {
               </Card>
               
               {userId && <HiddenWordsSettings userId={userId} />}
+
+              {/* Voice Prompt */}
+              {userId && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      🎤 Sesli Tanıtım
+                    </CardTitle>
+                    <CardDescription>
+                      Profilinize kısa bir sesli tanıtım ekleyin
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <VoicePromptRecorder userId={userId} onSaved={() => {}} />
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Video Prompt */}
+              {userId && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      🎬 Video Tanıtım
+                    </CardTitle>
+                    <CardDescription>
+                      Profilinize kısa bir video tanıtım ekleyin
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <VideoPromptRecorder userId={userId} onSaved={() => {}} />
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </TabsContent>
 
