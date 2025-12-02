@@ -74,6 +74,8 @@ const Profile = () => {
     bio: "",
     gender: "",
     profile_photo: "",
+    xp: 0,
+    level: 1,
   });
   const [photos, setPhotos] = useState<UserPhoto[]>([]);
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
