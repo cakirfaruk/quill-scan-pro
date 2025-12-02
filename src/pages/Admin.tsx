@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Users, CreditCard, History, Loader2, Eye, Trash2, BarChart3, AlertTriangle, Activity, Bell } from "lucide-react";
+import { Shield, Users, CreditCard, History, Loader2, Eye, Trash2, BarChart3, AlertTriangle, Activity, Bell, Package, Target } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { AnalyticsOverview } from "@/components/admin/AnalyticsOverview";
 import { EventsChart } from "@/components/admin/EventsChart";
@@ -24,6 +24,8 @@ import { RealTimeStats } from "@/components/admin/RealTimeStats";
 import { SystemHealth } from "@/components/admin/SystemHealth";
 import { PopularFeatures } from "@/components/admin/PopularFeatures";
 import { UserManagement } from "@/components/admin/UserManagement";
+import { CreditPackageManager } from "@/components/admin/CreditPackageManager";
+import { DailyMissionManager } from "@/components/admin/DailyMissionManager";
 import { useRealtimeAnalytics } from "@/hooks/use-realtime-analytics";
 import { z } from "zod";
 
@@ -315,32 +317,40 @@ const Admin = () => {
         ) : (
           <Tabs defaultValue="management" className="space-y-6">
             <div className="overflow-x-auto pb-2 mb-6">
-              <TabsList className="inline-flex w-auto min-w-full lg:grid lg:w-full lg:grid-cols-7 relative z-10 bg-card">
-                <TabsTrigger value="management" className="gap-2 flex-shrink-0 px-4 py-2.5">
+              <TabsList className="inline-flex w-auto min-w-full lg:grid lg:w-full lg:grid-cols-9 relative z-10 bg-card">
+                <TabsTrigger value="management" className="gap-2 flex-shrink-0 px-3 py-2.5">
                   <Shield className="w-4 h-4" />
                   <span className="whitespace-nowrap">Yönetim</span>
                 </TabsTrigger>
-                <TabsTrigger value="users" className="gap-2 flex-shrink-0 px-4 py-2.5">
+                <TabsTrigger value="users" className="gap-2 flex-shrink-0 px-3 py-2.5">
                   <Users className="w-4 h-4" />
                   <span className="whitespace-nowrap">Kullanıcılar</span>
                 </TabsTrigger>
-                <TabsTrigger value="analytics" className="gap-2 flex-shrink-0 px-4 py-2.5">
+                <TabsTrigger value="packages" className="gap-2 flex-shrink-0 px-3 py-2.5">
+                  <Package className="w-4 h-4" />
+                  <span className="whitespace-nowrap">Paketler</span>
+                </TabsTrigger>
+                <TabsTrigger value="missions" className="gap-2 flex-shrink-0 px-3 py-2.5">
+                  <Target className="w-4 h-4" />
+                  <span className="whitespace-nowrap">Görevler</span>
+                </TabsTrigger>
+                <TabsTrigger value="analytics" className="gap-2 flex-shrink-0 px-3 py-2.5">
                   <BarChart3 className="w-4 h-4" />
                   <span className="whitespace-nowrap">Analytics</span>
                 </TabsTrigger>
-                <TabsTrigger value="errors" className="gap-2 flex-shrink-0 px-4 py-2.5">
+                <TabsTrigger value="errors" className="gap-2 flex-shrink-0 px-3 py-2.5">
                   <AlertTriangle className="w-4 h-4" />
                   <span className="whitespace-nowrap">Hatalar</span>
                 </TabsTrigger>
-                <TabsTrigger value="performance" className="gap-2 flex-shrink-0 px-4 py-2.5">
+                <TabsTrigger value="performance" className="gap-2 flex-shrink-0 px-3 py-2.5">
                   <Activity className="w-4 h-4" />
                   <span className="whitespace-nowrap">Performans</span>
                 </TabsTrigger>
-                <TabsTrigger value="behavior" className="gap-2 flex-shrink-0 px-4 py-2.5">
+                <TabsTrigger value="behavior" className="gap-2 flex-shrink-0 px-3 py-2.5">
                   <Users className="w-4 h-4" />
                   <span className="whitespace-nowrap">Davranış</span>
                 </TabsTrigger>
-                <TabsTrigger value="system" className="gap-2 flex-shrink-0 px-4 py-2.5">
+                <TabsTrigger value="system" className="gap-2 flex-shrink-0 px-3 py-2.5">
                   <Bell className="w-4 h-4" />
                   <span className="whitespace-nowrap">Sistem</span>
                 </TabsTrigger>
@@ -349,6 +359,14 @@ const Admin = () => {
 
             <TabsContent value="management" className="space-y-6">
               <UserManagement />
+            </TabsContent>
+
+            <TabsContent value="packages" className="space-y-6">
+              <CreditPackageManager />
+            </TabsContent>
+
+            <TabsContent value="missions" className="space-y-6">
+              <DailyMissionManager />
             </TabsContent>
 
             <TabsContent value="users" className="space-y-6">
