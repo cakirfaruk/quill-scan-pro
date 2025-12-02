@@ -1924,8 +1924,8 @@ const Match = () => {
           open={showPassportDialog}
           onOpenChange={setShowPassportDialog}
           userId={user.id}
-          credits={credits}
-          onCreditsChange={(newCredits) => setCredits(newCredits)}
+          userCredits={credits}
+          onCreditsChanged={() => loadCredits(user.id)}
         />
       )}
 

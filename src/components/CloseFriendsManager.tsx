@@ -17,16 +17,11 @@ interface Friend {
 }
 
 interface CloseFriendsManagerProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   userId: string;
 }
 
-export const CloseFriendsManager = ({
-  open,
-  onOpenChange,
-  userId,
-}: CloseFriendsManagerProps) => {
+export const CloseFriendsManager = ({ userId }: CloseFriendsManagerProps) => {
+  const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const [closeFriends, setCloseFriends] = useState<Friend[]>([]);
   const [allFriends, setAllFriends] = useState<Friend[]>([]);
@@ -133,7 +128,12 @@ export const CloseFriendsManager = ({
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <Button variant="outline" onClick={() => setOpen(true)} className="gap-2">
+        <Star className="w-4 h-4 text-yellow-500" />
+        Yakın Arkadaşlar
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -251,5 +251,6 @@ export const CloseFriendsManager = ({
         )}
       </DialogContent>
     </Dialog>
+    </>
   );
 };
