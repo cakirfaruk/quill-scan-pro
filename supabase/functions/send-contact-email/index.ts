@@ -71,51 +71,70 @@ serve(async (req) => {
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     
     if (resendApiKey) {
-      const { Resend } = await import("npm:resend@2.0.0");
-      const resend = new Resend(resendApiKey);
-
-      // Send notification email to support team
-      await resend.emails.send({
-        from: "Stellara <noreply@stellara.app>",
-        to: ["destek@stellara.app"],
-        subject: `[${categoryLabels[category] || category}] Yeni İletişim Formu - ${name}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #8B5CF6;">Yeni İletişim Formu Mesajı</h2>
-            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p><strong>Ad Soyad:</strong> ${name}</p>
-              <p><strong>E-posta:</strong> ${email}</p>
-              <p><strong>Kategori:</strong> ${categoryLabels[category] || category}</p>
-              <p><strong>Mesaj:</strong></p>
-              <p style="white-space: pre-wrap; background: white; padding: 15px; border-radius: 4px;">${message}</p>
+      // Use fetch to call Resend API directly
+      const supportEmailResponse = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "Stellara <onboarding@resend.dev>",
+          to: ["destek@stellara.app"],
+          subject: `[${categoryLabels[category] || category}] Yeni İletişim Formu - ${name}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #8B5CF6;">Yeni İletişim Formu Mesajı</h2>
+              <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p><strong>Ad Soyad:</strong> ${name}</p>
+                <p><strong>E-posta:</strong> ${email}</p>
+                <p><strong>Kategori:</strong> ${categoryLabels[category] || category}</p>
+                <p><strong>Mesaj:</strong></p>
+                <p style="white-space: pre-wrap; background: white; padding: 15px; border-radius: 4px;">${message}</p>
+              </div>
+              <p style="color: #666; font-size: 12px;">Bu mesaj Stellara iletişim formundan gönderilmiştir.</p>
             </div>
-            <p style="color: #666; font-size: 12px;">Bu mesaj Stellara iletişim formundan gönderilmiştir.</p>
-          </div>
-        `,
+          `,
+        }),
       });
+
+      if (!supportEmailResponse.ok) {
+        console.error("Failed to send support email:", await supportEmailResponse.text());
+      }
 
       // Send confirmation email to user
-      await resend.emails.send({
-        from: "Stellara <noreply@stellara.app>",
-        to: [email],
-        subject: "Mesajınız Alındı - Stellara",
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #8B5CF6;">Merhaba ${name},</h2>
-            <p>Mesajınız başarıyla alınmıştır. En kısa sürede size geri dönüş yapacağız.</p>
-            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p><strong>Kategori:</strong> ${categoryLabels[category] || category}</p>
-              <p><strong>Mesajınız:</strong></p>
-              <p style="white-space: pre-wrap;">${message}</p>
+      const userEmailResponse = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "Stellara <onboarding@resend.dev>",
+          to: [email],
+          subject: "Mesajınız Alındı - Stellara",
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #8B5CF6;">Merhaba ${name},</h2>
+              <p>Mesajınız başarıyla alınmıştır. En kısa sürede size geri dönüş yapacağız.</p>
+              <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p><strong>Kategori:</strong> ${categoryLabels[category] || category}</p>
+                <p><strong>Mesajınız:</strong></p>
+                <p style="white-space: pre-wrap;">${message}</p>
+              </div>
+              <p>Teşekkürler,<br>Stellara Ekibi</p>
             </div>
-            <p>Teşekkürler,<br>Stellara Ekibi</p>
-          </div>
-        `,
+          `,
+        }),
       });
+
+      if (!userEmailResponse.ok) {
+        console.error("Failed to send user confirmation email:", await userEmailResponse.text());
+      }
 
       console.log("Emails sent successfully");
     } else {
-      console.log("RESEND_API_KEY not configured, skipping email send");
+      console.log("RESEND_API_KEY not configured, message saved to database only");
     }
 
     return new Response(

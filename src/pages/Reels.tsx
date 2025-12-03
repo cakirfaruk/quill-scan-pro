@@ -7,14 +7,23 @@ import { VideoPlayer } from "@/components/VideoPlayer";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useSwipe } from "@/hooks/use-gestures";
-import { Heart, MessageCircle, Share2, MoreVertical, Music, Volume2, VolumeX, Maximize, Minimize, Send } from "lucide-react";
+import { Heart, MessageCircle, Share2, Bookmark, Flag, Music, Volume2, VolumeX, Maximize, Minimize, Send, MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SkeletonReel } from "@/components/SkeletonReel";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Reel {
   id: string;
@@ -31,6 +40,7 @@ interface Reel {
   likes_count?: number;
   comments_count?: number;
   is_liked?: boolean;
+  is_saved?: boolean;
 }
 
 const Reels = () => {
@@ -41,9 +51,13 @@ const Reels = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDetails, setReportDetails] = useState("");
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState<"up" | "down" | null>(null);
   const [likeAnimation, setLikeAnimation] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -77,7 +91,6 @@ const Reels = () => {
   }, []);
 
   useEffect(() => {
-    // Scroll to current reel
     if (containerRef.current) {
       const reelElements = containerRef.current.children;
       if (reelElements[currentIndex]) {
@@ -99,7 +112,6 @@ const Reels = () => {
 
       setCurrentUserId(user.id);
 
-      // Get friends' reels and own reels
       const { data: friendsData } = await supabase
         .from("friends")
         .select("friend_id, user_id")
@@ -112,7 +124,6 @@ const Reels = () => {
 
       const userIds = [user.id, ...friendIds];
 
-      // Get only reels posts (post_type='reels')
       const { data: reelsData, error } = await supabase
         .from("posts")
         .select(`
@@ -130,11 +141,30 @@ const Reels = () => {
 
       if (error) throw error;
 
+      // Get likes for these posts
+      const postIds = reelsData?.map(p => p.id) || [];
+      const { data: likesData } = await supabase
+        .from("post_likes")
+        .select("post_id")
+        .eq("user_id", user.id)
+        .in("post_id", postIds);
+
+      const likedPostIds = new Set(likesData?.map(l => l.post_id) || []);
+
+      // Get saves for these posts
+      const { data: savesData } = await supabase
+        .from("saved_posts")
+        .select("post_id")
+        .eq("user_id", user.id)
+        .in("post_id", postIds);
+
+      const savedPostIds = new Set(savesData?.map(s => s.post_id) || []);
+
       const reelsWithData = reelsData?.map(post => ({
         id: post.id,
         user_id: post.user_id,
         video_url: post.media_url || "",
-        thumbnail_url: "", // posts don't have thumbnails, can be added later if needed
+        thumbnail_url: "",
         title: post.content || "",
         description: post.content,
         created_at: post.created_at,
@@ -142,6 +172,10 @@ const Reels = () => {
           username: post.profiles?.username || "Unknown",
           profile_photo: post.profiles?.profile_photo || "",
         },
+        likes_count: post.likes_count || 0,
+        comments_count: post.comments_count || 0,
+        is_liked: likedPostIds.has(post.id),
+        is_saved: savedPostIds.has(post.id),
       })) || [];
 
       setReels(reelsWithData);
@@ -165,7 +199,7 @@ const Reels = () => {
       setTimeout(() => setLikeAnimation(false), 1000);
 
       const { data: existingLike } = await supabase
-        .from("likes" as any)
+        .from("post_likes")
         .select("*")
         .eq("post_id", reelId)
         .eq("user_id", currentUserId)
@@ -173,7 +207,7 @@ const Reels = () => {
 
       if (existingLike) {
         await supabase
-          .from("likes" as any)
+          .from("post_likes")
           .delete()
           .eq("post_id", reelId)
           .eq("user_id", currentUserId);
@@ -184,7 +218,7 @@ const Reels = () => {
             : r
         ));
       } else {
-        await supabase.from("likes" as any).insert({
+        await supabase.from("post_likes").insert({
           post_id: reelId,
           user_id: currentUserId,
         });
@@ -205,10 +239,92 @@ const Reels = () => {
     }
   };
 
+  const handleSave = async (reelId: string) => {
+    if (!currentUserId) return;
+
+    try {
+      const reel = reels.find(r => r.id === reelId);
+      if (!reel) return;
+
+      if (reel.is_saved) {
+        await supabase
+          .from("saved_posts")
+          .delete()
+          .eq("post_id", reelId)
+          .eq("user_id", currentUserId);
+
+        setReels(prev => prev.map(r => 
+          r.id === reelId ? { ...r, is_saved: false } : r
+        ));
+
+        toast({
+          title: "Kaydedilenden kaldırıldı",
+        });
+      } else {
+        await supabase.from("saved_posts").insert({
+          post_id: reelId,
+          user_id: currentUserId,
+        });
+
+        setReels(prev => prev.map(r => 
+          r.id === reelId ? { ...r, is_saved: true } : r
+        ));
+
+        toast({
+          title: "Kaydedildi",
+          description: "Kaydettiğin gönderiler profilinde görünür.",
+        });
+      }
+    } catch (error) {
+      console.error("Save error:", error);
+      toast({
+        title: "Hata",
+        description: "İşlem gerçekleştirilemedi",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleReport = async () => {
+    if (!currentUserId || !reportReason) return;
+
+    setIsSubmittingReport(true);
+    try {
+      const currentReel = reels[currentIndex];
+      
+      await supabase.from("reports").insert({
+        reporter_id: currentUserId,
+        reported_content_type: "post",
+        reported_content_id: currentReel.id,
+        reported_user_id: currentReel.user_id,
+        reason: reportReason,
+        details: reportDetails,
+      });
+
+      toast({
+        title: "Rapor gönderildi",
+        description: "İncelememiz tamamlandığında size bilgi vereceğiz.",
+      });
+
+      setShowReport(false);
+      setReportReason("");
+      setReportDetails("");
+    } catch (error) {
+      console.error("Report error:", error);
+      toast({
+        title: "Hata",
+        description: "Rapor gönderilemedi",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
+
   const loadComments = async (reelId: string) => {
     try {
       const { data, error } = await supabase
-        .from("comments" as any)
+        .from("post_comments")
         .select(`
           *,
           profiles:user_id (
@@ -238,7 +354,7 @@ const Reels = () => {
     setIsSubmittingComment(true);
     try {
       const currentReel = reels[currentIndex];
-      const { error } = await supabase.from("comments" as any).insert({
+      const { error } = await supabase.from("post_comments").insert({
         post_id: currentReel.id,
         user_id: currentUserId,
         content: commentText,
@@ -247,8 +363,7 @@ const Reels = () => {
       if (error) throw error;
 
       toast({
-        title: "Başarılı",
-        description: "Yorum eklendi",
+        title: "Yorum eklendi",
       });
 
       setCommentText("");
@@ -411,45 +526,44 @@ const Reels = () => {
                 {/* Overlay UI */}
                 <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
                   <div className="flex items-end justify-between">
-                {/* Left side - User info and caption */}
-                <div className="flex-1 space-y-3">
-                  <div
-                    className="flex items-center gap-3 cursor-pointer group"
-                    onClick={() => navigate(`/profile/${reel.user?.username}`)}
-                  >
-                    <Avatar className="w-12 h-12 border-2 border-white group-hover:scale-110 transition-transform">
-                      <AvatarImage src={reel.user?.profile_photo} />
-                      <AvatarFallback className="bg-primary">
-                        {reel.user?.username.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold text-white">@{reel.user?.username}</p>
-                      <p className="text-sm text-white/80">{reel.title}</p>
-                    </div>
-                  </div>
+                    {/* Left side - User info and caption */}
+                    <div className="flex-1 space-y-3">
+                      <div
+                        className="flex items-center gap-3 cursor-pointer group"
+                        onClick={() => navigate(`/profile/${reel.user_id}`)}
+                      >
+                        <Avatar className="w-12 h-12 border-2 border-white group-hover:scale-110 transition-transform">
+                          <AvatarImage src={reel.user?.profile_photo} />
+                          <AvatarFallback className="bg-primary">
+                            {reel.user?.username.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-semibold text-white">@{reel.user?.username}</p>
+                        </div>
+                      </div>
 
-                  {reel.description && (
-                    <p className="text-sm text-white line-clamp-2">
-                      {reel.description}
-                    </p>
-                  )}
-                </div>
+                      {reel.description && (
+                        <p className="text-sm text-white line-clamp-2">
+                          {reel.description}
+                        </p>
+                      )}
+                    </div>
 
                     {/* Right side - Action buttons */}
-                    <div className="flex flex-col items-center gap-6 ml-4">
+                    <div className="flex flex-col items-center gap-4 ml-4">
                       <motion.button
                         whileTap={{ scale: 0.8 }}
                         className="flex flex-col items-center gap-1 group"
                         onClick={() => handleLike(reel.id)}
                       >
-                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-500/30 to-red-500/30 backdrop-blur-md flex items-center justify-center group-hover:scale-110 transition-transform border border-white/20 shadow-lg">
+                        <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center group-hover:scale-110 transition-transform border border-white/20">
                           <Heart className={cn(
-                            "w-7 h-7 transition-all",
-                            reel.is_liked ? "fill-red-500 text-red-500 scale-110" : "text-white"
+                            "w-6 h-6 transition-all",
+                            reel.is_liked ? "fill-red-500 text-red-500" : "text-white"
                           )} />
                         </div>
-                        <span className="text-sm text-white font-bold drop-shadow-lg">
+                        <span className="text-xs text-white font-medium">
                           {reel.likes_count || 0}
                         </span>
                       </motion.button>
@@ -459,10 +573,10 @@ const Reels = () => {
                         className="flex flex-col items-center gap-1 group"
                         onClick={() => handleOpenComments(reel.id)}
                       >
-                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500/30 to-cyan-500/30 backdrop-blur-md flex items-center justify-center group-hover:scale-110 transition-transform border border-white/20 shadow-lg">
-                          <MessageCircle className="w-7 h-7 text-white" />
+                        <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center group-hover:scale-110 transition-transform border border-white/20">
+                          <MessageCircle className="w-6 h-6 text-white" />
                         </div>
-                        <span className="text-sm text-white font-bold drop-shadow-lg">
+                        <span className="text-xs text-white font-medium">
                           {reel.comments_count || 0}
                         </span>
                       </motion.button>
@@ -470,9 +584,13 @@ const Reels = () => {
                       <motion.button
                         whileTap={{ scale: 0.8 }}
                         className="flex flex-col items-center gap-1 group"
+                        onClick={() => handleSave(reel.id)}
                       >
-                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500/30 to-pink-500/30 backdrop-blur-md flex items-center justify-center group-hover:scale-110 transition-transform border border-white/20 shadow-lg">
-                          <Share2 className="w-7 h-7 text-white" />
+                        <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center group-hover:scale-110 transition-transform border border-white/20">
+                          <Bookmark className={cn(
+                            "w-6 h-6 transition-all",
+                            reel.is_saved ? "fill-white text-white" : "text-white"
+                          )} />
                         </div>
                       </motion.button>
 
@@ -480,23 +598,40 @@ const Reels = () => {
                         whileTap={{ scale: 0.8 }}
                         className="flex flex-col items-center gap-1 group"
                       >
-                        <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center group-hover:scale-110 transition-transform border border-white/20 shadow-lg">
-                          <MoreVertical className="w-7 h-7 text-white" />
+                        <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center group-hover:scale-110 transition-transform border border-white/20">
+                          <Share2 className="w-6 h-6 text-white" />
                         </div>
                       </motion.button>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <motion.button
+                            whileTap={{ scale: 0.8 }}
+                            className="flex flex-col items-center gap-1 group"
+                          >
+                            <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center group-hover:scale-110 transition-transform border border-white/20">
+                              <MoreVertical className="w-6 h-6 text-white" />
+                            </div>
+                          </motion.button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setShowReport(true)}>
+                            <Flag className="w-4 h-4 mr-2" />
+                            Bildir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-              </div>
+                  </div>
 
                   {/* Progress indicator */}
-                  <div className="mt-4 flex gap-1.5">
+                  <div className="mt-4 flex gap-1">
                     {reels.map((_, idx) => (
-                      <motion.div
+                      <div
                         key={idx}
-                        initial={{ scale: 0.8 }}
-                        animate={{ scale: idx === currentIndex ? 1 : 0.8 }}
                         className={cn(
                           "h-1 flex-1 rounded-full transition-all",
-                          idx === currentIndex ? "bg-primary shadow-lg shadow-primary/50" : "bg-white/30"
+                          idx === currentIndex ? "bg-white" : "bg-white/30"
                         )}
                       />
                     ))}
@@ -580,6 +715,74 @@ const Reels = () => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Report Dialog */}
+      <Dialog open={showReport} onOpenChange={setShowReport}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Flag className="w-5 h-5 text-destructive" />
+              İçeriği Bildir
+            </DialogTitle>
+            <DialogDescription>
+              Bu içeriği neden bildirmek istediğinizi belirtin.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <RadioGroup value={reportReason} onValueChange={setReportReason}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="spam" id="spam" />
+                <Label htmlFor="spam">Spam veya yanıltıcı içerik</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="inappropriate" id="inappropriate" />
+                <Label htmlFor="inappropriate">Uygunsuz içerik</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="harassment" id="harassment" />
+                <Label htmlFor="harassment">Taciz veya zorbalık</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="violence" id="violence" />
+                <Label htmlFor="violence">Şiddet veya tehdit</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="copyright" id="copyright" />
+                <Label htmlFor="copyright">Telif hakkı ihlali</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="other" id="other" />
+                <Label htmlFor="other">Diğer</Label>
+              </div>
+            </RadioGroup>
+
+            <div className="space-y-2">
+              <Label htmlFor="details">Ek bilgi (opsiyonel)</Label>
+              <Textarea
+                id="details"
+                value={reportDetails}
+                onChange={(e) => setReportDetails(e.target.value)}
+                placeholder="Detaylı açıklama ekleyebilirsiniz..."
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowReport(false)}>
+              İptal
+            </Button>
+            <Button 
+              onClick={handleReport} 
+              disabled={!reportReason || isSubmittingReport}
+              variant="destructive"
+            >
+              {isSubmittingReport ? "Gönderiliyor..." : "Bildir"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

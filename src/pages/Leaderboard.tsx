@@ -5,10 +5,10 @@ import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Trophy, Medal, Crown, Flame, Star, ChevronRight } from "lucide-react";
+import { Trophy, Medal, Crown, Users, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { LeagueBadge } from "@/components/LeagueBadge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface LeaderboardEntry {
   user_id: string;
@@ -25,8 +25,13 @@ const Leaderboard = () => {
   const [weeklyLeaders, setWeeklyLeaders] = useState<LeaderboardEntry[]>([]);
   const [monthlyLeaders, setMonthlyLeaders] = useState<LeaderboardEntry[]>([]);
   const [allTimeLeaders, setAllTimeLeaders] = useState<LeaderboardEntry[]>([]);
+  const [friendsLeaders, setFriendsLeaders] = useState<LeaderboardEntry[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [currentUserRank, setCurrentUserRank] = useState<number | null>(null);
+  const [currentUserRank, setCurrentUserRank] = useState<{ weekly: number | null; monthly: number | null; allTime: number | null }>({
+    weekly: null,
+    monthly: null,
+    allTime: null,
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,7 +53,7 @@ const Leaderboard = () => {
       if (profiles) {
         const allTime = profiles.map((p, idx) => ({
           user_id: p.user_id,
-          username: p.username || '',
+          username: p.username || 'Kullanıcı',
           photo_url: p.profile_photo,
           xp: p.xp || 0,
           level: p.level || 1,
@@ -58,14 +63,132 @@ const Leaderboard = () => {
 
         // Find current user rank
         if (user) {
-          const userRank = allTime.find(l => l.user_id === user.id);
-          if (userRank) setCurrentUserRank(userRank.rank);
+          const userRank = allTime.findIndex(l => l.user_id === user.id);
+          setCurrentUserRank(prev => ({ ...prev, allTime: userRank >= 0 ? userRank + 1 : null }));
         }
+      }
 
-        // For weekly and monthly, we'll use the same data for now
-        // In production, you'd filter by date ranges
-        setWeeklyLeaders(allTime.slice(0, 50));
-        setMonthlyLeaders(allTime.slice(0, 50));
+      // Get weekly leaderboard from leaderboards table
+      const weekStart = new Date();
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      weekStart.setHours(0, 0, 0, 0);
+
+      const { data: weeklyData } = await supabase
+        .from('leaderboards')
+        .select(`
+          user_id,
+          xp_earned,
+          rank
+        `)
+        .eq('period_type', 'weekly')
+        .gte('period_start', weekStart.toISOString())
+        .order('xp_earned', { ascending: false })
+        .limit(50);
+
+      if (weeklyData && weeklyData.length > 0) {
+        // Get profile info for weekly leaders
+        const userIds = weeklyData.map(w => w.user_id);
+        const { data: weeklyProfiles } = await supabase
+          .from('profiles')
+          .select('user_id, username, profile_photo, level')
+          .in('user_id', userIds);
+
+        const profileMap = new Map(weeklyProfiles?.map(p => [p.user_id, p]) || []);
+        
+        const weekly = weeklyData.map((w, idx) => {
+          const profile = profileMap.get(w.user_id);
+          return {
+            user_id: w.user_id,
+            username: profile?.username || 'Kullanıcı',
+            photo_url: profile?.profile_photo || null,
+            xp: w.xp_earned,
+            level: profile?.level || 1,
+            rank: idx + 1,
+          };
+        });
+        setWeeklyLeaders(weekly);
+
+        if (user) {
+          const userWeeklyRank = weekly.findIndex(l => l.user_id === user.id);
+          setCurrentUserRank(prev => ({ ...prev, weekly: userWeeklyRank >= 0 ? userWeeklyRank + 1 : null }));
+        }
+      } else {
+        // Fallback: use all-time data if no weekly data
+        setWeeklyLeaders(allTimeLeaders.slice(0, 50));
+      }
+
+      // Get monthly leaderboard
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+
+      const { data: monthlyData } = await supabase
+        .from('leaderboards')
+        .select('user_id, xp_earned, rank')
+        .eq('period_type', 'monthly')
+        .gte('period_start', monthStart.toISOString())
+        .order('xp_earned', { ascending: false })
+        .limit(50);
+
+      if (monthlyData && monthlyData.length > 0) {
+        const userIds = monthlyData.map(m => m.user_id);
+        const { data: monthlyProfiles } = await supabase
+          .from('profiles')
+          .select('user_id, username, profile_photo, level')
+          .in('user_id', userIds);
+
+        const profileMap = new Map(monthlyProfiles?.map(p => [p.user_id, p]) || []);
+        
+        const monthly = monthlyData.map((m, idx) => {
+          const profile = profileMap.get(m.user_id);
+          return {
+            user_id: m.user_id,
+            username: profile?.username || 'Kullanıcı',
+            photo_url: profile?.profile_photo || null,
+            xp: m.xp_earned,
+            level: profile?.level || 1,
+            rank: idx + 1,
+          };
+        });
+        setMonthlyLeaders(monthly);
+
+        if (user) {
+          const userMonthlyRank = monthly.findIndex(l => l.user_id === user.id);
+          setCurrentUserRank(prev => ({ ...prev, monthly: userMonthlyRank >= 0 ? userMonthlyRank + 1 : null }));
+        }
+      } else {
+        setMonthlyLeaders(allTimeLeaders.slice(0, 50));
+      }
+
+      // Get friends leaderboard
+      if (user) {
+        const { data: friendsData } = await supabase
+          .from('friends')
+          .select('friend_id')
+          .eq('user_id', user.id)
+          .eq('status', 'accepted');
+
+        if (friendsData && friendsData.length > 0) {
+          const friendIds = [...friendsData.map(f => f.friend_id), user.id];
+          
+          const { data: friendProfiles } = await supabase
+            .from('profiles')
+            .select('user_id, username, profile_photo, xp, level')
+            .in('user_id', friendIds)
+            .order('xp', { ascending: false });
+
+          if (friendProfiles) {
+            const friends = friendProfiles.map((p, idx) => ({
+              user_id: p.user_id,
+              username: p.username || 'Kullanıcı',
+              photo_url: p.profile_photo,
+              xp: p.xp || 0,
+              level: p.level || 1,
+              rank: idx + 1,
+            }));
+            setFriendsLeaders(friends);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading leaderboard:', error);
@@ -100,49 +223,75 @@ const Leaderboard = () => {
     }
   };
 
-  const LeaderboardList = ({ entries }: { entries: LeaderboardEntry[] }) => (
-    <div className="space-y-2">
-      {entries.map((entry, idx) => (
-        <motion.div
-          key={entry.user_id}
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: idx * 0.03 }}
-        >
-          <Card
-            className={`p-3 flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors ${
-              entry.user_id === currentUserId ? 'ring-2 ring-primary' : ''
-            } ${getRankBg(entry.rank)}`}
-            onClick={() => navigate(`/profile/${entry.user_id}`)}
+  const LeaderboardList = ({ entries, emptyMessage }: { entries: LeaderboardEntry[]; emptyMessage?: string }) => {
+    if (entries.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground">
+          {emptyMessage || "Henüz veri yok"}
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        {entries.map((entry, idx) => (
+          <motion.div
+            key={entry.user_id}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: idx * 0.03 }}
           >
-            <div className="w-8 flex justify-center">
-              {getRankIcon(entry.rank)}
-            </div>
-            
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={entry.photo_url || undefined} />
-              <AvatarFallback>{entry.username?.[0]?.toUpperCase()}</AvatarFallback>
-            </Avatar>
-            
-            <div className="flex-1 min-w-0">
+            <Card
+              className={`p-3 flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors ${
+                entry.user_id === currentUserId ? 'ring-2 ring-primary' : ''
+              } ${getRankBg(entry.rank)}`}
+              onClick={() => navigate(`/profile/${entry.user_id}`)}
+            >
+              <div className="w-8 flex justify-center">
+                {getRankIcon(entry.rank)}
+              </div>
+              
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={entry.photo_url || undefined} />
+                <AvatarFallback>{entry.username?.[0]?.toUpperCase()}</AvatarFallback>
+              </Avatar>
+              
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium truncate">{entry.username}</p>
+                  <LeagueBadge xp={entry.xp} size="sm" />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Seviye {entry.level}
+                </p>
+              </div>
+              
               <div className="flex items-center gap-2">
-                <p className="font-medium truncate">{entry.username}</p>
-                <LeagueBadge xp={entry.xp} size="sm" />
+                <div className="text-right">
+                  <p className="font-bold text-primary">{entry.xp.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">XP</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </div>
-              <p className="text-xs text-muted-foreground">
-                Seviye {entry.level}
-              </p>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <div className="text-right">
-                <p className="font-bold text-primary">{entry.xp.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">XP</p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </div>
-          </Card>
-        </motion.div>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+    );
+  };
+
+  const LoadingSkeleton = () => (
+    <div className="space-y-2">
+      {[...Array(5)].map((_, i) => (
+        <Card key={i} className="p-3 flex items-center gap-3">
+          <Skeleton className="w-8 h-8 rounded-full" />
+          <Skeleton className="w-10 h-10 rounded-full" />
+          <div className="flex-1">
+            <Skeleton className="h-4 w-24 mb-1" />
+            <Skeleton className="h-3 w-16" />
+          </div>
+          <Skeleton className="h-6 w-16" />
+        </Card>
       ))}
     </div>
   );
@@ -162,15 +311,15 @@ const Leaderboard = () => {
             <Trophy className="w-8 h-8 text-yellow-500" />
             <h1 className="text-2xl font-bold">Liderlik Tablosu</h1>
           </div>
-          {currentUserRank && (
+          {currentUserRank.allTime && (
             <p className="text-muted-foreground">
-              Sıralaman: <span className="font-bold text-primary">#{currentUserRank}</span>
+              Sıralaman: <span className="font-bold text-primary">#{currentUserRank.allTime}</span>
             </p>
           )}
         </motion.div>
 
         {/* Top 3 Podium */}
-        {allTimeLeaders.length >= 3 && (
+        {!loading && allTimeLeaders.length >= 3 && (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -219,30 +368,37 @@ const Leaderboard = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="weekly" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-4">
+          <TabsList className="grid w-full grid-cols-4 mb-4">
             <TabsTrigger value="weekly" className="text-xs">Haftalık</TabsTrigger>
             <TabsTrigger value="monthly" className="text-xs">Aylık</TabsTrigger>
-            <TabsTrigger value="alltime" className="text-xs">Tüm Zamanlar</TabsTrigger>
+            <TabsTrigger value="alltime" className="text-xs">Tüm Zaman</TabsTrigger>
+            <TabsTrigger value="friends" className="text-xs">
+              <Users className="w-3 h-3 mr-1" />
+              Arkadaş
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="weekly">
-            {loading ? (
-              <div className="space-y-2">
-                {[...Array(5)].map((_, i) => (
-                  <Card key={i} className="p-3 h-16 animate-pulse bg-muted" />
-                ))}
-              </div>
-            ) : (
-              <LeaderboardList entries={weeklyLeaders} />
-            )}
+            {loading ? <LoadingSkeleton /> : <LeaderboardList entries={weeklyLeaders} />}
           </TabsContent>
 
           <TabsContent value="monthly">
-            <LeaderboardList entries={monthlyLeaders} />
+            {loading ? <LoadingSkeleton /> : <LeaderboardList entries={monthlyLeaders} />}
           </TabsContent>
 
           <TabsContent value="alltime">
-            <LeaderboardList entries={allTimeLeaders} />
+            {loading ? <LoadingSkeleton /> : <LeaderboardList entries={allTimeLeaders} />}
+          </TabsContent>
+
+          <TabsContent value="friends">
+            {loading ? (
+              <LoadingSkeleton />
+            ) : (
+              <LeaderboardList 
+                entries={friendsLeaders} 
+                emptyMessage="Arkadaş ekleyerek arkadaşlarınızla yarışın!"
+              />
+            )}
           </TabsContent>
         </Tabs>
       </main>
