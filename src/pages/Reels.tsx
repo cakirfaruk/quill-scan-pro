@@ -172,8 +172,8 @@ const Reels = () => {
           username: post.profiles?.username || "Unknown",
           profile_photo: post.profiles?.profile_photo || "",
         },
-        likes_count: post.likes_count || 0,
-        comments_count: post.comments_count || 0,
+        likes_count: (post as any).likes_count || 0,
+        comments_count: (post as any).comments_count || 0,
         is_liked: likedPostIds.has(post.id),
         is_saved: savedPostIds.has(post.id),
       })) || [];
@@ -292,7 +292,7 @@ const Reels = () => {
     try {
       const currentReel = reels[currentIndex];
       
-      await supabase.from("reports").insert({
+      await (supabase.from("reports") as any).insert({
         reporter_id: currentUserId,
         reported_content_type: "post",
         reported_content_id: currentReel.id,
