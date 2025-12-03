@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, MessageSquare, Send, Loader2 } from "lucide-react";
+import { Mail, MessageSquare, Send, Loader2, Instagram, Twitter, Phone } from "lucide-react";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 
 const contactSchema = z.object({
   name: z.string()
@@ -48,9 +49,14 @@ const Contact = () => {
         throw new Error(validation.error.errors[0].message);
       }
 
-      // In production, this would call an edge function to send email
-      // For now, we'll just show success message
-      console.log("Contact form submission:", formData);
+      // Call edge function to send email
+      const { data, error } = await supabase.functions.invoke("send-contact-email", {
+        body: formData,
+      });
+
+      if (error) {
+        throw new Error(error.message || "Mesaj gönderilemedi");
+      }
 
       toast({
         title: "Mesajınız gönderildi",
@@ -192,16 +198,49 @@ const Contact = () => {
                 Alternatif İletişim
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Bize doğrudan e-posta ile de ulaşabilirsiniz:
-              </p>
-              <a
-                href="mailto:destek@stellara.app"
-                className="text-primary hover:underline font-medium"
-              >
-                destek@stellara.app
-              </a>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Mail className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">E-posta</p>
+                  <a
+                    href="mailto:destek@stellara.app"
+                    className="text-primary hover:underline font-medium"
+                  >
+                    destek@stellara.app
+                  </a>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <Instagram className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Instagram</p>
+                  <a
+                    href="https://instagram.com/stellara.app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline font-medium"
+                  >
+                    @stellara.app
+                  </a>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <Twitter className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Twitter / X</p>
+                  <a
+                    href="https://twitter.com/stellaraapp"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline font-medium"
+                  >
+                    @stellaraapp
+                  </a>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
