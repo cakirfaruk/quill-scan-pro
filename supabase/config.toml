@@ -65,3 +65,9 @@ verify_jwt = true
 
 [functions.list-cron-jobs]
 verify_jwt = true
+
+[functions.oracle-chat]
+verify_jwt = true
+
+[functions.send-contact-email]
+verify_jwt = false

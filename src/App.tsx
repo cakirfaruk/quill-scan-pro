@@ -69,6 +69,7 @@ const Privacy = lazyWithPreload(() => import("./pages/Privacy"));
 const Terms = lazyWithPreload(() => import("./pages/Terms"));
 const KVKK = lazyWithPreload(() => import("./pages/KVKK"));
 const Contact = lazyWithPreload(() => import("./pages/Contact"));
+const Oracle = lazyWithPreload(() => import("./pages/Oracle"));
 const NotFound = lazyWithPreload(() => import("./pages/NotFound"));
 
 // Route component map for preloading
@@ -106,6 +107,7 @@ const routeComponents: { [path: string]: any } = {
   '/trending': TrendingHashtags,
   '/leaderboard': Leaderboard,
   '/contact': Contact,
+  '/oracle': Oracle,
 };
 
 // Optimized QueryClient with AGGRESSIVE cache settings
@@ -376,6 +378,7 @@ const AppRoutes = () => {
           <Route path="/terms" element={<Terms />} />
           <Route path="/kvkk" element={<KVKK />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/oracle" element={<Oracle />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
       </Suspense>

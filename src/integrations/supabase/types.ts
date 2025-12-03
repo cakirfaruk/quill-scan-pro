@@ -2295,6 +2295,86 @@ export type Database = {
         }
         Relationships: []
       }
+      oracle_conversations: {
+        Row: {
+          created_at: string | null
+          id: string
+          title: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          title?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      oracle_daily_usage: {
+        Row: {
+          date: string
+          free_questions_used: number | null
+          paid_questions_used: number | null
+          user_id: string
+        }
+        Insert: {
+          date?: string
+          free_questions_used?: number | null
+          paid_questions_used?: number | null
+          user_id: string
+        }
+        Update: {
+          date?: string
+          free_questions_used?: number | null
+          paid_questions_used?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      oracle_messages: {
+        Row: {
+          content: string
+          context_used: Json | null
+          conversation_id: string | null
+          created_at: string | null
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          context_used?: Json | null
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          context_used?: Json | null
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oracle_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "oracle_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       palmistry_readings: {
         Row: {
           created_at: string
