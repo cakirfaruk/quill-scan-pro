@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Moon, Brain, History, Star, TrendingUp, Clock, ChevronRight } from "lucide-react";
+import { Sparkles, Moon, Brain, History, Star, TrendingUp, Clock, ChevronRight, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -31,7 +31,7 @@ const Discovery = () => {
   const fortunes = [
     { title: "Tarot", icon: "🔮", color: "from-violet-500 to-purple-500", path: "/tarot", type: "tarot" },
     { title: "Kahve Falı", icon: "☕", color: "from-amber-600 to-yellow-600", path: "/coffee-fortune", type: "coffee_fortune" },
-    { title: "Rüya Tabiri", icon: "🌙", color: "from-indigo-500 to-blue-500", path: "/dream-interpretation", type: "dream" },
+    { title: "Rüya Tabiri", icon: "🌙", color: "from-indigo-500 to-blue-500", path: "/dream", type: "dream" },
     { title: "Günlük Burç", icon: "⭐", color: "from-yellow-500 to-amber-500", path: "/daily-horoscope", type: "daily_horoscope" },
     { title: "El Okuma", icon: "🤲", color: "from-teal-500 to-emerald-500", path: "/palmistry", type: "palmistry" },
   ];
@@ -124,6 +124,35 @@ const Discovery = () => {
           <p className="text-muted-foreground text-sm max-w-md mx-auto">
             Analizler ve fallarla kendinizi keşfedin
           </p>
+        </motion.div>
+
+        {/* Mystic Oracle Card */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.15 }}
+        >
+          <Card 
+            className="bg-gradient-to-br from-purple-600/20 to-pink-600/20 border-purple-500/30 cursor-pointer hover:shadow-glow transition-all hover:-translate-y-1"
+            onClick={() => navigate("/oracle")}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center animate-pulse shadow-lg">
+                  <MessageCircle className="w-7 h-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-lg bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                    Mystic Oracle
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Kişisel astroloji asistanına sor, yıldızların bilgeliğini keşfet
+                  </p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-purple-400" />
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
 
         {/* Daily Tip Card */}
