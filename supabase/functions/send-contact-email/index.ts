@@ -22,6 +22,16 @@ const categoryLabels: Record<string, string> = {
   other: "Diğer",
 };
 
+// HTML escape function to prevent injection
+const escapeHtml = (str: string): string => {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -67,6 +77,12 @@ serve(async (req) => {
       // Continue even if DB insert fails - we still want to try sending the email
     }
 
+    // Sanitize user inputs to prevent HTML injection
+    const safeName = escapeHtml(name);
+    const safeEmail = escapeHtml(email);
+    const safeMessage = escapeHtml(message);
+    const safeCategory = escapeHtml(categoryLabels[category] || category);
+
     // Try to send email via Resend if API key is configured
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     
@@ -81,16 +97,16 @@ serve(async (req) => {
         body: JSON.stringify({
           from: "Stellara <onboarding@resend.dev>",
           to: ["destek@stellara.app"],
-          subject: `[${categoryLabels[category] || category}] Yeni İletişim Formu - ${name}`,
+          subject: `[${safeCategory}] Yeni İletişim Formu - ${safeName}`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: #8B5CF6;">Yeni İletişim Formu Mesajı</h2>
               <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <p><strong>Ad Soyad:</strong> ${name}</p>
-                <p><strong>E-posta:</strong> ${email}</p>
-                <p><strong>Kategori:</strong> ${categoryLabels[category] || category}</p>
+                <p><strong>Ad Soyad:</strong> ${safeName}</p>
+                <p><strong>E-posta:</strong> ${safeEmail}</p>
+                <p><strong>Kategori:</strong> ${safeCategory}</p>
                 <p><strong>Mesaj:</strong></p>
-                <p style="white-space: pre-wrap; background: white; padding: 15px; border-radius: 4px;">${message}</p>
+                <p style="white-space: pre-wrap; background: white; padding: 15px; border-radius: 4px;">${safeMessage}</p>
               </div>
               <p style="color: #666; font-size: 12px;">Bu mesaj Stellara iletişim formundan gönderilmiştir.</p>
             </div>
@@ -115,12 +131,12 @@ serve(async (req) => {
           subject: "Mesajınız Alındı - Stellara",
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #8B5CF6;">Merhaba ${name},</h2>
+              <h2 style="color: #8B5CF6;">Merhaba ${safeName},</h2>
               <p>Mesajınız başarıyla alınmıştır. En kısa sürede size geri dönüş yapacağız.</p>
               <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <p><strong>Kategori:</strong> ${categoryLabels[category] || category}</p>
+                <p><strong>Kategori:</strong> ${safeCategory}</p>
                 <p><strong>Mesajınız:</strong></p>
-                <p style="white-space: pre-wrap;">${message}</p>
+                <p style="white-space: pre-wrap;">${safeMessage}</p>
               </div>
               <p>Teşekkürler,<br>Stellara Ekibi</p>
             </div>
