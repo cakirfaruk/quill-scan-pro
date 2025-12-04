@@ -11,6 +11,20 @@ export const HeroSection = () => {
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-b from-background via-background to-background/50">
       <ParticleBackground />
       
+      {/* Readability Overlay - Creates soft focus on text area while preserving stars at edges */}
+      <div 
+        className="absolute inset-0 z-[5] pointer-events-none"
+        style={{
+          background: `radial-gradient(
+            ellipse 90% 70% at 50% 45%,
+            hsl(var(--background) / 0.9) 0%,
+            hsl(var(--background) / 0.7) 35%,
+            hsl(var(--background) / 0.4) 60%,
+            transparent 100%
+          )`
+        }}
+      />
+      
       <div className="container relative z-10 px-4">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -36,10 +50,10 @@ export const HeroSection = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.8 }}
-            className="text-5xl md:text-7xl font-bold mb-6 leading-tight"
+            className="text-5xl md:text-7xl font-bold mb-6 leading-tight drop-shadow-sm"
           >
             Herkes yıldızların altında{" "}
-            <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent animate-gradient-shimmer">
+            <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent animate-gradient-shimmer drop-shadow-none">
               doğar
             </span>
           </motion.h1>
