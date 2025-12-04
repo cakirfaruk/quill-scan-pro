@@ -19,6 +19,7 @@ import { lazyWithPreload } from "@/utils/lazyWithPreload";
 import { useRoutePreloader } from "@/hooks/use-route-preloader";
 import { useLinkIntersectionPreloader } from "@/hooks/use-link-intersection-preloader";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { OfflineCacheStatus } from "@/components/OfflineCacheStatus";
 import { InAppNotification } from "@/components/InAppNotification";
 import { useAnalytics } from "@/hooks/use-analytics";
@@ -70,6 +71,8 @@ const Terms = lazyWithPreload(() => import("./pages/Terms"));
 const KVKK = lazyWithPreload(() => import("./pages/KVKK"));
 const Contact = lazyWithPreload(() => import("./pages/Contact"));
 const Oracle = lazyWithPreload(() => import("./pages/Oracle"));
+const Install = lazyWithPreload(() => import("./pages/Install"));
+const Offline = lazyWithPreload(() => import("./pages/Offline"));
 const NotFound = lazyWithPreload(() => import("./pages/NotFound"));
 
 // Route component map for preloading
@@ -108,6 +111,8 @@ const routeComponents: { [path: string]: any } = {
   '/leaderboard': Leaderboard,
   '/contact': Contact,
   '/oracle': Oracle,
+  '/install': Install,
+  '/offline': Offline,
 };
 
 // Optimized QueryClient with AGGRESSIVE cache settings
@@ -379,6 +384,8 @@ const AppRoutes = () => {
           <Route path="/kvkk" element={<KVKK />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/oracle" element={<Oracle />} />
+          <Route path="/install" element={<Install />} />
+          <Route path="/offline" element={<Offline />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
       </Suspense>
@@ -422,6 +429,7 @@ const App = () => {
               <PermissionManager />
               <EnhancedOfflineIndicator />
               <PWAInstallPrompt />
+              <PWAUpdatePrompt />
               <OfflineCacheStatus />
               <CookieConsent />
               <AppRoutes />
