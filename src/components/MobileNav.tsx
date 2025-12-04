@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Plus, Video, Sparkles, Heart, Menu, Coffee, Moon, Hand, Star, Target, Calendar, FileText, History, Gift } from "lucide-react";
+import { Home, Plus, Video, Sparkles, Heart, Menu, Coffee, Moon, Hand, Star, Target, Calendar, FileText, History, Gift, Users, Trophy, Award, Settings, User, MessageCircle, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PreloadLink } from "@/components/PreloadLink";
 import { useState, useEffect, Suspense } from "react";
@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { PWAInstallButton } from "@/components/PWAInstallButton";
+import { Separator } from "@/components/ui/separator";
 
 export const MobileNav = () => {
   const location = useLocation();
@@ -61,18 +62,47 @@ export const MobileNav = () => {
     { icon: Video, label: "Reels", path: "/reels" },
   ];
 
-  const quickMenuItems = [
-    { icon: Gift, label: "Günlük Ödüller", path: "/daily-rewards" },
-    { icon: History, label: "Analiz Geçmişi", path: "/analysis-history" },
-    { icon: Sparkles, label: "Tarot", path: "/tarot" },
-    { icon: Coffee, label: "Kahve Falı", path: "/coffee-fortune" },
-    { icon: Moon, label: "Rüya Tabiri", path: "/dream-interpretation" },
-    { icon: Hand, label: "El Okuma", path: "/palmistry" },
-    { icon: Star, label: "Günlük Burç", path: "/daily-horoscope" },
-    { icon: Target, label: "Numeroloji", path: "/numerology" },
-    { icon: Calendar, label: "Doğum Haritası", path: "/birth-chart" },
-    { icon: FileText, label: "El Yazısı", path: "/handwriting" },
-    { icon: Heart, label: "Uyumluluk", path: "/compatibility" },
+  // Organized quick menu with categories for better navigation
+  const quickMenuCategories = [
+    {
+      title: "Hızlı Erişim",
+      items: [
+        { icon: Gift, label: "Günlük Ödüller", path: "/daily-rewards", highlight: true },
+        { icon: Sparkles, label: "Oracle AI", path: "/oracle", highlight: true },
+        { icon: User, label: "Profil", path: "/profile" },
+        { icon: MessageCircle, label: "Mesajlar", path: "/messages" },
+      ]
+    },
+    {
+      title: "Analizler",
+      items: [
+        { icon: History, label: "Analiz Geçmişi", path: "/analysis-history" },
+        { icon: Sparkles, label: "Tarot", path: "/tarot" },
+        { icon: Coffee, label: "Kahve Falı", path: "/coffee-fortune" },
+        { icon: Moon, label: "Rüya Tabiri", path: "/dream" },
+        { icon: Hand, label: "El Okuma", path: "/palmistry" },
+        { icon: Star, label: "Günlük Burç", path: "/daily-horoscope" },
+        { icon: Target, label: "Numeroloji", path: "/numerology" },
+        { icon: Calendar, label: "Doğum Haritası", path: "/birth-chart" },
+        { icon: FileText, label: "El Yazısı", path: "/handwriting" },
+        { icon: Heart, label: "Uyumluluk", path: "/compatibility" },
+      ]
+    },
+    {
+      title: "Sosyal",
+      items: [
+        { icon: Users, label: "Gruplar", path: "/groups" },
+        { icon: Search, label: "Keşfet", path: "/explore" },
+        { icon: Trophy, label: "Lider Tablosu", path: "/leaderboard" },
+        { icon: Award, label: "Rozetler", path: "/badges" },
+      ]
+    },
+    {
+      title: "Diğer",
+      items: [
+        { icon: Settings, label: "Ayarlar", path: "/settings" },
+      ]
+    }
   ];
 
   return (
@@ -132,36 +162,53 @@ export const MobileNav = () => {
                 <span className="text-[10px] font-medium">Menü</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-              <SheetHeader>
+            <SheetContent side="right" className="w-[300px] sm:w-[400px] p-0">
+              <SheetHeader className="p-4 pb-2">
                 <SheetTitle>Hızlı Erişim</SheetTitle>
               </SheetHeader>
               
               {/* PWA Install Button */}
-              <div className="mt-4 mb-2">
+              <div className="px-4 pb-2">
                 <PWAInstallButton />
               </div>
               
-              <ScrollArea className="h-[calc(100vh-180px)] mt-4">
-                <div className="grid grid-cols-2 gap-3 pr-4">
-                  {quickMenuItems.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <button
-                        key={item.path}
-                        onClick={() => {
-                          navigate(item.path);
-                          setQuickMenuOpen(false);
-                        }}
-                        className="flex flex-col items-center gap-2 p-3 rounded-lg border hover:border-primary hover:bg-accent transition-all"
-                      >
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <Icon className="w-5 h-5 text-primary" />
-                        </div>
-                        <span className="text-[10px] text-center font-medium leading-tight">{item.label}</span>
-                      </button>
-                    );
-                  })}
+              <ScrollArea className="h-[calc(100vh-140px)]">
+                <div className="px-4 pb-4 space-y-4">
+                  {quickMenuCategories.map((category, categoryIndex) => (
+                    <div key={category.title}>
+                      {categoryIndex > 0 && <Separator className="mb-3" />}
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                        {category.title}
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {category.items.map((item) => {
+                          const Icon = item.icon;
+                          const isHighlight = 'highlight' in item && item.highlight;
+                          return (
+                            <button
+                              key={item.path}
+                              onClick={() => {
+                                navigate(item.path);
+                                setQuickMenuOpen(false);
+                              }}
+                              className={`flex flex-col items-center gap-1.5 p-2.5 rounded-lg border transition-all ${
+                                isHighlight 
+                                  ? "border-primary/30 bg-primary/5 hover:bg-primary/10" 
+                                  : "hover:border-primary hover:bg-accent"
+                              }`}
+                            >
+                              <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
+                                isHighlight ? "bg-primary/20" : "bg-primary/10"
+                              }`}>
+                                <Icon className={`w-4 h-4 ${isHighlight ? "text-primary" : "text-primary"}`} />
+                              </div>
+                              <span className="text-[10px] text-center font-medium leading-tight">{item.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </ScrollArea>
             </SheetContent>

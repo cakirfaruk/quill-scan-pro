@@ -324,13 +324,13 @@ export const CompactHeader = () => {
                 )}>{credits}</span>
               </Button>
 
-              {/* Daily Rewards - Desktop Only */}
+              {/* Daily Rewards - Now Visible on Mobile */}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate("/daily-rewards")}
                 className={cn(
-                  "gap-1.5 px-2 sm:px-3 transition-all duration-300 hidden sm:flex",
+                  "gap-1 px-1.5 sm:px-3 transition-all duration-300",
                   isMiniMode ? "h-7 sm:h-8" : "h-8 sm:h-9"
                 )}
                 title="Günlük Ücretsiz Kredi"
