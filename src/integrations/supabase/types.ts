@@ -4454,6 +4454,10 @@ export type Database = {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
       }
+      is_group_member: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
       reset_daily_swipes: { Args: never; Returns: undefined }
       send_scheduled_messages: { Args: never; Returns: undefined }
       update_trending_search: {
