@@ -18,6 +18,19 @@ import { EditPostDialog } from "@/components/EditPostDialog";
 import { PostInsightsDialog } from "@/components/PostInsightsDialog";
 import { SharedPostCard } from "@/components/SharedPostCard";
 
+// Helper function to check if media type is an image
+const isImageType = (type: string | undefined | null): boolean => {
+  if (!type) return true; // Default to image if no type
+  const imageTypes = ['image', 'photo', 'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg'];
+  return imageTypes.some(t => type.toLowerCase().includes(t) || type.toLowerCase() === t);
+};
+
+// Helper function to check if media type is video
+const isVideoType = (type: string | undefined | null): boolean => {
+  if (!type) return false;
+  return type.toLowerCase().includes('video');
+};
+
 interface Post {
   id: string;
   user_id: string;
@@ -205,11 +218,11 @@ export const FeedPostCard = memo(({
                 onClick={() => {
                   onMediaClick(post.media_urls!.map((url, i) => ({ 
                     url, 
-                    type: post.media_types?.[i] === "video" ? "video" : "photo" 
+                    type: isVideoType(post.media_types?.[i]) ? "video" : "photo" 
                   })), 0);
                 }}
               >
-                {post.media_types?.[0] === "image" || post.media_types?.[0] === "photo" ? (
+                {isImageType(post.media_types?.[0]) ? (
                   <OptimizedImage
                     src={post.media_urls[0]}
                     alt="Post"
@@ -218,7 +231,7 @@ export const FeedPostCard = memo(({
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 600px, 800px"
                     quality={80}
                   />
-                ) : post.media_types?.[0] === "video" ? (
+                ) : isVideoType(post.media_types?.[0]) ? (
                   <video 
                     src={post.media_urls[0]} 
                     controls 
@@ -238,11 +251,11 @@ export const FeedPostCard = memo(({
                         onClick={() => {
                           onMediaClick(post.media_urls!.map((url, i) => ({ 
                             url, 
-                            type: post.media_types?.[i] === "video" ? "video" : "photo" 
+                            type: isVideoType(post.media_types?.[i]) ? "video" : "photo" 
                           })), index);
                         }}
                       >
-                        {post.media_types?.[index] === "image" || post.media_types?.[index] === "photo" ? (
+                        {isImageType(post.media_types?.[index]) ? (
                           <OptimizedImage
                             src={url}
                             alt={`Post ${index + 1}`}
@@ -251,7 +264,7 @@ export const FeedPostCard = memo(({
                             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 600px, 800px"
                             quality={80}
                           />
-                        ) : post.media_types?.[index] === "video" ? (
+                        ) : isVideoType(post.media_types?.[index]) ? (
                           <video 
                             src={url} 
                             controls 

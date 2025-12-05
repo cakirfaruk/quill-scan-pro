@@ -76,6 +76,12 @@ export const uploadToStorage = async (
 
     const fileName = `${userId}/${Date.now()}.${fileExt}`;
 
+    // Get session for authenticated upload
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      throw new Error('Oturum bulunamadı. Lütfen tekrar giriş yapın.');
+    }
+
     // Upload with progress tracking using XMLHttpRequest
     if (onProgress) {
       const uploadPromise = new Promise<string>((resolve, reject) => {
@@ -90,19 +96,30 @@ export const uploadToStorage = async (
         });
 
         xhr.addEventListener('load', async () => {
-          if (xhr.status === 200) {
+          if (xhr.status >= 200 && xhr.status < 300) {
             try {
               const response = JSON.parse(xhr.responseText);
-              if (response.Key) {
-                resolve(response.Key);
+              if (response.Key || response.Id) {
+                resolve(response.Key || fileName);
               } else {
-                reject(new Error('Upload başarısız - yanıt formatı hatalı'));
+                resolve(fileName); // Fallback to fileName
               }
             } catch (e) {
-              reject(new Error('Upload yanıtı işlenemedi'));
+              resolve(fileName); // Fallback to fileName on parse error
             }
           } else {
-            reject(new Error(`Upload başarısız - HTTP ${xhr.status}`));
+            let errorMsg = `Upload başarısız - HTTP ${xhr.status}`;
+            try {
+              const errorResponse = JSON.parse(xhr.responseText);
+              if (errorResponse.message) {
+                errorMsg = errorResponse.message;
+              } else if (errorResponse.error) {
+                errorMsg = errorResponse.error;
+              }
+            } catch (e) {
+              // Use default error message
+            }
+            reject(new Error(errorMsg));
           }
         });
 
@@ -114,15 +131,15 @@ export const uploadToStorage = async (
           reject(new Error('Yükleme iptal edildi'));
         });
 
-        // Get upload URL and token
+        // Get upload URL and token - use session token for proper auth
         const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
         const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
         
         xhr.open('POST', `${SUPABASE_URL}/storage/v1/object/${bucket}/${fileName}`);
-        xhr.setRequestHeader('Authorization', `Bearer ${SUPABASE_KEY}`);
+        xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
         xhr.setRequestHeader('apikey', SUPABASE_KEY);
         xhr.setRequestHeader('Content-Type', fileToUpload.type || 'application/octet-stream');
-        xhr.setRequestHeader('cache-control', '3600');
+        xhr.setRequestHeader('x-upsert', 'false');
         
         xhr.send(fileToUpload);
       });

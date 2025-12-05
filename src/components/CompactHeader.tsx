@@ -138,7 +138,7 @@ export const CompactHeader = () => {
           >
         {/* Logo */}
         <PreloadLink 
-          to="/" 
+          to={isLoggedIn ? "/feed" : "/"} 
           className={cn(
             "flex items-center gap-2 hover:opacity-80 transition-all duration-300",
             isMiniMode && "scale-90"

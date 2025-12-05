@@ -17,6 +17,19 @@ import { OptimizedImage } from "./OptimizedImage";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
+// Helper function to check if media type is an image
+const isImageType = (type: string | undefined | null): boolean => {
+  if (!type) return true; // Default to image if no type
+  const imageTypes = ['image', 'photo', 'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg'];
+  return imageTypes.some(t => type.toLowerCase().includes(t) || type.toLowerCase() === t);
+};
+
+// Helper function to check if media type is video
+const isVideoType = (type: string | undefined | null): boolean => {
+  if (!type) return false;
+  return type.toLowerCase().includes('video');
+};
+
 interface Post {
   id: string;
   user_id: string;
@@ -141,10 +154,10 @@ export const ProfilePosts = memo(({ posts, loading, isOwnProfile, onLike }: Prof
             transition={{ duration: 0.3 }}
             className="grid grid-cols-3 gap-1 sm:gap-2"
           >
-            {postsWithMedia.map((post, index) => {
+          {postsWithMedia.map((post, index) => {
               const firstMedia = post.media_urls![0];
               const mediaType = post.media_types?.[0];
-              const isVideo = mediaType === "video";
+              const isVideo = isVideoType(mediaType);
 
               return (
                 <motion.div
@@ -262,7 +275,7 @@ export const ProfilePosts = memo(({ posts, loading, isOwnProfile, onLike }: Prof
                   className="w-full"
                   onClick={() => openMediaViewer(post, 0)}
                 >
-                  {post.media_types?.[0] === "photo" ? (
+                  {isImageType(post.media_types?.[0]) ? (
                     <OptimizedImage
                       src={post.media_urls[0]}
                       alt="Post media"
@@ -290,7 +303,7 @@ export const ProfilePosts = memo(({ posts, loading, isOwnProfile, onLike }: Prof
                         className="w-full"
                         onClick={() => openMediaViewer(post, index)}
                       >
-                          {post.media_types?.[index] === "photo" ? (
+                          {isImageType(post.media_types?.[index]) ? (
                             <OptimizedImage
                               src={url}
                               alt={`Post media ${index + 1}`}
