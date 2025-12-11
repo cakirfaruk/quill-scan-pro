@@ -74,6 +74,7 @@ const Oracle = lazyWithPreload(() => import("./pages/Oracle"));
 const Install = lazyWithPreload(() => import("./pages/Install"));
 const Offline = lazyWithPreload(() => import("./pages/Offline"));
 const NotFound = lazyWithPreload(() => import("./pages/NotFound"));
+const Store = lazyWithPreload(() => import("./pages/Store"));
 
 // Route component map for preloading
 const routeComponents: { [path: string]: any } = {
@@ -113,6 +114,7 @@ const routeComponents: { [path: string]: any } = {
   '/oracle': Oracle,
   '/install': Install,
   '/offline': Offline,
+  '/store': Store,
 };
 
 // Optimized QueryClient with AGGRESSIVE cache settings
@@ -386,6 +388,7 @@ const AppRoutes = () => {
           <Route path="/oracle" element={<Oracle />} />
           <Route path="/install" element={<Install />} />
           <Route path="/offline" element={<Offline />} />
+          <Route path="/store" element={<Store />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
       </Suspense>
