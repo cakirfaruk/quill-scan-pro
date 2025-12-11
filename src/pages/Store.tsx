@@ -6,11 +6,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Coins, Crown, Gift, Sparkles, Shield, Clock, Zap } from "lucide-react";
+import { Coins, Crown, Package, Sparkles, Shield, Clock, Zap } from "lucide-react";
 import CreditPackages from "@/components/store/CreditPackages";
 import SubscriptionPlans from "@/components/store/SubscriptionPlans";
-import SpecialPackages from "@/components/store/SpecialPackages";
+import TimeBasedPackages from "@/components/store/TimeBasedPackages";
 import AnalysisPrices from "@/components/store/AnalysisPrices";
+import FlashDeals from "@/components/store/FlashDeals";
+import ActivePackages from "@/components/store/ActivePackages";
 
 const Store = () => {
   const navigate = useNavigate();
@@ -109,11 +111,24 @@ const Store = () => {
           </div>
         </motion.div>
 
-        {/* Trust Badges */}
+        {/* Active Packages */}
+        <ActivePackages />
+
+        {/* Flash Deals */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.1 }}
+          className="mb-6"
+        >
+          <FlashDeals onPurchaseComplete={checkAuthAndLoadData} />
+        </motion.div>
+
+        {/* Trust Badges */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
           className="flex flex-wrap justify-center gap-4 mb-8"
         >
           {trustBadges.map((badge, index) => (
@@ -128,8 +143,18 @@ const Store = () => {
         </motion.div>
 
         {/* Main Tabs */}
-        <Tabs defaultValue="credits" className="w-full">
+        <Tabs defaultValue="packages" className="w-full">
           <TabsList className="w-full grid grid-cols-4 mb-6 h-auto p-1 bg-muted/50 rounded-xl">
+            <TabsTrigger 
+              value="packages" 
+              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg relative"
+            >
+              <Package className="w-4 h-4" />
+              <span className="text-xs sm:text-sm">Paketler</span>
+              <Badge className="absolute -top-1 -right-1 text-[10px] px-1 py-0 bg-gradient-to-r from-green-500 to-emerald-500 border-0">
+                YENİ
+              </Badge>
+            </TabsTrigger>
             <TabsTrigger 
               value="credits" 
               className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
@@ -148,13 +173,6 @@ const Store = () => {
               </Badge>
             </TabsTrigger>
             <TabsTrigger 
-              value="packages" 
-              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
-            >
-              <Gift className="w-4 h-4" />
-              <span className="text-xs sm:text-sm">Paketler</span>
-            </TabsTrigger>
-            <TabsTrigger 
               value="prices" 
               className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
             >
@@ -164,23 +182,47 @@ const Store = () => {
           </TabsList>
 
           <AnimatePresence mode="wait">
+            <TabsContent value="packages" className="mt-0">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                <TimeBasedPackages onPurchaseComplete={checkAuthAndLoadData} />
+              </motion.div>
+            </TabsContent>
+            
             <TabsContent value="credits" className="mt-0">
-              <CreditPackages onPurchaseComplete={checkAuthAndLoadData} />
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                <CreditPackages onPurchaseComplete={checkAuthAndLoadData} />
+              </motion.div>
             </TabsContent>
             
             <TabsContent value="subscriptions" className="mt-0">
-              <SubscriptionPlans 
-                hasSubscription={hasSubscription} 
-                onPurchaseComplete={checkAuthAndLoadData} 
-              />
-            </TabsContent>
-            
-            <TabsContent value="packages" className="mt-0">
-              <SpecialPackages onPurchaseComplete={checkAuthAndLoadData} />
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                <SubscriptionPlans 
+                  hasSubscription={hasSubscription} 
+                  onPurchaseComplete={checkAuthAndLoadData} 
+                />
+              </motion.div>
             </TabsContent>
             
             <TabsContent value="prices" className="mt-0">
-              <AnalysisPrices />
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                <AnalysisPrices />
+              </motion.div>
             </TabsContent>
           </AnimatePresence>
         </Tabs>

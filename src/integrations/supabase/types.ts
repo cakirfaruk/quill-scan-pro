@@ -1264,6 +1264,60 @@ export type Database = {
         }
         Relationships: []
       }
+      flash_deals: {
+        Row: {
+          created_at: string | null
+          current_purchases: number | null
+          deal_price: number
+          deal_type: string
+          description: string | null
+          discount_percent: number
+          ends_at: string
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          max_purchases: number | null
+          name: string
+          original_price: number
+          reference_id: string | null
+          starts_at: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_purchases?: number | null
+          deal_price: number
+          deal_type: string
+          description?: string | null
+          discount_percent: number
+          ends_at: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_purchases?: number | null
+          name: string
+          original_price: number
+          reference_id?: string | null
+          starts_at: string
+        }
+        Update: {
+          created_at?: string | null
+          current_purchases?: number | null
+          deal_price?: number
+          deal_type?: string
+          description?: string | null
+          discount_percent?: number
+          ends_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_purchases?: number | null
+          name?: string
+          original_price?: number
+          reference_id?: string | null
+          starts_at?: string
+        }
+        Relationships: []
+      }
       friend_streaks: {
         Row: {
           created_at: string
@@ -2419,6 +2473,38 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "oracle_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      package_usage_logs: {
+        Row: {
+          active_package_id: string | null
+          created_at: string | null
+          id: string
+          usage_type: string
+          user_id: string
+        }
+        Insert: {
+          active_package_id?: string | null
+          created_at?: string | null
+          id?: string
+          usage_type: string
+          user_id: string
+        }
+        Update: {
+          active_package_id?: string | null
+          created_at?: string | null
+          id?: string
+          usage_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_usage_logs_active_package_id_fkey"
+            columns: ["active_package_id"]
+            isOneToOne: false
+            referencedRelation: "user_active_packages"
             referencedColumns: ["id"]
           },
         ]
@@ -3933,6 +4019,57 @@ export type Database = {
         }
         Relationships: []
       }
+      time_based_packages: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          credit_cost: number
+          description: string | null
+          duration_days: number
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          original_credit_value: number
+          package_type: string
+          sort_order: number | null
+          updated_at: string | null
+          usage_limit: number | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          credit_cost: number
+          description?: string | null
+          duration_days: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          original_credit_value: number
+          package_type: string
+          sort_order?: number | null
+          updated_at?: string | null
+          usage_limit?: number | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          credit_cost?: number
+          description?: string | null
+          duration_days?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          original_credit_value?: number
+          package_type?: string
+          sort_order?: number | null
+          updated_at?: string | null
+          usage_limit?: number | null
+        }
+        Relationships: []
+      }
       transit_notifications: {
         Row: {
           created_at: string
@@ -4000,6 +4137,59 @@ export type Database = {
           search_count?: number | null
         }
         Relationships: []
+      }
+      user_active_packages: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          is_active: boolean | null
+          notification_hour: number | null
+          package_id: string | null
+          package_name: string
+          package_type: string
+          starts_at: string
+          usage_count: number | null
+          usage_limit: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          is_active?: boolean | null
+          notification_hour?: number | null
+          package_id?: string | null
+          package_name: string
+          package_type: string
+          starts_at?: string
+          usage_count?: number | null
+          usage_limit?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          is_active?: boolean | null
+          notification_hour?: number | null
+          package_id?: string | null
+          package_name?: string
+          package_type?: string
+          starts_at?: string
+          usage_count?: number | null
+          usage_limit?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_active_packages_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "time_based_packages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_badges: {
         Row: {
@@ -4153,6 +4343,39 @@ export type Database = {
           id?: string
           moderator_id?: string
           reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_notification_preferences: {
+        Row: {
+          created_at: string | null
+          daily_horoscope_enabled: boolean | null
+          daily_horoscope_hour: number | null
+          deal_notifications_enabled: boolean | null
+          id: string
+          package_reminders_enabled: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          daily_horoscope_enabled?: boolean | null
+          daily_horoscope_hour?: number | null
+          deal_notifications_enabled?: boolean | null
+          id?: string
+          package_reminders_enabled?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          daily_horoscope_enabled?: boolean | null
+          daily_horoscope_hour?: number | null
+          deal_notifications_enabled?: boolean | null
+          id?: string
+          package_reminders_enabled?: boolean | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -4704,6 +4927,10 @@ export type Database = {
           plan_name: string
         }[]
       }
+      has_active_package: {
+        Args: { p_package_type: string; p_user_id: string }
+        Returns: boolean
+      }
       has_active_subscription: { Args: { p_user_id: string }; Returns: boolean }
       has_role: {
         Args: {
@@ -4730,6 +4957,10 @@ export type Database = {
       update_trending_search: {
         Args: { search_query: string }
         Returns: undefined
+      }
+      use_package_credit: {
+        Args: { p_package_type: string; p_user_id: string }
+        Returns: boolean
       }
     }
     Enums: {

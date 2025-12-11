@@ -111,8 +111,8 @@ const AnalysisPrices = () => {
               <Coins className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="font-medium text-foreground">1 Kredi = ~10₺ Değerinde</p>
-              <p className="text-muted-foreground">VIP aboneler tüm hizmetlere sınırsız erişir</p>
+              <p className="font-medium text-foreground">1₭ ≈ 10₺ Piyasa Değeri</p>
+              <p className="text-muted-foreground">Piyasadan %30-50 daha uygun fiyatlar</p>
             </div>
           </div>
         </CardContent>
@@ -162,10 +162,15 @@ const AnalysisPrices = () => {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10">
-                      <Coins className="w-4 h-4 text-primary" />
-                      <span className="font-bold text-primary">{price.credit_cost}</span>
-                      <span className="text-sm text-primary/70">₭</span>
+                    <div className="text-right">
+                      <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10">
+                        <Coins className="w-4 h-4 text-primary" />
+                        <span className="font-bold text-primary">{price.credit_cost}</span>
+                        <span className="text-sm text-primary/70">₭</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        ~{price.credit_cost * 10}₺
+                      </p>
                     </div>
                     <Button
                       size="sm"

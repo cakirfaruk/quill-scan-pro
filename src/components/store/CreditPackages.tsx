@@ -15,6 +15,14 @@ interface CreditPackage {
   price_try: number;
 }
 
+const getBonusPercent = (price: number, credits: number): number => {
+  // Base rate is 1 credit = 1 TL at Mini package level
+  const baseRate = 1;
+  const effectiveRate = price / credits;
+  const bonus = Math.round(((baseRate - effectiveRate) / baseRate) * 100);
+  return Math.max(0, bonus);
+};
+
 interface CreditPackagesProps {
   onPurchaseComplete: () => void;
 }
