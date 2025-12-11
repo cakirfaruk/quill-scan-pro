@@ -69,6 +69,7 @@ export const MobileNav = () => {
       items: [
         { icon: Gift, label: "Günlük Ödüller", path: "/daily-rewards", highlight: true },
         { icon: Sparkles, label: "Oracle AI", path: "/oracle", highlight: true },
+        { icon: Star, label: "Mağaza", path: "/store", highlight: true },
         { icon: User, label: "Profil", path: "/profile" },
         { icon: MessageCircle, label: "Mesajlar", path: "/messages" },
       ]

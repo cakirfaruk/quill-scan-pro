@@ -207,6 +207,54 @@ export type Database = {
         }
         Relationships: []
       }
+      analysis_prices: {
+        Row: {
+          analysis_type: string
+          category: string | null
+          cooldown_hours: number | null
+          created_at: string | null
+          credit_cost: number
+          description: string | null
+          display_name: string
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          is_repeatable: boolean | null
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          analysis_type: string
+          category?: string | null
+          cooldown_hours?: number | null
+          created_at?: string | null
+          credit_cost: number
+          description?: string | null
+          display_name: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_repeatable?: boolean | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          analysis_type?: string
+          category?: string | null
+          cooldown_hours?: number | null
+          created_at?: string | null
+          credit_cost?: number
+          description?: string | null
+          display_name?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_repeatable?: boolean | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       analytics_events: {
         Row: {
           created_at: string
@@ -3068,6 +3116,59 @@ export type Database = {
         }
         Relationships: []
       }
+      purchases: {
+        Row: {
+          amount_try: number
+          created_at: string | null
+          credits_added: number | null
+          id: string
+          item_id: string | null
+          item_name: string | null
+          platform: string
+          purchase_type: string
+          status: string | null
+          store_receipt: string | null
+          store_transaction_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_try: number
+          created_at?: string | null
+          credits_added?: number | null
+          id?: string
+          item_id?: string | null
+          item_name?: string | null
+          platform: string
+          purchase_type: string
+          status?: string | null
+          store_receipt?: string | null
+          store_transaction_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_try?: number
+          created_at?: string | null
+          credits_added?: number | null
+          id?: string
+          item_id?: string | null
+          item_name?: string | null
+          platform?: string
+          purchase_type?: string
+          status?: string | null
+          store_receipt?: string | null
+          store_transaction_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchases_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       push_subscriptions: {
         Row: {
           auth: string
@@ -3427,6 +3528,57 @@ export type Database = {
           },
         ]
       }
+      special_packages: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          discount_percentage: number | null
+          expires_at: string | null
+          icon: string | null
+          id: string
+          included_items: Json
+          is_active: boolean | null
+          is_featured: boolean | null
+          is_limited_time: boolean | null
+          name: string
+          original_price_try: number | null
+          price_try: number
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          discount_percentage?: number | null
+          expires_at?: string | null
+          icon?: string | null
+          id?: string
+          included_items?: Json
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          is_limited_time?: boolean | null
+          name: string
+          original_price_try?: number | null
+          price_try: number
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          discount_percentage?: number | null
+          expires_at?: string | null
+          icon?: string | null
+          id?: string
+          included_items?: Json
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          is_limited_time?: boolean | null
+          name?: string
+          original_price_try?: number | null
+          price_try?: number
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
       stories: {
         Row: {
           background_color: string | null
@@ -3669,6 +3821,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subscription_plans: {
+        Row: {
+          app_store_product_id: string | null
+          bonus_credits: number | null
+          created_at: string | null
+          description: string | null
+          duration_days: number
+          duration_type: string
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          is_popular: boolean | null
+          name: string
+          play_store_product_id: string | null
+          price_try: number
+        }
+        Insert: {
+          app_store_product_id?: string | null
+          bonus_credits?: number | null
+          created_at?: string | null
+          description?: string | null
+          duration_days: number
+          duration_type: string
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          is_popular?: boolean | null
+          name: string
+          play_store_product_id?: string | null
+          price_try: number
+        }
+        Update: {
+          app_store_product_id?: string | null
+          bonus_credits?: number | null
+          created_at?: string | null
+          description?: string | null
+          duration_days?: number
+          duration_type?: string
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          is_popular?: boolean | null
+          name?: string
+          play_store_product_id?: string | null
+          price_try?: number
+        }
+        Relationships: []
       }
       swipes: {
         Row: {
@@ -4051,6 +4251,63 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          auto_renew: boolean | null
+          created_at: string | null
+          expires_at: string
+          id: string
+          plan_id: string
+          platform: string | null
+          started_at: string | null
+          status: string | null
+          store_transaction_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auto_renew?: boolean | null
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          plan_id: string
+          platform?: string | null
+          started_at?: string | null
+          status?: string | null
+          store_transaction_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          auto_renew?: boolean | null
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          plan_id?: string
+          platform?: string | null
+          started_at?: string | null
+          status?: string | null
+          store_transaction_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       user_videos: {
         Row: {
@@ -4438,6 +4695,16 @@ export type Database = {
       }
       delete_expired_stories: { Args: never; Returns: undefined }
       get_league_for_xp: { Args: { xp: number }; Returns: string }
+      get_user_subscription: {
+        Args: { p_user_id: string }
+        Returns: {
+          auto_renew: boolean
+          days_remaining: number
+          expires_at: string
+          plan_name: string
+        }[]
+      }
+      has_active_subscription: { Args: { p_user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
