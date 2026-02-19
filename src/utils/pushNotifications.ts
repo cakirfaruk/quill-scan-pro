@@ -47,7 +47,8 @@ export async function subscribeToPushNotifications(): Promise<boolean> {
     await navigator.serviceWorker.ready;
 
     // Check if already subscribed
-    let subscription = await registration.pushManager.getSubscription();
+    const swRegistration = registration as ServiceWorkerRegistration & { pushManager: PushManager };
+    let subscription = await swRegistration.pushManager.getSubscription();
 
     if (!subscription) {
       // VAPID public key
@@ -56,7 +57,7 @@ export async function subscribeToPushNotifications(): Promise<boolean> {
       const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
 
       // Subscribe to push notifications
-      subscription = await registration.pushManager.subscribe({
+      subscription = await swRegistration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: convertedVapidKey as BufferSource,
       });
@@ -108,7 +109,8 @@ export async function unsubscribeFromPushNotifications(): Promise<boolean> {
       return false;
     }
 
-    const subscription = await registration.pushManager.getSubscription();
+    const swReg = registration as ServiceWorkerRegistration & { pushManager: PushManager };
+    const subscription = await swReg.pushManager.getSubscription();
     if (!subscription) {
       console.log('No subscription found');
       return false;

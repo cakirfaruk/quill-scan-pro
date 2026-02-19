@@ -39,7 +39,8 @@ export const PushNotificationSettings = () => {
     if ('serviceWorker' in navigator && status === 'granted') {
       try {
         const registration = await navigator.serviceWorker.getRegistration();
-        const subscription = await registration?.pushManager.getSubscription();
+        const swReg = registration as (ServiceWorkerRegistration & { pushManager: PushManager }) | undefined;
+        const subscription = await swReg?.pushManager.getSubscription();
         setIsEnabled(!!subscription);
       } catch (error) {
         console.error('Error checking subscription:', error);
