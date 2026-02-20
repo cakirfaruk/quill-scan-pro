@@ -27,7 +27,8 @@ export const usePushNotifications = () => {
       if ('serviceWorker' in navigator) {
         const registration = await navigator.serviceWorker.getRegistration();
         if (registration) {
-          const subscription = await registration.pushManager.getSubscription();
+          const reg = registration as ServiceWorkerRegistration & { pushManager: PushManager };
+          const subscription = await reg.pushManager.getSubscription();
           setIsSubscribed(!!subscription);
         }
       }

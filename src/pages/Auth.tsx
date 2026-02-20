@@ -133,8 +133,8 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-8 shadow-elegant">
+    <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4 overflow-y-auto">
+      <Card className="w-full max-w-md p-8 shadow-elegant my-4">
         <div className="flex items-center justify-center mb-8">
           <div className="p-3 bg-gradient-primary rounded-lg">
             <FileText className="w-8 h-8 text-primary-foreground" />
@@ -142,10 +142,10 @@ const Auth = () => {
         </div>
 
         <h1 className="text-3xl font-bold text-center mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-          El Yazısı Analizi
+          Astro Social
         </h1>
         <p className="text-center text-muted-foreground mb-8">
-          Grafolog AI ile profesyonel analiz
+          Burç, tarot, el falı ve daha fazlası
         </p>
 
         <Tabs defaultValue="signin" className="w-full">
