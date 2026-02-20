@@ -58,15 +58,16 @@ export const MainLayout = () => {
 
             {/* Floating Dynamic Dock V2 */}
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 pointer-events-none">
-                <nav className="bg-black/80 rounded-[2.5rem] p-2 flex items-center gap-1 sm:gap-2 border border-white/10 shadow-2xl pointer-events-auto">
+                <nav aria-label="Ana navigasyon" className="bg-black/80 rounded-[2.5rem] p-2 flex items-center gap-1 sm:gap-2 border border-white/10 shadow-2xl pointer-events-auto">
                     {navItems.map((item) => {
                         const Icon = item.icon;
 
                         if (item.highlight) {
                             return (
                                 <div key={item.id} className="relative mx-1 sm:mx-3">
-                                    <button
+                        <button
                                         onClick={item.action}
+                                        aria-label="Yeni gönderi oluştur"
                                         className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-neon-gradient shadow-neon flex items-center justify-center border border-white/30 text-white z-10 hover:scale-110 active:scale-95 transition-transform duration-200"
                                     >
                                         <Icon className="w-6 h-6 sm:w-8 sm:h-8" strokeWidth={2.5} />

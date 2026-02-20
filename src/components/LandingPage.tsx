@@ -32,12 +32,12 @@ export const LandingPage = () => {
           <div className="absolute inset-0 -z-10 overflow-hidden">
             <div
               ref={bgLeftRef}
-              className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse transition-transform duration-300"
+              className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl transition-transform duration-300"
               style={{ transform: `translateY(${bgLeftOffset}px)` }}
             ></div>
             <div
               ref={bgRightRef}
-              className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse transition-transform duration-300"
+              className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl transition-transform duration-300"
               style={{ animationDelay: "1s", transform: `translateY(${bgRightOffset}px)` }}
             ></div>
           </div>

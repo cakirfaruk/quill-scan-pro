@@ -1,5 +1,5 @@
-
 import { useEffect, useState } from "react";
+import { updatePageMeta } from "@/utils/meta";
 import { getOptimizedImageUrl } from "@/utils/image-optimizer";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -163,6 +163,14 @@ const Match = () => {
       loadImages();
     }
   }, [showCardSelection, tarotImagesLoaded]);
+
+  useEffect(() => {
+    updatePageMeta(
+      "Eşleşme | Astro Social",
+      "Numeroloji ve astroloji uyumuna göre ideal eşini bul. Akıllı eşleşme sistemi.",
+      "/match"
+    );
+  }, []);
 
   useEffect(() => {
     const userIdParam = searchParams.get("userId");

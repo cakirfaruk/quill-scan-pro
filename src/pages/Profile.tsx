@@ -1,5 +1,6 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
+import { updatePageMeta } from "@/utils/meta";
 import { useAuth } from "@/contexts/AuthContext";
 import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
@@ -123,6 +124,18 @@ const Profile = () => {
   useEffect(() => {
     loadProfile();
   }, [username]);
+
+  // Update meta tags when profile loads
+  useEffect(() => {
+    if (profile.username) {
+      const displayName = profile.full_name || profile.username;
+      updatePageMeta(
+        `${displayName} | Astro Social`,
+        `${displayName} profilini incele. Analizler, paylaşımlar ve daha fazlası.`,
+        `/profile/${profile.username}`
+      );
+    }
+  }, [profile.username, profile.full_name]);
 
   useEffect(() => {
     if (profile.user_id && activeTab === "collections" && isOwnProfile) {
@@ -464,15 +477,15 @@ const Profile = () => {
         palmistryResult,
         horoscopeResult
       ] = await Promise.all([
-        supabase.from("analysis_history").select("id, analysis_type, created_at, credits_used, selected_topics").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
-        supabase.from("numerology_analyses").select("id, created_at, credits_used, full_name, birth_date, selected_topics").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
-        supabase.from("birth_chart_analyses").select("id, created_at, credits_used, full_name, birth_date, birth_time, birth_place, selected_topics").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
-        supabase.from("compatibility_analyses").select("id, created_at, credits_used, gender1, gender2").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
-        supabase.from("tarot_readings").select("id, created_at, credits_used, spread_type, question").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
-        supabase.from("coffee_fortune_readings").select("id, created_at, credits_used").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
-        supabase.from("dream_interpretations").select("id, created_at, credits_used, dream_description").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
-        supabase.from("palmistry_readings").select("id, created_at, credits_used").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
-        supabase.from("daily_horoscopes").select("id, created_at, credits_used").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+        supabase.from("analysis_history").select("id, analysis_type, created_at, credits_used, selected_topics").eq("user_id", userId).order("created_at", { ascending: false }).limit(5),
+        supabase.from("numerology_analyses").select("id, created_at, credits_used, full_name, birth_date, selected_topics").eq("user_id", userId).order("created_at", { ascending: false }).limit(5),
+        supabase.from("birth_chart_analyses").select("id, created_at, credits_used, full_name, birth_date, birth_time, birth_place, selected_topics").eq("user_id", userId).order("created_at", { ascending: false }).limit(5),
+        supabase.from("compatibility_analyses").select("id, created_at, credits_used, gender1, gender2").eq("user_id", userId).order("created_at", { ascending: false }).limit(5),
+        supabase.from("tarot_readings").select("id, created_at, credits_used, spread_type, question").eq("user_id", userId).order("created_at", { ascending: false }).limit(5),
+        supabase.from("coffee_fortune_readings").select("id, created_at, credits_used").eq("user_id", userId).order("created_at", { ascending: false }).limit(5),
+        supabase.from("dream_interpretations").select("id, created_at, credits_used, dream_description").eq("user_id", userId).order("created_at", { ascending: false }).limit(5),
+        supabase.from("palmistry_readings").select("id, created_at, credits_used").eq("user_id", userId).order("created_at", { ascending: false }).limit(5),
+        supabase.from("daily_horoscopes").select("id, created_at, credits_used").eq("user_id", userId).order("created_at", { ascending: false }).limit(5),
       ]);
 
       // Combine all analyses into a single array

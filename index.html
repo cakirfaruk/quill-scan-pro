@@ -15,6 +15,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
     <link rel="dns-prefetch" href="https://ekkymypfvixlysrgtabz.supabase.co">
     <link rel="preconnect" href="https://ekkymypfvixlysrgtabz.supabase.co" crossorigin>
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://analiz.sebanyazilim.com/" />
     
     <!-- Critical CSS - Inlined for instant rendering -->
     <style>
@@ -29,11 +31,8 @@
       .fade-out{opacity:0;transition:opacity 0.3s}
     </style>
     
-    <!-- Font optimization with font-display: swap (removed wght 300 - unused) -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript>
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-    </noscript>
+    <!-- Font: direct stylesheet with font-display:swap avoids "ineffective preload" Lighthouse warning -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     
     <!-- Icons -->
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
@@ -50,16 +49,18 @@
     
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Astro Social" />
-    <meta property="og:description" content="Analizler, Fallar, Kehanetler, Eşleşmeler, Arkadaşlıklar, Paylaşımlar..." />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:url" content="https://analiz.sebanyazilim.com/" />
+    <meta property="og:title" content="Astro Social - Analizler, Fallar, Kehanetler" />
+    <meta property="og:description" content="Tarot, kahve falı, rüya tabiri ve astroloji ile kişisel analiz platformu. Numeroloji ve doğum haritası uyumlarıyla ideal eşini bul." />
+    <meta property="og:image" content="https://analiz.sebanyazilim.com/icon-512.png" />
+    <meta property="og:site_name" content="Astro Social" />
+    <meta property="og:locale" content="tr_TR" />
     
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:title" content="Astro Social" />
-    <meta name="twitter:description" content="Analizler, Fallar, Kehanetler, Eşleşmeler, Arkadaşlıklar, Paylaşımlar..." />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:title" content="Astro Social - Analizler, Fallar, Kehanetler" />
+    <meta name="twitter:description" content="Tarot, kahve falı, rüya tabiri ve astroloji ile kişisel analiz platformu." />
+    <meta name="twitter:image" content="https://analiz.sebanyazilim.com/icon-512.png" />
   </head>
   <body>
     <div id="root">
