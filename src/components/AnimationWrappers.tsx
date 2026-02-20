@@ -1,5 +1,4 @@
-import { motion } from "framer-motion";
-import { ReactNode } from "react";
+import { ReactNode, CSSProperties, useEffect, useState } from "react";
 
 interface LoadingSpinnerProps {
   size?: "sm" | "md" | "lg";
@@ -15,10 +14,8 @@ export const LoadingSpinner = ({ size = "md", className = "" }: LoadingSpinnerPr
 
   return (
     <div className={`flex items-center justify-center min-h-screen ${className}`}>
-      <motion.div
-        className={`rounded-full border-b-2 border-primary ${sizeClasses[size]}`}
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+      <div
+        className={`rounded-full border-b-2 border-primary ${sizeClasses[size]} animate-spin`}
       />
     </div>
   );
@@ -32,24 +29,9 @@ export const RouteProgressBar = ({ isAnimating }: ProgressBarProps) => {
   return (
     <>
       {isAnimating && (
-        <motion.div
-          className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent to-primary z-[9999] shadow-lg shadow-primary/50"
-          initial={{ scaleX: 0, opacity: 0 }}
-          animate={{ 
-            scaleX: 1, 
-            opacity: 1,
-            transition: { 
-              duration: 0.3, 
-              ease: "easeOut" as const 
-            }
-          }}
-          exit={{ 
-            opacity: 0,
-            transition: { 
-              duration: 0.2 
-            }
-          }}
-          style={{ transformOrigin: "0%" }}
+        <div
+          className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent to-primary z-[9999] shadow-lg shadow-primary/50 animate-fade-in"
+          style={{ transformOrigin: "0%", animation: "progress-bar 0.3s ease-out forwards" }}
         />
       )}
     </>
@@ -62,30 +44,35 @@ interface FadeInWrapperProps {
   direction?: "up" | "down" | "left" | "right";
 }
 
-export const FadeInWrapper = ({ 
-  children, 
-  delay = 0, 
-  direction = "up" 
+export const FadeInWrapper = ({
+  children,
+  delay = 0,
+  direction = "up"
 }: FadeInWrapperProps) => {
-  const directions = {
-    up: { y: 20 },
-    down: { y: -20 },
-    left: { x: 20 },
-    right: { x: -20 }
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), delay * 1000);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  const directions: Record<string, CSSProperties> = {
+    up: { transform: isVisible ? "translateY(0)" : "translateY(20px)" },
+    down: { transform: isVisible ? "translateY(0)" : "translateY(-20px)" },
+    left: { transform: isVisible ? "translateX(0)" : "translateX(20px)" },
+    right: { transform: isVisible ? "translateX(0)" : "translateX(-20px)" }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, ...directions[direction] }}
-      animate={{ opacity: 1, y: 0, x: 0 }}
-      transition={{ 
-        duration: 0.5, 
-        delay,
-        ease: "easeInOut" as const
+    <div
+      style={{
+        opacity: isVisible ? 1 : 0,
+        ...directions[direction],
+        transition: `opacity 0.5s ease-in-out, transform 0.5s ease-in-out`,
       }}
     >
       {children}
-    </motion.div>
+    </div>
   );
 };
 
@@ -94,43 +81,33 @@ interface StaggerContainerProps {
   staggerDelay?: number;
 }
 
-export const StaggerContainer = ({ 
-  children, 
-  staggerDelay = 0.1 
+export const StaggerContainer = ({
+  children,
+  staggerDelay = 0.1
 }: StaggerContainerProps) => {
   return (
-    <motion.div
-      initial="hidden"
-      animate="visible"
-      variants={{
-        visible: {
-          transition: {
-            staggerChildren: staggerDelay
-          }
-        }
-      }}
-    >
+    <div>
       {children}
-    </motion.div>
+    </div>
   );
 };
 
 export const StaggerItem = ({ children }: { children: ReactNode }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    requestAnimationFrame(() => setIsVisible(true));
+  }, []);
+
   return (
-    <motion.div
-      variants={{
-        hidden: { opacity: 0, y: 20 },
-        visible: { 
-          opacity: 1, 
-          y: 0,
-          transition: {
-            duration: 0.5,
-            ease: "easeInOut" as const
-          }
-        }
+    <div
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "translateY(0)" : "translateY(20px)",
+        transition: "opacity 0.5s ease-in-out, transform 0.5s ease-in-out",
       }}
     >
       {children}
-    </motion.div>
+    </div>
   );
 };

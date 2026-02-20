@@ -39,55 +39,40 @@ export const useFeedPosts = (): UseFeedPostsReturn => {
             const POSTS_PER_PAGE = 20;
             const offset = (page - 1) * POSTS_PER_PAGE;
 
-            // 1. Fetch posts with pagination
-            const postsResult = await supabase
-                .from("posts")
-                .select(`
-                    *,
-                    profiles!posts_user_id_fkey (
-                      user_id,
-                      username,
-                      full_name,
-                      profile_photo
-                    )
-                `)
-                .order("created_at", { ascending: false })
-                .range(offset, offset + POSTS_PER_PAGE - 1);
+            // STAGE 1: Posts + Friends in PARALLEL (friends don't need postIds)
+            const [postsResult, friendsResult] = await Promise.all([
+                supabase
+                    .from("posts")
+                    .select(`
+                        id, user_id, content, media_url, media_type, created_at, shares_count, likes_count, comments_count,
+                        profiles!posts_user_id_fkey (
+                          user_id,
+                          username,
+                          full_name,
+                          profile_photo
+                        )
+                    `)
+                    .order("created_at", { ascending: false })
+                    .range(offset, offset + POSTS_PER_PAGE - 1),
+                supabase
+                    .from("friends")
+                    .select("user_id, friend_id")
+                    .or(`user_id.eq.${currentUserId},friend_id.eq.${currentUserId}`)
+                    .eq("status", "accepted"),
+            ]);
 
             if (postsResult.error) throw postsResult.error;
 
             const fetchedPosts = postsResult.data || [];
             const postIds = fetchedPosts.map(p => p.id);
 
-            // Parallel queries to fetch related data for specifically these posts
-            const [friendsResult, likesResult, commentsCountResult, userLikesResult, userSavesResult] = await Promise.all([
-                // 2. Fetch friends
-                supabase
-                    .from("friends")
-                    .select("user_id, friend_id")
-                    .or(`user_id.eq.${currentUserId},friend_id.eq.${currentUserId}`)
-                    .eq("status", "accepted"),
-
-                // 3. Fetch likes count for specific posts
-                postIds.length > 0 ? supabase
-                    .from("post_likes")
-                    .select("post_id")
-                    .in("post_id", postIds) : { data: [] },
-
-                // 4. Fetch comments count for specific posts
-                postIds.length > 0 ? supabase
-                    .from("post_comments")
-                    .select("post_id")
-                    .in("post_id", postIds) : { data: [] },
-
-                // 5. Fetch user's likes for specific posts
+            // STAGE 2: Likes + Saves need postIds (parallel with each other)
+            const [userLikesResult, userSavesResult] = await Promise.all([
                 postIds.length > 0 ? supabase
                     .from("post_likes")
                     .select("post_id")
                     .eq("user_id", currentUserId)
                     .in("post_id", postIds) : { data: [] },
-
-                // 6. Fetch user's saved posts for specific posts
                 postIds.length > 0 ? supabase
                     .from("saved_posts")
                     .select("post_id")
@@ -95,23 +80,10 @@ export const useFeedPosts = (): UseFeedPostsReturn => {
                     .in("post_id", postIds) : { data: [] }
             ]);
 
-
-
-            // Group likes and comments counts
-            const likesMap = new Map<string, number>();
-            (likesResult.data || []).forEach(like => {
-                likesMap.set(like.post_id, (likesMap.get(like.post_id) || 0) + 1);
-            });
-
-            const commentsMap = new Map<string, number>();
-            (commentsCountResult.data || []).forEach(comment => {
-                commentsMap.set(comment.post_id, (commentsMap.get(comment.post_id) || 0) + 1);
-            });
-
             const userLikesSet = new Set(userLikesResult.data?.map(l => l.post_id) || []);
             const userSavesSet = new Set(userSavesResult.data?.map(s => s.post_id) || []);
 
-            // Enrich posts with data
+            // Enrich posts - use server-side counts from posts table
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const postsWithData: Post[] = fetchedPosts.map((post: any) => ({
                 id: post.id,
@@ -127,8 +99,8 @@ export const useFeedPosts = (): UseFeedPostsReturn => {
                     full_name: post.profiles.full_name,
                     profile_photo: post.profiles.profile_photo
                 },
-                likes: likesMap.get(post.id) || 0,
-                comments: commentsMap.get(post.id) || 0,
+                likes: post.likes_count || 0,
+                comments: post.comments_count || 0,
                 hasLiked: userLikesSet.has(post.id),
                 hasSaved: userSavesSet.has(post.id),
             }));

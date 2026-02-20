@@ -1,100 +1,43 @@
-import { useEffect, useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
-  Home, Search, Plus, Video, Sparkles, Shield, Coins, MessageCircle, Menu, Heart
+  Sparkles, Shield, Coins, MessageCircle, Menu
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { NotificationBell } from "@/components/NotificationBell";
-import { ErrorAlertIndicator } from "@/components/ErrorAlertIndicator";
-import { PageHistory } from "@/components/PageHistory";
+const NotificationBell = lazy(() => import("@/components/NotificationBell").then(m => ({ default: m.NotificationBell })));
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
-import { CreatePostDialog } from "@/components/CreatePostDialog";
-import { GlobalSearch } from "@/components/GlobalSearch";
-import { useScrollProgress } from "@/hooks/use-parallax";
+import { useAuth } from "@/contexts/AuthContext";
+const CreatePostDialog = lazy(() => import("@/components/CreatePostDialog").then(m => ({ default: m.CreatePostDialog })));
+const GlobalSearch = lazy(() => import("@/components/GlobalSearch").then(m => ({ default: m.GlobalSearch })));
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import { cn } from "@/lib/utils";
 
 export const CompactHeader = () => {
-  const [credits, setCredits] = useState(0);
-  const [username, setUsername] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [profilePhoto, setProfilePhoto] = useState("");
-  const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
+  const { user, profile, isAdmin } = useAuth();
+  const isLoggedIn = !!user;
+  const currentUserId = user?.id;
+  const username = profile?.username ?? "";
+  const profilePhoto = profile?.profile_photo ?? "";
+  const credits = profile?.credits ?? 0;
   const [createPostDialogOpen, setCreatePostDialogOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
 
-  const scrollProgress = useScrollProgress();
   const { scrollDirection, scrollY } = useScrollDirection({ threshold: 10 });
 
   // Mini mode when scrolled past 100px
   const isMiniMode = scrollY > 100;
   // Hide when scrolling down past 200px
   const shouldHide = scrollDirection === "down" && scrollY > 200;
-
-  useUpdateOnlineStatus();
-
-  useEffect(() => {
-    loadUserProfile();
-
-    const channel = supabase
-      .channel("profile-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, loadUserProfile)
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const loadUserProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      setIsLoggedIn(true);
-      setCurrentUserId(user.id);
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("credits, username, profile_photo")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (profile) {
-        setCredits(profile.credits);
-        setUsername(profile.username);
-        setProfilePhoto(profile.profile_photo || "");
-      }
-
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-
-      setIsAdmin(!!roles);
-    } else {
-      setIsLoggedIn(false);
-      setIsAdmin(false);
-      setCurrentUserId(undefined);
-    }
-  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -104,24 +47,15 @@ export const CompactHeader = () => {
 
   return (
     <>
-      {/* Scroll Progress Bar */}
-      <div
-        className="fixed top-0 left-0 h-1 bg-gradient-to-r from-primary via-accent to-primary z-[60] transition-all duration-300"
-        style={{ width: `${scrollProgress}%` }}
-      />
-
       <header
         className={cn(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
           shouldHide && "-translate-y-full"
         )}
         style={{
-          backgroundColor: scrollY > 5
-            ? `hsl(var(--card) / ${Math.min(0.95 + (scrollY / 1000), 0.98)})`
-            : 'hsl(var(--card) / 0.95)',
-          backdropFilter: scrollY > 5 ? `blur(${Math.min(8 + scrollY / 50, 16)}px)` : 'blur(8px)',
+          backgroundColor: 'hsl(var(--card) / 0.97)',
           boxShadow: scrollY > 10
-            ? `0 4px 20px hsl(var(--primary) / ${Math.min(0.1 + scrollY / 2000, 0.2)})`
+            ? '0 4px 20px hsl(var(--primary) / 0.15)'
             : '0 1px 3px hsl(var(--border) / 0.5)',
         }}
       >
@@ -164,7 +98,9 @@ export const CompactHeader = () => {
             {/* Global Search - Centered */}
             {isLoggedIn && (
               <div className="flex-1 max-w-md mx-4 hidden md:block">
-                <GlobalSearch />
+                <Suspense fallback={null}>
+                  <GlobalSearch />
+                </Suspense>
               </div>
             )}
 
@@ -197,11 +133,15 @@ export const CompactHeader = () => {
 
                   {/* Search - Mobile Only */}
                   <div className="md:hidden">
-                    <GlobalSearch />
+                    <Suspense fallback={null}>
+                      <GlobalSearch />
+                    </Suspense>
                   </div>
 
                   {/* Notifications */}
-                  <NotificationBell />
+                  <Suspense fallback={null}>
+                    <NotificationBell />
+                  </Suspense>
 
                   {/* Messages - Mobile Visible */}
                   <Button
@@ -274,20 +214,22 @@ export const CompactHeader = () => {
       </header>
 
       {/* Create Post Dialog */}
-      <CreatePostDialog
-        open={createPostDialogOpen}
-        onOpenChange={setCreatePostDialogOpen}
-        userId={currentUserId || ""}
-        username={username}
-        profilePhoto={profilePhoto}
-        onPostCreated={() => {
-          toast({
-            title: "Başarılı",
-            description: "Gönderi oluşturuldu",
-          });
-          setCreatePostDialogOpen(false);
-        }}
-      />
+      <Suspense fallback={null}>
+        <CreatePostDialog
+          open={createPostDialogOpen}
+          onOpenChange={setCreatePostDialogOpen}
+          userId={currentUserId || ""}
+          username={username}
+          profilePhoto={profilePhoto}
+          onPostCreated={() => {
+            toast({
+              title: "Başarılı",
+              description: "Gönderi oluşturuldu",
+            });
+            setCreatePostDialogOpen(false);
+          }}
+        />
+      </Suspense>
     </>
   );
 };

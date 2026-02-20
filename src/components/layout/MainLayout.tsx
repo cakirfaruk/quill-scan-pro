@@ -1,51 +1,19 @@
 import { Outlet, useLocation, Link, useNavigate } from "react-router-dom";
 import { User, Sparkles, Heart, Plus, Network } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
-import { CreatePostDialog } from "@/components/CreatePostDialog";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, lazy, Suspense } from "react";
+const CreatePostDialog = lazy(() => import("@/components/CreatePostDialog").then(m => ({ default: m.CreatePostDialog })));
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const MainLayout = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [createPostDialogOpen, setCreatePostDialogOpen] = useState(false);
-    const [userId, setUserId] = useState<string | null>(null);
-    const [currentProfile, setCurrentProfile] = useState<{ username: string; profile_photo: string | null }>({ username: "", profile_photo: null });
+    const { user, profile } = useAuth();
+    const userId = user?.id ?? null;
+    const currentProfile = { username: profile?.username ?? "", profile_photo: profile?.profile_photo ?? null };
     const { toast } = useToast();
-
-    useEffect(() => {
-        supabase.auth.getUser().then(({ data: { user } }) => {
-            if (user) {
-                setUserId(user.id);
-                loadUserProfile(user.id);
-            }
-        });
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            if (session?.user) {
-                setUserId(session.user.id);
-                loadUserProfile(session.user.id);
-            } else {
-                setUserId(null);
-                setCurrentProfile({ username: "", profile_photo: null });
-            }
-        });
-
-        return () => subscription.unsubscribe();
-    }, []);
-
-    const loadUserProfile = async (uid: string) => {
-        const { data } = await supabase
-            .from("profiles")
-            .select("username, profile_photo")
-            .eq("user_id", uid)
-            .maybeSingle();
-
-        if (data) setCurrentProfile(data);
-    };
 
     const handleCreatePost = () => {
         if (!userId) {
@@ -77,11 +45,10 @@ export const MainLayout = () => {
     return (
         <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 pb-28 relative overflow-hidden">
 
-            {/* Ambient Background Glow */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden flex justify-center z-[-1] opacity-60">
-                <div className="absolute top-[-20%] w-[120vw] h-[60vh] bg-primary/10 rounded-[100%] blur-[120px] animate-pulse-glow" />
-                <div className="absolute bottom-[-20%] left-[-10%] w-[80vw] h-[60vh] bg-secondary/10 rounded-[100%] blur-[120px] animate-pulse-glow" style={{ animationDelay: "1.5s" }} />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[50vh] bg-accent/5 rounded-[100%] blur-[120px] animate-pulse-glow" style={{ animationDelay: "3s" }} />
+            {/* Ambient Background - Static gradient (no blur, no animation) */}
+            <div className="fixed inset-0 pointer-events-none z-[-1] opacity-60">
+                <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/3" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-secondary/3 via-transparent to-transparent" />
             </div>
 
             {/* Main Content Area */}
@@ -91,21 +58,19 @@ export const MainLayout = () => {
 
             {/* Floating Dynamic Dock V2 */}
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 pointer-events-none">
-                <nav className="glass-card rounded-[2.5rem] p-2 flex items-center gap-1 sm:gap-2 border border-white/10 shadow-glass backdrop-blur-3xl pointer-events-auto">
+                <nav className="bg-black/80 rounded-[2.5rem] p-2 flex items-center gap-1 sm:gap-2 border border-white/10 shadow-2xl pointer-events-auto">
                     {navItems.map((item) => {
                         const Icon = item.icon;
 
                         if (item.highlight) {
                             return (
                                 <div key={item.id} className="relative mx-1 sm:mx-3">
-                                    <motion.button
-                                        whileHover={{ scale: 1.1, rotate: 90 }}
-                                        whileTap={{ scale: 0.95, rotate: 0 }}
+                                    <button
                                         onClick={item.action}
-                                        className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-neon-gradient shadow-neon flex items-center justify-center border border-white/30 text-white z-10"
+                                        className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-neon-gradient shadow-neon flex items-center justify-center border border-white/30 text-white z-10 hover:scale-110 active:scale-95 transition-transform duration-200"
                                     >
                                         <Icon className="w-6 h-6 sm:w-8 sm:h-8" strokeWidth={2.5} />
-                                    </motion.button>
+                                    </button>
                                 </div>
                             );
                         }
@@ -114,13 +79,11 @@ export const MainLayout = () => {
 
                         return (
                             <Link key={item.id} to={item.path!}>
-                                <motion.div
+                                <div
                                     className={cn(
-                                        "relative flex flex-col items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-[1.5rem] transition-colors group",
+                                        "relative flex flex-col items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-[1.5rem] transition-all duration-200 group hover:scale-105 hover:bg-white/5 active:scale-95",
                                         active ? "text-primary" : "text-muted-foreground hover:text-white"
                                     )}
-                                    whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.05)" }}
-                                    whileTap={{ scale: 0.95 }}
                                 >
                                     <Icon className={cn("w-5 h-5 sm:w-6 sm:h-6 z-10 transition-all duration-300", active && "drop-shadow-[0_0_8px_rgba(0,240,255,0.8)] scale-110")} />
 
@@ -130,20 +93,19 @@ export const MainLayout = () => {
                                     </span>
 
                                     {active && (
-                                        <motion.div
-                                            layoutId="dock-indicator"
-                                            className="absolute inset-0 bg-primary/10 rounded-[1.5rem] border border-primary/20 z-0"
-                                            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                        <div
+                                            className="absolute inset-0 bg-primary/10 rounded-[1.5rem] border border-primary/20 z-0 transition-all duration-300"
                                         />
                                     )}
-                                </motion.div>
+                                </div>
                             </Link>
                         );
                     })}
                 </nav>
             </div>
 
-            <CreatePostDialog
+            <Suspense fallback={null}>
+              <CreatePostDialog
                 open={createPostDialogOpen}
                 onOpenChange={setCreatePostDialogOpen}
                 userId={userId || ""}
@@ -156,7 +118,8 @@ export const MainLayout = () => {
                     });
                     setCreatePostDialogOpen(false);
                 }}
-            />
+              />
+            </Suspense>
         </div>
     );
 };

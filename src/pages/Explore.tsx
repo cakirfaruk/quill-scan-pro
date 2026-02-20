@@ -12,7 +12,6 @@ import { Search, TrendingUp, Hash, Loader2, Users, Sparkles } from "lucide-react
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ParsedText } from "@/components/ParsedText";
 import { SkeletonHashtagList, SkeletonSearchResult } from "@/components/SkeletonHashtag";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface Hashtag {
   id: string;
@@ -68,7 +67,7 @@ const Explore = () => {
     try {
       const { data, error } = await supabase
         .from("hashtags")
-        .select("*")
+        .select("id, tag, usage_count")
         .order("usage_count", { ascending: false })
         .limit(50);
 
@@ -271,14 +270,8 @@ const Explore = () => {
             </TabsTrigger>
           </TabsList>
 
-          <AnimatePresence mode="wait">
             <TabsContent value="trending">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="glass-card p-6 border-white/10"
-              >
+              <div className="glass-card p-6 border-white/10 animate-fade-in">
                 <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-white">
                   <span className="bg-primary/20 p-2 rounded-lg"><TrendingUp className="w-5 h-5 text-primary" /></span>
                   Gündemdeki Konular
@@ -290,12 +283,10 @@ const Explore = () => {
                   <ScrollArea className="h-[500px] pr-4">
                     <div className="space-y-3">
                       {trendingHashtags.map((hashtag, index) => (
-                        <motion.button
+                        <button
                           key={hashtag.id}
                           onClick={() => handleHashtagClick(hashtag.tag)}
-                          whileHover={{ scale: 1.02, x: 5 }}
-                          whileTap={{ scale: 0.98 }}
-                          className="w-full text-left p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 transition-all group relative overflow-hidden"
+                          className="w-full text-left p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 transition-all group relative overflow-hidden hover:scale-[1.02] hover:translate-x-1 active:scale-[0.98]"
                         >
                           <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
@@ -317,7 +308,7 @@ const Explore = () => {
                               <Hash className="w-4 h-4" />
                             </div>
                           </div>
-                        </motion.button>
+                        </button>
                       ))}
 
                       {trendingHashtags.length === 0 && (
@@ -329,15 +320,11 @@ const Explore = () => {
                     </div>
                   </ScrollArea>
                 )}
-              </motion.div>
+              </div>
             </TabsContent>
 
             <TabsContent value="search">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-              >
+              <div className="animate-fade-in">
                 {isLoading ? (
                   <div className="space-y-4">
                     {searchType === "users" ? (
@@ -359,11 +346,9 @@ const Explore = () => {
                         )}
 
                         {userSearchResults.map((user) => (
-                          <motion.div
+                          <div
                             key={user.user_id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="glass-card p-4 hover:bg-white/5 transition-colors cursor-pointer border-white/10 group"
+                            className="glass-card p-4 hover:bg-white/5 transition-colors cursor-pointer border-white/10 group animate-fade-in"
                             onClick={() => navigate(`/profile/${user.username}`)}
                           >
                             <div className="flex items-center gap-4">
@@ -391,7 +376,7 @@ const Explore = () => {
                               </div>
                               <Users className="w-5 h-5 text-white/20 group-hover:text-accent transition-colors" />
                             </div>
-                          </motion.div>
+                          </div>
                         ))}
 
                         {userSearchResults.length === 0 && !isLoading && searchQuery && (
@@ -412,7 +397,7 @@ const Explore = () => {
                         )}
 
                         {searchResults.map((post) => (
-                          <motion.div key={post.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                          <div key={post.id} className="animate-fade-in">
                             <Card className="p-5 glass-card border-white/10 hover:border-primary/30 transition-all group">
                               <div className="flex items-start gap-4">
                                 <Avatar
@@ -460,7 +445,7 @@ const Explore = () => {
                                 </div>
                               </div>
                             </Card>
-                          </motion.div>
+                          </div>
                         ))}
 
                         {searchResults.length === 0 && !isLoading && searchQuery && (
@@ -484,9 +469,8 @@ const Explore = () => {
                     )}
                   </div>
                 )}
-              </motion.div>
+              </div>
             </TabsContent>
-          </AnimatePresence>
         </Tabs>
       </main>
     </div>

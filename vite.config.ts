@@ -4,7 +4,6 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
 import { visualizer } from 'rollup-plugin-visualizer';
-import viteCompression from 'vite-plugin-compression';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -15,25 +14,12 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
-    // Bundle analyzer - run 'npm run build' to see stats.html
-    mode === 'production' && visualizer({
+    // Bundle analyzer - only when ANALYZE=true (run: npm run build:analyze)
+    process.env.ANALYZE === 'true' && visualizer({
       filename: './dist/stats.html',
       open: false,
       gzipSize: true,
       brotliSize: true,
-    }),
-    // Gzip and Brotli compression
-    mode === 'production' && viteCompression({
-      algorithm: 'gzip',
-      ext: '.gz',
-      threshold: 1024, // Only compress files larger than 1KB
-      deleteOriginFile: false,
-    }),
-    mode === 'production' && viteCompression({
-      algorithm: 'brotliCompress',
-      ext: '.br',
-      threshold: 1024,
-      deleteOriginFile: false,
     }),
     VitePWA({
       registerType: 'autoUpdate',
@@ -98,7 +84,6 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         globIgnores: ['**/stats.html'],
-        // Aggressive caching for better performance
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
@@ -108,7 +93,7 @@ export default defineConfig(({ mode }) => ({
               networkTimeoutSeconds: 3,
               expiration: {
                 maxEntries: 200,
-                maxAgeSeconds: 60 * 5 // 5 minutes for API responses
+                maxAgeSeconds: 60 * 5
               },
               cacheableResponse: {
                 statuses: [0, 200]
@@ -122,7 +107,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: 'supabase-storage-cache',
               expiration: {
                 maxEntries: 500,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days for storage
+                maxAgeSeconds: 60 * 60 * 24 * 30
               },
               cacheableResponse: {
                 statuses: [0, 200]
@@ -136,12 +121,11 @@ export default defineConfig(({ mode }) => ({
               cacheName: 'images-cache',
               expiration: {
                 maxEntries: 300,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                maxAgeSeconds: 60 * 60 * 24 * 30
               },
               plugins: [
                 {
                   cacheWillUpdate: async ({ response }) => {
-                    // Only cache successful responses
                     return response.status === 200 ? response : null;
                   }
                 }
@@ -155,7 +139,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: 'google-fonts-cache',
               expiration: {
                 maxEntries: 30,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+                maxAgeSeconds: 60 * 60 * 24 * 365
               }
             }
           }
@@ -171,79 +155,79 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // esbuild drop console/debugger in production
+  esbuild: mode === 'production' ? {
+    drop: ['console', 'debugger'],
+  } : undefined,
   build: {
-    // Manual chunk splitting for better caching
+    // CRITICAL: Disable modulepreload — lazy chunks must NOT be eagerly preloaded
+    modulePreload: false,
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // CRITICAL: Keep React and React-DOM together to avoid dispatcher issues
           if (id.includes('node_modules')) {
-            // React ecosystem - MUST be in same chunk
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-is') || id.includes('scheduler')) {
+            // IMPORTANT: Check specific react-* libs BEFORE the generic react check
+            // to avoid them being swallowed into react-core
+            if (id.includes('react-router')) return 'react-router';
+            if (id.includes('lucide-react')) return 'lucide-icons';
+            if (id.includes('emoji-picker-react')) return 'emoji-picker';
+            if (id.includes('react-hook-form') || id.includes('@hookform')) return 'form-vendor';
+            if (id.includes('react-day-picker')) return 'date-vendor';
+            if (id.includes('@tanstack/react-query')) return 'query-vendor';
+            if (id.includes('recharts') || id.includes('d3-')) return 'charts-vendor';
+
+            // CRITICAL: React core — ONLY react, react-dom, react-is, scheduler
+            // Use path separators to avoid matching react-router, react-hook-form, etc.
+            if (
+              id.includes('/react/') ||
+              id.includes('/react-dom/') ||
+              id.includes('/react-is/') ||
+              id.includes('/scheduler/')
+            ) {
               return 'react-core';
             }
-            // React Router
-            if (id.includes('react-router')) {
-              return 'react-router';
-            }
-            // Framer Motion (animation library)
-            if (id.includes('framer-motion')) {
-              return 'framer-vendor';
-            }
-            // Radix UI (component library) - group together
-            if (id.includes('@radix-ui')) {
-              return 'radix-vendor';
-            }
-            // Supabase
-            if (id.includes('@supabase')) {
-              return 'supabase-vendor';
-            }
-            // React Query
-            if (id.includes('@tanstack/react-query')) {
-              return 'query-vendor';
-            }
-            // Date utilities
-            if (id.includes('date-fns')) {
-              return 'date-vendor';
-            }
-            // Other vendors
+
+            if (id.includes('@radix-ui')) return 'radix-vendor';
+            if (id.includes('@supabase')) return 'supabase-vendor';
+            if (id.includes('zod')) return 'zod-vendor';
+            if (id.includes('date-fns')) return 'date-vendor';
+            if (id.includes('ephemeris')) return 'astronomy-vendor';
+            if (id.includes('vaul')) return 'drawer-vendor';
             return 'vendor';
           }
 
-          // Page chunks - only split large pages
+          // Page-level code splitting
           if (id.includes('src/pages/')) {
             const pageName = id.split('src/pages/')[1]?.split('.')[0];
             if (!pageName) return undefined;
 
-            // Keep smaller pages in main bundle
+            // Small pages → main bundle
             const smallPages = ['About', 'FAQ', 'Credits', 'NotFound', 'VapidKeyGenerator'];
-            if (smallPages.some(p => pageName.includes(p))) {
-              return undefined; // Include in main bundle
-            }
+            if (smallPages.some(p => pageName.includes(p))) return undefined;
 
-            // Large pages get their own chunks
-            const largePages = ['Feed', 'Messages', 'Groups', 'Match', 'Profile'];
-            if (largePages.some(p => pageName.includes(p))) {
-              return `page-${pageName.toLowerCase()}`;
-            }
+            // Large pages → own chunks
+            const largePages = ['Feed', 'Messages', 'Groups', 'Match', 'Profile', 'GroupChat'];
+            if (largePages.some(p => pageName.includes(p))) return `page-${pageName.toLowerCase()}`;
 
-            // Group medium pages
-            return 'pages-medium';
+            // Category-based splitting for medium pages
+            const analysisPages = ['Tarot', 'CoffeeFortune', 'Palmistry', 'BirthChart', 'Numerology', 'Compatibility', 'DailyHoroscope', 'DreamInterpretation'];
+            if (analysisPages.some(p => pageName.includes(p))) return 'pages-analysis';
+
+            const socialPages = ['Friends', 'SavedPosts', 'Reels', 'Explore', 'Discovery', 'CallHistory'];
+            if (socialPages.some(p => pageName.includes(p))) return 'pages-social';
+
+            const adminPages = ['Admin', 'ErrorMonitor', 'ErrorAnalytics', 'ErrorDetail'];
+            if (adminPages.some(p => pageName.includes(p))) return 'pages-admin';
+
+            // Remaining: Auth, Settings, GroupSettings, Install
+            return 'pages-other';
           }
         },
       },
     },
-    // Increase chunk size warning limit
     chunkSizeWarningLimit: 1000,
-    // Enable source maps for production debugging (optional)
     sourcemap: false,
-    // Minify with terser for better compression
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true, // Remove console logs in production
-        drop_debugger: true,
-      },
-    },
+    // esbuild minifier (default) — 10-20x faster than terser
+    minify: 'esbuild',
   },
 }));

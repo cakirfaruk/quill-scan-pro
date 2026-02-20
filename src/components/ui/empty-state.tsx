@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { LucideIcon } from "lucide-react";
-import { motion } from "framer-motion";
 
 interface EmptyStateProps {
   icon: LucideIcon;
@@ -34,72 +33,45 @@ export const EmptyState = ({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-    >
+    <div className="animate-fade-in">
       <Card className={getCardClassName()}>
         <div className="max-w-md mx-auto space-y-6">
           {illustration ? (
-            <motion.div 
-              className="flex justify-center mb-6"
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            >
+            <div className="flex justify-center mb-6 animate-bounce">
               {illustration}
-            </motion.div>
+            </div>
           ) : (
             <div className="relative inline-flex items-center justify-center w-24 h-24 mb-4">
               {/* Animated background rings */}
-              <motion.div 
-                className="absolute inset-0 rounded-full bg-primary/10"
-                animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              <div
+                className="absolute inset-0 rounded-full bg-primary/10 animate-ping opacity-50"
               />
-              <motion.div 
-                className="absolute inset-0 rounded-full bg-primary/5"
-                animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              <div
+                className="absolute inset-0 rounded-full bg-primary/5 animate-ping opacity-30 [animation-delay:1s]"
               />
               
               {/* Icon container */}
-              <motion.div 
-                className="relative flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 depth-1"
-                animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              <div
+                className="relative flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 depth-1 animate-bounce"
               >
-                <motion.div
-                  animate={{ rotate: [-3, 3, -3] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                >
+                <div>
                   <Icon className="w-10 h-10 text-primary" />
-                </motion.div>
-              </motion.div>
+                </div>
+              </div>
             </div>
           )}
           
-          <motion.div 
-            className="space-y-2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
+          <div className="space-y-2 animate-fade-in">
             <h3 className="text-xl font-semibold text-foreground">
               {title}
             </h3>
             <p className="text-muted-foreground text-sm leading-relaxed max-w-sm mx-auto">
               {description}
             </p>
-          </motion.div>
+          </div>
 
           {(actionLabel || secondaryActionLabel) && (
-            <motion.div 
-              className="flex gap-3 justify-center mt-6"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
+            <div className="flex gap-3 justify-center mt-6 animate-fade-in">
               {actionLabel && onAction && (
                 <Button 
                   onClick={onAction} 
@@ -120,10 +92,10 @@ export const EmptyState = ({
                   {secondaryActionLabel}
                 </Button>
               )}
-            </motion.div>
+            </div>
           )}
         </div>
       </Card>
-    </motion.div>
+    </div>
   );
 };

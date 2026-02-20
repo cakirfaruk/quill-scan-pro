@@ -4,9 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
-import { RouteProgressBar } from "@/components/AnimationWrappers";
-import { EnhancedOfflineIndicator } from "@/components/EnhancedOfflineIndicator";
 
 import { MainLayout } from "@/components/layout/MainLayout";
 
@@ -14,12 +11,8 @@ import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingFallback } from "@/components/LoadingFallback";
-import { IncomingCallDialog } from "@/components/IncomingCallDialog";
-import { IncomingGroupCallDialog } from "@/components/IncomingGroupCallDialog";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { useErrorAlerts } from "@/hooks/use-error-alerts";
-import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
-import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 // Lazy load ALL pages including Index for optimal code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -59,133 +52,125 @@ const ErrorDetail = lazy(() => import("./pages/ErrorDetail"));
 const Install = lazy(() => import("./pages/Install"));
 const Feed = lazy(() => import("./pages/Feed"));
 
-const queryClient = new QueryClient();
+// Lazy-load non-critical UI components (not needed on initial render)
+const IncomingCallDialog = lazy(() => import("@/components/IncomingCallDialog").then(m => ({ default: m.IncomingCallDialog })));
+const IncomingGroupCallDialog = lazy(() => import("@/components/IncomingGroupCallDialog").then(m => ({ default: m.IncomingGroupCallDialog })));
+const PWAInstallPrompt = lazy(() => import("@/components/PWAInstallPrompt").then(m => ({ default: m.PWAInstallPrompt })));
+const PushNotificationPrompt = lazy(() => import("@/components/PushNotificationPrompt").then(m => ({ default: m.PushNotificationPrompt })));
+const EnhancedOfflineIndicator = lazy(() => import("@/components/EnhancedOfflineIndicator").then(m => ({ default: m.EnhancedOfflineIndicator })));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,     // 5 min — don't refetch if fresh
+      gcTime: 10 * 60 * 1000,        // 10 min garbage collection
+      refetchOnWindowFocus: false,    // Don't refetch on tab switch
+      retry: 1,                        // 1 retry is enough
+    },
+  },
+});
 
 // Component that uses hooks - must be inside providers
 const AppRoutes = () => {
-  useUpdateOnlineStatus();
-  useErrorAlerts(); // Real-time error alerting
+  const { user } = useAuth();
+  const currentUserId = user?.id ?? null;
+  useUpdateOnlineStatus(currentUserId);
   const location = useLocation();
   const [incomingCall, setIncomingCall] = useState<any>(null);
   const [incomingGroupCall, setIncomingGroupCall] = useState<any>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [isNavigating, setIsNavigating] = useState(false);
 
-  // Get current user
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setCurrentUserId(user.id);
-    });
-  }, []);
-
-  // Track route changes for progress bar
-  useEffect(() => {
-    setIsNavigating(true);
-    const timer = setTimeout(() => {
-      setIsNavigating(false);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [location.pathname]);
-
-  // Listen for incoming calls
+  // Defer call subscriptions — 10s after mount to not block initial render
   useEffect(() => {
     if (!currentUserId) return;
 
-    const channel = supabase
-      .channel("incoming-calls")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "call_logs",
-          filter: `receiver_id=eq.${currentUserId}`,
-        },
-        async (payload) => {
-          const call = payload.new;
-
-          // Only show dialog if status is ringing
-          if (call.status === "ringing") {
-            // Get caller info
-            const { data: callerProfile } = await supabase
-              .from("profiles")
-              .select("username, full_name, profile_photo")
-              .eq("user_id", call.caller_id)
-              .single();
-
-            if (callerProfile) {
-              setIncomingCall({
-                callId: call.call_id,
-                callerId: call.caller_id,
-                callerName: callerProfile.full_name || callerProfile.username,
-                callerPhoto: callerProfile.profile_photo,
-                callType: call.call_type,
-              });
-            }
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [currentUserId]);
-
-  // Listen for incoming group calls
-  useEffect(() => {
-    if (!currentUserId) return;
-
-    const channel = supabase
-      .channel("incoming-group-calls")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "group_call_participants",
-          filter: `user_id=eq.${currentUserId}`,
-        },
-        async (payload) => {
-          const participant = payload.new;
-
-          // Only show dialog if status is invited
-          if (participant.status === "invited") {
-            // Get group call info
-            const { data: groupCall } = await supabase
-              .from("group_calls")
-              .select("*, groups(*)")
-              .eq("id", participant.call_id)
-              .single();
-
-            if (groupCall && groupCall.status === "ringing") {
-              // Get caller info
+    const timerId = setTimeout(() => {
+      const callChannel = supabase
+        .channel("incoming-calls")
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "call_logs",
+            filter: `receiver_id=eq.${currentUserId}`,
+          },
+          async (payload) => {
+            const call = payload.new;
+            if (call.status === "ringing") {
               const { data: callerProfile } = await supabase
                 .from("profiles")
                 .select("username, full_name, profile_photo")
-                .eq("user_id", groupCall.started_by)
+                .eq("user_id", call.caller_id)
                 .single();
 
               if (callerProfile) {
-                setIncomingGroupCall({
-                  callId: groupCall.call_id,
-                  groupCallId: groupCall.id,
-                  groupId: groupCall.group_id,
-                  groupName: groupCall.groups.name,
-                  groupPhoto: groupCall.groups.photo_url,
-                  callType: groupCall.call_type,
+                setIncomingCall({
+                  callId: call.call_id,
+                  callerId: call.caller_id,
                   callerName: callerProfile.full_name || callerProfile.username,
+                  callerPhoto: callerProfile.profile_photo,
+                  callType: call.call_type,
                 });
               }
             }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+
+      const groupCallChannel = supabase
+        .channel("incoming-group-calls")
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "group_call_participants",
+            filter: `user_id=eq.${currentUserId}`,
+          },
+          async (payload) => {
+            const participant = payload.new;
+            if (participant.status === "invited") {
+              const { data: groupCall } = await supabase
+                .from("group_calls")
+                .select("*, groups(*)")
+                .eq("id", participant.call_id)
+                .single();
+
+              if (groupCall && groupCall.status === "ringing") {
+                const { data: callerProfile } = await supabase
+                  .from("profiles")
+                  .select("username, full_name, profile_photo")
+                  .eq("user_id", groupCall.started_by)
+                  .single();
+
+                if (callerProfile) {
+                  setIncomingGroupCall({
+                    callId: groupCall.call_id,
+                    groupCallId: groupCall.id,
+                    groupId: groupCall.group_id,
+                    groupName: groupCall.groups.name,
+                    groupPhoto: groupCall.groups.photo_url,
+                    callType: groupCall.call_type,
+                    callerName: callerProfile.full_name || callerProfile.username,
+                  });
+                }
+              }
+            }
+          }
+        )
+        .subscribe();
+
+      // Store for cleanup
+      (window as any).__callChannels = [callChannel, groupCallChannel];
+    }, 10000);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearTimeout(timerId);
+      const channels = (window as any).__callChannels;
+      if (channels) {
+        channels.forEach((ch: any) => supabase.removeChannel(ch));
+        delete (window as any).__callChannels;
+      }
     };
   }, [currentUserId]);
 
@@ -193,99 +178,81 @@ const AppRoutes = () => {
 
 
 
-  // Page transition variants
-  const pageTransition = {
-    initial: { opacity: 0, y: 10 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -10 },
-    transition: {
-      duration: 0.3,
-      ease: "easeInOut" as const
-    }
-  };
-
   return (
     <>
-      <RouteProgressBar isAnimating={isNavigating} />
       {incomingCall && (
-        <IncomingCallDialog
-          isOpen={true}
-          onClose={() => setIncomingCall(null)}
-          callId={incomingCall.callId}
-          callerId={incomingCall.callerId}
-          callerName={incomingCall.callerName}
-          callerPhoto={incomingCall.callerPhoto}
-          callType={incomingCall.callType}
-        />
+        <Suspense fallback={null}>
+          <IncomingCallDialog
+            isOpen={true}
+            onClose={() => setIncomingCall(null)}
+            callId={incomingCall.callId}
+            callerId={incomingCall.callerId}
+            callerName={incomingCall.callerName}
+            callerPhoto={incomingCall.callerPhoto}
+            callType={incomingCall.callType}
+          />
+        </Suspense>
       )}
       {incomingGroupCall && (
-        <IncomingGroupCallDialog
-          isOpen={true}
-          onClose={() => setIncomingGroupCall(null)}
-          callId={incomingGroupCall.callId}
-          groupCallId={incomingGroupCall.groupCallId}
-          groupId={incomingGroupCall.groupId}
-          groupName={incomingGroupCall.groupName}
-          groupPhoto={incomingGroupCall.groupPhoto}
-          callType={incomingGroupCall.callType}
-          callerName={incomingGroupCall.callerName}
-        />
+        <Suspense fallback={null}>
+          <IncomingGroupCallDialog
+            isOpen={true}
+            onClose={() => setIncomingGroupCall(null)}
+            callId={incomingGroupCall.callId}
+            groupCallId={incomingGroupCall.groupCallId}
+            groupId={incomingGroupCall.groupId}
+            groupName={incomingGroupCall.groupName}
+            groupPhoto={incomingGroupCall.groupPhoto}
+            callType={incomingGroupCall.callType}
+            callerName={incomingGroupCall.callerName}
+          />
+        </Suspense>
       )}
       <Suspense fallback={<LoadingFallback />}>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={location.pathname}
-            initial={pageTransition.initial}
-            animate={pageTransition.animate}
-            exit={pageTransition.exit}
-            transition={pageTransition.transition}
-            className="w-full"
-          >
-            <Routes location={location}>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/install" element={<Install />} />
+        <Routes location={location}>
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/install" element={<Install />} />
 
-              <Route element={<MainLayout />}>
-                <Route path="/" element={<Index />} />
-                <Route path="/profile/:username?" element={<Profile />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/faq" element={<FAQ />} />
-                <Route path="/credits" element={<Credits />} />
-                <Route path="/messages" element={<Messages />} />
-                <Route path="/friends" element={<Friends />} />
-                <Route path="/saved" element={<SavedPosts />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/tarot" element={<Tarot />} />
-                <Route path="/coffee-fortune" element={<CoffeeFortune />} />
-                <Route path="/palmistry" element={<Palmistry />} />
-                {/* Handwriting Removed */}
-                <Route path="/birth-chart" element={<BirthChart />} />
-                <Route path="/numerology" element={<Numerology />} />
-                <Route path="/compatibility" element={<Compatibility />} />
-                <Route path="/daily-horoscope" element={<DailyHoroscope />} />
-                <Route path="/dream" element={<DreamInterpretation />} />
-                <Route path="/reels" element={<Reels />} />
-                <Route path="/explore" element={<Explore />} />
-                <Route path="/discovery" element={<Discovery />} />
-                <Route path="/groups" element={<Groups />} />
-                <Route path="/groups/:groupId" element={<GroupChat />} />
-                <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
-                <Route path="/match" element={<Match />} />
-                <Route path="/call-history" element={<CallHistory />} />
-                <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
-                <Route path="/error-monitor" element={<ErrorMonitor />} />
-                <Route path="/error-analytics" element={<ErrorAnalytics />} />
-                <Route path="/error/:errorId" element={<ErrorDetail />} />
-                <Route path="/feed" element={<Feed />} />
-              </Route>
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<Index />} />
+            <Route path="/profile/:username?" element={<Profile />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/credits" element={<Credits />} />
+            <Route path="/messages" element={<Messages />} />
+            <Route path="/friends" element={<Friends />} />
+            <Route path="/saved" element={<SavedPosts />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/tarot" element={<Tarot />} />
+            <Route path="/coffee-fortune" element={<CoffeeFortune />} />
+            <Route path="/palmistry" element={<Palmistry />} />
+            <Route path="/birth-chart" element={<BirthChart />} />
+            <Route path="/numerology" element={<Numerology />} />
+            <Route path="/compatibility" element={<Compatibility />} />
+            <Route path="/daily-horoscope" element={<DailyHoroscope />} />
+            <Route path="/dream" element={<DreamInterpretation />} />
+            <Route path="/reels" element={<Reels />} />
+            <Route path="/explore" element={<Explore />} />
+            <Route path="/discovery" element={<Discovery />} />
+            <Route path="/groups" element={<Groups />} />
+            <Route path="/groups/:groupId" element={<GroupChat />} />
+            <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
+            <Route path="/match" element={<Match />} />
+            <Route path="/call-history" element={<CallHistory />} />
+            <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
+            <Route path="/error-monitor" element={<ErrorMonitor />} />
+            <Route path="/error-analytics" element={<ErrorAnalytics />} />
+            <Route path="/error/:errorId" element={<ErrorDetail />} />
+            <Route path="/feed" element={<Feed />} />
+          </Route>
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </motion.div>
-        </AnimatePresence>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </Suspense>
-      <PWAInstallPrompt />
+      <Suspense fallback={null}>
+        <PWAInstallPrompt />
+      </Suspense>
     </>
   );
 };
@@ -294,18 +261,23 @@ const App = () => {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
+        <AuthProvider>
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
             <TooltipProvider>
               <Toaster />
               <Sonner />
-              <EnhancedOfflineIndicator />
-
-              <PushNotificationPrompt />
+              <Suspense fallback={null}>
+                <EnhancedOfflineIndicator />
+              </Suspense>
+              <Suspense fallback={null}>
+                <PushNotificationPrompt />
+              </Suspense>
               <AppRoutes />
             </TooltipProvider>
           </ThemeProvider>
         </BrowserRouter>
+        </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

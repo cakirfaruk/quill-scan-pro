@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
@@ -10,13 +10,10 @@ import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { soundEffects } from "@/utils/soundEffects";
 import { StoriesBar } from "@/components/StoriesBar";
 import { SkeletonPost } from "@/components/ui/enhanced-skeleton";
-import { CreatePostDialog } from "@/components/CreatePostDialog";
-import { ScrollReveal } from "@/components/ScrollReveal";
+const CreatePostDialog = lazy(() => import("@/components/CreatePostDialog").then(m => ({ default: m.CreatePostDialog })));
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
-import { useOnboarding } from "@/hooks/use-onboarding";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
-import { WidgetDashboard } from "@/components/WidgetDashboard";
 import { FeedList } from "@/components/feed/FeedList";
 import { useFeedPosts } from "@/hooks/use-feed-posts";
 import { usePostInteractions } from "@/hooks/use-post-interactions";
@@ -29,10 +26,10 @@ import { Button } from "@/components/ui/button";
 const Feed = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { shouldShowOnboarding, markOnboardingComplete } = useOnboarding();
-  const [userId, setUserId] = useState<string>("");
-  const [username, setUsername] = useState<string>("");
-  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const { user, profile } = useAuth();
+  const userId = user?.id ?? "";
+  const username = profile?.username ?? "";
+  const profilePhoto = profile?.profile_photo ?? null;
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
 
@@ -142,31 +139,10 @@ const Feed = () => {
   });
 
   useEffect(() => {
-    checkUserAndLoad();
-  }, []); // Run once on mount
-
-  const checkUserAndLoad = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      navigate("/auth");
-      return;
+    if (userId) {
+      loadPosts(userId, 1, true);
     }
-    setUserId(user.id);
-
-    // Fetch user profile
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("username, profile_photo")
-      .eq("user_id", user.id)
-      .single();
-
-    if (profile) {
-      setUsername(profile.username);
-      setProfilePhoto(profile.profile_photo);
-    }
-
-    await loadPosts(user.id, 1, true);
-  };
+  }, [userId]);
 
   const handleLoadMoreFriends = useCallback(async () => {
     if (!userId || !hasMoreFriendsPosts) return;
@@ -263,17 +239,15 @@ const Feed = () => {
         </div>
 
         {userId && (
-          <ScrollReveal direction="down" delay={0.1}>
-            <div className="mb-6 px-4 sm:px-0">
-              <StoriesBar currentUserId={userId} />
-            </div>
-          </ScrollReveal>
+          <div className="mb-6 px-4 sm:px-0">
+            <StoriesBar currentUserId={userId} />
+          </div>
         )}
 
         <Tabs defaultValue="friends" className="w-full">
           {/* Floating Sticky Tabs */}
           <div className="px-4 sm:px-0 sticky top-20 z-30 mb-8">
-            <TabsList className="flex w-full bg-black/50 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-1.5 shadow-glass">
+            <TabsList className="flex w-full bg-black/70 border border-white/10 rounded-[2rem] p-1.5 shadow-glass">
               <TabsTrigger value="friends" className="flex-1 rounded-full py-2.5 data-[state=active]:bg-primary/20 data-[state=active]:text-white font-semibold data-[state=active]:shadow-[0_0_15px_rgba(0,240,255,0.3)] transition-all duration-300">
                 Arkadaşlarım
               </TabsTrigger>
@@ -317,14 +291,16 @@ const Feed = () => {
         </Tabs>
       </div>
 
-      <CreatePostDialog
-        open={createPostOpen}
-        onOpenChange={setCreatePostOpen}
-        userId={userId}
-        username={username}
-        profilePhoto={profilePhoto}
-        onPostCreated={() => loadPosts(userId, 1, true)}
-      />
+      <Suspense fallback={null}>
+        <CreatePostDialog
+          open={createPostOpen}
+          onOpenChange={setCreatePostOpen}
+          userId={userId}
+          username={username}
+          profilePhoto={profilePhoto}
+          onPostCreated={() => loadPosts(userId, 1, true)}
+        />
+      </Suspense>
 
       <KeyboardShortcutsHelp open={shortcutsHelpOpen} onOpenChange={setShortcutsHelpOpen} />
 

@@ -12,57 +12,58 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Heart, X, Sparkles, Send, Loader2, Star, Moon, Info, Filter } from "lucide-react";
 import { SkeletonCard } from "@/components/ui/enhanced-skeleton";
-import { motion, AnimatePresence } from "framer-motion";
 import { MatchPreferencesDialog } from "@/components/MatchPreferencesDialog";
 
-// Import tarot card images (keeping existing imports)
-import cardBackImg from "@/assets/tarot/card-back.png";
-import deliImg from "@/assets/tarot/deli.png";
-import buyucuImg from "@/assets/tarot/buyucu.png";
-import basRahibeImg from "@/assets/tarot/bas-rahibe-azize.png";
-import imparatoriceImg from "@/assets/tarot/imparatorice.png";
-import imparatorImg from "@/assets/tarot/imparator.png";
-import basRahipImg from "@/assets/tarot/bas-rahip-aziz.png";
-import asiklarImg from "@/assets/tarot/asiklar.png";
-import savaşArabasiImg from "@/assets/tarot/savas-arabasi.png";
-import gucImg from "@/assets/tarot/guc.png";
-import ermisImg from "@/assets/tarot/ermis.png";
-import kaderCarkiImg from "@/assets/tarot/kader-carki.png";
-import adaletImg from "@/assets/tarot/adalet.png";
-import asilanAdamImg from "@/assets/tarot/asilan-adam.png";
-import olumImg from "@/assets/tarot/olum.png";
-import dengeImg from "@/assets/tarot/denge.png";
-import seytanImg from "@/assets/tarot/seytan.png";
-import yikilanKuleImg from "@/assets/tarot/yikilan-kule.png";
-import yildizImg from "@/assets/tarot/yildiz.png";
-import ayImg from "@/assets/tarot/ay.png";
-import gunesImg from "@/assets/tarot/gunes.png";
-import mahkemeImg from "@/assets/tarot/mahkeme.png";
-import dunyaImg from "@/assets/tarot/dunya.png";
+// Lazy-load tarot images only when needed
+const tarotImagePaths: Record<string, () => Promise<{ default: string }>> = {
+  'card-back': () => import('@/assets/tarot/card-back.png'),
+  'deli': () => import('@/assets/tarot/deli.png'),
+  'buyucu': () => import('@/assets/tarot/buyucu.png'),
+  'bas-rahibe-azize': () => import('@/assets/tarot/bas-rahibe-azize.png'),
+  'imparatorice': () => import('@/assets/tarot/imparatorice.png'),
+  'imparator': () => import('@/assets/tarot/imparator.png'),
+  'bas-rahip-aziz': () => import('@/assets/tarot/bas-rahip-aziz.png'),
+  'asiklar': () => import('@/assets/tarot/asiklar.png'),
+  'savas-arabasi': () => import('@/assets/tarot/savas-arabasi.png'),
+  'guc': () => import('@/assets/tarot/guc.png'),
+  'ermis': () => import('@/assets/tarot/ermis.png'),
+  'kader-carki': () => import('@/assets/tarot/kader-carki.png'),
+  'adalet': () => import('@/assets/tarot/adalet.png'),
+  'asilan-adam': () => import('@/assets/tarot/asilan-adam.png'),
+  'olum': () => import('@/assets/tarot/olum.png'),
+  'denge': () => import('@/assets/tarot/denge.png'),
+  'seytan': () => import('@/assets/tarot/seytan.png'),
+  'yikilan-kule': () => import('@/assets/tarot/yikilan-kule.png'),
+  'yildiz': () => import('@/assets/tarot/yildiz.png'),
+  'ay': () => import('@/assets/tarot/ay.png'),
+  'gunes': () => import('@/assets/tarot/gunes.png'),
+  'mahkeme': () => import('@/assets/tarot/mahkeme.png'),
+  'dunya': () => import('@/assets/tarot/dunya.png'),
+};
 
 const majorArcana = [
-  { id: 0, name: "Deli", suit: "Major Arcana", image: deliImg },
-  { id: 1, name: "Büyücü", suit: "Major Arcana", image: buyucuImg },
-  { id: 2, name: "Baş Rahibe", suit: "Major Arcana", image: basRahibeImg },
-  { id: 3, name: "İmparatoriçe", suit: "Major Arcana", image: imparatoriceImg },
-  { id: 4, name: "İmparator", suit: "Major Arcana", image: imparatorImg },
-  { id: 5, name: "Baş Rahip", suit: "Major Arcana", image: basRahipImg },
-  { id: 6, name: "Aşıklar", suit: "Major Arcana", image: asiklarImg },
-  { id: 7, name: "Savaş Arabası", suit: "Major Arcana", image: savaşArabasiImg },
-  { id: 8, name: "Güç", suit: "Major Arcana", image: gucImg },
-  { id: 9, name: "Ermiş", suit: "Major Arcana", image: ermisImg },
-  { id: 10, name: "Kader Çarkı", suit: "Major Arcana", image: kaderCarkiImg },
-  { id: 11, name: "Adalet", suit: "Major Arcana", image: adaletImg },
-  { id: 12, name: "Asılan Adam", suit: "Major Arcana", image: asilanAdamImg },
-  { id: 13, name: "Ölüm", suit: "Major Arcana", image: olumImg },
-  { id: 14, name: "Denge", suit: "Major Arcana", image: dengeImg },
-  { id: 15, name: "Şeytan", suit: "Major Arcana", image: seytanImg },
-  { id: 16, name: "Yıkılan Kule", suit: "Major Arcana", image: yikilanKuleImg },
-  { id: 17, name: "Yıldız", suit: "Major Arcana", image: yildizImg },
-  { id: 18, name: "Ay", suit: "Major Arcana", image: ayImg },
-  { id: 19, name: "Güneş", suit: "Major Arcana", image: gunesImg },
-  { id: 20, name: "Mahkeme", suit: "Major Arcana", image: mahkemeImg },
-  { id: 21, name: "Dünya", suit: "Major Arcana", image: dunyaImg },
+  { id: 0, name: "Deli", suit: "Major Arcana", imageKey: "deli" },
+  { id: 1, name: "Büyücü", suit: "Major Arcana", imageKey: "buyucu" },
+  { id: 2, name: "Baş Rahibe", suit: "Major Arcana", imageKey: "bas-rahibe-azize" },
+  { id: 3, name: "İmparatoriçe", suit: "Major Arcana", imageKey: "imparatorice" },
+  { id: 4, name: "İmparator", suit: "Major Arcana", imageKey: "imparator" },
+  { id: 5, name: "Baş Rahip", suit: "Major Arcana", imageKey: "bas-rahip-aziz" },
+  { id: 6, name: "Aşıklar", suit: "Major Arcana", imageKey: "asiklar" },
+  { id: 7, name: "Savaş Arabası", suit: "Major Arcana", imageKey: "savas-arabasi" },
+  { id: 8, name: "Güç", suit: "Major Arcana", imageKey: "guc" },
+  { id: 9, name: "Ermiş", suit: "Major Arcana", imageKey: "ermis" },
+  { id: 10, name: "Kader Çarkı", suit: "Major Arcana", imageKey: "kader-carki" },
+  { id: 11, name: "Adalet", suit: "Major Arcana", imageKey: "adalet" },
+  { id: 12, name: "Asılan Adam", suit: "Major Arcana", imageKey: "asilan-adam" },
+  { id: 13, name: "Ölüm", suit: "Major Arcana", imageKey: "olum" },
+  { id: 14, name: "Denge", suit: "Major Arcana", imageKey: "denge" },
+  { id: 15, name: "Şeytan", suit: "Major Arcana", imageKey: "seytan" },
+  { id: 16, name: "Yıkılan Kule", suit: "Major Arcana", imageKey: "yikilan-kule" },
+  { id: 17, name: "Yıldız", suit: "Major Arcana", imageKey: "yildiz" },
+  { id: 18, name: "Ay", suit: "Major Arcana", imageKey: "ay" },
+  { id: 19, name: "Güneş", suit: "Major Arcana", imageKey: "gunes" },
+  { id: 20, name: "Mahkeme", suit: "Major Arcana", imageKey: "mahkeme" },
+  { id: 21, name: "Dünya", suit: "Major Arcana", imageKey: "dunya" },
 ];
 
 interface MatchProfile {
@@ -111,6 +112,10 @@ const Match = () => {
   const [selectedArea, setSelectedArea] = useState<any>(null);
   const [specificUserId, setSpecificUserId] = useState<string | null>(null);
 
+  // Lazy-loaded tarot images state
+  const [tarotImages, setTarotImages] = useState<Record<string, string>>({});
+  const [tarotImagesLoaded, setTarotImagesLoaded] = useState(false);
+
   // Preferences
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [filters, setFilters] = useState({
@@ -141,6 +146,23 @@ const Match = () => {
     "İlişkimiz nasıl gelişecek?",
   ];
 
+  // Load tarot images only when card selection is shown
+  useEffect(() => {
+    if (showCardSelection && !tarotImagesLoaded) {
+      const loadImages = async () => {
+        const entries = await Promise.all(
+          Object.entries(tarotImagePaths).map(async ([key, loader]) => {
+            const mod = await loader();
+            return [key, mod.default] as [string, string];
+          })
+        );
+        setTarotImages(Object.fromEntries(entries));
+        setTarotImagesLoaded(true);
+      };
+      loadImages();
+    }
+  }, [showCardSelection, tarotImagesLoaded]);
+
   useEffect(() => {
     const userIdParam = searchParams.get("userId");
     if (userIdParam) {
@@ -165,7 +187,7 @@ const Match = () => {
       const [user1, user2] = [user.id, currentProfile.user_id].sort();
       const { data: existingMatch } = await supabase
         .from("matches")
-        .select("*")
+        .select("id, compatibility_numerology, compatibility_birth_chart, tarot_reading")
         .eq("user1_id", user1)
         .eq("user2_id", user2)
         .maybeSingle();
@@ -252,7 +274,6 @@ const Match = () => {
   };
 
   async function loadProfiles(userId: string, currentFilters = filters) {
-    if (loading) return;
     setLoading(true);
 
     // Timeout safety - kept from previous fix, but logic inside is now faster
@@ -477,7 +498,7 @@ const Match = () => {
       if (action === "like") {
         const { data: mutualSwipe } = await supabase
           .from("swipes")
-          .select("*")
+          .select("id")
           .eq("user_id", targetProfile.user_id)
           .eq("target_user_id", user.id)
           .eq("action", "like")
@@ -517,7 +538,7 @@ const Match = () => {
       const [user1, user2] = [user.id, currentProfile.user_id].sort();
       const { data: existingMatch } = await supabase
         .from("matches")
-        .select("*")
+        .select("id, compatibility_numerology, compatibility_birth_chart")
         .eq("user1_id", user1)
         .eq("user2_id", user2)
         .maybeSingle();
@@ -1042,29 +1063,35 @@ const Match = () => {
                 )}
               </div>
 
-              <div className="grid grid-cols-4 gap-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                {majorArcana.map((card) => {
-                  const isSelected = selectedTarotCards.find(c => c.id === card.id);
-                  return (
-                    <motion.div
-                      key={card.id}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => toggleCardSelection(card)}
-                      className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${isSelected ? 'border-primary shadow-glow' : 'border-transparent opacity-80 hover:opacity-100'
-                        }`}
-                    >
-                      <img src={isSelected ? card.image : cardBackImg} alt={card.name} className="w-full h-auto" />
-                      {isSelected && (
-                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                          <div className="bg-primary text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-lg">
-                            {selectedTarotCards.findIndex(c => c.id === card.id) + 1}
+              {!tarotImagesLoaded ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 text-violet-400 animate-spin mb-3" />
+                  <p className="text-sm text-white/50">Kartlar yükleniyor...</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-4 gap-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                  {majorArcana.map((card) => {
+                    const isSelected = selectedTarotCards.find(c => c.id === card.id);
+                    return (
+                      <div
+                        key={card.id}
+                        onClick={() => toggleCardSelection(card)}
+                        className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all duration-200 active:scale-95 ${isSelected ? 'border-primary shadow-glow' : 'border-transparent opacity-80 hover:opacity-100'
+                          }`}
+                      >
+                        <img src={isSelected ? tarotImages[card.imageKey] : tarotImages['card-back']} alt={card.name} className="w-full h-auto" />
+                        {isSelected && (
+                          <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                            <div className="bg-primary text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-lg">
+                              {selectedTarotCards.findIndex(c => c.id === card.id) + 1}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               <div className="flex gap-3">
                 <Button variant="outline" onClick={() => setShowCardSelection(false)} className="flex-1 border-white/20 text-white">Geri</Button>
@@ -1090,16 +1117,14 @@ const Match = () => {
               {/* Cards Display */}
               <div className="flex justify-center gap-4 my-4">
                 {tarotResult.selectedCards?.map((card: any, idx: number) => (
-                  <motion.div
+                  <div
                     key={idx}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="w-1/3 max-w-[120px]"
+                    className="w-1/3 max-w-[120px] animate-fade-in"
+                    style={{ animationDelay: `${idx * 100}ms`, animationFillMode: 'both' }}
                   >
-                    <img src={majorArcana.find(c => c.id === card.id)?.image} className="w-full rounded-lg shadow-lg border border-white/10" alt={card.name} />
+                    <img src={tarotImages[majorArcana.find(c => c.id === card.id)?.imageKey || '']} className="w-full rounded-lg shadow-lg border border-white/10" alt={card.name} />
                     <p className="text-center text-xs mt-2 text-violet-200 font-medium">{card.name}</p>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
 
