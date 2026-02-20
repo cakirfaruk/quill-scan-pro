@@ -592,14 +592,17 @@ const Profile = () => {
       const table = tableMap[analysis.analysis_type];
       if (!table) return;
 
-      const { data } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
         .from(table)
         .select('*')
         .eq('id', analysis.id)
         .single();
 
       if (data) {
-        let result = data.result || data.interpretation || data.horoscope_text;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const d = data as any;
+        let result = d.result || d.interpretation || d.horoscope_text;
         setSelectedAnalysis({ ...analysis, result });
         setDetailDialogOpen(true);
       }

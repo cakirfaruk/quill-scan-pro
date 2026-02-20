@@ -73,7 +73,7 @@ const Discovery = () => {
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 relative z-10">
                 <div className="w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-primary via-secondary to-accent relative shrink-0">
                   <div className="absolute inset-0 rounded-full animate-spin-slow bg-gradient-to-tr from-primary/50 to-transparent blur-md" />
-                  <img src={authProfile?.profile_photo ? getOptimizedImageUrl(userProfile.profile_photo, 200, 200) : "/placeholder.svg"} className="w-full h-full rounded-full object-cover border-4 border-black box-border relative z-10" alt="Avatar" />
+                  <img src={authProfile?.profile_photo ? getOptimizedImageUrl(authProfile.profile_photo, 200, 200) : "/placeholder.svg"} className="w-full h-full rounded-full object-cover border-4 border-black box-border relative z-10" alt="Avatar" />
                 </div>
 
                 <div className="flex-1 text-center sm:text-left">
