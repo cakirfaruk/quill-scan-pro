@@ -12,19 +12,25 @@ export const useParallax = (
   const [offset, setOffset] = useState(0);
 
   useEffect(() => {
+    let rafId: number;
+
     const handleScroll = () => {
-      if (!elementRef.current) return;
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        if (!elementRef.current) return;
 
-      const scrollPosition = window.scrollY;
-      const elementTop = elementRef.current.offsetTop;
-      const elementHeight = elementRef.current.offsetHeight;
-      const windowHeight = window.innerHeight;
+        const scrollPosition = window.scrollY;
+        // Read layout properties in a single rAF to avoid forced reflow
+        const elementTop = elementRef.current.offsetTop;
+        const elementHeight = elementRef.current.offsetHeight;
+        const windowHeight = window.innerHeight;
 
-      // Only apply parallax when element is in viewport
-      if (scrollPosition + windowHeight > elementTop && scrollPosition < elementTop + elementHeight) {
-        const parallaxOffset = (scrollPosition - elementTop) * speed;
-        setOffset(direction === "up" ? -parallaxOffset : parallaxOffset);
-      }
+        // Only apply parallax when element is in viewport
+        if (scrollPosition + windowHeight > elementTop && scrollPosition < elementTop + elementHeight) {
+          const parallaxOffset = (scrollPosition - elementTop) * speed;
+          setOffset(direction === "up" ? -parallaxOffset : parallaxOffset);
+        }
+      });
     };
 
     // Use passive listener for better performance
@@ -33,6 +39,7 @@ export const useParallax = (
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
+      if (rafId) cancelAnimationFrame(rafId);
     };
   }, [elementRef, speed, direction]);
 

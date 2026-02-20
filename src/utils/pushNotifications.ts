@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
+type SWRegistrationWithPush = ServiceWorkerRegistration & { pushManager: PushManager };
+
 // Convert base64 string to Uint8Array for VAPID key
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -40,7 +42,7 @@ export async function requestNotificationPermission(): Promise<boolean> {
 export async function subscribeToPushNotifications(): Promise<boolean> {
   try {
     // Register service worker
-    const registration = await navigator.serviceWorker.register('/sw.js');
+    const registration = await navigator.serviceWorker.register('/sw.js') as SWRegistrationWithPush;
     console.log('Service Worker registered');
 
     // Wait for service worker to be ready
@@ -107,7 +109,7 @@ export async function subscribeToPushNotifications(): Promise<boolean> {
 
 export async function unsubscribeFromPushNotifications(): Promise<boolean> {
   try {
-    const registration = await navigator.serviceWorker.getRegistration();
+    const registration = await navigator.serviceWorker.getRegistration() as SWRegistrationWithPush | undefined;
     if (!registration) {
       console.log('No service worker registration found');
       return false;
