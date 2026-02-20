@@ -11,6 +11,19 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  // CRITICAL: Force React to be pre-bundled as a single shared chunk in dev mode.
+  // Without this, Vite may create separate pre-bundled copies of React for
+  // different dep groups, causing "Cannot read properties of null (reading 'useRef')"
+  // and similar hook/context errors when multiple React instances exist.
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-dom/client',
+      'react/jsx-runtime',
+      'react/jsx-dev-runtime',
+    ],
+  },
   plugins: [
     react(),
     mode === "development" && componentTagger(),
