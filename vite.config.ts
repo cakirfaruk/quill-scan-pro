@@ -156,9 +156,8 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
-            // NOTE: React and React-DOM must NOT be split into custom chunks.
-            // Vite handles React deduplication automatically via its module graph.
-            // Splitting React causes "Cannot read properties of null (reading 'useState')" errors.
+            // CRITICAL: Never split React ecosystem - causes duplicate context/hooks errors.
+            // These must all land in the same chunk Vite creates naturally.
             if (
               id.includes('/react/') ||
               id.includes('/react-dom/') ||
@@ -166,10 +165,11 @@ export default defineConfig(({ mode }) => ({
               id.includes('/scheduler/') ||
               id.includes('/react-router') ||
               id.includes('/framer-motion') ||
-              id.includes('/@radix-ui')
+              id.includes('/@radix-ui') ||
+              id.includes('/next-themes') ||
+              id.includes('/use-sync-external-store')
             ) {
-              // Let Vite/Rollup handle these naturally - do not split
-              return undefined;
+              return undefined; // Vite handles deduplication naturally
             }
             // Supabase
             if (id.includes('@supabase')) {
@@ -191,7 +191,7 @@ export default defineConfig(({ mode }) => ({
             if (id.includes('date-fns')) {
               return 'date-vendor';
             }
-            // Other vendors
+            // Other non-React vendors are safe to group
             return 'vendor';
           }
 
