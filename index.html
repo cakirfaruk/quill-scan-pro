@@ -11,8 +11,9 @@
     <meta name="apple-mobile-web-app-title" content="Astro Social" />
     
     <!-- Preconnect to external domains for faster resource loading -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin="anonymous">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://tenor.googleapis.com">
     <link rel="dns-prefetch" href="https://ekkymypfvixlysrgtabz.supabase.co">
     <link rel="preconnect" href="https://ekkymypfvixlysrgtabz.supabase.co" crossorigin>
     
@@ -29,15 +30,15 @@
       .fade-out{opacity:0;transition:opacity 0.3s}
     </style>
     
-    <!-- Font optimization with font-display: swap -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <!-- Google Fonts - non-render-blocking -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@400;500;700&family=Montserrat:wght@400;600;700&display=swap" media="print" onload="this.media='all'">
     <noscript>
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@400;500;700&family=Montserrat:wght@400;600;700&display=swap">
     </noscript>
     
-    <!-- Resource hints for better performance -->
-    <link rel="modulepreload" href="/src/main.tsx" />
-    <link rel="modulepreload" href="/src/App.tsx" />
+    <!-- Preload LCP tarot images -->
+    <link rel="preload" as="image" href="/assets/tarot/gunes.png" fetchpriority="high">
+    <link rel="preload" as="image" href="/assets/tarot/imparatorice.png" fetchpriority="high">
     
     <!-- Icons -->
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
@@ -75,5 +76,7 @@
       <div class="loading-spinner"></div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- Service Worker registration deferred to avoid render blocking -->
+    <script defer src="/registerSW.js"></script>
   </body>
 </html>
