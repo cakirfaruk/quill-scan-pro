@@ -95,10 +95,9 @@ export default defineConfig(({ mode }) => ({
           }
         ]
       },
-      workbox: {
+    workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         globIgnores: ['**/stats.html'],
-        // Aggressive caching for better performance
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
@@ -108,7 +107,7 @@ export default defineConfig(({ mode }) => ({
               networkTimeoutSeconds: 3,
               expiration: {
                 maxEntries: 200,
-                maxAgeSeconds: 60 * 5 // 5 minutes for API responses
+                maxAgeSeconds: 60 * 5
               },
               cacheableResponse: {
                 statuses: [0, 200]
@@ -122,7 +121,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: 'supabase-storage-cache',
               expiration: {
                 maxEntries: 500,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days for storage
+                maxAgeSeconds: 60 * 60 * 24 * 30
               },
               cacheableResponse: {
                 statuses: [0, 200]
@@ -136,26 +135,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: 'images-cache',
               expiration: {
                 maxEntries: 300,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
-              },
-              plugins: [
-                {
-                  cacheWillUpdate: async ({ response }) => {
-                    // Only cache successful responses
-                    return response.status === 200 ? response : null;
-                  }
-                }
-              ]
-            }
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 30,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+                maxAgeSeconds: 60 * 60 * 24 * 30
               }
             }
           }
@@ -172,25 +152,23 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    // Manual chunk splitting for better caching
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // CRITICAL: Keep React and React-DOM together to avoid dispatcher issues
           if (id.includes('node_modules')) {
             // React ecosystem - MUST be in same chunk
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-is') || id.includes('scheduler')) {
+            if (id.includes('react/') || id.includes('react-dom') || id.includes('react-is') || id.includes('scheduler')) {
               return 'react-core';
             }
             // React Router
             if (id.includes('react-router')) {
               return 'react-router';
             }
-            // Framer Motion (animation library)
+            // Framer Motion - heavy, isolate it
             if (id.includes('framer-motion')) {
               return 'framer-vendor';
             }
-            // Radix UI (component library) - group together
+            // Radix UI - group together
             if (id.includes('@radix-ui')) {
               return 'radix-vendor';
             }
@@ -202,6 +180,14 @@ export default defineConfig(({ mode }) => ({
             if (id.includes('@tanstack/react-query')) {
               return 'query-vendor';
             }
+            // Recharts - heavy charting library, isolate it
+            if (id.includes('recharts') || id.includes('d3-') || id.includes('victory-')) {
+              return 'recharts-vendor';
+            }
+            // Emoji picker - heavy, isolate it
+            if (id.includes('emoji-picker-react')) {
+              return 'emoji-vendor';
+            }
             // Date utilities
             if (id.includes('date-fns')) {
               return 'date-vendor';
@@ -210,7 +196,12 @@ export default defineConfig(({ mode }) => ({
             return 'vendor';
           }
 
-          // Page chunks - only split large pages
+          // Heavy analysis components - split separately
+          if (id.includes('src/components/AnalysisDetailView')) {
+            return 'analysis-detail';
+          }
+
+          // Page chunks
           if (id.includes('src/pages/')) {
             const pageName = id.split('src/pages/')[1]?.split('.')[0];
             if (!pageName) return undefined;
@@ -218,31 +209,31 @@ export default defineConfig(({ mode }) => ({
             // Keep smaller pages in main bundle
             const smallPages = ['About', 'FAQ', 'Credits', 'NotFound', 'VapidKeyGenerator'];
             if (smallPages.some(p => pageName.includes(p))) {
-              return undefined; // Include in main bundle
+              return undefined;
             }
 
             // Large pages get their own chunks
-            const largePages = ['Feed', 'Messages', 'Groups', 'Match', 'Profile'];
+            const largePages = ['Feed', 'Messages', 'Groups', 'Match', 'Profile', 'Admin', 'ErrorMonitor', 'ErrorAnalytics'];
             if (largePages.some(p => pageName.includes(p))) {
               return `page-${pageName.toLowerCase()}`;
             }
 
-            // Group medium pages
             return 'pages-medium';
           }
         },
       },
     },
-    // Increase chunk size warning limit
     chunkSizeWarningLimit: 1000,
-    // Enable source maps for production debugging (optional)
     sourcemap: false,
-    // Minify with terser for better compression
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true, // Remove console logs in production
+        drop_console: true,
         drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info', 'console.debug'],
+      },
+      mangle: {
+        safari10: true,
       },
     },
   },
