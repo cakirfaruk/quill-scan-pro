@@ -1,12 +1,26 @@
 // Service Worker for push notifications and offline support
+// v2 — force immediate activation to bust stale chunk caches after deploys
+const SW_VERSION = 'v2';
+
 self.addEventListener('install', (event) => {
-  console.log('Service Worker installing.');
+  // Skip waiting immediately so new SW takes over without waiting for old tabs to close
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker activating.');
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    (async () => {
+      // Delete ALL old caches so stale chunks from previous deploys are removed
+      const cacheNames = await caches.keys();
+      await Promise.all(
+        cacheNames
+          .filter(name => name !== 'lovable-cache-' + SW_VERSION)
+          .map(name => caches.delete(name))
+      );
+      // Claim all open tabs immediately
+      await clients.claim();
+    })()
+  );
 });
 
 self.addEventListener('push', (event) => {
