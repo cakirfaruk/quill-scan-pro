@@ -11,10 +11,11 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
-  // CRITICAL: Force React to be pre-bundled as a single shared chunk in dev mode.
-  // Without this, Vite may create separate pre-bundled copies of React for
-  // different dep groups, causing "Cannot read properties of null (reading 'useRef')"
-  // and similar hook/context errors when multiple React instances exist.
+  // CRITICAL: Deduplicate React across ALL pre-bundled deps in dev mode.
+  // `resolve.dedupe` forces every package (react-router, radix-ui, etc.) to
+  // resolve react/react-dom to the SAME physical file, eliminating the
+  // "Cannot read properties of null (reading 'useRef/useContext')" errors
+  // that occur when multiple React instances exist simultaneously.
   optimizeDeps: {
     include: [
       'react',
@@ -23,6 +24,8 @@ export default defineConfig(({ mode }) => ({
       'react/jsx-runtime',
       'react/jsx-dev-runtime',
     ],
+    // Force all deps that import react to share the same pre-bundled copy
+    dedupe: ['react', 'react-dom'],
   },
   plugins: [
     react(),
@@ -167,6 +170,11 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    // Force a single copy of React for ALL modules (dev + build).
+    // This is the canonical fix for "Cannot read properties of null (reading 'useRef/useContext')"
+    // caused by react-router-dom, @radix-ui, next-themes etc. each resolving
+    // their own react instance instead of sharing one.
+    dedupe: ['react', 'react-dom', 'react-dom/client'],
   },
   // esbuild drop console/debugger in production
   esbuild: mode === 'production' ? {
