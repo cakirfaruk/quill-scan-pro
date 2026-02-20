@@ -91,6 +91,7 @@ const Match = () => {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [user, setUser] = useState<any>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [userGender, setUserGender] = useState<string | null>(null);
   const [credits, setCredits] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -213,9 +214,13 @@ const Match = () => {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      console.log("Match: No active session found.");
+      console.log("Match: No active session found, redirecting to auth.");
+      setAuthChecked(true);
+      navigate("/auth");
+      return;
     }
 
+    setAuthChecked(true);
     const currentUser = user;
     if (currentUser) {
       setUser(currentUser);
@@ -784,7 +789,19 @@ const Match = () => {
     );
   }
 
-  return (
+  // Show loading while auth check is in progress
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-muted-foreground text-sm">Yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+    return (
     <div className="h-screen bg-transparent flex flex-col overflow-hidden pb-20 relative">
       {/* Cosmic Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 bg-black">
