@@ -11,53 +11,54 @@ import { EnhancedOfflineIndicator } from "@/components/EnhancedOfflineIndicator"
 import { MainLayout } from "@/components/layout/MainLayout";
 
 import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingFallback } from "@/components/LoadingFallback";
 import { IncomingCallDialog } from "@/components/IncomingCallDialog";
 import { IncomingGroupCallDialog } from "@/components/IncomingGroupCallDialog";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import { useErrorAlerts } from "@/hooks/use-error-alerts";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
+import { lazyWithRetry } from "@/utils/lazyWithRetry";
 
-// Lazy load ALL pages including Index for optimal code splitting
-const Index = lazy(() => import("./pages/Index"));
+// All pages use lazyWithRetry for automatic stale-chunk recovery
+const Index = lazyWithRetry(() => import("./pages/Index"));
+const Auth = lazyWithRetry(() => import("./pages/Auth"));
+const Credits = lazyWithRetry(() => import("./pages/Credits"));
+const Compatibility = lazyWithRetry(() => import("./pages/Compatibility"));
+const About = lazyWithRetry(() => import("./pages/About"));
+const FAQ = lazyWithRetry(() => import("./pages/FAQ"));
+const Numerology = lazyWithRetry(() => import("./pages/Numerology"));
+const BirthChart = lazyWithRetry(() => import("./pages/BirthChart"));
+const Admin = lazyWithRetry(() => import("./pages/Admin"));
+const Profile = lazyWithRetry(() => import("./pages/Profile"));
+const Friends = lazyWithRetry(() => import("./pages/Friends"));
+const Messages = lazyWithRetry(() => import("./pages/Messages"));
+const Settings = lazyWithRetry(() => import("./pages/Settings"));
+const Match = lazyWithRetry(() => import("./pages/Match"));
+const Tarot = lazyWithRetry(() => import("./pages/Tarot"));
+const CoffeeFortune = lazyWithRetry(() => import("./pages/CoffeeFortune"));
+const DreamInterpretation = lazyWithRetry(() => import("./pages/DreamInterpretation"));
+const DailyHoroscope = lazyWithRetry(() => import("./pages/DailyHoroscope"));
+const Palmistry = lazyWithRetry(() => import("./pages/Palmistry"));
+const SavedPosts = lazyWithRetry(() => import("./pages/SavedPosts"));
+const Reels = lazyWithRetry(() => import("./pages/Reels"));
+const Explore = lazyWithRetry(() => import("./pages/Explore"));
+const Groups = lazyWithRetry(() => import("./pages/Groups"));
+const GroupChat = lazyWithRetry(() => import("./pages/GroupChat"));
+const GroupSettings = lazyWithRetry(() => import("./pages/GroupSettings"));
+const Discovery = lazyWithRetry(() => import("./pages/Discovery"));
+const CallHistory = lazyWithRetry(() => import("./pages/CallHistory"));
+const VapidKeyGenerator = lazyWithRetry(() => import("./pages/VapidKeyGenerator"));
+const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
+const ErrorMonitor = lazyWithRetry(() => import("./pages/ErrorMonitor"));
+const ErrorAnalytics = lazyWithRetry(() => import("./pages/ErrorAnalytics"));
+const ErrorDetail = lazyWithRetry(() => import("./pages/ErrorDetail"));
+const Install = lazyWithRetry(() => import("./pages/Install"));
+const Feed = lazyWithRetry(() => import("./pages/Feed"));
 
-// Lazy load routes for better performance
-const Auth = lazy(() => import("./pages/Auth"));
-const Credits = lazy(() => import("./pages/Credits"));
-const Compatibility = lazy(() => import("./pages/Compatibility"));
-const About = lazy(() => import("./pages/About"));
-const FAQ = lazy(() => import("./pages/FAQ"));
-const Numerology = lazy(() => import("./pages/Numerology"));
-const BirthChart = lazy(() => import("./pages/BirthChart"));
-const Admin = lazy(() => import("./pages/Admin"));
-const Profile = lazy(() => import("./pages/Profile"));
-const Friends = lazy(() => import("./pages/Friends"));
-const Messages = lazy(() => import("./pages/Messages"));
-const Settings = lazy(() => import("./pages/Settings"));
-const Match = lazy(() => import("./pages/Match"));
-const Tarot = lazy(() => import("./pages/Tarot"));
-const CoffeeFortune = lazy(() => import("./pages/CoffeeFortune"));
-const DreamInterpretation = lazy(() => import("./pages/DreamInterpretation"));
-const DailyHoroscope = lazy(() => import("./pages/DailyHoroscope"));
-const Palmistry = lazy(() => import("./pages/Palmistry"));
-const SavedPosts = lazy(() => import("./pages/SavedPosts"));
-const Reels = lazy(() => import("./pages/Reels"));
-const Explore = lazy(() => import("./pages/Explore"));
-const Groups = lazy(() => import("./pages/Groups"));
-const GroupChat = lazy(() => import("./pages/GroupChat"));
-const GroupSettings = lazy(() => import("./pages/GroupSettings"));
-const Discovery = lazy(() => import("./pages/Discovery"));
-const CallHistory = lazy(() => import("./pages/CallHistory"));
-const VapidKeyGenerator = lazy(() => import("./pages/VapidKeyGenerator"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const ErrorMonitor = lazy(() => import("./pages/ErrorMonitor"));
-const ErrorAnalytics = lazy(() => import("./pages/ErrorAnalytics"));
-const ErrorDetail = lazy(() => import("./pages/ErrorDetail"));
-const Install = lazy(() => import("./pages/Install"));
-const Feed = lazy(() => import("./pages/Feed"));
 
 const queryClient = new QueryClient();
 
@@ -231,60 +232,63 @@ const AppRoutes = () => {
           callerName={incomingGroupCall.callerName}
         />
       )}
-      <Suspense fallback={<LoadingFallback />}>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={location.pathname}
-            initial={pageTransition.initial}
-            animate={pageTransition.animate}
-            exit={pageTransition.exit}
-            transition={pageTransition.transition}
-            className="w-full"
-          >
-            <Routes location={location}>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/install" element={<Install />} />
+      {/* ChunkErrorBoundary catches stale-chunk 404s after deploys and offers a cache-busting reload */}
+      <ChunkErrorBoundary chunkName="sayfa">
+        <Suspense fallback={<LoadingFallback />}>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={location.pathname}
+              initial={pageTransition.initial}
+              animate={pageTransition.animate}
+              exit={pageTransition.exit}
+              transition={pageTransition.transition}
+              className="w-full"
+            >
+              <Routes location={location}>
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/install" element={<Install />} />
 
-              <Route element={<MainLayout />}>
-                <Route path="/" element={<Index />} />
-                <Route path="/profile/:username?" element={<Profile />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/faq" element={<FAQ />} />
-                <Route path="/credits" element={<Credits />} />
-                <Route path="/messages" element={<Messages />} />
-                <Route path="/friends" element={<Friends />} />
-                <Route path="/saved" element={<SavedPosts />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/tarot" element={<Tarot />} />
-                <Route path="/coffee-fortune" element={<CoffeeFortune />} />
-                <Route path="/palmistry" element={<Palmistry />} />
-                {/* Handwriting Removed */}
-                <Route path="/birth-chart" element={<BirthChart />} />
-                <Route path="/numerology" element={<Numerology />} />
-                <Route path="/compatibility" element={<Compatibility />} />
-                <Route path="/daily-horoscope" element={<DailyHoroscope />} />
-                <Route path="/dream" element={<DreamInterpretation />} />
-                <Route path="/reels" element={<Reels />} />
-                <Route path="/explore" element={<Explore />} />
-                <Route path="/discovery" element={<Discovery />} />
-                <Route path="/groups" element={<Groups />} />
-                <Route path="/groups/:groupId" element={<GroupChat />} />
-                <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
-                <Route path="/match" element={<Match />} />
-                <Route path="/call-history" element={<CallHistory />} />
-                <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
-                <Route path="/error-monitor" element={<ErrorMonitor />} />
-                <Route path="/error-analytics" element={<ErrorAnalytics />} />
-                <Route path="/error/:errorId" element={<ErrorDetail />} />
-                <Route path="/feed" element={<Feed />} />
-              </Route>
+                <Route element={<MainLayout />}>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/profile/:username?" element={<Profile />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/faq" element={<FAQ />} />
+                  <Route path="/credits" element={<Credits />} />
+                  <Route path="/messages" element={<Messages />} />
+                  <Route path="/friends" element={<Friends />} />
+                  <Route path="/saved" element={<SavedPosts />} />
+                  <Route path="/admin" element={<Admin />} />
+                  <Route path="/tarot" element={<Tarot />} />
+                  <Route path="/coffee-fortune" element={<CoffeeFortune />} />
+                  <Route path="/palmistry" element={<Palmistry />} />
+                  {/* Handwriting Removed */}
+                  <Route path="/birth-chart" element={<BirthChart />} />
+                  <Route path="/numerology" element={<Numerology />} />
+                  <Route path="/compatibility" element={<Compatibility />} />
+                  <Route path="/daily-horoscope" element={<DailyHoroscope />} />
+                  <Route path="/dream" element={<DreamInterpretation />} />
+                  <Route path="/reels" element={<Reels />} />
+                  <Route path="/explore" element={<Explore />} />
+                  <Route path="/discovery" element={<Discovery />} />
+                  <Route path="/groups" element={<Groups />} />
+                  <Route path="/groups/:groupId" element={<GroupChat />} />
+                  <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
+                  <Route path="/match" element={<Match />} />
+                  <Route path="/call-history" element={<CallHistory />} />
+                  <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
+                  <Route path="/error-monitor" element={<ErrorMonitor />} />
+                  <Route path="/error-analytics" element={<ErrorAnalytics />} />
+                  <Route path="/error/:errorId" element={<ErrorDetail />} />
+                  <Route path="/feed" element={<Feed />} />
+                </Route>
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </motion.div>
-        </AnimatePresence>
-      </Suspense>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </motion.div>
+          </AnimatePresence>
+        </Suspense>
+      </ChunkErrorBoundary>
       <PWAInstallPrompt />
     </>
   );
