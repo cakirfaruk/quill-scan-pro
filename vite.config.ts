@@ -156,21 +156,20 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
-            // React ecosystem - MUST be in same chunk
-            if (id.includes('react/') || id.includes('react-dom') || id.includes('react-is') || id.includes('scheduler')) {
-              return 'react-core';
-            }
-            // React Router
-            if (id.includes('react-router')) {
-              return 'react-router';
-            }
-            // Framer Motion - heavy, isolate it
-            if (id.includes('framer-motion')) {
-              return 'framer-vendor';
-            }
-            // Radix UI - group together
-            if (id.includes('@radix-ui')) {
-              return 'radix-vendor';
+            // NOTE: React and React-DOM must NOT be split into custom chunks.
+            // Vite handles React deduplication automatically via its module graph.
+            // Splitting React causes "Cannot read properties of null (reading 'useState')" errors.
+            if (
+              id.includes('/react/') ||
+              id.includes('/react-dom/') ||
+              id.includes('/react-is/') ||
+              id.includes('/scheduler/') ||
+              id.includes('/react-router') ||
+              id.includes('/framer-motion') ||
+              id.includes('/@radix-ui')
+            ) {
+              // Let Vite/Rollup handle these naturally - do not split
+              return undefined;
             }
             // Supabase
             if (id.includes('@supabase')) {
@@ -181,7 +180,7 @@ export default defineConfig(({ mode }) => ({
               return 'query-vendor';
             }
             // Recharts - heavy charting library, isolate it
-            if (id.includes('recharts') || id.includes('d3-') || id.includes('victory-')) {
+            if (id.includes('recharts') || id.includes('d3-')) {
               return 'recharts-vendor';
             }
             // Emoji picker - heavy, isolate it
@@ -196,32 +195,7 @@ export default defineConfig(({ mode }) => ({
             return 'vendor';
           }
 
-          // Heavy analysis components - split separately
-          if (id.includes('src/components/AnalysisDetailView')) {
-            return 'analysis-detail';
-          }
-
-          // Heavy dialogs - lazy loadable
-          if (id.includes('src/components/VideoCallDialog') ||
-              id.includes('src/components/GroupVideoCallDialog') ||
-              id.includes('src/components/CallInterface') ||
-              id.includes('src/components/StoryViewer') ||
-              id.includes('src/components/CreatePostDialog') ||
-              id.includes('src/components/GifPicker') ||
-              id.includes('src/components/VoiceRecorder') ||
-              id.includes('src/components/WidgetDashboard')) {
-            return 'heavy-dialogs';
-          }
-
-          // WebRTC / call hooks
-          if (id.includes('src/hooks/use-webrtc') ||
-              id.includes('src/hooks/use-group-webrtc') ||
-              id.includes('src/utils/callNotifications') ||
-              id.includes('src/utils/pushNotifications')) {
-            return 'webrtc-utils';
-          }
-
-          // Page chunks
+          // Page chunks - only split pages, not shared components
           if (id.includes('src/pages/')) {
             const pageName = id.split('src/pages/')[1]?.split('.')[0];
             if (!pageName) return undefined;
