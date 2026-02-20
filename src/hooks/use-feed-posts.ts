@@ -44,7 +44,7 @@ export const useFeedPosts = (): UseFeedPostsReturn => {
                 supabase
                     .from("posts")
                     .select(`
-                        id, user_id, content, media_url, media_type, created_at, shares_count, likes_count, comments_count,
+                        id, user_id, content, media_url, media_type, created_at, shares_count,
                         profiles!posts_user_id_fkey (
                           user_id,
                           username,
