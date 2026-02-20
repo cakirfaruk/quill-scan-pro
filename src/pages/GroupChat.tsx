@@ -1013,7 +1013,7 @@ const GroupChat = () => {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-full p-0 bg-transparent border-none shadow-none" align="start">
-                    <EmojiPicker onEmojiClick={handleEmojiClick} theme="dark" />
+                    <EmojiPicker onEmojiClick={handleEmojiClick} theme={"dark" as any} />
                   </PopoverContent>
                 </Popover>
 

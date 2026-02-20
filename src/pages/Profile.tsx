@@ -1234,7 +1234,7 @@ const Profile = () => {
                   variant="outline"
                   className="bg-accent/20 border-accent/50 text-accent hover:bg-accent/40"
                   onClick={() => {
-                    supabase.from('profiles').update({ credits: Number(profile.credits || 0) + 1000 }).eq('user_id', profile.user_id)
+                    supabase.from('profiles').update({ credits: Number((profile as any).credits || 0) + 1000 }).eq('user_id', profile.user_id)
                       .then(() => {
                         toast({ title: 'Başarılı', description: '1000 kredi eklendi.' });
                         handleRefresh();
