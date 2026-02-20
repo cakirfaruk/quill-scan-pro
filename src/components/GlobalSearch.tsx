@@ -68,7 +68,7 @@ export const GlobalSearch = () => {
         e.preventDefault();
         setOpen((open) => !open);
       }
-      
+
       // Escape to close
       if (e.key === "Escape" && open) {
         e.preventDefault();
@@ -121,108 +121,101 @@ export const GlobalSearch = () => {
       // Search features/pages
       if (filterType === "all" || filterType === "feature") {
         const features = [
-          { 
-            id: "tarot", 
-            title: "Tarot Falı", 
-            subtitle: "Kartlarla geleceğini keşfet", 
+          {
+            id: "tarot",
+            title: "Tarot Falı",
+            subtitle: "Kartlarla geleceğini keşfet",
             path: "/tarot",
             icon: "🔮"
           },
-          { 
-            id: "birth-chart", 
-            title: "Doğum Haritası", 
-            subtitle: "Yıldızların senin hakkında söyledikleri", 
+          {
+            id: "birth-chart",
+            title: "Doğum Haritası",
+            subtitle: "Yıldızların senin hakkında söyledikleri",
             path: "/birth-chart",
             icon: "⭐"
           },
-          { 
-            id: "numerology", 
-            title: "Numeroloji", 
-            subtitle: "Sayıların gizli anlamları", 
+          {
+            id: "numerology",
+            title: "Numeroloji",
+            subtitle: "Sayıların gizli anlamları",
             path: "/numerology",
             icon: "🔢"
           },
-          { 
-            id: "coffee-fortune", 
-            title: "Kahve Falı", 
-            subtitle: "Fincandaki sırlar", 
+          {
+            id: "coffee-fortune",
+            title: "Kahve Falı",
+            subtitle: "Fincandaki sırlar",
             path: "/coffee-fortune",
             icon: "☕"
           },
-          { 
-            id: "palmistry", 
-            title: "El Falı", 
-            subtitle: "Avucunuzdaki çizgiler", 
+          {
+            id: "palmistry",
+            title: "El Falı",
+            subtitle: "Avucunuzdaki çizgiler",
             path: "/palmistry",
             icon: "🤚"
           },
-          { 
-            id: "dream", 
-            title: "Rüya Tabiri", 
-            subtitle: "Rüyalarının anlamı", 
+          {
+            id: "dream",
+            title: "Rüya Tabiri",
+            subtitle: "Rüyalarının anlamı",
             path: "/dream-interpretation",
             icon: "💭"
           },
-          { 
-            id: "compatibility", 
-            title: "Uyum Analizi", 
-            subtitle: "İlişki uyumunuzu öğrenin", 
+          {
+            id: "compatibility",
+            title: "Uyum Analizi",
+            subtitle: "İlişki uyumunuzu öğrenin",
             path: "/compatibility",
             icon: "💕"
           },
-          { 
-            id: "horoscope", 
-            title: "Günlük Burç", 
-            subtitle: "Bugün seni neler bekliyor", 
+          {
+            id: "horoscope",
+            title: "Günlük Burç",
+            subtitle: "Bugün seni neler bekliyor",
             path: "/daily-horoscope",
             icon: "♈"
           },
-          { 
-            id: "handwriting", 
-            title: "El Yazısı Analizi", 
-            subtitle: "Yazınız kişiliğinizi yansıtır", 
-            path: "/handwriting",
-            icon: "✍️"
-          },
-          { 
-            id: "feed", 
-            title: "Ana Sayfa", 
-            subtitle: "Güncel akış", 
+          {
+            id: "feed",
+            title: "Ana Sayfa",
+            subtitle: "Güncel akış",
             path: "/feed",
             icon: "🏠"
           },
-          { 
-            id: "messages", 
-            title: "Mesajlar", 
-            subtitle: "Sohbetleriniz", 
+          {
+            id: "messages",
+            title: "Mesajlar",
+            subtitle: "Sohbetleriniz",
             path: "/messages",
             icon: "💬"
           },
-          { 
-            id: "groups", 
-            title: "Gruplar", 
-            subtitle: "Topluluklar", 
+          {
+            id: "groups",
+            title: "Gruplar",
+            subtitle: "Topluluklar",
             path: "/groups",
             icon: "👥"
           },
-          { 
-            id: "friends", 
-            title: "Arkadaşlar", 
-            subtitle: "Bağlantılarınız", 
+          {
+            id: "friends",
+            title: "Arkadaşlar",
+            subtitle: "Bağlantılarınız",
             path: "/friends",
             icon: "👫"
           },
-          { 
-            id: "discovery", 
-            title: "Keşfet", 
-            subtitle: "Yeni insanlarla tanış", 
+          {
+            id: "discovery",
+            title: "Keşfet",
+            subtitle: "Yeni insanlarla tanış",
             path: "/discovery",
             icon: "🎯"
           },
-          { 
-            id: "reels", 
-            title: "Reels", 
-            subtitle: "Kısa videolar", 
+          {
+            id: "reels",
+            title: "Reels",
+            subtitle: "Kısa videolar",
             path: "/reels",
             icon: "🎬"
           },
@@ -652,15 +645,15 @@ export const GlobalSearch = () => {
                       {typeResults.map((result, index) => {
                         const globalIndex = results.findIndex(r => r.id === result.id && r.type === result.type);
                         const isSelected = globalIndex === selectedIndex;
-                        
+
                         return (
                           <button
                             key={result.id}
                             onClick={() => handleResultClick(result)}
                             className={cn(
                               "flex items-center gap-3 w-full px-2 py-2 rounded-md transition-all text-left",
-                              isSelected 
-                                ? "bg-primary text-primary-foreground shadow-md scale-[1.02]" 
+                              isSelected
+                                ? "bg-primary text-primary-foreground shadow-md scale-[1.02]"
                                 : "hover:bg-accent"
                             )}
                           >

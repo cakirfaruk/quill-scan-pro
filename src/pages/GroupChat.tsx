@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Header } from "@/components/Header";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Send, Users, Settings, Smile, Loader2, UserPlus, BarChart3, Megaphone, Image as ImageIcon, Paperclip, Reply, X, TrendingUp, Search, CalendarDays, Pin, Phone, Video } from "lucide-react";
+import { ArrowLeft, Send, Users, Settings, Smile, Loader2, UserPlus, BarChart3, Megaphone, Image as ImageIcon, Paperclip, Reply, X, TrendingUp, Search, CalendarDays, Pin, Phone, Video, MoreVertical, LogOut } from "lucide-react";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -29,6 +29,7 @@ import { GroupFileCard } from "@/components/GroupFileCard";
 import { CreateGroupFileDialog } from "@/components/CreateGroupFileDialog";
 import { PinnedMessages } from "@/components/PinnedMessages";
 import { GroupVideoCallDialog } from "@/components/GroupVideoCallDialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const messageSchema = z.object({
   content: z.string()
@@ -57,6 +58,7 @@ interface GroupMessage {
       username: string;
     };
   } | null;
+  pinned_at?: string | null;
 }
 
 interface GroupMember {
@@ -75,7 +77,7 @@ const GroupChat = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  
+
   const [group, setGroup] = useState<any>(null);
   const [messages, setMessages] = useState<GroupMessage[]>([]);
   const [members, setMembers] = useState<GroupMember[]>([]);
@@ -114,7 +116,7 @@ const GroupChat = () => {
     loadEvents();
     loadFiles();
     loadPinnedMessages();
-    
+
     // Subscribe to new messages
     const messagesChannel = supabase
       .channel(`group-messages-${groupId}`)
@@ -212,7 +214,10 @@ const GroupChat = () => {
   useEffect(() => {
     // Auto-scroll to bottom
     if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+      const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollContainer) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      }
     }
   }, [messages]);
 
@@ -277,7 +282,7 @@ const GroupChat = () => {
     try {
       const { data, error } = await supabase
         .from("group_messages")
-        .select("id, content, media_url, media_type, reply_to, created_at, sender_id")
+        .select("id, content, media_url, media_type, reply_to, created_at, sender_id, pinned_at")
         .eq("group_id", groupId)
         .order("created_at", { ascending: true })
         .limit(100);
@@ -299,12 +304,12 @@ const GroupChat = () => {
       const replyIds = (data || [])
         .filter((msg: any) => msg.reply_to)
         .map((msg: any) => msg.reply_to);
-      
+
       const { data: repliedMessages } = replyIds.length > 0
         ? await supabase
-            .from("group_messages")
-            .select("id, content, media_url, sender_id")
-            .in("id", replyIds)
+          .from("group_messages")
+          .select("id, content, media_url, sender_id")
+          .in("id", replyIds)
         : { data: [] };
 
       const repliedMessageMap = new Map(
@@ -450,7 +455,7 @@ const GroupChat = () => {
     try {
       const { data, error } = await supabase
         .from("group_messages")
-        .select("id, content, media_url, media_type, created_at, sender_id")
+        .select("id, content, media_url, media_type, created_at, sender_id, pinned_at")
         .eq("group_id", groupId)
         .not("pinned_at", "is", null)
         .order("pinned_at", { ascending: false });
@@ -744,33 +749,40 @@ const GroupChat = () => {
     const element = document.getElementById(`message-${messageId}`);
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "center" });
-      element.classList.add("highlight-message");
+      element.classList.add("ring-2", "ring-primary", "ring-offset-2", "ring-offset-black");
       setTimeout(() => {
-        element.classList.remove("highlight-message");
+        element.classList.remove("ring-2", "ring-primary", "ring-offset-2", "ring-offset-black");
       }, 2000);
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-subtle">
-        <Header />
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-12 h-12 animate-spin text-primary" />
+      <div className="min-h-screen bg-transparent pb-20 relative">
+        <PageHeader title="Grup Sohbeti" />
+        <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       </div>
     );
   }
 
-  if (!group) {
-    return null;
-  }
+  if (!group) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-subtle flex flex-col">
-      <Header />
+    <div className="min-h-screen bg-transparent pb-20 relative font-sans">
+      {/* Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div className="absolute top-[20%] right-[10%] w-96 h-96 bg-primary/10 rounded-full blur-[100px]" />
+        <div className="absolute bottom-[20%] left-[10%] w-96 h-96 bg-accent/10 rounded-full blur-[100px]" />
+      </div>
 
-      <div className="mx-4 mt-4">
+      <div className="-mt-6">
+        <PageHeader title={group.name || "Grup Sohbeti"} />
+      </div>
+
+      {/* Breadcrumb Area */}
+      <div className="container mx-auto px-4 mt-2 mb-4">
         <Breadcrumb
           items={[
             { label: "Gruplar", path: "/groups" },
@@ -779,492 +791,304 @@ const GroupChat = () => {
         />
       </div>
 
-      {/* Group Header */}
-      <Card className="mx-4 mt-2">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/groups")}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            
-            <Avatar className="w-12 h-12">
-              <AvatarImage src={group.photo_url || undefined} />
-              <AvatarFallback className="bg-gradient-primary text-primary-foreground">
-                {group.name.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-
-            <div>
-              <h2 className="font-semibold">{group.name}</h2>
-              <p className="text-xs text-muted-foreground">
-                {members.length} üye
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => startGroupCall("audio")}
-              title="Sesli Grup Araması"
-            >
-              <Phone className="w-5 h-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => startGroupCall("video")}
-              title="Görüntülü Grup Araması"
-            >
-              <Video className="w-5 h-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSearchOpen(true)}
-              title="Ara"
-            >
-              <Search className="w-5 h-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setStatsOpen(true)}
-              title="İstatistikler"
-            >
-              <TrendingUp className="w-5 h-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setMediaGalleryOpen(true)}
-              title="Medya Galerisi"
-            >
-              <ImageIcon className="w-5 h-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setUploadFileDialogOpen(true)}
-              title="Dosya Paylaş"
-            >
-              <Paperclip className="w-5 h-5" />
-            </Button>
-            {isAdmin && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setCreateEventDialogOpen(true)}
-                  title="Etkinlik Oluştur"
-                >
-                  <CalendarDays className="w-5 h-5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setCreateAnnouncementDialogOpen(true)}
-                  title="Duyuru Oluştur"
-                >
-                  <Megaphone className="w-5 h-5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setCreatePollDialogOpen(true)}
-                  title="Anket Oluştur"
-                >
-                  <BarChart3 className="w-5 h-5" />
-                </Button>
-              </>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setMembersDialogOpen(true)}
-            >
-              <Users className="w-5 h-5" />
-            </Button>
-            {isAdmin && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate(`/groups/${groupId}/settings`)}
-              >
-                <Settings className="w-5 h-5" />
+      <div className="container mx-auto px-4 h-[calc(100vh-180px)] flex flex-col gap-4">
+        {/* Header Card */}
+        <Card className="glass-card border-white/10 p-4 sticky top-0 z-20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" className="md:hidden text-white/70" onClick={() => navigate("/groups")}>
+                <ArrowLeft className="w-5 h-5" />
               </Button>
-            )}
-          </div>
-        </div>
-      </Card>
 
-      {/* Pinned Messages */}
-      <PinnedMessages
-        messages={pinnedMessages}
-        isAdmin={isAdmin}
-        onUnpin={handleUnpinMessage}
-        onMessageClick={scrollToMessage}
-      />
+              <Avatar className="w-10 h-10 ring-2 ring-primary/20">
+                <AvatarImage src={group.photo_url || undefined} />
+                <AvatarFallback className="bg-primary/20 text-primary">
+                  {group.name.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
 
-      {/* Messages Area */}
-      <Card className="flex-1 mx-4 my-4 flex flex-col">
-        <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-          <div className="space-y-4">
-            {/* Announcements */}
-            {announcements.map((announcement) => (
-              <GroupAnnouncementCard
-                key={announcement.id}
-                announcement={announcement}
-                currentUserId={currentUserId}
-                isAdmin={isAdmin}
-                onDelete={loadAnnouncements}
-              />
-            ))}
+              <div>
+                <h2 className="font-semibold text-white leading-none mb-1">{group.name}</h2>
+                <p className="text-xs text-white/50">{members.length} üye</p>
+              </div>
+            </div>
 
-            {/* Events */}
-            {events.map((event) => (
-              <GroupEventCard
-                key={event.id}
-                event={event}
-                currentUserId={currentUserId}
-                onDelete={loadEvents}
-              />
-            ))}
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="text-white/70 hover:text-primary hover:bg-primary/10 rounded-full" onClick={() => startGroupCall("audio")}>
+                <Phone className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="text-white/70 hover:text-accent hover:bg-accent/10 rounded-full" onClick={() => startGroupCall("video")}>
+                <Video className="w-4 h-4" />
+              </Button>
 
-            {/* Files */}
-            {files.map((file) => (
-              <GroupFileCard
-                key={file.id}
-                file={file}
-                currentUserId={currentUserId}
-                isAdmin={isAdmin}
-                onDelete={loadFiles}
-              />
-            ))}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-white/70 rounded-full">
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="glass-card border-white/10 text-white min-w-[200px]">
+                  <DropdownMenuItem onClick={() => setSearchOpen(true)} className="hover:bg-white/10 cursor-pointer">
+                    <Search className="w-4 h-4 mr-2" /> Ara
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setStatsOpen(true)} className="hover:bg-white/10 cursor-pointer">
+                    <TrendingUp className="w-4 h-4 mr-2" /> İstatistikler
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setMediaGalleryOpen(true)} className="hover:bg-white/10 cursor-pointer">
+                    <ImageIcon className="w-4 h-4 mr-2" /> Medya Galerisi
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setUploadFileDialogOpen(true)} className="hover:bg-white/10 cursor-pointer">
+                    <Paperclip className="w-4 h-4 mr-2" /> Dosya Paylaş
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setMembersDialogOpen(true)} className="hover:bg-white/10 cursor-pointer">
+                    <Users className="w-4 h-4 mr-2" /> Üyeler
+                  </DropdownMenuItem>
 
-            {/* Polls */}
-            {polls.map((poll) => (
-              <GroupPollCard
-                key={poll.id}
-                poll={poll}
-                currentUserId={currentUserId}
-                isAdmin={isAdmin}
-                onDelete={loadPolls}
-              />
-            ))}
-
-            {/* Messages */}
-            {messages.map((msg) => (
-              <div
-                id={`message-${msg.id}`}
-                key={msg.id}
-                className={`flex gap-3 transition-all ${
-                  msg.sender_id === currentUserId ? "flex-row-reverse" : ""
-                }`}
-              >
-                <Avatar className="w-8 h-8">
-                  <AvatarImage src={msg.sender.profile_photo || undefined} />
-                  <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs">
-                    {msg.sender.username.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div
-                  className={`flex-1 max-w-[70%] ${
-                    msg.sender_id === currentUserId ? "text-right" : ""
-                  }`}
-                >
-                  {msg.sender_id !== currentUserId && (
-                    <p className="text-xs font-medium mb-1">
-                      {msg.sender.full_name || msg.sender.username}
-                    </p>
+                  {isAdmin && (
+                    <>
+                      <div className="h-px bg-white/10 my-1" />
+                      <DropdownMenuItem onClick={() => setCreateEventDialogOpen(true)} className="hover:bg-white/10 cursor-pointer">
+                        <CalendarDays className="w-4 h-4 mr-2" /> Etkinlik Oluştur
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setCreateAnnouncementDialogOpen(true)} className="hover:bg-white/10 cursor-pointer">
+                        <Megaphone className="w-4 h-4 mr-2" /> Duyuru Yap
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setCreatePollDialogOpen(true)} className="hover:bg-white/10 cursor-pointer">
+                        <BarChart3 className="w-4 h-4 mr-2" /> Anket Başlat
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate(`/groups/${groupId}/settings`)} className="hover:bg-white/10 cursor-pointer">
+                        <Settings className="w-4 h-4 mr-2" /> Grup Ayarları
+                      </DropdownMenuItem>
+                    </>
                   )}
-                  <div className="relative group">
-                    <div
-                      className={`rounded-lg overflow-hidden ${
-                        msg.media_url ? "" : "px-4 py-2"
-                      } inline-block ${
-                        msg.sender_id === currentUserId
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
-                      }`}
-                    >
-                      {/* Replied Message */}
-                      {msg.replied_message && (
-                        <div
-                          className={`px-3 py-2 mb-2 border-l-2 ${
-                            msg.sender_id === currentUserId
-                              ? "border-primary-foreground/30 bg-primary/20"
-                              : "border-primary/50 bg-accent/50"
-                          }`}
-                        >
-                          <p className="text-xs font-semibold mb-1">
-                            {msg.replied_message.sender.username}
-                          </p>
-                          <p className="text-xs opacity-80 truncate">
-                            {msg.replied_message.media_url
-                              ? msg.replied_message.media_url.includes("image")
-                                ? "📷 Fotoğraf"
-                                : "🎥 Video"
-                              : msg.replied_message.content}
-                          </p>
-                        </div>
-                      )}
 
-                      {/* Message Content */}
-                      {msg.media_url ? (
-                        <div>
-                          {msg.media_type?.startsWith("image") ? (
-                            <img
-                              src={msg.media_url}
-                              alt="Paylaşılan medya"
-                              className="max-w-[300px] max-h-[300px] object-cover"
-                            />
-                          ) : (
-                            <video
-                              src={msg.media_url}
-                              controls
-                              className="max-w-[300px] max-h-[300px]"
-                            />
-                          )}
-                          {msg.content && (
-                            <p className="text-sm px-4 py-2">{msg.content}</p>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-sm">{msg.content}</p>
-                      )}
-                    </div>
-
-                    {/* Reply Button */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`absolute -top-2 opacity-0 group-hover:opacity-100 transition-opacity ${
-                        msg.sender_id === currentUserId ? "left-0" : "right-0"
-                      }`}
-                      onClick={() => setReplyingTo(msg)}
-                      title="Yanıtla"
-                    >
-                      <Reply className="w-3 h-3" />
-                    </Button>
-                    
-                    {/* Pin Button (Admin Only) */}
-                    {isAdmin && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={`absolute -top-2 opacity-0 group-hover:opacity-100 transition-opacity ${
-                          msg.sender_id === currentUserId ? "left-10" : "right-10"
-                        }`}
-                        onClick={() => handlePinMessage(msg.id)}
-                        title="Sabitle"
-                      >
-                        <Pin className="w-3 h-3" />
-                      </Button>
-                    )}
-                  </div>
-
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    {formatDistanceToNow(new Date(msg.created_at), {
-                      addSuffix: true,
-                      locale: tr,
-                    })}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
-
-        {/* Message Input */}
-        <div className="p-4 border-t">
-          {/* Reply Preview */}
-          {replyingTo && (
-            <div className="mb-2 p-2 bg-accent/50 rounded-lg flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <Reply className="w-3 h-3 text-primary" />
-                  <p className="text-xs font-semibold">
-                    {replyingTo.sender.username}
-                  </p>
-                </div>
-                <p className="text-xs text-muted-foreground truncate">
-                  {replyingTo.media_url
-                    ? replyingTo.media_url.includes("image")
-                      ? "📷 Fotoğraf"
-                      : "🎥 Video"
-                    : replyingTo.content}
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setReplyingTo(null)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
+                  <div className="h-px bg-white/10 my-1" />
+                  <DropdownMenuItem onClick={handleLeaveGroup} className="text-red-400 hover:bg-red-500/10 hover:text-red-300 cursor-pointer">
+                    <LogOut className="w-4 h-4 mr-2" /> Gruptan Ayrıl
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-          )}
+          </div>
+        </Card>
 
-          <form onSubmit={handleSendMessage} className="flex gap-2">
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-              accept="image/jpeg,image/jpg,image/png,image/webp,video/mp4,video/webm"
-              className="hidden"
-            />
-            
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-            >
-              {uploading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Paperclip className="w-5 h-5" />
-              )}
-            </Button>
+        {/* Pinned Messages Bar */}
+        <PinnedMessages
+          messages={pinnedMessages}
+          isAdmin={isAdmin}
+          onUnpin={handleUnpinMessage}
+          onMessageClick={scrollToMessage}
+        />
 
-            <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
-              <PopoverTrigger asChild>
-                <Button type="button" variant="ghost" size="icon">
-                  <Smile className="w-5 h-5" />
+        {/* Main Chat Area */}
+        <Card className="glass-card flex-1 flex flex-col overflow-hidden border-white/10 relative bg-black/40 shadow-2xl backdrop-blur-xl">
+          <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+            <div className="space-y-6">
+              {/* Special Cards (Announcements, Events, etc) */}
+              <div className="space-y-4">
+                {announcements.map(a => (
+                  <GroupAnnouncementCard key={a.id} announcement={a} currentUserId={currentUserId} isAdmin={isAdmin} onDelete={loadAnnouncements} />
+                ))}
+                {events.map(e => (
+                  <GroupEventCard key={e.id} event={e} currentUserId={currentUserId} onDelete={loadEvents} />
+                ))}
+                {files.map(f => (
+                  <GroupFileCard key={f.id} file={f} currentUserId={currentUserId} isAdmin={isAdmin} onDelete={loadFiles} />
+                ))}
+                {polls.map(p => (
+                  <GroupPollCard key={p.id} poll={p} currentUserId={currentUserId} isAdmin={isAdmin} onDelete={loadPolls} />
+                ))}
+              </div>
+
+              {/* Messages */}
+              {messages.map((msg, index) => {
+                const isMe = msg.sender_id === currentUserId;
+                const showAvatar = !isMe && (index === 0 || messages[index - 1].sender_id !== msg.sender_id);
+
+                return (
+                  <div
+                    id={`message-${msg.id}`}
+                    key={msg.id}
+                    className={`flex gap-3 ${isMe ? "justify-end" : "justify-start"} group transform transition-all hover:translate-y-[-1px]`}
+                  >
+                    {!isMe && (
+                      <div className="w-8 flex-shrink-0 flex items-end">
+                        {showAvatar ? (
+                          <Avatar className="w-8 h-8 ring-1 ring-white/10">
+                            <AvatarImage src={msg.sender.profile_photo || undefined} />
+                            <AvatarFallback className="bg-primary/20 text-primary text-xs">
+                              {msg.sender.username.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        ) : <div className="w-8" />}
+                      </div>
+                    )}
+
+                    <div className={`flex flex-col max-w-[80%] md:max-w-[70%] min-w-0 ${isMe ? "items-end" : "items-start"}`}>
+                      {!isMe && showAvatar && (
+                        <span className="text-[10px] text-white/50 ml-1 mb-1">{msg.sender.full_name || msg.sender.username}</span>
+                      )}
+
+                      <div className={`relative px-4 py-2.5 shadow-lg ${isMe
+                          ? "rounded-2xl rounded-tr-sm bg-gradient-to-br from-primary via-violet-600 to-violet-700 text-white border-0"
+                          : "rounded-2xl rounded-tl-sm bg-white/10 backdrop-blur-md border border-white/10 text-white/90"
+                        }`}>
+                        {/* Replied Message Context */}
+                        {msg.replied_message && (
+                          <div className={`mb-2 p-2 rounded-lg text-xs border-l-2 ${isMe ? "bg-black/20 border-white/30" : "bg-black/20 border-primary/50"}`}>
+                            <p className="font-bold opacity-80 mb-0.5">{msg.replied_message.sender.username}</p>
+                            <p className="opacity-70 truncate line-clamp-1">
+                              {msg.replied_message.media_url ? (msg.replied_message.media_url.includes("image") ? "📷 Fotoğraf" : "🎥 Video") : msg.replied_message.content}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Media Content */}
+                        {msg.media_url && (
+                          <div className="mb-2 rounded-lg overflow-hidden max-w-full">
+                            {msg.media_type?.startsWith("image") ? (
+                              <img src={msg.media_url} alt="Media" className="max-w-full rounded-lg" />
+                            ) : (
+                              <video src={msg.media_url} controls className="max-w-full rounded-lg" />
+                            )}
+                          </div>
+                        )}
+
+                        {/* Text Content */}
+                        {msg.content && (
+                          <p className="text-[15px] whitespace-pre-wrap break-words leading-relaxed">
+                            {msg.content}
+                          </p>
+                        )}
+
+                        {/* Metadata */}
+                        <div className={`flex items-center gap-1.5 mt-1 select-none ${isMe ? "justify-end text-white/70" : "justify-start text-white/40"}`}>
+                          <span className="text-[10px]">
+                            {new Date(msg.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                          {msg.pinned_at && <Pin className="w-3 h-3 text-accent rotate-45" />}
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className={`flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity px-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-white/10 text-white/50" onClick={() => setReplyingTo(msg)} title="Yanıtla">
+                          <Reply className="w-3.5 h-3.5" />
+                        </Button>
+                        {isAdmin && (
+                          <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-white/10 text-white/50" onClick={() => handlePinMessage(msg.id)} title="Sabitle">
+                            <Pin className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+
+          {/* Input Area */}
+          <div className="p-3 md:p-4 bg-white/5 backdrop-blur-3xl border-t border-white/10 z-20">
+            {replyingTo && (
+              <div className="flex items-center justify-between p-2 mb-2 bg-primary/10 border border-primary/20 rounded-lg animate-in slide-in-from-bottom-2">
+                <div className="flex flex-col text-sm">
+                  <span className="text-primary font-bold text-xs">@{replyingTo.sender.username} kişisine yanıt veriliyor</span>
+                  <span className="text-white/70 truncate line-clamp-1 text-xs mt-0.5">
+                    {replyingTo.media_url ? "📷 Medya" : replyingTo.content}
+                  </span>
+                </div>
+                <Button size="icon" variant="ghost" className="h-6 w-6 text-white/50 hover:text-white" onClick={() => setReplyingTo(null)}>
+                  <X className="w-4 h-4" />
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-full p-0" align="start">
-                <EmojiPicker onEmojiClick={handleEmojiClick} />
-              </PopoverContent>
-            </Popover>
+              </div>
+            )}
 
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder={replyingTo ? "Yanıt yaz..." : "Mesaj yaz..."}
-              disabled={sending || uploading}
-              maxLength={2000}
-            />
+            <form onSubmit={handleSendMessage} className="flex items-end gap-2">
+              <div className="flex-1 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl flex items-end p-1 focus-within:bg-white/10 focus-within:border-primary/30 transition-all shadow-inner">
+                <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-white/50 hover:text-primary hover:bg-primary/10 transition-colors">
+                      <Smile className="w-5 h-5" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0 bg-transparent border-none shadow-none" align="start">
+                    <EmojiPicker onEmojiClick={handleEmojiClick} theme="dark" />
+                  </PopoverContent>
+                </Popover>
 
-            <Button type="submit" disabled={sending || uploading || !newMessage.trim()}>
-              {sending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Send className="w-5 h-5" />
-              )}
-            </Button>
-          </form>
-        </div>
-      </Card>
+                <Input
+                  className="flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[44px] py-3 text-white placeholder:text-white/30"
+                  placeholder={replyingTo ? "Yanıtınızı yazın..." : "Bir mesaj yazın..."}
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  disabled={sending || uploading}
+                  maxLength={2000}
+                />
 
-      {/* Members Dialog */}
+                <Button type="button" variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-white/50 hover:text-accent hover:bg-accent/10 transition-colors" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                  {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
+                  <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*,video/*" className="hidden" />
+                </Button>
+              </div>
+
+              <Button
+                type="submit"
+                size="icon"
+                className={`h-12 w-12 rounded-2xl shadow-lg transition-all duration-300 ${newMessage.trim() ? "bg-gradient-to-r from-primary to-violet-600 hover:scale-105" : "bg-white/10 text-white/30 hover:bg-white/20"}`}
+                disabled={sending || uploading || !newMessage.trim()}
+              >
+                {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 ml-0.5" />}
+              </Button>
+            </form>
+          </div>
+        </Card>
+      </div>
+
+      {/* Dialogs */}
       <Dialog open={membersDialogOpen} onOpenChange={setMembersDialogOpen}>
-        <DialogContent>
+        <DialogContent className="glass-card border-white/10 text-white">
           <DialogHeader>
             <DialogTitle>Grup Üyeleri ({members.length})</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="max-h-[400px]">
+          <ScrollArea className="max-h-[400px] pr-4">
             <div className="space-y-3">
               {members.map((member) => (
-                <div key={member.id} className="flex items-center justify-between">
+                <div key={member.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors">
                   <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10">
+                    <Avatar className="w-10 h-10 ring-1 ring-white/10">
                       <AvatarImage src={member.profile.profile_photo || undefined} />
-                      <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                      <AvatarFallback className="bg-primary/20 text-primary">
                         {member.profile.username.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium">
+                      <p className="font-medium text-white/90">
                         {member.profile.full_name || member.profile.username}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-white/50">
                         @{member.profile.username}
                       </p>
                     </div>
                   </div>
                   {member.role === "admin" && (
-                    <span className="text-xs text-primary font-medium">Admin</span>
+                    <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Admin</span>
                   )}
                 </div>
               ))}
             </div>
           </ScrollArea>
-          {isAdmin && (
-            <Button className="w-full mt-4" variant="outline">
-              <UserPlus className="w-4 h-4 mr-2" />
-              Üye Ekle
-            </Button>
-          )}
-          <Button
-            variant="destructive"
-            onClick={handleLeaveGroup}
-            className="w-full"
-          >
-            Gruptan Ayrıl
-          </Button>
         </DialogContent>
       </Dialog>
 
-      {/* Create Poll Dialog */}
-      <CreateGroupPollDialog
-        open={createPollDialogOpen}
-        onOpenChange={setCreatePollDialogOpen}
-        groupId={groupId!}
-        onPollCreated={loadPolls}
-      />
+      <CreateGroupPollDialog open={createPollDialogOpen} onOpenChange={setCreatePollDialogOpen} groupId={groupId!} onPollCreated={loadPolls} />
+      <CreateGroupAnnouncementDialog open={createAnnouncementDialogOpen} onOpenChange={setCreateAnnouncementDialogOpen} groupId={groupId!} onAnnouncementCreated={loadAnnouncements} />
+      <GroupMediaGallery open={mediaGalleryOpen} onOpenChange={setMediaGalleryOpen} groupId={groupId!} />
+      <GroupStats open={statsOpen} onOpenChange={setStatsOpen} groupId={groupId!} />
+      <GroupSearch open={searchOpen} onOpenChange={setSearchOpen} groupId={groupId!} />
+      <CreateGroupEventDialog open={createEventDialogOpen} onOpenChange={setCreateEventDialogOpen} groupId={groupId!} onEventCreated={loadEvents} />
+      <CreateGroupFileDialog open={uploadFileDialogOpen} onOpenChange={setUploadFileDialogOpen} groupId={groupId!} onFileUploaded={loadFiles} />
 
-      {/* Create Announcement Dialog */}
-      <CreateGroupAnnouncementDialog
-        open={createAnnouncementDialogOpen}
-        onOpenChange={setCreateAnnouncementDialogOpen}
-        groupId={groupId!}
-        onAnnouncementCreated={loadAnnouncements}
-      />
-
-      {/* Media Gallery */}
-      <GroupMediaGallery
-        open={mediaGalleryOpen}
-        onOpenChange={setMediaGalleryOpen}
-        groupId={groupId!}
-      />
-
-      {/* Group Stats */}
-      <GroupStats
-        open={statsOpen}
-        onOpenChange={setStatsOpen}
-        groupId={groupId!}
-      />
-
-      {/* Group Search */}
-      <GroupSearch
-        open={searchOpen}
-        onOpenChange={setSearchOpen}
-        groupId={groupId!}
-      />
-
-      {/* Create Event Dialog */}
-      <CreateGroupEventDialog
-        open={createEventDialogOpen}
-        onOpenChange={setCreateEventDialogOpen}
-        groupId={groupId!}
-        onEventCreated={loadEvents}
-      />
-
-      {/* Upload File Dialog */}
-      <CreateGroupFileDialog
-        open={uploadFileDialogOpen}
-        onOpenChange={setUploadFileDialogOpen}
-        groupId={groupId!}
-        onFileUploaded={loadFiles}
-      />
-
-      {/* Group Video Call */}
       {showCallInterface && activeCallId && (
         <GroupVideoCallDialog
           isOpen={showCallInterface}

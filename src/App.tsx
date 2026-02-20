@@ -7,9 +7,9 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { RouteProgressBar } from "@/components/AnimationWrappers";
 import { EnhancedOfflineIndicator } from "@/components/EnhancedOfflineIndicator";
-import { Tutorial } from "@/components/Tutorial";
-import { MobileNav } from "@/components/MobileNav";
-import { FloatingActionButton } from "@/components/FloatingActionButton";
+
+import { MainLayout } from "@/components/layout/MainLayout";
+
 import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,7 +43,6 @@ const CoffeeFortune = lazy(() => import("./pages/CoffeeFortune"));
 const DreamInterpretation = lazy(() => import("./pages/DreamInterpretation"));
 const DailyHoroscope = lazy(() => import("./pages/DailyHoroscope"));
 const Palmistry = lazy(() => import("./pages/Palmistry"));
-const Handwriting = lazy(() => import("./pages/Handwriting"));
 const SavedPosts = lazy(() => import("./pages/SavedPosts"));
 const Reels = lazy(() => import("./pages/Reels"));
 const Explore = lazy(() => import("./pages/Explore"));
@@ -105,7 +104,7 @@ const AppRoutes = () => {
         },
         async (payload) => {
           const call = payload.new;
-          
+
           // Only show dialog if status is ringing
           if (call.status === "ringing") {
             // Get caller info
@@ -150,7 +149,7 @@ const AppRoutes = () => {
         },
         async (payload) => {
           const participant = payload.new;
-          
+
           // Only show dialog if status is invited
           if (participant.status === "invited") {
             // Get group call info
@@ -189,20 +188,18 @@ const AppRoutes = () => {
       supabase.removeChannel(channel);
     };
   }, [currentUserId]);
-  
-  const showNav = ['/', '/explore', '/reels', '/discovery', '/messages', '/profile', '/match', '/friends'].some(
-    path => location.pathname === path || location.pathname.startsWith('/profile/')
-  );
 
-  const showFAB = location.pathname !== "/" && location.pathname !== "/auth";
+
+
+
 
   // Page transition variants
   const pageTransition = {
     initial: { opacity: 0, y: 10 },
     animate: { opacity: 1, y: 0 },
     exit: { opacity: 0, y: -10 },
-    transition: { 
-      duration: 0.3, 
+    transition: {
+      duration: 0.3,
       ease: "easeInOut" as const
     }
   };
@@ -245,47 +242,49 @@ const AppRoutes = () => {
             className="w-full"
           >
             <Routes location={location}>
-              <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/profile/:username?" element={<Profile />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/faq" element={<FAQ />} />
-              <Route path="/credits" element={<Credits />} />
-              <Route path="/messages" element={<Messages />} />
-              <Route path="/friends" element={<Friends />} />
-              <Route path="/saved" element={<SavedPosts />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/tarot" element={<Tarot />} />
-              <Route path="/coffee-fortune" element={<CoffeeFortune />} />
-              <Route path="/palmistry" element={<Palmistry />} />
-              <Route path="/handwriting" element={<Handwriting />} />
-              <Route path="/birth-chart" element={<BirthChart />} />
-              <Route path="/numerology" element={<Numerology />} />
-              <Route path="/compatibility" element={<Compatibility />} />
-              <Route path="/daily-horoscope" element={<DailyHoroscope />} />
-              <Route path="/dream" element={<DreamInterpretation />} />
-              <Route path="/reels" element={<Reels />} />
-              <Route path="/explore" element={<Explore />} />
-              <Route path="/discovery" element={<Discovery />} />
-              <Route path="/groups" element={<Groups />} />
-              <Route path="/groups/:groupId" element={<GroupChat />} />
-              <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
-              <Route path="/match" element={<Match />} />
-              <Route path="/call-history" element={<CallHistory />} />
-              <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
-              <Route path="/error-monitor" element={<ErrorMonitor />} />
-              <Route path="/error-analytics" element={<ErrorAnalytics />} />
-              <Route path="/error/:errorId" element={<ErrorDetail />} />
               <Route path="/install" element={<Install />} />
-              <Route path="/feed" element={<Feed />} />
+
+              <Route element={<MainLayout />}>
+                <Route path="/" element={<Index />} />
+                <Route path="/profile/:username?" element={<Profile />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/faq" element={<FAQ />} />
+                <Route path="/credits" element={<Credits />} />
+                <Route path="/messages" element={<Messages />} />
+                <Route path="/friends" element={<Friends />} />
+                <Route path="/saved" element={<SavedPosts />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/tarot" element={<Tarot />} />
+                <Route path="/coffee-fortune" element={<CoffeeFortune />} />
+                <Route path="/palmistry" element={<Palmistry />} />
+                {/* Handwriting Removed */}
+                <Route path="/birth-chart" element={<BirthChart />} />
+                <Route path="/numerology" element={<Numerology />} />
+                <Route path="/compatibility" element={<Compatibility />} />
+                <Route path="/daily-horoscope" element={<DailyHoroscope />} />
+                <Route path="/dream" element={<DreamInterpretation />} />
+                <Route path="/reels" element={<Reels />} />
+                <Route path="/explore" element={<Explore />} />
+                <Route path="/discovery" element={<Discovery />} />
+                <Route path="/groups" element={<Groups />} />
+                <Route path="/groups/:groupId" element={<GroupChat />} />
+                <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
+                <Route path="/match" element={<Match />} />
+                <Route path="/call-history" element={<CallHistory />} />
+                <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
+                <Route path="/error-monitor" element={<ErrorMonitor />} />
+                <Route path="/error-analytics" element={<ErrorAnalytics />} />
+                <Route path="/error/:errorId" element={<ErrorDetail />} />
+                <Route path="/feed" element={<Feed />} />
+              </Route>
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </motion.div>
         </AnimatePresence>
       </Suspense>
-      {showNav && <MobileNav />}
-      {showFAB && <FloatingActionButton />}
       <PWAInstallPrompt />
     </>
   );
@@ -295,13 +294,13 @@ const App = () => {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
             <TooltipProvider>
               <Toaster />
               <Sonner />
               <EnhancedOfflineIndicator />
-              <Tutorial />
+
               <PushNotificationPrompt />
               <AppRoutes />
             </TooltipProvider>

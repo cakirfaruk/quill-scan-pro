@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
-import { ShareButton } from "@/components/ShareButton";
+import { ShareAnalysisButton } from "@/components/ShareAnalysisButton";
 import { z } from "zod";
 
 const numerologySchema = z.object({
@@ -49,6 +49,7 @@ export default function Numerology() {
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [analysisId, setAnalysisId] = useState<string | null>(null);
   const [availableCredits, setAvailableCredits] = useState(0);
   const [selectAll, setSelectAll] = useState(false);
 
@@ -92,7 +93,7 @@ export default function Numerology() {
     const missingFields: string[] = [];
     if (!personData.fullName?.trim()) missingFields.push("Ad Soyad");
     if (!personData.birthDate) missingFields.push("Doğum Tarihi");
-    
+
     if (missingFields.length > 0) {
       toast({
         title: "Eksik Profil Bilgileri",
@@ -107,7 +108,7 @@ export default function Numerology() {
       fullName: personData.fullName,
       birthDate: personData.birthDate,
     });
-    
+
     if (!validation.success) {
       toast({
         title: "Geçersiz Veri",
@@ -145,8 +146,9 @@ export default function Numerology() {
       if (error) throw error;
 
       setAnalysisResult(data.result);
+      if (data.id) setAnalysisId(data.id);
       setAvailableCredits((prev) => prev - requiredCredits);
-      
+
       toast({
         title: "Analiz Tamamlandı",
         description: `${requiredCredits} kredi kullanıldı.`,
@@ -164,6 +166,7 @@ export default function Numerology() {
 
   const handleReset = () => {
     setAnalysisResult(null);
+    setAnalysisId(null);
     setPersonData({ fullName: "", birthDate: "" });
     setSelectedTopics([]);
     setSelectAll(false);
@@ -171,7 +174,7 @@ export default function Numerology() {
 
   if (analysisResult) {
     const analysisData = analysisResult.analiz || analysisResult;
-    
+
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -185,12 +188,15 @@ export default function Numerology() {
                     {analysisData.isim || personData.fullName} - {analysisData.dogum_tarihi ? new Date(analysisData.dogum_tarihi).toLocaleDateString("tr-TR") : (personData.birthDate ? new Date(personData.birthDate).toLocaleDateString("tr-TR") : "")}
                   </CardDescription>
                 </div>
-                <ShareButton
-                  title="Numeroloji Analizim - Astro Social"
-                  text={`${analysisData.isim || personData.fullName} için numeroloji analizi! 🔢 Hayat yolu sayıları ve kişilik analizi sonuçlarımı Astro Social'da keşfedin!`}
-                  variant="outline"
-                  size="sm"
-                />
+                {analysisId && (
+                  <ShareAnalysisButton
+                    analysisId={analysisId}
+                    analysisType="numerology"
+                    analysisTitle="Numeroloji"
+                    variant="outline"
+                    size="sm"
+                  />
+                )}
               </div>
             </CardHeader>
             <CardContent>

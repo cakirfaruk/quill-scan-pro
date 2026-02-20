@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { X, ChevronLeft, ChevronRight, Eye, Send } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 interface Story {
   id: string;
@@ -181,8 +182,8 @@ export const StoryViewer = ({
                 index === currentStoryIndex
                   ? progress
                   : index < currentStoryIndex
-                  ? 100
-                  : 0
+                    ? 100
+                    : 0
               }
               className="h-0.5 bg-white/30"
             />
@@ -238,10 +239,11 @@ export const StoryViewer = ({
           onClick={() => setIsPaused(!isPaused)}
         >
           {currentStory.media_type === "photo" ? (
-            <img
+            <OptimizedImage
               src={currentStory.media_url}
               alt="Story"
-              className="w-full h-full object-contain"
+              className="w-full h-full"
+              imgClassName="object-contain"
             />
           ) : (
             <video

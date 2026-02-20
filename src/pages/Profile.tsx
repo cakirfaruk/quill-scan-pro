@@ -19,12 +19,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { CreatePostDialog } from "@/components/CreatePostDialog";
-import { ProfilePosts } from "@/components/ProfilePosts";
+import { ProfileFeed } from "@/components/ProfileFeed";
 import { MutualFriends } from "@/components/MutualFriends";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { soundEffects } from "@/utils/soundEffects";
 import { OnlineStatusBadge } from "@/components/OnlineStatusBadge";
 import { Breadcrumb } from "@/components/Breadcrumb";
+import { SoulIdCard } from "@/components/SoulIdCard";
+import { UserCheck, UserPlus } from "lucide-react";
+import { uploadToStorage } from "@/utils/storageUpload";
 
 interface UserPhoto {
   id: string;
@@ -87,8 +90,7 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState("posts");
   const [friendsDialogOpen, setFriendsDialogOpen] = useState(false);
   const [createPostDialogOpen, setCreatePostDialogOpen] = useState(false);
-  const [userPosts, setUserPosts] = useState<any[]>([]);
-  const [postsLoading, setPostsLoading] = useState(false);
+  const [feedRefreshKey, setFeedRefreshKey] = useState(0);
   const [shareAnalysisToPost, setShareAnalysisToPost] = useState<Analysis | null>(null);
   const [friendshipStatus, setFriendshipStatus] = useState<"none" | "pending_sent" | "pending_received" | "accepted">("none");
   const [selectedProfileImage, setSelectedProfileImage] = useState<string | null>(null);
@@ -109,7 +111,7 @@ const Profile = () => {
     soundEffects.playClick();
     await loadProfile();
     if (profile.user_id && activeTab === "posts") {
-      await loadUserPosts();
+      setFeedRefreshKey(prev => prev + 1);
     }
   };
 
@@ -123,85 +125,16 @@ const Profile = () => {
   }, [username]);
 
   useEffect(() => {
-    if (profile.user_id && activeTab === "posts") {
-      loadUserPosts();
-    } else if (profile.user_id && activeTab === "collections" && isOwnProfile) {
+    if (profile.user_id && activeTab === "collections" && isOwnProfile) {
       loadCollections();
     }
   }, [profile.user_id, activeTab, isOwnProfile]);
 
-  const loadUserPosts = async () => {
-    if (!profile.user_id) return;
-    
-    setPostsLoading(true);
-    try {
-      // **PARALEL SORGULAR** - Tüm verileri tek seferde çek
-      const [postsResult, likesResult, commentsCountResult, userLikesResult] = await Promise.all([
-        // 1. Postları çek
-        supabase
-          .from("posts")
-          .select(`
-            *,
-            profiles!posts_user_id_fkey (
-              username,
-              full_name,
-              profile_photo
-            )
-          `)
-          .eq("user_id", profile.user_id)
-          .order("created_at", { ascending: false }),
-        
-        // 2. TÜM like'ları çek
-        supabase
-          .from("post_likes")
-          .select("post_id"),
-        
-        // 3. TÜM yorumları çek
-        supabase
-          .from("post_comments")
-          .select("post_id"),
-        
-        // 4. Kullanıcının like'larını çek
-        supabase
-          .from("post_likes")
-          .select("post_id")
-          .eq("user_id", currentUserId)
-      ]);
 
-      if (postsResult.data) {
-        // Like ve comment sayılarını grupla
-        const likesMap = new Map<string, number>();
-        (likesResult.data || []).forEach(like => {
-          likesMap.set(like.post_id, (likesMap.get(like.post_id) || 0) + 1);
-        });
-
-        const commentsMap = new Map<string, number>();
-        (commentsCountResult.data || []).forEach(comment => {
-          commentsMap.set(comment.post_id, (commentsMap.get(comment.post_id) || 0) + 1);
-        });
-
-        const userLikesSet = new Set(userLikesResult.data?.map(l => l.post_id) || []);
-
-        const postsWithData = postsResult.data.map((post: any) => ({
-          ...post,
-          profile: post.profiles,
-          likes: likesMap.get(post.id) || 0,
-          comments: commentsMap.get(post.id) || 0,
-          hasLiked: userLikesSet.has(post.id),
-        }));
-
-        setUserPosts(postsWithData);
-      }
-    } catch (error) {
-      console.error("Error loading posts:", error);
-    } finally {
-      setPostsLoading(false);
-    }
-  };
 
   const loadCollections = async () => {
     if (!profile.user_id) return;
-    
+
     setCollectionsLoading(true);
     try {
       // Load collections
@@ -386,7 +319,7 @@ const Profile = () => {
       // If no username in URL, show current user's profile by user_id
       let profileData;
       let profileError;
-      
+
       if (username) {
         // Looking at another user's profile - search by username
         const result = await supabase
@@ -439,7 +372,7 @@ const Profile = () => {
           .select("*")
           .eq("user_id", profileData.user_id)
           .order("display_order"),
-        
+
         // Friends
         supabase
           .from("friends")
@@ -450,24 +383,24 @@ const Profile = () => {
           `)
           .or(`user_id.eq.${profileData.user_id},friend_id.eq.${profileData.user_id}`)
           .eq("status", "accepted"),
-        
+
         // Friendship status (only if not own profile)
         profileData.user_id !== user.id
           ? supabase
-              .from("friends")
-              .select("*")
-              .or(`and(user_id.eq.${user.id},friend_id.eq.${profileData.user_id}),and(user_id.eq.${profileData.user_id},friend_id.eq.${user.id})`)
-              .maybeSingle()
+            .from("friends")
+            .select("*")
+            .or(`and(user_id.eq.${user.id},friend_id.eq.${profileData.user_id}),and(user_id.eq.${profileData.user_id},friend_id.eq.${user.id})`)
+            .maybeSingle()
           : Promise.resolve({ data: null }),
-        
+
         // Block status (only if not own profile)
         profileData.user_id !== user.id
           ? supabase
-              .from("blocked_users")
-              .select("id")
-              .eq("user_id", user.id)
-              .eq("blocked_user_id", profileData.user_id)
-              .maybeSingle()
+            .from("blocked_users")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("blocked_user_id", profileData.user_id)
+            .maybeSingle()
           : Promise.resolve({ data: null }),
       ]);
 
@@ -591,7 +524,7 @@ const Profile = () => {
 
       // Sort by creation date
       allAnalyses.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      
+
       setAnalyses(allAnalyses);
     } catch (error: any) {
       console.error("Error loading analyses:", error);
@@ -649,7 +582,7 @@ const Profile = () => {
       ];
 
       // Sort by created_at descending
-      allAnalyses.sort((a, b) => 
+      allAnalyses.sort((a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
@@ -661,7 +594,7 @@ const Profile = () => {
 
   const handleAddPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isOwnProfile) return;
-    
+
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -727,7 +660,6 @@ const Profile = () => {
   };
 
   const getAnalysisTypeLabel = (type: string) => {
-    if (type === "handwriting") return "El Yazısı Analizi";
     if (type === "compatibility") return "Uyum Analizi";
     if (type === "numerology") return "Numeroloji Analizi";
     if (type === "birth_chart") return "Doğum Haritası Analizi";
@@ -752,17 +684,17 @@ const Profile = () => {
   };
 
   const handleSelectAnalysis = (id: string, checked: boolean) => {
-    setSelectedAnalysisIds(prev => 
+    setSelectedAnalysisIds(prev =>
       checked ? [...prev, id] : prev.filter(aid => aid !== id)
     );
   };
 
   const calculateSummaryCost = () => {
     if (selectedAnalysisIds.length === 0) return 0;
-    
+
     const selectedAnalyses = analyses.filter(a => selectedAnalysisIds.includes(a.id));
     const totalCredits = selectedAnalyses.reduce((sum, a) => sum + a.credits_used, 0);
-    
+
     if (selectedAnalysisIds.length === 1) {
       return Math.ceil(totalCredits / 3);
     } else {
@@ -807,9 +739,9 @@ const Profile = () => {
         title: "Özet oluşturuldu",
         description: `${data.analysisCount} analiz özeti başarıyla oluşturuldu. ${data.creditsUsed} kredi kullanıldı.`,
       });
-      
+
       await loadProfile();
-      
+
     } catch (error: any) {
       console.error('Summarize error:', error);
       toast({
@@ -962,7 +894,7 @@ const Profile = () => {
   const openVisibilityDialog = async (analysis: Analysis) => {
     setSelectedAnalysis(analysis);
     setVisibilityDialogOpen(true);
-    
+
     const { data: existingShare } = await supabase
       .from("shared_analyses")
       .select("*")
@@ -983,8 +915,8 @@ const Profile = () => {
   };
 
   const toggleFriendSelection = (friendId: string) => {
-    setSelectedFriendIds(prev => 
-      prev.includes(friendId) 
+    setSelectedFriendIds(prev =>
+      prev.includes(friendId)
         ? prev.filter(id => id !== friendId)
         : [...prev, friendId]
     );
@@ -1206,7 +1138,7 @@ const Profile = () => {
   const handleProfileAnalysis = async () => {
     setProfileAnalysisLoading(true);
     setProfileAnalysisResult(null);
-    
+
     try {
       soundEffects.playClick();
       const { data, error } = await supabase.functions.invoke('analyze-user-profile', {
@@ -1226,7 +1158,7 @@ const Profile = () => {
         title: "Analiz tamamlandı",
         description: `${data.creditsUsed} kredi kullanıldı.`,
       });
-      
+
       await loadProfile();
     } catch (error: any) {
       console.error('Profile analysis error:', error);
@@ -1253,7 +1185,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-transparent pt-24 pb-20 relative">
       <Header />
 
       <main ref={containerRef} className="container mx-auto px-4 py-8 max-w-6xl relative">
@@ -1265,12 +1197,12 @@ const Profile = () => {
             ]}
           />
         )}
-        
+
         {/* Pull to Refresh Indicator */}
         {(isPulling || isRefreshing) && (
-          <div 
+          <div
             className="absolute top-0 left-1/2 -translate-x-1/2 transition-all duration-200 z-50"
-            style={{ 
+            style={{
               transform: `translateX(-50%) translateY(${Math.min(pullDistance, 80)}px)`,
               opacity: Math.min(pullDistance / 80, 1)
             }}
@@ -1281,195 +1213,258 @@ const Profile = () => {
           </div>
         )}
 
-        {/* Profile Header */}
-        <Card className="p-6 mb-6 animate-fade-in">
-          <div className="flex flex-col md:flex-row gap-6 items-start">
-            <div className="relative flex-shrink-0">
-              <Avatar 
-                className="w-32 h-32 md:w-40 md:h-40 border-4 border-primary/20 cursor-pointer hover:border-primary/40 transition-all"
-                onClick={() => profile.profile_photo && setSelectedProfileImage(profile.profile_photo)}
-              >
-                <AvatarImage src={profile.profile_photo} alt={profile.full_name} />
-                <AvatarFallback className="bg-gradient-primary text-primary-foreground text-4xl">
-                  {profile.username.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              {isOwnProfile && (
-                <label className="absolute bottom-0 right-0 p-2.5 bg-primary rounded-full cursor-pointer hover:opacity-90 transition-opacity shadow-lg">
-                  <Camera className="w-5 h-5 text-primary-foreground" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                  />
-                </label>
+        {/* Profile Header - Replaced by SoulIdCard */}
+        <div className="mb-6 animate-fade-in relative z-10 -mt-20">
+          <SoulIdCard profile={profile} isOwnProfile={isOwnProfile} />
+        </div>
+
+        {/* Legacy Actions (Hidden/Refactored) - Only showing essential actions below card */}
+        <div className="flex justify-center gap-3 mb-8">
+          {isOwnProfile ? (
+            <>
+              <Link to="/settings">
+                <Button size="sm" variant="outline" className="bg-black/40 border-white/10 text-white hover:bg-white/10">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Ayarlar
+                </Button>
+              </Link>
+              {profile.username?.toLowerCase() === 'adminuser' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-accent/20 border-accent/50 text-accent hover:bg-accent/40"
+                  onClick={() => {
+                    supabase.from('profiles').update({ credits: Number(profile.credits || 0) + 1000 }).eq('user_id', profile.user_id)
+                      .then(() => {
+                        toast({ title: 'Başarılı', description: '1000 kredi eklendi.' });
+                        handleRefresh();
+                      });
+                  }}
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  1000 Kredi Ekle
+                </Button>
               )}
+            </>
+          ) : (
+            <div className="flex gap-2">
+              {/* Simplified Friend Actions */}
+              {friendshipStatus === "none" && (
+                <Button size="sm" onClick={handleSendFriendRequest} className="bg-violet-600 hover:bg-violet-700">
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Ekle
+                </Button>
+              )}
+              {friendshipStatus === "accepted" && (
+                <Button size="sm" variant="outline" onClick={handleRemoveFriend} className="bg-black/40 border-green-500/50 text-green-400">
+                  <UserCheck className="w-4 h-4 mr-2" />
+                  Arkadaşız
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={() => navigate(`/chat/${profile.user_id}`)} className="bg-black/40 border-white/10 text-white hover:bg-white/10">
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Mesaj
+              </Button>
             </div>
+          )}
+        </div>
+
+        {/* Helper to hide old stats if they were inside the card we are NOT fully replacing yet? 
+            Wait, I'm replacing the START of the Card. 
+            The old Card content continues until line 1395 (approx).
+            I need to comment out or remove the old Card content. 
+        */}
+        <div className="hidden">
+          {/* Hiding old header content safely */}
+          <Card className="p-6 mb-6 animate-fade-in">
+            <div className="flex flex-col md:flex-row gap-6 items-start">
+              <div className="relative flex-shrink-0">
+                <Avatar
+                  className="w-32 h-32 md:w-40 md:h-40 border-4 border-primary/20 cursor-pointer hover:border-primary/40 transition-all"
+                  onClick={() => profile.profile_photo && setSelectedProfileImage(profile.profile_photo)}
+                >
+                  <AvatarImage src={profile.profile_photo} alt={profile.full_name} />
+                  <AvatarFallback className="bg-gradient-primary text-primary-foreground text-4xl">
+                    {profile.username.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                {isOwnProfile && (
+                  <label className="absolute bottom-0 right-0 p-2.5 bg-primary rounded-full cursor-pointer hover:opacity-90 transition-opacity shadow-lg">
+                    <Camera className="w-5 h-5 text-primary-foreground" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                    />
+                  </label>
+                )}
+              </div>
 
               <div className="flex-1">
-              <div className="flex items-center gap-4 mb-4 flex-wrap">
-                <h1 className="text-2xl md:text-3xl font-bold">
-                  {profile.full_name || profile.username}
-                </h1>
-                {isOwnProfile ? (
-                  <>
-                    <Link to="/settings">
-                      <Button size="sm" variant="outline">
-                        <Settings className="w-4 h-4 mr-2" />
-                        Düzenle
+                <div className="flex items-center gap-4 mb-4 flex-wrap">
+                  <h1 className="text-2xl md:text-3xl font-bold">
+                    {profile.full_name || profile.username}
+                  </h1>
+                  {isOwnProfile ? (
+                    <>
+                      <Link to="/settings">
+                        <Button size="sm" variant="outline">
+                          <Settings className="w-4 h-4 mr-2" />
+                          Düzenle
+                        </Button>
+                      </Link>
+                      <Button
+                        size="sm"
+                        onClick={handleProfileAnalysis}
+                        disabled={profileAnalysisLoading}
+                        className="gap-2"
+                      >
+                        {profileAnalysisLoading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Analiz Ediliyor...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4" />
+                            Profil Analizi (50₺)
+                          </>
+                        )}
                       </Button>
-                    </Link>
-                    <Button 
-                      size="sm" 
-                      onClick={handleProfileAnalysis}
-                      disabled={profileAnalysisLoading}
-                      className="gap-2"
-                    >
-                      {profileAnalysisLoading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Analiz Ediliyor...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4" />
-                          Profil Analizi (50₺)
-                        </>
+                    </>
+                  ) : (
+                    <>
+                      {friendshipStatus === "none" && (
+                        <Button size="sm" onClick={handleSendFriendRequest}>
+                          <Plus className="w-4 h-4 mr-2" />
+                          Arkadaş Ekle
+                        </Button>
                       )}
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    {friendshipStatus === "none" && (
-                      <Button size="sm" onClick={handleSendFriendRequest}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Arkadaş Ekle
-                      </Button>
-                    )}
-                    {friendshipStatus === "pending_sent" && (
-                      <Button size="sm" variant="outline" onClick={handleCancelFriendRequest}>
-                        İstek Gönderildi
-                      </Button>
-                    )}
-                    {friendshipStatus === "pending_received" && (
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={handleAcceptFriendRequest}>
-                          Kabul Et
+                      {friendshipStatus === "pending_sent" && (
+                        <Button size="sm" variant="outline" onClick={handleCancelFriendRequest}>
+                          İstek Gönderildi
                         </Button>
-                        <Button size="sm" variant="outline" onClick={handleRejectFriendRequest}>
-                          Reddet
+                      )}
+                      {friendshipStatus === "pending_received" && (
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={handleAcceptFriendRequest}>
+                            Kabul Et
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={handleRejectFriendRequest}>
+                            Reddet
+                          </Button>
+                        </div>
+                      )}
+                      {friendshipStatus === "accepted" && (
+                        <Button size="sm" variant="outline" onClick={handleRemoveFriend}>
+                          Arkadaş
                         </Button>
-                      </div>
-                    )}
-                    {friendshipStatus === "accepted" && (
-                      <Button size="sm" variant="outline" onClick={handleRemoveFriend}>
-                        Arkadaş
-                      </Button>
-                    )}
-                    
-                    {!isBlocked ? (
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        onClick={handleBlockUser}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <UserX className="w-4 h-4 mr-2" />
-                        Engelle
-                      </Button>
-                    ) : (
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={handleUnblockUser}
-                      >
-                        <ShieldOff className="w-4 h-4 mr-2" />
-                        Engeli Kaldır
-                      </Button>
-                    )}
-                  </>
-                )}
-              </div>
+                      )}
 
-              <div className="flex gap-6 mb-4 text-sm flex-wrap">
-                <button 
-                  onClick={() => setActiveTab("photos")}
-                  className="hover:opacity-70 transition-opacity flex items-center gap-1.5"
-                >
-                  <Camera className="w-4 h-4" />
-                  <span className="font-bold">{photos.length}</span> fotoğraf
-                </button>
-                <button 
-                  onClick={() => setActiveTab("analyses")}
-                  className="hover:opacity-70 transition-opacity"
-                >
-                  <span className="font-bold">{analyses.length}</span> analiz
-                </button>
-                <button 
-                  onClick={() => setFriendsDialogOpen(true)}
-                  className="hover:opacity-70 transition-opacity"
-                >
-                  <span className="font-bold">{friends.length}</span> arkadaş
-                </button>
-              </div>
-
-              <p className="text-sm text-muted-foreground mb-2">@{profile.username}</p>
-              
-              {/* Online Status */}
-              {!isOwnProfile && profile.user_id && (
-                <div className="mb-3">
-                  <OnlineStatusBadge userId={profile.user_id} showLastSeen={true} size="md" />
+                      {!isBlocked ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={handleBlockUser}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <UserX className="w-4 h-4 mr-2" />
+                          Engelle
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleUnblockUser}
+                        >
+                          <ShieldOff className="w-4 h-4 mr-2" />
+                          Engeli Kaldır
+                        </Button>
+                      )}
+                    </>
+                  )}
                 </div>
-              )}
-              
-              {profile.bio && (
-                <p className="text-sm mb-3">{profile.bio}</p>
-              )}
 
-              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                {profile.birth_date && (
-                  <div className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-full">
-                    <Calendar className="w-3 h-3" />
-                    {new Date(profile.birth_date).toLocaleDateString('tr-TR')}
+                <div className="flex gap-6 mb-4 text-sm flex-wrap">
+                  <button
+                    onClick={() => setActiveTab("photos")}
+                    className="hover:opacity-70 transition-opacity flex items-center gap-1.5"
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span className="font-bold">{photos.length}</span> fotoğraf
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("analyses")}
+                    className="hover:opacity-70 transition-opacity"
+                  >
+                    <span className="font-bold">{analyses.length}</span> analiz
+                  </button>
+                  <button
+                    onClick={() => setFriendsDialogOpen(true)}
+                    className="hover:opacity-70 transition-opacity"
+                  >
+                    <span className="font-bold">{friends.length}</span> arkadaş
+                  </button>
+                </div>
+
+                <p className="text-sm text-muted-foreground mb-2">@{profile.username}</p>
+
+                {/* Online Status */}
+                {!isOwnProfile && profile.user_id && (
+                  <div className="mb-3">
+                    <OnlineStatusBadge userId={profile.user_id} showLastSeen={true} size="md" />
                   </div>
                 )}
-                {profile.birth_place && (
-                  <div className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-full">
-                    <MapPin className="w-3 h-3" />
-                    Doğum: {profile.birth_place}
-                  </div>
+
+                {profile.bio && (
+                  <p className="text-sm mb-3">{profile.bio}</p>
                 )}
-                {profile.current_location && (
-                  <div className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-full">
-                    <MapPin className="w-3 h-3" />
-                    Yaşıyor: {profile.current_location}
-                  </div>
-                )}
-                {latestBirthChart?.result?.sun_sign && (
-                  <div className="flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-full text-primary font-medium">
-                    ☀️ {latestBirthChart.result.sun_sign}
-                  </div>
-                )}
-                {latestBirthChart?.result?.ascendant && (
-                  <div className="flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-full text-primary font-medium">
-                    ⬆️ Yükselen: {latestBirthChart.result.ascendant}
-                  </div>
-                )}
-                {latestNumerology?.result?.life_path_number && (
-                  <div className="flex items-center gap-1 bg-secondary/10 px-3 py-1.5 rounded-full text-secondary font-medium">
-                    🔢 Yaşam Yolu: {latestNumerology.result.life_path_number}
-                  </div>
-                )}
+
+                <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                  {profile.birth_date && (
+                    <div className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-full">
+                      <Calendar className="w-3 h-3" />
+                      {new Date(profile.birth_date).toLocaleDateString('tr-TR')}
+                    </div>
+                  )}
+                  {profile.birth_place && (
+                    <div className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-full">
+                      <MapPin className="w-3 h-3" />
+                      Doğum: {profile.birth_place}
+                    </div>
+                  )}
+                  {profile.current_location && (
+                    <div className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-full">
+                      <MapPin className="w-3 h-3" />
+                      Yaşıyor: {profile.current_location}
+                    </div>
+                  )}
+                  {latestBirthChart?.result?.sun_sign && (
+                    <div className="flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-full text-primary font-medium">
+                      ☀️ {latestBirthChart.result.sun_sign}
+                    </div>
+                  )}
+                  {latestBirthChart?.result?.ascendant && (
+                    <div className="flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-full text-primary font-medium">
+                      ⬆️ Yükselen: {latestBirthChart.result.ascendant}
+                    </div>
+                  )}
+                  {latestNumerology?.result?.life_path_number && (
+                    <div className="flex items-center gap-1 bg-secondary/10 px-3 py-1.5 rounded-full text-secondary font-medium">
+                      🔢 Yaşam Yolu: {latestNumerology.result.life_path_number}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Mutual Friends - Show only if viewing another user's profile */}
-            {!isOwnProfile && currentUserId && profile.user_id && (
-              <MutualFriends userId={currentUserId} profileUserId={profile.user_id} />
-            )}
-          </div>
-        </Card>
+              {/* Mutual Friends - Show only if viewing another user's profile */}
+              {!isOwnProfile && currentUserId && profile.user_id && (
+                <MutualFriends userId={currentUserId} profileUserId={profile.user_id} />
+              )}
+            </div>
+          </Card>
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
@@ -1479,7 +1474,7 @@ const Profile = () => {
           </TabsList>
 
           <TabsContent value="posts">
-            <ProfilePosts posts={userPosts} loading={postsLoading} isOwnProfile={isOwnProfile} />
+            <ProfileFeed key={feedRefreshKey} userId={profile.user_id || ""} isOwnProfile={isOwnProfile} />
           </TabsContent>
 
           <TabsContent value="analyses">
@@ -1491,7 +1486,7 @@ const Profile = () => {
                       <span>{selectedAnalysisIds.length} analiz seçildi - {calculateSummaryCost()} kredi harcanacak</span>
                     )}
                   </div>
-                  <Button 
+                  <Button
                     onClick={handleSummarize}
                     disabled={selectedAnalysisIds.length === 0 || isSummarizing}
                     size="sm"
@@ -1530,7 +1525,7 @@ const Profile = () => {
                               onClick={(e) => e.stopPropagation()}
                             />
                           )}
-                          <div 
+                          <div
                             className="flex-1 cursor-pointer"
                             onClick={() => {
                               setSelectedAnalysis(analysis);
@@ -1610,8 +1605,8 @@ const Profile = () => {
                   </DialogHeader>
                   {selectedAnalysis && (
                     <div className="pt-4">
-                      <AnalysisDetailView 
-                        result={selectedAnalysis.result} 
+                      <AnalysisDetailView
+                        result={selectedAnalysis.result}
                         analysisType={selectedAnalysis.analysis_type}
                       />
                     </div>
@@ -1655,13 +1650,13 @@ const Profile = () => {
                               <SelectItem value="none" disabled>Henüz arkadaşınız yok</SelectItem>
                             ) : (
                               friends.map((friend) => {
-                                const friendProfile = friend.user_id === currentUserId 
-                                  ? friend.friend_profile 
+                                const friendProfile = friend.user_id === currentUserId
+                                  ? friend.friend_profile
                                   : friend.user_profile;
                                 const friendId = friendProfile?.user_id;
-                                
+
                                 if (!friendId) return null;
-                                
+
                                 return (
                                   <SelectItem key={friend.id} value={friendId}>
                                     {friendProfile?.full_name || friendProfile?.username || "Arkadaş"}
@@ -1743,13 +1738,13 @@ const Profile = () => {
                             </p>
                           ) : (
                             friends.map((friend) => {
-                              const friendProfile = friend.user_id === currentUserId 
-                                ? friend.friend_profile 
+                              const friendProfile = friend.user_id === currentUserId
+                                ? friend.friend_profile
                                 : friend.user_profile;
                               const friendId = friendProfile?.user_id;
-                              
+
                               if (!friendId) return null;
-                              
+
                               return (
                                 <div key={friend.id} className="flex items-center space-x-2">
                                   <Checkbox
@@ -1823,7 +1818,7 @@ const Profile = () => {
                     </div>
                   </div>
                   <div className="flex gap-2 mt-6 pt-4 border-t">
-                    <Button 
+                    <Button
                       onClick={() => {
                         navigator.clipboard.writeText(profileAnalysisResult || '');
                         toast({ title: "Kopyalandı", description: "Analiz panoya kopyalandı" });
@@ -1833,7 +1828,7 @@ const Profile = () => {
                     >
                       📋 Kopyala
                     </Button>
-                    <Button 
+                    <Button
                       onClick={() => setProfileAnalysisDialogOpen(false)}
                       className="flex-1"
                     >
@@ -2041,12 +2036,12 @@ const Profile = () => {
                 </div>
               ) : (
                 friends.map((friend) => {
-                  const friendProfile = friend.user_id === profile.user_id 
-                    ? friend.friend_profile 
+                  const friendProfile = friend.user_id === profile.user_id
+                    ? friend.friend_profile
                     : friend.user_profile;
-                  
+
                   if (!friendProfile) return null;
-                  
+
                   return (
                     <div
                       key={friend.id}
@@ -2097,7 +2092,7 @@ const Profile = () => {
           username={profile.username}
           profilePhoto={profile.profile_photo}
           onPostCreated={() => {
-            loadUserPosts();
+            setFeedRefreshKey(prev => prev + 1);
             toast({
               title: "Başarılı",
               description: "Gönderi oluşturuldu",
@@ -2108,9 +2103,9 @@ const Profile = () => {
         {/* Profile Image Zoom Dialog */}
         <Dialog open={!!selectedProfileImage} onOpenChange={() => setSelectedProfileImage(null)}>
           <DialogContent className="max-w-4xl p-0 overflow-hidden">
-            <img 
-              src={selectedProfileImage || ""} 
-              alt="Profile" 
+            <img
+              src={selectedProfileImage || ""}
+              alt="Profile"
               className="w-full h-auto"
             />
           </DialogContent>

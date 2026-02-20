@@ -27,33 +27,50 @@ export const PlaceAutocompleteInput = ({
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // Load Google Maps script
+    // Singleton pattern for Google Maps script
     const apiKey = "AIzaSyCONL709dmB9jCd3Pd2li5xACFF7qltmSI";
+    const scriptId = "google-maps-script";
 
-    // Check if already loaded
-    if (window.google && window.google.maps) {
-      setIsLoaded(true);
-      return;
-    }
+    const loadScript = () => {
+      // Check if already loaded in window
+      if (window.google && window.google.maps) {
+        setIsLoaded(true);
+        return;
+      }
 
-    // Load script
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initAutocomplete`;
-    script.async = true;
-    script.defer = true;
+      // Check if script tag already exists
+      const existingScript = document.getElementById(scriptId);
+      if (existingScript) {
+        // If script exists but window.google not yet available, wait for it
+        existingScript.addEventListener("load", () => setIsLoaded(true));
+        return;
+      }
 
-    window.initAutocomplete = () => {
-      setIsLoaded(true);
+      // Define callback function globally
+      window.initAutocomplete = () => {
+        setIsLoaded(true);
+      };
+
+      // Load script
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initAutocomplete`;
+      script.async = true;
+      script.defer = true;
+
+      script.addEventListener("error", () => {
+        console.error("Failed to load Google Maps script");
+      });
+
+      document.head.appendChild(script);
     };
 
-    document.head.appendChild(script);
+    loadScript();
 
     return () => {
-      // Cleanup
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-      delete window.initAutocomplete;
+      // Do NOT remove the script tag. Let it persist.
+      // Just clean up the global callback if needed, but keeping it is safer for re-mounts.
+      // delete window.initAutocomplete; 
     };
   }, []);
 

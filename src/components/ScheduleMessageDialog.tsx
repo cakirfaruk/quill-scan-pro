@@ -14,7 +14,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Clock } from "lucide-react";
+import { Clock, Calendar as CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { tr } from "date-fns/locale";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface ScheduleMessageDialogProps {
   open: boolean;
@@ -98,56 +102,77 @@ export const ScheduleMessageDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] glass-card border-white/10 text-white">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
+          <DialogTitle className="flex items-center gap-2 text-white">
+            <Clock className="w-5 h-5 text-primary" />
             Mesaj Zamanla
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/60">
             {receiverName} kişisine zamanlanmış mesaj gönderin
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="message">Mesaj</Label>
+            <Label htmlFor="message" className="text-white">Mesaj</Label>
             <Textarea
               id="message"
               placeholder="Mesajınızı yazın..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               rows={4}
+              className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-primary/50 focus:ring-primary/20"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Tarih</Label>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              disabled={(date) => date < new Date()}
-              className="rounded-md border"
-            />
-          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-white">Tarih</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-primary",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "PPP", { locale: tr }) : <span>Tarih seçin</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-black/90 border-white/10 text-white" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    initialFocus
+                    disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                    className="p-3"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="time">Saat</Label>
-            <Input
-              id="time"
-              type="time"
-              value={selectedTime}
-              onChange={(e) => setSelectedTime(e.target.value)}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="time" className="text-white">Saat</Label>
+              <Input
+                id="time"
+                type="time"
+                value={selectedTime}
+                onChange={(e) => setSelectedTime(e.target.value)}
+                className="bg-white/5 border-white/10 text-white focus:border-primary/50 focus:ring-primary/20"
+              />
+            </div>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} className="text-white/70 hover:text-white hover:bg-white/10">
             İptal
           </Button>
-          <Button onClick={handleSchedule} disabled={loading}>
+          <Button onClick={handleSchedule} disabled={loading} className="bg-primary hover:bg-primary/90 text-white shadow-glow">
             {loading ? "Zamanlanıyor..." : "Zamanla"}
           </Button>
         </DialogFooter>

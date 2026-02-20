@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { 
+import {
   Home, Search, Plus, Video, Sparkles, Shield, Coins, MessageCircle, Menu, Heart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,10 +39,10 @@ export const CompactHeader = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  
+
   const scrollProgress = useScrollProgress();
   const { scrollDirection, scrollY } = useScrollDirection({ threshold: 10 });
-  
+
   // Mini mode when scrolled past 100px
   const isMiniMode = scrollY > 100;
   // Hide when scrolling down past 200px
@@ -105,238 +105,170 @@ export const CompactHeader = () => {
   return (
     <>
       {/* Scroll Progress Bar */}
-      <div 
+      <div
         className="fixed top-0 left-0 h-1 bg-gradient-to-r from-primary via-accent to-primary z-[60] transition-all duration-300"
         style={{ width: `${scrollProgress}%` }}
       />
-      
-      <header 
+
+      <header
         className={cn(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
           shouldHide && "-translate-y-full"
         )}
         style={{
-          backgroundColor: scrollY > 5 
-            ? `hsl(var(--card) / ${Math.min(0.95 + (scrollY / 1000), 0.98)})` 
+          backgroundColor: scrollY > 5
+            ? `hsl(var(--card) / ${Math.min(0.95 + (scrollY / 1000), 0.98)})`
             : 'hsl(var(--card) / 0.95)',
           backdropFilter: scrollY > 5 ? `blur(${Math.min(8 + scrollY / 50, 16)}px)` : 'blur(8px)',
-          boxShadow: scrollY > 10 
-            ? `0 4px 20px hsl(var(--primary) / ${Math.min(0.1 + scrollY / 2000, 0.2)})` 
+          boxShadow: scrollY > 10
+            ? `0 4px 20px hsl(var(--primary) / ${Math.min(0.1 + scrollY / 2000, 0.2)})`
             : '0 1px 3px hsl(var(--border) / 0.5)',
         }}
       >
         <div className="border-b border-border">
-          <div 
+          <div
             className={cn(
               "container mx-auto px-3 sm:px-4 flex items-center justify-between transition-all duration-300",
               isMiniMode ? "h-12" : "h-14"
             )}
           >
-        {/* Logo */}
-        <Link 
-          to="/" 
-          className={cn(
-            "flex items-center gap-2 hover:opacity-80 transition-all duration-300",
-            isMiniMode && "scale-90"
-          )}
-        >
-          <div 
-            className={cn(
-              "p-1.5 bg-gradient-primary rounded-lg shadow-glow transition-all duration-300",
-              isMiniMode && "p-1"
-            )}
-          >
-            <Sparkles className={cn(
-              "text-primary-foreground transition-all duration-300",
-              isMiniMode ? "w-4 h-4" : "w-5 h-5"
-            )} />
-          </div>
-          <span 
-            className={cn(
-              "font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent hidden sm:block transition-all duration-300",
-              isMiniMode ? "text-base" : "text-lg"
-            )}
-          >
-            KAM
-          </span>
-        </Link>
-
-        {/* Global Search - Centered */}
-        {isLoggedIn && (
-          <div className="flex-1 max-w-md mx-4 hidden md:block">
-            <GlobalSearch />
-          </div>
-        )}
-
-        {/* Desktop Navigation - Hidden on mobile */}
-        {isLoggedIn && (
-          <nav className="hidden lg:flex items-center gap-1">
-            <Link to="/explore">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`gap-2 ${location.pathname === "/explore" ? "text-primary" : ""}`}
-              >
-                <Search className="w-4 h-4" />
-                Keşfet
-              </Button>
-            </Link>
-            <Link to="/messages">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`gap-2 ${location.pathname === "/messages" ? "text-primary" : ""}`}
-              >
-                <MessageCircle className="w-4 h-4" />
-                Mesajlar
-              </Button>
-            </Link>
-            <Link to="/match">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`gap-2 ${location.pathname === "/match" ? "text-primary" : ""}`}
-              >
-                <Heart className="w-4 h-4" />
-                Eşleşme
-              </Button>
-            </Link>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCreatePostDialogOpen(true)}
-              className="gap-2"
+            {/* Logo */}
+            <Link
+              to="/"
+              className={cn(
+                "flex items-center gap-2 hover:opacity-80 transition-all duration-300",
+                isMiniMode && "scale-90"
+              )}
             >
-              <Plus className="w-4 h-4" />
-              Oluştur
-            </Button>
-            <Link to="/reels">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`gap-2 ${location.pathname === "/reels" ? "text-primary" : ""}`}
-              >
-                <Video className="w-4 h-4" />
-                Reels
-              </Button>
-            </Link>
-            <Link to="/discovery">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`gap-2 ${location.pathname === "/discovery" ? "text-primary" : ""}`}
-              >
-                <Sparkles className="w-4 h-4" />
-                Analizler
-              </Button>
-            </Link>
-          </nav>
-        )}
-
-        {/* Right Section */}
-        <div className="flex items-center gap-1 sm:gap-2">
-          {isLoggedIn ? (
-            <>
-              {/* Credits */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/credits")}
+              <div
                 className={cn(
-                  "gap-1.5 px-2 sm:px-3 transition-all duration-300",
-                  isMiniMode ? "h-7 sm:h-8" : "h-8 sm:h-9"
+                  "p-1.5 bg-gradient-primary rounded-lg shadow-glow transition-all duration-300",
+                  isMiniMode && "p-1"
                 )}
               >
-                <Coins className={cn(
-                  "text-primary transition-all duration-300",
-                  isMiniMode ? "w-3.5 h-3.5" : "w-4 h-4"
-                )} />
-                <span className={cn(
-                  "font-semibold text-primary transition-all duration-300",
-                  isMiniMode ? "text-xs" : "text-sm"
-                )}>{credits}</span>
-              </Button>
-
-              {/* Search - Mobile Only */}
-              <div className="md:hidden">
-                <GlobalSearch />
-              </div>
-
-              {/* Notifications */}
-              <NotificationBell />
-
-              {/* Error Alerts */}
-              <ErrorAlertIndicator />
-
-              {/* Page History */}
-              <PageHistory />
-
-              {/* Messages - Mobile Visible */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate("/messages")}
-                className={cn(
-                  "transition-all duration-300",
-                  isMiniMode ? "h-7 w-7 sm:h-8 sm:w-8" : "h-8 w-8 sm:h-9 sm:w-9",
-                  location.pathname === "/messages" && "text-primary"
-                )}
-              >
-                <MessageCircle className={cn(
-                  "transition-all duration-300",
+                <Sparkles className={cn(
+                  "text-primary-foreground transition-all duration-300",
                   isMiniMode ? "w-4 h-4" : "w-5 h-5"
                 )} />
-              </Button>
-
-              {/* Main Menu - Desktop only for admin */}
-              {isAdmin && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 sm:h-9 w-8 sm:w-9 hidden lg:flex">
-                      <Menu className="w-5 h-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuItem onClick={() => navigate("/admin")}>
-                      <Shield className="w-4 h-4 mr-2" />
-                      Admin Panel
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-
-              {/* Profile Avatar with double-click for match */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate("/profile")}
+              </div>
+              <span
                 className={cn(
-                  "rounded-full p-0 hover:scale-105 transition-all duration-300",
-                  isMiniMode ? "h-7 w-7 sm:h-8 sm:w-8" : "h-8 w-8 sm:h-9 sm:w-9"
+                  "font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent hidden sm:block transition-all duration-300",
+                  isMiniMode ? "text-base" : "text-lg"
                 )}
               >
-                <Avatar 
-                  className={cn(
-                    "border-2 border-primary/20 transition-all duration-300",
-                    isMiniMode ? "w-7 h-7 sm:w-8 sm:h-8" : "w-8 h-8 sm:w-9 sm:h-9"
+                KAM
+              </span>
+            </Link>
+
+            {/* Global Search - Centered */}
+            {isLoggedIn && (
+              <div className="flex-1 max-w-md mx-4 hidden md:block">
+                <GlobalSearch />
+              </div>
+            )}
+
+            {/* Desktop Navigation - Refactored to Sidebar */}
+            <div className="hidden lg:block flex-1" />
+
+            {/* Right Section */}
+            <div className="flex items-center gap-1 sm:gap-2">
+              {isLoggedIn ? (
+                <>
+                  {/* Credits */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate("/credits")}
+                    className={cn(
+                      "gap-1.5 px-2 sm:px-3 transition-all duration-300",
+                      isMiniMode ? "h-7 sm:h-8" : "h-8 sm:h-9"
+                    )}
+                  >
+                    <Coins className={cn(
+                      "text-primary transition-all duration-300",
+                      isMiniMode ? "w-3.5 h-3.5" : "w-4 h-4"
+                    )} />
+                    <span className={cn(
+                      "font-semibold text-primary transition-all duration-300",
+                      isMiniMode ? "text-xs" : "text-sm"
+                    )}>{credits}</span>
+                  </Button>
+
+                  {/* Search - Mobile Only */}
+                  <div className="md:hidden">
+                    <GlobalSearch />
+                  </div>
+
+                  {/* Notifications */}
+                  <NotificationBell />
+
+                  {/* Messages - Mobile Visible */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate("/messages")}
+                    className={cn(
+                      "transition-all duration-300",
+                      isMiniMode ? "h-7 w-7 sm:h-8 sm:w-8" : "h-8 w-8 sm:h-9 sm:w-9",
+                      location.pathname === "/messages" && "text-primary"
+                    )}
+                  >
+                    <MessageCircle className={cn(
+                      "transition-all duration-300",
+                      isMiniMode ? "w-4 h-4" : "w-5 h-5"
+                    )} />
+                  </Button>
+
+                  {/* Main Menu - Desktop only for admin */}
+                  {isAdmin && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 sm:h-9 w-8 sm:w-9 hidden lg:flex">
+                          <Menu className="w-5 h-5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuItem onClick={() => navigate("/admin")}>
+                          <Shield className="w-4 h-4 mr-2" />
+                          Admin Panel
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
-                >
-                  <AvatarImage src={profilePhoto} alt={username} />
-                  <AvatarFallback className={cn(
-                    "bg-gradient-primary text-primary-foreground transition-all duration-300",
-                    isMiniMode ? "text-[10px] sm:text-xs" : "text-xs sm:text-sm"
-                  )}>
-                    {username.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </>
-          ) : (
-            <Button onClick={() => navigate("/auth")} size="sm">
-              Giriş Yap
-            </Button>
-          )}
-        </div>
+
+                  {/* Profile Avatar with double-click for match */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate("/profile")}
+                    className={cn(
+                      "rounded-full p-0 hover:scale-105 transition-all duration-300",
+                      isMiniMode ? "h-7 w-7 sm:h-8 sm:w-8" : "h-8 w-8 sm:h-9 sm:w-9"
+                    )}
+                  >
+                    <Avatar
+                      className={cn(
+                        "border-2 border-primary/20 transition-all duration-300",
+                        isMiniMode ? "w-7 h-7 sm:w-8 sm:h-8" : "w-8 h-8 sm:w-9 sm:h-9"
+                      )}
+                    >
+                      <AvatarImage src={profilePhoto} alt={username} />
+                      <AvatarFallback className={cn(
+                        "bg-gradient-primary text-primary-foreground transition-all duration-300",
+                        isMiniMode ? "text-[10px] sm:text-xs" : "text-xs sm:text-sm"
+                      )}>
+                        {username.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </>
+              ) : (
+                <Button onClick={() => navigate("/auth")} size="sm">
+                  Giriş Yap
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </header>

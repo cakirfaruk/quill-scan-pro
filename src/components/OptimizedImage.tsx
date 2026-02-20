@@ -1,34 +1,35 @@
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { getOptimizedImageUrl } from "@/utils/image-optimizer";
 
 interface OptimizedImageProps {
   src: string | null | undefined;
   alt: string;
-  className?: string;
+  className?: string; // Container class
+  imgClassName?: string; // Image element class
   fallback?: React.ReactNode;
-  priority?: boolean; // Skip lazy loading for above-fold images
-  aspectRatio?: string; // e.g., "16/9" for layout stability
-  sizes?: string; // Responsive sizes
-  quality?: number; // Image quality (1-100)
+  priority?: boolean;
+  aspectRatio?: string;
+  sizes?: string;
+  quality?: number;
+  width?: number; // Target width for server-side resize
+  height?: number; // Target height for server-side resize
+  objectFit?: "cover" | "contain";
 }
 
-/**
- * Optimized image component with:
- * - WebP format support with fallback
- * - Lazy loading with Intersection Observer
- * - Progressive loading (blur-up technique)
- * - Layout shift prevention
- * - Error handling
- */
-export const OptimizedImage = ({ 
-  src, 
-  alt, 
-  className, 
+export const OptimizedImage = ({
+  src,
+  alt,
+  className,
+  imgClassName,
   fallback,
   priority = false,
   aspectRatio,
   sizes = "100vw",
-  quality = 75
+  quality = 75,
+  width,
+  height,
+  objectFit = "cover"
 }: OptimizedImageProps) => {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -36,7 +37,6 @@ export const OptimizedImage = ({
   const imgRef = useRef<HTMLImageElement>(null);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
 
-  // Intersection Observer for lazy loading
   useEffect(() => {
     if (priority || !imgRef.current) return;
 
@@ -49,52 +49,48 @@ export const OptimizedImage = ({
           }
         });
       },
-      {
-        rootMargin: "50px", // Start loading 50px before entering viewport
-      }
+      { rootMargin: "50px" }
     );
 
     observer.observe(imgRef.current);
-
     return () => observer.disconnect();
   }, [priority]);
 
-  // Convert image to WebP if possible
   useEffect(() => {
     if (!src || !isInView) return;
 
-    // Check if it's a base64 image or external URL
-    if (src.startsWith('data:image') || src.startsWith('http')) {
+    if (src.startsWith('data:image')) {
       setImageSrc(src);
       return;
     }
 
-    // For Supabase storage URLs, we can add transformations
-    if (src.includes('supabase.co/storage')) {
-      const url = new URL(src);
-      url.searchParams.set('quality', quality.toString());
-      url.searchParams.set('format', 'webp');
-      setImageSrc(url.toString());
+    // Generate optimized URL using our utility
+    // Only optimize if we have at least width or height
+    if (width || height || src.includes('supabase.co')) {
+      const optimized = getOptimizedImageUrl(src, width || 800, height || 800, {
+        quality,
+        resize: objectFit,
+        format: 'webp'
+      });
+      setImageSrc(optimized || src);
     } else {
       setImageSrc(src);
     }
-  }, [src, isInView, quality]);
+  }, [src, isInView, quality, width, height, objectFit]);
 
   if (!src || error) {
-    return <>{fallback}</>;
+    return <>{fallback || <div className={cn("bg-muted flex items-center justify-center text-muted-foreground text-xs", className)}>Görsel Yok</div>}</>;
   }
 
   return (
-    <div 
+    <div
       className={cn("relative overflow-hidden bg-muted", className)}
       style={aspectRatio ? { aspectRatio } : undefined}
     >
-      {/* Blur placeholder while loading */}
       {!loaded && isInView && (
         <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted-foreground/10 animate-pulse" />
       )}
-      
-      {/* Main image */}
+
       <img
         ref={imgRef}
         src={imageSrc || ''}
@@ -104,7 +100,8 @@ export const OptimizedImage = ({
         sizes={sizes}
         className={cn(
           "w-full h-full object-cover transition-opacity duration-500",
-          loaded ? "opacity-100" : "opacity-0"
+          loaded ? "opacity-100" : "opacity-0",
+          imgClassName
         )}
         onLoad={() => setLoaded(true)}
         onError={() => setError(true)}

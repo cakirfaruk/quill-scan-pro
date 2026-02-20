@@ -40,12 +40,12 @@ const compressImage = async (file: File, maxWidth: number = 1920, quality: numbe
  */
 export const uploadToStorage = async (
   file: File,
-  bucket: 'posts' | 'stories' | 'profiles' | 'videos',
+  bucket: 'posts' | 'stories' | 'profiles' | 'videos' | 'messages',
   userId: string
 ): Promise<string | null> => {
   try {
     let fileToUpload: File | Blob = file;
-    
+
     // Compress images (not videos)
     if (file.type.startsWith('image/')) {
       fileToUpload = await compressImage(file, 1920, 0.8);
@@ -80,13 +80,13 @@ export const uploadToStorage = async (
  */
 export const deleteFromStorage = async (
   url: string,
-  bucket: 'posts' | 'stories' | 'profiles' | 'videos'
+  bucket: 'posts' | 'stories' | 'profiles' | 'videos' | 'messages'
 ): Promise<boolean> => {
   try {
     // Extract path from URL
     const urlParts = url.split(`/${bucket}/`);
     if (urlParts.length < 2) return false;
-    
+
     const path = urlParts[1];
 
     const { error } = await supabase.storage

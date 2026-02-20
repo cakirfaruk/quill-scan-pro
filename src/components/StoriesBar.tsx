@@ -1,4 +1,5 @@
 import { useEffect, useState, memo, useCallback } from "react";
+import { getOptimizedImageUrl } from "@/utils/image-optimizer";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Plus } from "lucide-react";
@@ -53,13 +54,13 @@ export const StoriesBar = memo(({ currentUserId }: StoriesBarProps) => {
           .eq("user_id", currentUserId)
           .gt("expires_at", new Date().toISOString())
           .order("created_at", { ascending: false }),
-        
+
         supabase
           .from("profiles")
           .select("username, full_name, profile_photo")
           .eq("user_id", currentUserId)
           .single(),
-        
+
         supabase
           .from("friends")
           .select(`
@@ -75,7 +76,7 @@ export const StoriesBar = memo(({ currentUserId }: StoriesBarProps) => {
       // Process own stories
       if (ownStoriesResult.data && ownStoriesResult.data.length > 0) {
         const ownStoryIds = ownStoriesResult.data.map(s => s.id);
-        
+
         // Get view counts for own stories
         const { data: ownViewsData } = await supabase
           .from("story_views")
@@ -97,7 +98,7 @@ export const StoriesBar = memo(({ currentUserId }: StoriesBarProps) => {
           views_count: viewCountsMap.get(story.id) || 0,
           has_viewed: false,
         }));
-        
+
         setOwnStories(storiesWithViews);
       }
 
@@ -125,17 +126,17 @@ export const StoriesBar = memo(({ currentUserId }: StoriesBarProps) => {
           .in("user_id", friendIds)
           .gt("expires_at", new Date().toISOString())
           .order("created_at", { ascending: false }),
-        
+
         supabase
           .from("profiles")
           .select("user_id, username, full_name, profile_photo")
           .in("user_id", friendIds),
-        
+
         supabase
           .from("story_views")
           .select("story_id")
           .eq("viewer_id", currentUserId),
-        
+
         supabase
           .from("story_views")
           .select("story_id")
@@ -241,7 +242,7 @@ export const StoriesBar = memo(({ currentUserId }: StoriesBarProps) => {
               className="relative"
             >
               <Avatar className="w-16 h-16 ring-2 ring-primary">
-                <AvatarImage src={ownStories[0]?.profile.profile_photo || undefined} />
+                <AvatarImage src={getOptimizedImageUrl(ownStories[0]?.profile.profile_photo || undefined, 64, 64, { resize: 'cover' })} />
                 <AvatarFallback className="bg-gradient-primary text-primary-foreground">
                   Sen
                 </AvatarFallback>
@@ -265,13 +266,12 @@ export const StoriesBar = memo(({ currentUserId }: StoriesBarProps) => {
               onClick={() => handleStoryClick(user.stories)}
             >
               <Avatar
-                className={`w-16 h-16 ring-2 ${
-                  user.has_unviewed
-                    ? "ring-gradient-primary"
-                    : "ring-muted"
-                }`}
+                className={`w-16 h-16 ring-2 ${user.has_unviewed
+                  ? "ring-gradient-primary"
+                  : "ring-muted"
+                  }`}
               >
-                <AvatarImage src={user.profile_photo || undefined} />
+                <AvatarImage src={getOptimizedImageUrl(user.profile_photo || undefined, 64, 64, { resize: 'cover' })} />
                 <AvatarFallback className="bg-gradient-primary text-primary-foreground">
                   {user.username[0].toUpperCase()}
                 </AvatarFallback>

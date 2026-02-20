@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   plugins: [
-    react(), 
+    react(),
     mode === "development" && componentTagger(),
     // Bundle analyzer - run 'npm run build' to see stats.html
     mode === 'production' && visualizer({
@@ -97,6 +97,7 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        globIgnores: ['**/stats.html'],
         // Aggressive caching for better performance
         runtimeCaching: [
           {
@@ -208,24 +209,24 @@ export default defineConfig(({ mode }) => ({
             // Other vendors
             return 'vendor';
           }
-          
+
           // Page chunks - only split large pages
           if (id.includes('src/pages/')) {
             const pageName = id.split('src/pages/')[1]?.split('.')[0];
             if (!pageName) return undefined;
-            
+
             // Keep smaller pages in main bundle
             const smallPages = ['About', 'FAQ', 'Credits', 'NotFound', 'VapidKeyGenerator'];
             if (smallPages.some(p => pageName.includes(p))) {
               return undefined; // Include in main bundle
             }
-            
+
             // Large pages get their own chunks
             const largePages = ['Feed', 'Messages', 'Groups', 'Match', 'Profile'];
             if (largePages.some(p => pageName.includes(p))) {
               return `page-${pageName.toLowerCase()}`;
             }
-            
+
             // Group medium pages
             return 'pages-medium';
           }

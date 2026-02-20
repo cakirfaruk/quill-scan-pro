@@ -154,9 +154,9 @@ JSON formatında yanıt ver, her konu için ayrı alan oluştur.`;
               parameters: {
                 type: "object",
                 properties: {
-                  overall_summary: { 
-                    type: "string", 
-                    description: "Minimum 5-6 paragraf uzunluğunda genel özet ve başlangıç yorumu" 
+                  overall_summary: {
+                    type: "string",
+                    description: "Minimum 5-6 paragraf uzunluğunda genel özet ve başlangıç yorumu"
                   },
                   topics: {
                     type: "object",
@@ -182,13 +182,13 @@ JSON formatında yanıt ver, her konu için ayrı alan oluştur.`;
 
     const aiData = await response.json();
     console.log("AI Response:", JSON.stringify(aiData, null, 2));
-    
+
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) {
       console.error("No tool call found in AI response");
       throw new Error("AI did not return structured data");
     }
-    
+
     // Parse the arguments - they might already be an object or a string
     let analysisResult;
     if (typeof toolCall.function.arguments === 'string') {
@@ -208,14 +208,18 @@ JSON formatında yanıt ver, her konu için ayrı alan oluştur.`;
       .update({ credits: profile.credits - creditsNeeded })
       .eq("user_id", user.id);
 
-    await supabaseClient.from("numerology_analyses").insert({
+    const { data: insertedData, error: insertError } = await supabaseClient.from("numerology_analyses").insert({
       user_id: user.id,
       full_name: fullName,
       birth_date: birthDate,
       selected_topics: selectedTopics,
       credits_used: creditsNeeded,
       result: analysisResult,
-    });
+    }).select("id").single();
+
+    if (insertError) {
+      console.error("Error saving to database", insertError);
+    }
 
     await supabaseClient.from("credit_transactions").insert({
       user_id: user.id,
@@ -224,7 +228,7 @@ JSON formatında yanıt ver, her konu için ayrı alan oluştur.`;
       description: `Numeroloji analizi - ${creditsNeeded} konu`,
     });
 
-    return new Response(JSON.stringify({ result: analysisResult }), {
+    return new Response(JSON.stringify({ result: analysisResult, id: insertedData?.id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {

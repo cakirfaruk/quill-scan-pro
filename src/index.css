@@ -2,66 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    --background: 220 25% 97%;
-    --foreground: 220 45% 12%;
+    /* Cosmic Light (Rarely used but defined) */
+    --background: 260 20% 98%;
+    --foreground: 260 10% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 45% 12%;
+    --card-foreground: 260 10% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 45% 12%;
+    --popover-foreground: 260 10% 10%;
 
-    --primary: 217 91% 35%;
+    --primary: 265 100% 60%;
+    /* Electric Violet */
     --primary-foreground: 0 0% 100%;
-    
-    --primary-glow: 217 91% 45%;
 
-    --secondary: 220 20% 94%;
-    --secondary-foreground: 220 45% 12%;
+    --secondary: 260 10% 96%;
+    --secondary-foreground: 260 10% 10%;
 
-    --muted: 220 15% 96%;
-    --muted-foreground: 220 15% 40%;
+    --muted: 260 10% 96%;
+    --muted-foreground: 260 5% 45%;
 
-    --accent: 210 100% 50%;
+    --accent: 290 100% 60%;
+    /* Neon Magenta */
     --accent-foreground: 0 0% 100%;
 
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 100%;
-    
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-    
-    --info: 199 89% 48%;
-    --info-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 100%;
+    --border: 260 10% 90%;
+    --input: 260 10% 90%;
+    --ring: 265 100% 60%;
 
-    --border: 220 15% 88%;
-    --input: 220 15% 88%;
-    --ring: 217 91% 35%;
+    --radius: 1rem;
 
-    --radius: 0.75rem;
-
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 35%), hsl(217 91% 45%));
-    --gradient-subtle: linear-gradient(180deg, hsl(220 25% 97%), hsl(220 20% 94%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(220 20% 98%));
-
-    /* Shadows */
-    --shadow-elegant: 0 10px 30px -10px hsl(217 91% 35% / 0.15);
-    --shadow-glow: 0 0 40px hsl(217 91% 45% / 0.2);
-    --shadow-card: 0 4px 20px hsl(217 20% 35% / 0.08);
-
-    /* Animations */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
+    /* Sidebar */
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -73,74 +49,52 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 220 35% 8%;
-    --foreground: 220 15% 95%;
+    /* Astro Core V2 - Deep Abyss */
+    --background: 240 33% 3%;
+    /* #05050A */
+    --foreground: 0 0% 98%;
 
-    --card: 220 30% 12%;
-    --card-foreground: 220 15% 95%;
+    /* Glass Cards */
+    --card: 240 25% 7%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 220 30% 12%;
-    --popover-foreground: 220 15% 95%;
+    --popover: 240 25% 6%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 217 91% 45%;
-    --primary-foreground: 0 0% 100%;
-    
-    --primary-glow: 217 91% 55%;
+    /* Neon Cyan */
+    --primary: 184 100% 50%;
+    /* #00F0FF */
+    --primary-foreground: 240 33% 3%;
 
-    --secondary: 220 25% 18%;
-    --secondary-foreground: 220 15% 95%;
+    /* Deep Violet */
+    --secondary: 266 100% 65%;
+    /* #8A2BE2 approx */
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 220 25% 15%;
-    --muted-foreground: 220 15% 60%;
+    --muted: 240 20% 12%;
+    --muted-foreground: 240 10% 65%;
 
-    --accent: 210 100% 55%;
-    --accent-foreground: 0 0% 100%;
+    /* Astral Gold */
+    --accent: 43 100% 50%;
+    /* #FFB800 */
+    --accent-foreground: 240 33% 3%;
 
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 100%;
-    
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-    
-    --info: 199 89% 48%;
-    --info-foreground: 0 0% 100%;
+    --destructive: 0 84% 40%;
+    --destructive-foreground: 0 0% 98%;
 
-    --destructive: 0 62.8% 45%;
-    --destructive-foreground: 0 0% 100%;
+    --border: 240 20% 12%;
+    --input: 240 20% 12%;
+    --ring: 184 100% 50%;
 
-    --border: 220 25% 20%;
-    --input: 220 25% 20%;
-    --ring: 217 91% 45%;
-
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 35%), hsl(217 91% 50%));
-    --gradient-subtle: linear-gradient(180deg, hsl(220 35% 8%), hsl(220 30% 12%));
-    --gradient-card: linear-gradient(145deg, hsl(220 30% 12%), hsl(220 25% 15%));
-
-    /* Shadows */
-    --shadow-elegant: 0 10px 30px -10px hsl(217 91% 35% / 0.3);
-    --shadow-glow: 0 0 40px hsl(217 91% 45% / 0.3);
-    --shadow-card: 0 4px 20px hsl(217 20% 0% / 0.3);
-
-    --sidebar-background: 240 5.9% 10%;
+    /* Sidebar */
+    --sidebar-background: 240 33% 4%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-primary: 184 100% 50%;
+    --sidebar-primary-foreground: 240 33% 3%;
+    --sidebar-accent: 240 20% 10%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark.oled {
-    --background: 0 0% 0%;
-    --card: 0 0% 2%;
-    --popover: 0 0% 2%;
-    --secondary: 0 0% 5%;
-    --muted: 0 0% 5%;
-    --accent: 0 0% 8%;
-    --border: 0 0% 10%;
-    --input: 0 0% 10%;
+    --sidebar-border: 240 20% 12%;
+    --sidebar-ring: 184 100% 50%;
   }
 }
 
@@ -152,294 +106,81 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Smooth Scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
-@layer utilities {
-  /* Ripple Effect */
-  .ripple {
-    position: absolute;
-    border-radius: 50%;
-    transform: scale(0);
-    animation: ripple-animation 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    pointer-events: none;
-    z-index: 10;
-  }
+@layer components {
 
-  .dark .ripple {
-    background-color: rgba(255, 255, 255, 0.4);
-  }
-
-  @keyframes ripple-animation {
-    to {
-      transform: scale(4);
-      opacity: 0;
-    }
-  }
-
-  /* Gradient Hover Links */
-  .gradient-link {
-    @apply relative inline-block;
-    background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--accent)));
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-size: 200% auto;
-    transition: background-position 0.5s ease;
-  }
-
-  .gradient-link:hover {
-    background-position: right center;
-  }
-
-  .gradient-link::after {
-    content: '';
-    @apply absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-primary to-accent;
-    transform: scaleX(0);
-    transform-origin: bottom right;
-    transition: transform 0.3s ease;
-  }
-
-  .gradient-link:hover::after {
-    transform: scaleX(1);
-    transform-origin: bottom left;
-  }
-
-  /* Hover Scale Animation */
-  .hover-scale {
-    @apply transition-transform duration-200 hover:scale-105;
-  }
-
-  .hover-scale-sm {
-    @apply transition-transform duration-200 hover:scale-102;
-  }
-
-  .hover-scale-lg {
-    @apply transition-transform duration-200 hover:scale-110;
-  }
-
-  /* Hover Lift Animation */
-  .hover-lift {
-    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
-  }
-
-  /* Hover Glow Animation */
-  .hover-glow {
-    @apply transition-all duration-300 hover:shadow-lg hover:shadow-primary/30;
-  }
-
-  /* Smooth Transitions */
-  .transition-smooth {
-    transition: var(--transition-smooth);
-  }
-
-  /* Interactive Elements */
-  .interactive {
-    @apply transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer;
-  }
-
-  .interactive-card {
-    @apply transition-all duration-500 hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/10 active:scale-[0.98] cursor-pointer;
-  }
-
-  /* Magnetic Button */
-  .magnetic {
-    @apply transition-transform duration-200 ease-out will-change-transform;
-  }
-
-  /* Shimmer Effect for Skeleton */
-  .shimmer {
-    background: linear-gradient(
-      90deg,
-      hsl(var(--muted)) 0%,
-      hsl(var(--muted-foreground) / 0.1) 50%,
-      hsl(var(--muted)) 100%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 2s linear infinite;
-  }
-
-  .shimmer-effect {
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      hsl(var(--primary) / 0.1) 20%,
-      hsl(var(--primary) / 0.15) 50%,
-      hsl(var(--primary) / 0.1) 80%,
-      transparent 100%
-    );
-    background-size: 200% 100%;
-    animation: shimmer-slide 2s ease-in-out infinite;
-  }
-
-  @keyframes shimmer-slide {
-    0% {
-      background-position: -200% 0;
-    }
-    100% {
-      background-position: 200% 0;
-    }
-  }
-
-  /* Glass Effect */
-  .glass {
-    @apply bg-background/80 backdrop-blur-md border border-border/50;
-  }
-
-  /* Gradient Text */
-  .gradient-text {
-    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
-  }
-
-  /* Card Hover Effect */
-  .card-hover {
-    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-primary/30;
-  }
-
-  /* Button Press Effect */
-  .press-effect {
-    @apply transition-transform duration-100 active:scale-95;
-  }
-
-  /* Focus Glow Effect */
-  .focus-glow {
-    @apply focus-visible:shadow-lg focus-visible:shadow-primary/30 focus-visible:border-primary transition-all duration-300 focus-visible:scale-[1.01];
-  }
-
-  /* Input Focus Glow */
-  .input-glow {
-    @apply transition-all duration-300;
-  }
-
-  .input-glow:focus {
-    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1), 
-                0 4px 20px hsl(var(--primary) / 0.15);
-  }
-
-  /* Pulse on Hover */
-  .pulse-hover:hover {
-    animation: pulse 1.5s ease-in-out infinite;
-  }
-
-  /* Smooth Glow */
-  .glow {
-    box-shadow: var(--shadow-glow);
-  }
-
-  /* Avatar Animations */
-  .avatar-glow {
-    @apply transition-all duration-300 hover:shadow-lg hover:shadow-primary/40 hover:scale-110;
-  }
-
-  .avatar-pulse {
-    animation: pulse-glow 2s ease-in-out infinite;
-  }
-
-  .avatar-ring {
-    @apply ring-2 ring-primary/20 ring-offset-2 ring-offset-background hover:ring-primary/60 transition-all duration-300;
-  }
-
-  /* Profile Card Hover */
-  .profile-card-hover {
-    @apply transition-all duration-500 hover:shadow-elegant hover:border-primary/30 hover:-translate-y-1 hover:scale-[1.02];
-  }
-
-  /* Glassmorphism */
-  .glass {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
+  /* Astro V2 Glass Utilities */
   .glass-card {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    @apply bg-black/40 backdrop-blur-xl border border-white/5 shadow-2xl;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   }
 
-  /* Gradient backgrounds */
-  .gradient-mesh {
-    background: linear-gradient(135deg, hsl(var(--primary) / 0.1) 0%, hsl(var(--accent) / 0.1) 100%);
+  .glass-panel {
+    @apply bg-black/50 backdrop-blur-2xl border-t border-white/10;
   }
 
-  .gradient-shimmer {
-    background: linear-gradient(
-      90deg,
-      transparent,
-      hsl(var(--primary) / 0.1),
-      transparent
-    );
-    background-size: 200% 100%;
-    animation: shimmer 2s infinite;
+  .neon-text {
+    @apply bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent font-bold;
+    filter: drop-shadow(0 0 8px hsl(var(--primary) / 0.5));
   }
 
-  /* Depth utilities */
-  .depth-1 {
-    box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.1), 0 4px 16px -4px rgba(0, 0, 0, 0.1);
+  .neon-border {
+    box-shadow: 0 0 10px hsl(var(--primary) / 0.3), inset 0 0 10px hsl(var(--primary) / 0.1);
+    @apply border border-primary/50;
   }
 
-  .depth-2 {
-    box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.1), 0 8px 32px -8px rgba(0, 0, 0, 0.1);
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
   }
 
-  .depth-3 {
-    box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.15), 0 16px 64px -16px rgba(0, 0, 0, 0.15);
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
   }
 
-  /* Smooth corners */
-  .smooth-corners {
-    border-radius: var(--radius);
-  }
-
-  .smooth-corners-lg {
-    border-radius: calc(var(--radius) + 8px);
-  }
-
-  /* Elegant Shadow */
-  .shadow-elegant {
-    box-shadow: var(--shadow-elegant);
-  }
-
-  /* Card Shadow */
-  .shadow-card {
-    box-shadow: var(--shadow-card);
+  ::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
   }
 }
 
-/* Safe area for mobile devices with notches */
-@supports (padding: env(safe-area-inset-bottom)) {
-  .safe-area-bottom {
-    padding-bottom: max(0.375rem, env(safe-area-inset-bottom));
-  }
-  
-  .safe-area-top {
-    padding-top: max(0.875rem, env(safe-area-inset-top));
-  }
-}
+/* Animations */
+@keyframes float {
 
-/* Highlight message animation */
-@keyframes highlight {
-  0%, 100% {
-    background-color: transparent;
+  0%,
+  100% {
+    transform: translateY(0);
   }
+
   50% {
-    background-color: hsl(var(--primary) / 0.15);
+    transform: translateY(-10px);
   }
 }
 
-.highlight-message {
-  animation: highlight 2s ease-in-out;
-  border-radius: 0.5rem;
+.animate-float {
+  animation: float 6s ease-in-out infinite;
 }
 
-/* Scrollbar hide utilities */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+.animate-pulse-glow {
+  animation: pulse-glow 3s infinite;
 }
 
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 15px -5px hsl(var(--primary) / 0.5);
+    opacity: 1;
+  }
+
+  50% {
+    box-shadow: 0 0 25px -5px hsl(var(--primary) / 0.8);
+    opacity: 0.8;
+  }
 }

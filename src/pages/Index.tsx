@@ -13,12 +13,13 @@ import { useParallax } from "@/hooks/use-parallax";
 const Index = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [isChecking, setIsChecking] = useState<boolean>(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  
+
   const heroRef = useRef<HTMLElement>(null);
   const bgLeftRef = useRef<HTMLDivElement>(null);
   const bgRightRef = useRef<HTMLDivElement>(null);
-  
+
   const heroOffset = useParallax(heroRef, { speed: 0.3, direction: "up" });
   const bgLeftOffset = useParallax(bgLeftRef, { speed: 0.5, direction: "down" });
   const bgRightOffset = useParallax(bgRightRef, { speed: 0.4, direction: "up" });
@@ -28,15 +29,19 @@ const Index = () => {
   }, []);
 
   const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    // Check if user has seen onboarding
-    if (user) {
-      const hasSeenOnboarding = localStorage.getItem(`onboarding_${user.id}`);
-      if (!hasSeenOnboarding) {
-        setShowOnboarding(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Check if user has seen onboarding
+      if (user) {
+        const hasSeenOnboarding = localStorage.getItem(`onboarding_${user.id}`);
+        if (!hasSeenOnboarding) {
+          setShowOnboarding(true);
+        }
+        setIsLoggedIn(true);
       }
-      setIsLoggedIn(true);
+    } finally {
+      setIsChecking(false);
     }
   };
 
@@ -59,45 +64,54 @@ const Index = () => {
     );
   }
 
+  // Show loading screen
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   // Show landing page immediately (no blocking while checking auth)
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background overflow-hidden">
       <Header />
-      
+
       <main className="container mx-auto px-4">
         {/* Hero Section */}
-        <section 
+        <section
           ref={heroRef}
           className="text-center py-16 md:py-24 animate-fade-in relative"
           style={{ transform: `translateY(${heroOffset}px)` }}
         >
           <div className="absolute inset-0 -z-10 overflow-hidden">
-            <div 
+            <div
               ref={bgLeftRef}
               className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse transition-transform duration-300"
               style={{ transform: `translateY(${bgLeftOffset}px)` }}
             ></div>
-            <div 
+            <div
               ref={bgRightRef}
-              className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse transition-transform duration-300" 
+              className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse transition-transform duration-300"
               style={{ animationDelay: "1s", transform: `translateY(${bgRightOffset}px)` }}
             ></div>
           </div>
-          
+
           <Badge className="mb-6 text-sm px-4 py-2" variant="secondary">
             <Sparkles className="w-4 h-4 mr-2" />
             Yapay Zeka Destekli Analiz Platformu
           </Badge>
-          
+
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-600 to-primary animate-gradient">
             Kendini Keşfet,<br />Ruhunu Tanı, Eşini Bul
           </h1>
-          
+
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8 leading-relaxed">
-            Tarot, kahve falı, rüya tabiri, el okuma ve astroloji ile derinlemesine kişilik analizleri. 
+            Tarot, kahve falı, rüya tabiri, el okuma ve astroloji ile derinlemesine kişilik analizleri.
             Numeroloji ve doğum haritası uyumlarıyla ideal eşini bul.
           </p>
-          
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button size="lg" onClick={() => navigate("/auth")} variant="gradient" className="group text-lg px-8 py-6">
               Ücretsiz Başla

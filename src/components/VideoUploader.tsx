@@ -7,6 +7,7 @@ import { Textarea } from "./ui/textarea";
 import { Progress } from "./ui/progress";
 import { Upload, X, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { base64ToFile } from "@/utils/storageUpload";
 
 interface VideoUploaderProps {
   onUploadComplete?: (videoUrl: string, thumbnailUrl: string) => void;
@@ -69,7 +70,7 @@ export const VideoUploader = ({ onUploadComplete, className }: VideoUploaderProp
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         context?.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
+
         canvas.toBlob((blob) => {
           if (blob) {
             const reader = new FileReader();
@@ -107,12 +108,30 @@ export const VideoUploader = ({ onUploadComplete, className }: VideoUploaderProp
       // Simulate progress for thumbnail generation
       setUploadProgress(10);
       const thumbnailBase64 = await generateThumbnail(selectedVideo);
-      
+
       setUploadProgress(20);
-      
+
+      // Convert base64 thumbnail to File
+      const thumbnailFile = base64ToFile(thumbnailBase64, `thumb_${Date.now()}.jpg`);
+      const thumbnailFileName = `${user.id}/thumbnails/${Date.now()}-${selectedVideo.name}.jpg`;
+
+      // Upload thumbnail
+      const { data: thumbData, error: thumbError } = await supabase.storage
+        .from("videos")
+        .upload(thumbnailFileName, thumbnailFile, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (thumbError) throw thumbError;
+
+      const { data: { publicUrl: thumbPublicUrl } } = supabase.storage
+        .from("videos")
+        .getPublicUrl(thumbData.path);
+
       // Upload video
       const videoFileName = `${user.id}/${Date.now()}-${selectedVideo.name}`;
-      
+
       // Simulate upload progress
       const uploadInterval = setInterval(() => {
         setUploadProgress(prev => {
@@ -149,7 +168,7 @@ export const VideoUploader = ({ onUploadComplete, className }: VideoUploaderProp
         .insert({
           user_id: user.id,
           video_url: publicUrl,
-          thumbnail_url: thumbnailBase64,
+          thumbnail_url: thumbPublicUrl,
           title: title || "Başlıksız Video",
           description: description || null,
         })
@@ -165,8 +184,8 @@ export const VideoUploader = ({ onUploadComplete, className }: VideoUploaderProp
         description: "Videonuz başarıyla yüklendi.",
       });
 
-      onUploadComplete?.(publicUrl, thumbnailBase64);
-      
+      onUploadComplete?.(publicUrl, thumbPublicUrl);
+
       // Reset form
       setSelectedVideo(null);
       setVideoPreview(null);
@@ -253,7 +272,7 @@ export const VideoUploader = ({ onUploadComplete, className }: VideoUploaderProp
             disabled={isUploading}
             rows={3}
           />
-          
+
           {isUploading && (
             <div className="space-y-2">
               <Progress value={uploadProgress} className="h-2" />

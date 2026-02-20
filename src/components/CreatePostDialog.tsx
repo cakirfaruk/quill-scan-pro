@@ -17,12 +17,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useDraft } from "@/hooks/use-draft";
 import { extractMentions, extractHashtags } from "@/utils/textParsing";
-import { 
-  Image, 
-  Video, 
-  Sparkles, 
-  X, 
-  Loader2, 
+import {
+  Image,
+  Video,
+  Sparkles,
+  X,
+  Loader2,
   AtSign,
   Smile,
   Save
@@ -95,7 +95,7 @@ export const CreatePostDialog = ({
   // Auto-save draft when content changes
   useEffect(() => {
     if (!open || !content.trim()) return;
-    
+
     const cleanup = draft.autoSave(content);
     return cleanup;
   }, [content, open]);
@@ -161,7 +161,7 @@ export const CreatePostDialog = ({
       video.onloadedmetadata = () => {
         URL.revokeObjectURL(video.src);
         const aspectRatio = video.videoWidth / video.videoHeight;
-        
+
         // Video is vertical if aspect ratio < 1 (height > width)
         if (aspectRatio >= 1) {
           toast({
@@ -171,7 +171,7 @@ export const CreatePostDialog = ({
           });
           return;
         }
-        
+
         // If vertical, proceed with setting the file
         setMediaFile(file);
         const reader = new FileReader();
@@ -225,7 +225,7 @@ export const CreatePostDialog = ({
   };
 
   const handleCreatePost = async () => {
-    if (!content.trim() && !mediaPreview) {
+    if (!content.trim() && !mediaFile) {
       toast({
         title: "Uyarı",
         description: "Lütfen bir içerik veya medya ekleyin",
@@ -248,20 +248,52 @@ export const CreatePostDialog = ({
     setIsLoading(true);
 
     try {
+      let publicUrl = mediaPreview;
+
+      // Upload media if a new file is selected
+      if (mediaFile) {
+        const fileExt = mediaFile.name.split(".").pop();
+        const fileName = `${userId}/${crypto.randomUUID()}.${fileExt}`;
+        const bucketName = "posts"; // Actually use the correct existing bucket name
+
+        const { error: uploadError } = await supabase.storage
+          .from(bucketName)
+          .upload(fileName, mediaFile);
+
+        if (uploadError) {
+          // If bucket doesn't exist or other error, try to create bucket or use 'uploads'
+          console.error("Upload error:", uploadError);
+          // Fallback to 'public' or common bucket if specific logic needed, 
+          // but for now throwing error to see actual issue is better than silent fail
+          throw new Error(`Resim yüklenemedi: ${uploadError.message}`);
+        }
+
+        const { data: { publicUrl: url } } = supabase.storage
+          .from(bucketName)
+          .getPublicUrl(fileName);
+
+        publicUrl = url;
+      }
+
       // Extract mentions and hashtags
       const mentions = extractMentions(content);
       const hashtags = extractHashtags(content);
 
       // Create post
+      const postPayload: any = {
+        user_id: userId,
+        content: content.trim(),
+        post_type: postType,
+      };
+
+      if (publicUrl) {
+        postPayload.media_url = publicUrl;
+        postPayload.media_type = postType === "video" || postType === "reels" ? "video" : "image";
+      }
+
       const { data: postData, error: postError } = await supabase
         .from("posts")
-        .insert({
-          user_id: userId,
-          content: content.trim(),
-          media_url: mediaPreview,
-          media_type: mediaPreview ? (postType === "video" || postType === "reels" ? "video" : "photo") : null,
-          post_type: postType,
-        })
+        .insert(postPayload)
         .select()
         .single();
 
@@ -328,9 +360,10 @@ export const CreatePostDialog = ({
       onOpenChange(false);
       onPostCreated?.();
     } catch (error: any) {
+      console.error("Post creation error:", error);
       toast({
         title: "Hata",
-        description: "Gönderi oluşturulamadı",
+        description: error.message || "Gönderi oluşturulamadı",
         variant: "destructive",
       });
     } finally {
@@ -359,9 +392,9 @@ export const CreatePostDialog = ({
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Save className="w-3 h-3" />
                 <span>
-                  {new Date(draft.lastSaved).toLocaleTimeString('tr-TR', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
+                  {new Date(draft.lastSaved).toLocaleTimeString('tr-TR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
                   })}
                 </span>
               </div>

@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload, X, Camera, Video } from "lucide-react";
 import { soundEffects } from "@/utils/soundEffects";
+import { uploadToStorage } from "@/utils/storageUpload";
 
 interface CreateStoryDialogProps {
   open: boolean;
@@ -58,30 +59,25 @@ export const CreateStoryDialog = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // For now, we'll store the base64 directly in the database
-      // In production, you'd upload to Supabase Storage
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const base64Data = e.target?.result as string;
+      const publicUrl = await uploadToStorage(file, "stories", user.id);
+      if (!publicUrl) throw new Error("Hikaye medyası yüklenemedi");
 
-        const { error } = await supabase.from("stories").insert({
-          user_id: user.id,
-          media_url: base64Data,
-          media_type: mediaType,
-        });
+      const { error } = await supabase.from("stories").insert({
+        user_id: user.id,
+        media_url: publicUrl,
+        media_type: mediaType,
+      });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        soundEffects.playMatch();
-        toast({
-          title: "Başarılı!",
-          description: "Hikayeniz paylaşıldı",
-        });
+      soundEffects.playMatch();
+      toast({
+        title: "Başarılı!",
+        description: "Hikayeniz paylaşıldı",
+      });
 
-        onSuccess();
-        handleClose();
-      };
-      reader.readAsDataURL(file);
+      onSuccess();
+      handleClose();
     } catch (error: any) {
       soundEffects.playError();
       toast({
