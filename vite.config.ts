@@ -201,6 +201,26 @@ export default defineConfig(({ mode }) => ({
             return 'analysis-detail';
           }
 
+          // Heavy dialogs - lazy loadable
+          if (id.includes('src/components/VideoCallDialog') ||
+              id.includes('src/components/GroupVideoCallDialog') ||
+              id.includes('src/components/CallInterface') ||
+              id.includes('src/components/StoryViewer') ||
+              id.includes('src/components/CreatePostDialog') ||
+              id.includes('src/components/GifPicker') ||
+              id.includes('src/components/VoiceRecorder') ||
+              id.includes('src/components/WidgetDashboard')) {
+            return 'heavy-dialogs';
+          }
+
+          // WebRTC / call hooks
+          if (id.includes('src/hooks/use-webrtc') ||
+              id.includes('src/hooks/use-group-webrtc') ||
+              id.includes('src/utils/callNotifications') ||
+              id.includes('src/utils/pushNotifications')) {
+            return 'webrtc-utils';
+          }
+
           // Page chunks
           if (id.includes('src/pages/')) {
             const pageName = id.split('src/pages/')[1]?.split('.')[0];
@@ -213,7 +233,7 @@ export default defineConfig(({ mode }) => ({
             }
 
             // Large pages get their own chunks
-            const largePages = ['Feed', 'Messages', 'Groups', 'Match', 'Profile', 'Admin', 'ErrorMonitor', 'ErrorAnalytics'];
+            const largePages = ['Feed', 'Messages', 'Groups', 'GroupChat', 'Match', 'Profile', 'Admin', 'ErrorMonitor', 'ErrorAnalytics', 'Reels', 'Tarot', 'BirthChart', 'Numerology', 'Palmistry', 'CoffeeFortune', 'Compatibility', 'DreamInterpretation', 'DailyHoroscope'];
             if (largePages.some(p => pageName.includes(p))) {
               return `page-${pageName.toLowerCase()}`;
             }
