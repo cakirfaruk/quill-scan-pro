@@ -36,7 +36,7 @@ export const useFeedPosts = (): UseFeedPostsReturn => {
                 setLoading(true);
             }
 
-            const POSTS_PER_PAGE = 20;
+            const POSTS_PER_PAGE = 10;
             const offset = (page - 1) * POSTS_PER_PAGE;
 
             // STAGE 1: Posts + Friends in PARALLEL (friends don't need postIds)

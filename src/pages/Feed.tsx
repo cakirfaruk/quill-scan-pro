@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, lazy, Suspense } from "react";
+import { updatePageMeta } from "@/utils/meta";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -126,6 +127,14 @@ const Feed = () => {
       },
     },
   ];
+
+  useEffect(() => {
+    updatePageMeta(
+      "Connect | Astro Social",
+      "Arkadaşlarınla bağlan, paylaşımları keşfet ve analizlerini paylaş.",
+      "/"
+    );
+  }, []);
 
   const handleRefresh = useCallback(async () => {
     soundEffects.playClick();

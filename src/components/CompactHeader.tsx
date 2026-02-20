@@ -115,6 +115,7 @@ export const CompactHeader = () => {
                   <Button
                     variant="ghost"
                     size="sm"
+                    aria-label="Kredi bakiyesi"
                     onClick={() => navigate("/credits")}
                     className={cn(
                       "gap-1.5 px-2 sm:px-3 transition-all duration-300",
@@ -147,6 +148,7 @@ export const CompactHeader = () => {
                   <Button
                     variant="ghost"
                     size="icon"
+                    aria-label="Mesajlar"
                     onClick={() => navigate("/messages")}
                     className={cn(
                       "transition-all duration-300",
@@ -181,6 +183,7 @@ export const CompactHeader = () => {
                   <Button
                     variant="ghost"
                     size="icon"
+                    aria-label="Profilim"
                     onClick={() => navigate("/profile")}
                     className={cn(
                       "rounded-full p-0 hover:scale-105 transition-all duration-300",

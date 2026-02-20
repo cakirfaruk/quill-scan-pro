@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { updatePageMeta } from "@/utils/meta";
 import { Sparkles, Moon, Brain, Star, Coffee, Hand, Sun, Activity, Zap, TrendingUp, Users, Heart } from "lucide-react";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -20,7 +21,14 @@ const Discovery = () => {
   });
 
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
+    updatePageMeta(
+      "Insight Command Center | Astro Social",
+      "Kozmik veri analiz merkeziniz. Tarot, kahve falı, numeroloji ve daha fazlası.",
+      "/discovery"
+    );
+  }, []);
+
+  useEffect(() => {
     // Use profile from context for credits, fetch only counts in parallel
     const userId = user.id;
     Promise.all([

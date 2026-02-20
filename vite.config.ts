@@ -181,6 +181,8 @@ export default defineConfig(({ mode }) => ({
     drop: ['console', 'debugger'],
   } : undefined,
   build: {
+    target: 'esnext',
+    cssCodeSplit: true,
     // modulePreload enabled (default) — browser handles chunk dependency ordering naturally
     rollupOptions: {
       output: {
