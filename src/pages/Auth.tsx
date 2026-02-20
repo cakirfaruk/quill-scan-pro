@@ -133,23 +133,23 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4 overflow-y-auto">
-      <Card className="w-full max-w-md p-8 shadow-elegant my-4">
-        <div className="flex items-center justify-center mb-8">
+    <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
+      <Card className="w-full max-w-md p-6 shadow-elegant">
+        <div className="flex items-center justify-center mb-5">
           <div className="p-3 bg-gradient-primary rounded-lg">
-            <FileText className="w-8 h-8 text-primary-foreground" />
+            <FileText className="w-7 h-7 text-primary-foreground" />
           </div>
         </div>
 
-        <h1 className="text-3xl font-bold text-center mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <h1 className="text-2xl font-bold text-center mb-1 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
           Astro Social
         </h1>
-        <p className="text-center text-muted-foreground mb-8">
+        <p className="text-center text-muted-foreground mb-5 text-sm">
           Burç, tarot, el falı ve daha fazlası
         </p>
 
         <Tabs defaultValue="signin" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8">
+          <TabsList className="grid w-full grid-cols-2 mb-5">
             <TabsTrigger value="signin">Giriş Yap</TabsTrigger>
             <TabsTrigger value="signup">Kayıt Ol</TabsTrigger>
           </TabsList>
