@@ -12,6 +12,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingFallback } from "@/components/LoadingFallback";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 // Lazy load ALL pages including Index for optimal code splitting
@@ -208,48 +209,50 @@ const AppRoutes = () => {
           />
         </Suspense>
       )}
-      <Suspense fallback={<LoadingFallback />}>
-        <Routes location={location}>
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/install" element={<Install />} />
+      <ChunkErrorBoundary chunkName="uygulama">
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes location={location}>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/install" element={<Install />} />
 
-          <Route element={<MainLayout />}>
-            <Route path="/" element={<Index />} />
-            <Route path="/profile/:username?" element={<Profile />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/faq" element={<FAQ />} />
-            <Route path="/credits" element={<Credits />} />
-            <Route path="/messages" element={<Messages />} />
-            <Route path="/friends" element={<Friends />} />
-            <Route path="/saved" element={<SavedPosts />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/tarot" element={<Tarot />} />
-            <Route path="/coffee-fortune" element={<CoffeeFortune />} />
-            <Route path="/palmistry" element={<Palmistry />} />
-            <Route path="/birth-chart" element={<BirthChart />} />
-            <Route path="/numerology" element={<Numerology />} />
-            <Route path="/compatibility" element={<Compatibility />} />
-            <Route path="/daily-horoscope" element={<DailyHoroscope />} />
-            <Route path="/dream" element={<DreamInterpretation />} />
-            <Route path="/reels" element={<Reels />} />
-            <Route path="/explore" element={<Explore />} />
-            <Route path="/discovery" element={<Discovery />} />
-            <Route path="/groups" element={<Groups />} />
-            <Route path="/groups/:groupId" element={<GroupChat />} />
-            <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
-            <Route path="/match" element={<Match />} />
-            <Route path="/call-history" element={<CallHistory />} />
-            <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
-            <Route path="/error-monitor" element={<ErrorMonitor />} />
-            <Route path="/error-analytics" element={<ErrorAnalytics />} />
-            <Route path="/error/:errorId" element={<ErrorDetail />} />
-            <Route path="/feed" element={<Feed />} />
-          </Route>
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/profile/:username?" element={<Profile />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/credits" element={<Credits />} />
+              <Route path="/messages" element={<Messages />} />
+              <Route path="/friends" element={<Friends />} />
+              <Route path="/saved" element={<SavedPosts />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/tarot" element={<Tarot />} />
+              <Route path="/coffee-fortune" element={<CoffeeFortune />} />
+              <Route path="/palmistry" element={<Palmistry />} />
+              <Route path="/birth-chart" element={<BirthChart />} />
+              <Route path="/numerology" element={<Numerology />} />
+              <Route path="/compatibility" element={<Compatibility />} />
+              <Route path="/daily-horoscope" element={<DailyHoroscope />} />
+              <Route path="/dream" element={<DreamInterpretation />} />
+              <Route path="/reels" element={<Reels />} />
+              <Route path="/explore" element={<Explore />} />
+              <Route path="/discovery" element={<Discovery />} />
+              <Route path="/groups" element={<Groups />} />
+              <Route path="/groups/:groupId" element={<GroupChat />} />
+              <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
+              <Route path="/match" element={<Match />} />
+              <Route path="/call-history" element={<CallHistory />} />
+              <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
+              <Route path="/error-monitor" element={<ErrorMonitor />} />
+              <Route path="/error-analytics" element={<ErrorAnalytics />} />
+              <Route path="/error/:errorId" element={<ErrorDetail />} />
+              <Route path="/feed" element={<Feed />} />
+            </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
+      </ChunkErrorBoundary>
       <Suspense fallback={null}>
         <PWAInstallPrompt />
       </Suspense>
