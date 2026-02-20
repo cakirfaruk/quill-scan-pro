@@ -1,7 +1,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { motion } from "framer-motion";
+
 import { Sparkles, Star, Zap } from "lucide-react";
 
 interface SoulIdCardProps {
@@ -11,10 +11,8 @@ interface SoulIdCardProps {
 
 export const SoulIdCard = ({ profile, isOwnProfile }: SoulIdCardProps) => {
     return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="relative w-full max-w-md mx-auto"
+        <div
+            className="relative w-full max-w-md mx-auto animate-fade-in"
         >
             {/* Holographic Container */}
             <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-black/40 backdrop-blur-xl shadow-neon group">
@@ -83,6 +81,6 @@ export const SoulIdCard = ({ profile, isOwnProfile }: SoulIdCardProps) => {
 
                 </div>
             </div>
-        </motion.div>
+        </div>
     );
 };

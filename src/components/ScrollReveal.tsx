@@ -1,5 +1,4 @@
-import { motion } from "framer-motion";
-import { ReactNode } from "react";
+import { ReactNode, CSSProperties } from "react";
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
 import { cn } from "@/lib/utils";
 
@@ -24,46 +23,40 @@ export const ScrollReveal = ({
   triggerOnce = true,
   threshold = 0.1,
 }: ScrollRevealProps) => {
-  const { elementRef, isVisible } = useScrollReveal({ 
-    threshold, 
+  const { elementRef, isVisible } = useScrollReveal({
+    threshold,
     triggerOnce,
     rootMargin: "0px 0px -50px 0px"
   });
 
-  const getInitialPosition = () => {
+  const getTransform = (visible: boolean): string => {
+    if (visible) return "translate3d(0, 0, 0)";
     switch (direction) {
       case "up":
-        return { y: distance, opacity: 0 };
+        return `translate3d(0, ${distance}px, 0)`;
       case "down":
-        return { y: -distance, opacity: 0 };
+        return `translate3d(0, -${distance}px, 0)`;
       case "left":
-        return { x: distance, opacity: 0 };
+        return `translate3d(${distance}px, 0, 0)`;
       case "right":
-        return { x: -distance, opacity: 0 };
+        return `translate3d(-${distance}px, 0, 0)`;
       case "none":
       default:
-        return { opacity: 0 };
+        return "translate3d(0, 0, 0)";
     }
   };
 
+  const style: CSSProperties = {
+    opacity: isVisible ? 1 : 0,
+    transform: getTransform(isVisible),
+    transition: `opacity ${duration}s ease-out ${delay}s, transform ${duration}s ease-out ${delay}s`,
+    willChange: "opacity, transform",
+  };
+
   return (
-    <motion.div
-      ref={elementRef}
-      initial={getInitialPosition()}
-      animate={
-        isVisible
-          ? { x: 0, y: 0, opacity: 1 }
-          : getInitialPosition()
-      }
-      transition={{
-        duration,
-        delay,
-        ease: "easeOut",
-      }}
-      className={cn(className)}
-    >
+    <div ref={elementRef} style={style} className={cn(className)}>
       {children}
-    </motion.div>
+    </div>
   );
 };
 
@@ -110,16 +103,16 @@ export const ScrollFade = ({
 }: ScrollFadeProps) => {
   const { elementRef, isVisible } = useScrollReveal({ triggerOnce: true });
 
+  const style: CSSProperties = {
+    opacity: isVisible ? 1 : 0,
+    transition: `opacity 0.8s ease-out ${delay}s`,
+    willChange: "opacity",
+  };
+
   return (
-    <motion.div
-      ref={elementRef}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: isVisible ? 1 : 0 }}
-      transition={{ duration: 0.8, delay }}
-      className={cn(className)}
-    >
+    <div ref={elementRef} style={style} className={cn(className)}>
       {children}
-    </motion.div>
+    </div>
   );
 };
 
@@ -136,19 +129,16 @@ export const ScrollScale = ({
 }: ScrollScaleProps) => {
   const { elementRef, isVisible } = useScrollReveal({ triggerOnce: true });
 
+  const style: CSSProperties = {
+    opacity: isVisible ? 1 : 0,
+    transform: isVisible ? "scale(1)" : "scale(0.8)",
+    transition: `opacity 0.5s ease-out ${delay}s, transform 0.5s ease-out ${delay}s`,
+    willChange: "opacity, transform",
+  };
+
   return (
-    <motion.div
-      ref={elementRef}
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={
-        isVisible
-          ? { opacity: 1, scale: 1 }
-          : { opacity: 0, scale: 0.8 }
-      }
-      transition={{ duration: 0.5, delay }}
-      className={cn(className)}
-    >
+    <div ref={elementRef} style={style} className={cn(className)}>
       {children}
-    </motion.div>
+    </div>
   );
 };

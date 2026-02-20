@@ -2,10 +2,9 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X, ChevronRight, Sparkles } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface TutorialStep {
-  target: string; // CSS selector for the target element
+  target: string;
   title: string;
   description: string;
   position: "top" | "bottom" | "left" | "right";
@@ -62,12 +61,10 @@ export const Tutorial = () => {
   const [position, setPosition] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
-    // Check if tutorial should be shown
     const tutorialCompleted = localStorage.getItem("tutorial_completed");
     const onboardingCompleted = localStorage.getItem("onboarding_completed");
-    
+
     if (!tutorialCompleted && onboardingCompleted) {
-      // Show tutorial after a short delay
       setTimeout(() => {
         setIsActive(true);
         updatePosition();
@@ -80,7 +77,7 @@ export const Tutorial = () => {
       updatePosition();
       window.addEventListener("resize", updatePosition);
       window.addEventListener("scroll", updatePosition);
-      
+
       return () => {
         window.removeEventListener("resize", updatePosition);
         window.removeEventListener("scroll", updatePosition);
@@ -91,7 +88,7 @@ export const Tutorial = () => {
   const updatePosition = () => {
     const step = tutorialSteps[currentStep];
     const element = document.querySelector(step.target);
-    
+
     if (element) {
       const rect = element.getBoundingClientRect();
       let top = 0;
@@ -117,11 +114,8 @@ export const Tutorial = () => {
       }
 
       setPosition({ top, left });
-
-      // Highlight the target element
       element.classList.add("tutorial-highlight");
-      
-      // Remove highlight from previous elements
+
       document.querySelectorAll(".tutorial-highlight").forEach((el) => {
         if (el !== element) {
           el.classList.remove("tutorial-highlight");
@@ -141,8 +135,7 @@ export const Tutorial = () => {
   const handleClose = () => {
     localStorage.setItem("tutorial_completed", "true");
     setIsActive(false);
-    
-    // Remove all highlights
+
     document.querySelectorAll(".tutorial-highlight").forEach((el) => {
       el.classList.remove("tutorial-highlight");
     });
@@ -155,83 +148,74 @@ export const Tutorial = () => {
   return (
     <>
       {/* Overlay */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/50 z-[9998] backdrop-blur-sm"
+      <div
+        className="fixed inset-0 bg-black/50 z-[9998] backdrop-blur-sm animate-fade-in"
         onClick={handleClose}
       />
 
       {/* Tutorial Card */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentStep}
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.9 }}
-          transition={{ duration: 0.2 }}
-          className="fixed z-[9999] pointer-events-auto"
-          style={{
-            top: `${position.top}px`,
-            left: `${position.left}px`,
-            transform: step.position === "left" || step.position === "right"
-              ? "translate(-50%, -50%)"
-              : "translate(-50%, 0)"
-          }}
-        >
-          <Card className="p-4 max-w-xs shadow-2xl border-2 border-primary/20">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-primary" />
-                <h3 className="font-bold text-lg">{step.title}</h3>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={handleClose}
-              >
-                <X className="w-4 h-4" />
-              </Button>
+      <div
+        key={currentStep}
+        className="fixed z-[9999] pointer-events-auto animate-fade-in"
+        style={{
+          top: `${position.top}px`,
+          left: `${position.left}px`,
+          transform: step.position === "left" || step.position === "right"
+            ? "translate(-50%, -50%)"
+            : "translate(-50%, 0)"
+        }}
+      >
+        <Card className="p-4 max-w-xs shadow-2xl border-2 border-primary/20">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h3 className="font-bold text-lg">{step.title}</h3>
             </div>
-            
-            <p className="text-sm text-muted-foreground mb-4">
-              {step.description}
-            </p>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={handleClose}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
 
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">
-                {currentStep + 1} / {tutorialSteps.length}
-              </span>
-              
-              <Button size="sm" onClick={handleNext}>
-                {currentStep === tutorialSteps.length - 1 ? (
-                  "Tamamla"
-                ) : (
-                  <>
-                    İleri
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </>
-                )}
-              </Button>
-            </div>
-          </Card>
+          <p className="text-sm text-muted-foreground mb-4">
+            {step.description}
+          </p>
 
-          {/* Arrow pointer */}
-          <div
-            className={`absolute w-0 h-0 ${
-              step.position === "bottom"
-                ? "border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-background -top-2 left-1/2 -translate-x-1/2"
-                : step.position === "top"
-                ? "border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-background -bottom-2 left-1/2 -translate-x-1/2"
-                : step.position === "left"
-                ? "border-t-8 border-b-8 border-l-8 border-t-transparent border-b-transparent border-l-background -right-2 top-1/2 -translate-y-1/2"
-                : "border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent border-r-background -left-2 top-1/2 -translate-y-1/2"
-            }`}
-          />
-        </motion.div>
-      </AnimatePresence>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              {currentStep + 1} / {tutorialSteps.length}
+            </span>
+
+            <Button size="sm" onClick={handleNext}>
+              {currentStep === tutorialSteps.length - 1 ? (
+                "Tamamla"
+              ) : (
+                <>
+                  İleri
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </>
+              )}
+            </Button>
+          </div>
+        </Card>
+
+        {/* Arrow pointer */}
+        <div
+          className={`absolute w-0 h-0 ${
+            step.position === "bottom"
+              ? "border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-background -top-2 left-1/2 -translate-x-1/2"
+              : step.position === "top"
+              ? "border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-background -bottom-2 left-1/2 -translate-x-1/2"
+              : step.position === "left"
+              ? "border-t-8 border-b-8 border-l-8 border-t-transparent border-b-transparent border-l-background -right-2 top-1/2 -translate-y-1/2"
+              : "border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent border-r-background -left-2 top-1/2 -translate-y-1/2"
+          }`}
+        />
+      </div>
 
       <style>{`
         .tutorial-highlight {

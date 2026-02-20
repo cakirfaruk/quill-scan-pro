@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, lazy, Suspense } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -14,14 +14,14 @@ import { Breadcrumb } from "@/components/Breadcrumb";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
+import { LazyEmojiPicker, type EmojiClickData } from "@/components/LazyEmojiPicker";
 import { z } from "zod";
 import { GroupPollCard } from "@/components/GroupPollCard";
 import { CreateGroupPollDialog } from "@/components/CreateGroupPollDialog";
 import { GroupAnnouncementCard } from "@/components/GroupAnnouncementCard";
 import { CreateGroupAnnouncementDialog } from "@/components/CreateGroupAnnouncementDialog";
 import { GroupMediaGallery } from "@/components/GroupMediaGallery";
-import { GroupStats } from "@/components/GroupStats";
+const GroupStats = lazy(() => import("@/components/GroupStats").then(m => ({ default: m.GroupStats })));
 import { GroupSearch } from "@/components/GroupSearch";
 import { GroupEventCard } from "@/components/GroupEventCard";
 import { CreateGroupEventDialog } from "@/components/CreateGroupEventDialog";
@@ -257,7 +257,7 @@ const GroupChat = () => {
 
       const { data, error } = await supabase
         .from("groups")
-        .select("*")
+        .select("id, name, description, photo_url, created_by, created_at")
         .eq("id", groupId)
         .single();
 
@@ -378,7 +378,7 @@ const GroupChat = () => {
     try {
       const { data, error } = await supabase
         .from("group_polls")
-        .select("*")
+        .select("id, group_id, question, options, multiple_choice, expires_at, created_at, created_by")
         .eq("group_id", groupId)
         .order("created_at", { ascending: false });
 
@@ -393,7 +393,7 @@ const GroupChat = () => {
     try {
       const { data, error } = await supabase
         .from("group_announcements")
-        .select("*")
+        .select("id, group_id, title, content, created_at, created_by")
         .eq("group_id", groupId)
         .order("created_at", { ascending: false });
 
@@ -408,7 +408,7 @@ const GroupChat = () => {
     try {
       const { data, error } = await supabase
         .from("group_events")
-        .select("*")
+        .select("id, group_id, title, description, event_date, location, created_by")
         .eq("group_id", groupId)
         .order("event_date", { ascending: true });
 
@@ -423,7 +423,7 @@ const GroupChat = () => {
     try {
       const { data, error } = await supabase
         .from("group_files")
-        .select("*")
+        .select("id, group_id, file_name, file_url, file_type, file_size, created_at, uploaded_by")
         .eq("group_id", groupId)
         .order("created_at", { ascending: false });
 
@@ -1013,7 +1013,7 @@ const GroupChat = () => {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-full p-0 bg-transparent border-none shadow-none" align="start">
-                    <EmojiPicker onEmojiClick={handleEmojiClick} theme="dark" />
+                    <LazyEmojiPicker onEmojiClick={handleEmojiClick} theme="dark" />
                   </PopoverContent>
                 </Popover>
 
@@ -1084,7 +1084,7 @@ const GroupChat = () => {
       <CreateGroupPollDialog open={createPollDialogOpen} onOpenChange={setCreatePollDialogOpen} groupId={groupId!} onPollCreated={loadPolls} />
       <CreateGroupAnnouncementDialog open={createAnnouncementDialogOpen} onOpenChange={setCreateAnnouncementDialogOpen} groupId={groupId!} onAnnouncementCreated={loadAnnouncements} />
       <GroupMediaGallery open={mediaGalleryOpen} onOpenChange={setMediaGalleryOpen} groupId={groupId!} />
-      <GroupStats open={statsOpen} onOpenChange={setStatsOpen} groupId={groupId!} />
+      <Suspense fallback={null}><GroupStats open={statsOpen} onOpenChange={setStatsOpen} groupId={groupId!} /></Suspense>
       <GroupSearch open={searchOpen} onOpenChange={setSearchOpen} groupId={groupId!} />
       <CreateGroupEventDialog open={createEventDialogOpen} onOpenChange={setCreateEventDialogOpen} groupId={groupId!} onEventCreated={loadEvents} />
       <CreateGroupFileDialog open={uploadFileDialogOpen} onOpenChange={setUploadFileDialogOpen} groupId={groupId!} onFileUploaded={loadFiles} />

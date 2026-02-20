@@ -67,40 +67,32 @@ export const ProfileFeed = ({ userId, isOwnProfile }: ProfileFeedProps) => {
             const { data: { user } } = await supabase.auth.getUser();
             const currentId = user?.id;
 
-            const [postsResult, likesResult, commentsCountResult, userLikesResult, savedResult] = await Promise.all([
+            const [postsResult, userLikesResult, savedResult] = await Promise.all([
                 supabase
                     .from("posts")
                     .select(`
-            *,
-            profiles!posts_user_id_fkey (
-              username,
-              full_name,
-              profile_photo
-            )
-          `)
+                        id, user_id, content, media_url, media_type, created_at, shares_count, likes_count, comments_count,
+                        profiles!posts_user_id_fkey (
+                          username,
+                          full_name,
+                          profile_photo
+                        )
+                    `)
                     .eq("user_id", userId)
                     .order("created_at", { ascending: false }),
-                supabase.from("post_likes").select("post_id"),
-                supabase.from("post_comments").select("post_id"),
                 currentId ? supabase.from("post_likes").select("post_id").eq("user_id", currentId) : Promise.resolve({ data: [] }),
                 currentId ? supabase.from("saved_posts").select("post_id").eq("user_id", currentId) : Promise.resolve({ data: [] })
             ]);
 
             if (postsResult.data) {
-                const likesMap = new Map();
-                likesResult.data?.forEach((l: any) => likesMap.set(l.post_id, (likesMap.get(l.post_id) || 0) + 1));
-
-                const commentsMap = new Map();
-                commentsCountResult.data?.forEach((c: any) => commentsMap.set(c.post_id, (commentsMap.get(c.post_id) || 0) + 1));
-
                 const userLikesSet = new Set(userLikesResult.data?.map((l: any) => l.post_id) || []);
                 const savedSet = new Set(savedResult.data?.map((s: any) => s.post_id) || []);
 
                 const formattedPosts = postsResult.data.map((post: any) => ({
                     ...post,
                     profile: post.profiles,
-                    likes: likesMap.get(post.id) || 0,
-                    comments: commentsMap.get(post.id) || 0,
+                    likes: post.likes_count || 0,
+                    comments: post.comments_count || 0,
                     hasLiked: userLikesSet.has(post.id),
                     hasSaved: savedSet.has(post.id)
                 }));
@@ -291,7 +283,7 @@ export const ProfileFeed = ({ userId, isOwnProfile }: ProfileFeedProps) => {
             setSaveDialogOpen(true);
             // Load collections
             if (currentUserId && collections.length === 0) {
-                const { data } = await supabase.from("collections").select("*").eq("user_id", currentUserId);
+                const { data } = await supabase.from("collections").select("id, name").eq("user_id", currentUserId);
                 if (data) setCollections(data);
             }
         }

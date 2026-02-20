@@ -52,33 +52,23 @@ export const useOnlineStatus = (userId: string | null) => {
   return { isOnline, lastSeen };
 };
 
-export const useUpdateOnlineStatus = () => {
+export const useUpdateOnlineStatus = (userId: string | null) => {
   useEffect(() => {
+    if (!userId) return;
+
     let intervalId: NodeJS.Timeout;
-    let userId: string | null = null;
 
     const updateStatus = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      userId = user.id;
-
       await supabase
         .from("profiles")
         .update({
           is_online: true,
           last_seen: new Date().toISOString(),
         })
-        .eq("user_id", user.id);
+        .eq("user_id", userId);
     };
 
     const setOffline = async () => {
-      if (!userId) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        userId = user.id;
-      }
-
       await supabase
         .from("profiles")
         .update({
@@ -88,9 +78,11 @@ export const useUpdateOnlineStatus = () => {
         .eq("user_id", userId);
     };
 
-    // Update status immediately and then every 30 seconds
-    updateStatus();
-    intervalId = setInterval(updateStatus, 30000);
+    // Defer first status update by 10 seconds to not block initial render
+    const initialTimerId = setTimeout(() => {
+      updateStatus();
+      intervalId = setInterval(updateStatus, 30000);
+    }, 10000);
 
     // Set offline when leaving page
     const handleBeforeUnload = () => {
@@ -109,10 +101,11 @@ export const useUpdateOnlineStatus = () => {
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
+      clearTimeout(initialTimerId);
       clearInterval(intervalId);
       window.removeEventListener("beforeunload", handleBeforeUnload);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       setOffline();
     };
-  }, []);
+  }, [userId]);
 };

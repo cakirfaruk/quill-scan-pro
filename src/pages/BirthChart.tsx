@@ -11,7 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { ShareAnalysisButton } from "@/components/ShareAnalysisButton";
 import { getAllPlanets } from "ephemeris";
-import { motion } from "framer-motion";
 
 const birthChartTopics = [
   "Güneş Burcu (Kişilik)",
@@ -281,11 +280,7 @@ const BirthChart = () => {
         />
 
         <div className="container mx-auto px-4 max-w-4xl space-y-6">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-          >
+          <div className="animate-fade-in">
             <Card className="glass-card border-none text-white overflow-hidden relative">
               <div className="absolute top-0 right-0 p-32 bg-primary/20 blur-[100px] rounded-full pointer-events-none" />
               <div className="absolute bottom-0 left-0 p-24 bg-accent/20 blur-[80px] rounded-full pointer-events-none" />
@@ -318,7 +313,7 @@ const BirthChart = () => {
                 </Button>
               </CardContent>
             </Card>
-          </motion.div>
+          </div>
         </div>
       </div>
     );
@@ -339,11 +334,7 @@ const BirthChart = () => {
       />
 
       <div className="container mx-auto px-4 max-w-4xl relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
+        <div className="animate-fade-in">
           <Card className="glass-card border-white/10 bg-black/40 text-white shadow-glass">
             <CardContent className="p-6 space-y-8">
 
@@ -401,12 +392,10 @@ const BirthChart = () => {
 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent p-1">
                   {birthChartTopics.map((topic) => (
-                    <motion.div
+                    <div
                       key={topic}
-                      whileTap={{ scale: 0.98 }}
-                      whileHover={{ scale: 1.02 }}
                       className={`
-                                relative overflow-hidden flex items-center p-4 rounded-2xl border cursor-pointer transition-all duration-300 group
+                                relative overflow-hidden flex items-center p-4 rounded-2xl border cursor-pointer transition-all duration-300 group active:scale-[0.98] hover:scale-[1.02]
                                 ${selectedTopics.includes(topic)
                           ? "bg-primary/20 border-primary/50 text-white shadow-neon"
                           : "bg-white/5 border-white/5 text-white/60 hover:bg-white/10 hover:border-white/20"
@@ -415,9 +404,8 @@ const BirthChart = () => {
                       onClick={() => toggleTopic(topic)}
                     >
                       {selectedTopics.includes(topic) && (
-                        <motion.div
-                          layoutId="active-glow"
-                          className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 blur-sm"
+                        <div
+                          className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 blur-sm transition-opacity duration-300"
                         />
                       )}
                       <span className="z-10 text-sm font-medium relative">{topic}</span>
@@ -426,7 +414,7 @@ const BirthChart = () => {
                           <Sparkles className="w-4 h-4 fill-current animate-pulse" />
                         </div>
                       )}
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -485,7 +473,7 @@ const BirthChart = () => {
               </div>
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

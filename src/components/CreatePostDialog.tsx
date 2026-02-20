@@ -27,8 +27,7 @@ import {
   Smile,
   Save
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
+import { LazyEmojiPicker, type EmojiClickData } from "@/components/LazyEmojiPicker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { z } from "zod";
 
@@ -512,7 +511,7 @@ export const CreatePostDialog = ({
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-full p-0 border-0" align="end">
-                      <EmojiPicker onEmojiClick={handleEmojiClick} />
+                      <LazyEmojiPicker onEmojiClick={handleEmojiClick} />
                     </PopoverContent>
                   </Popover>
 

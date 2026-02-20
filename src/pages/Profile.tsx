@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,12 +14,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Camera, Plus, X, Settings, Calendar, MapPin, Share2, Eye, EyeOff, FileText, Sparkles, Heart, Moon, Hand, Coffee, Star, Send, MessageCircle, RefreshCw, UserX, ShieldOff, Bookmark, Folder as FolderIcon, Trash2 as Trash2Icon, FolderPlus } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+const AnalysisDetailView = lazy(() => import("@/components/AnalysisDetailView").then(m => ({ default: m.AnalysisDetailView })));
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { CreatePostDialog } from "@/components/CreatePostDialog";
+const CreatePostDialog = lazy(() => import("@/components/CreatePostDialog").then(m => ({ default: m.CreatePostDialog })));
 import { ProfileFeed } from "@/components/ProfileFeed";
 import { MutualFriends } from "@/components/MutualFriends";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
@@ -40,7 +41,7 @@ interface Analysis {
   id: string;
   analysis_type: string;
   created_at: string;
-  result: any;
+  result?: any;
   selected_topics?: string[] | null;
   credits_used: number;
   full_name?: string;
@@ -84,9 +85,8 @@ const Profile = () => {
   const [shareType, setShareType] = useState<"message" | "feed">("message");
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [currentUserId, setCurrentUserId] = useState("");
-  const [latestBirthChart, setLatestBirthChart] = useState<any>(null);
-  const [latestNumerology, setLatestNumerology] = useState<any>(null);
+  const { user: authUser } = useAuth();
+  const [currentUserId, setCurrentUserId] = useState(authUser?.id ?? "");
   const [activeTab, setActiveTab] = useState("posts");
   const [friendsDialogOpen, setFriendsDialogOpen] = useState(false);
   const [createPostDialogOpen, setCreatePostDialogOpen] = useState(false);
@@ -140,7 +140,7 @@ const Profile = () => {
       // Load collections
       const { data: collectionsData, error: collError } = await supabase
         .from("collections")
-        .select("*")
+        .select("id, name, description, user_id, created_at")
         .eq("user_id", profile.user_id)
         .order("created_at", { ascending: false });
 
@@ -308,7 +308,7 @@ const Profile = () => {
 
   const loadProfile = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = authUser;
       if (!user) {
         navigate("/auth");
         return;
@@ -320,11 +320,12 @@ const Profile = () => {
       let profileData;
       let profileError;
 
+      const profileFields = "user_id, username, full_name, birth_date, birth_place, current_location, bio, gender, profile_photo, credits, zodiac_sign, created_at";
       if (username) {
         // Looking at another user's profile - search by username
         const result = await supabase
           .from("profiles")
-          .select("*")
+          .select(profileFields)
           .eq("username", username)
           .maybeSingle();
         profileData = result.data;
@@ -333,7 +334,7 @@ const Profile = () => {
         // Looking at own profile - search by user_id
         const result = await supabase
           .from("profiles")
-          .select("*")
+          .select(profileFields)
           .eq("user_id", user.id)
           .maybeSingle();
         profileData = result.data;
@@ -369,7 +370,7 @@ const Profile = () => {
         // Photos
         supabase
           .from("user_photos")
-          .select("*")
+          .select("id, photo_url, is_primary, display_order")
           .eq("user_id", profileData.user_id)
           .order("display_order"),
 
@@ -377,7 +378,7 @@ const Profile = () => {
         supabase
           .from("friends")
           .select(`
-            *,
+            id, user_id, friend_id, status, created_at,
             friend_profile:profiles!friends_friend_id_fkey(user_id, username, full_name, profile_photo),
             user_profile:profiles!friends_user_id_fkey(user_id, username, full_name, profile_photo)
           `)
@@ -388,7 +389,7 @@ const Profile = () => {
         profileData.user_id !== user.id
           ? supabase
             .from("friends")
-            .select("*")
+            .select("id, user_id, friend_id, status")
             .or(`and(user_id.eq.${user.id},friend_id.eq.${profileData.user_id}),and(user_id.eq.${profileData.user_id},friend_id.eq.${user.id})`)
             .maybeSingle()
           : Promise.resolve({ data: null }),
@@ -433,10 +434,7 @@ const Profile = () => {
 
       // Load analyses async (don't wait)
       if (profileData.user_id === user.id) {
-        Promise.all([
-          loadAnalyses(profileData.user_id),
-          loadLatestAnalyses(profileData.user_id)
-        ]);
+        loadAnalyses(profileData.user_id);
       } else {
         loadSharedAnalyses(profileData.user_id);
       }
@@ -454,7 +452,7 @@ const Profile = () => {
 
   const loadAnalyses = async (userId: string) => {
     try {
-      // **PARALEL SORGULAR** - Tüm analiz sorgularını aynı anda başlat
+      // **PARALEL SORGULAR** - Tüm analiz sorgularını aynı anda başlat (only list fields, no heavy data)
       const [
         handwritingResult,
         numerologyResult,
@@ -466,15 +464,15 @@ const Profile = () => {
         palmistryResult,
         horoscopeResult
       ] = await Promise.all([
-        supabase.from("analysis_history").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-        supabase.from("numerology_analyses").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-        supabase.from("birth_chart_analyses").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-        supabase.from("compatibility_analyses").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-        supabase.from("tarot_readings").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-        supabase.from("coffee_fortune_readings").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-        supabase.from("dream_interpretations").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-        supabase.from("palmistry_readings").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-        supabase.from("daily_horoscopes").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("analysis_history").select("id, analysis_type, created_at, credits_used, selected_topics").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+        supabase.from("numerology_analyses").select("id, created_at, credits_used, full_name, birth_date, selected_topics").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+        supabase.from("birth_chart_analyses").select("id, created_at, credits_used, full_name, birth_date, birth_time, birth_place, selected_topics").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+        supabase.from("compatibility_analyses").select("id, created_at, credits_used, gender1, gender2").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+        supabase.from("tarot_readings").select("id, created_at, credits_used, spread_type, question").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+        supabase.from("coffee_fortune_readings").select("id, created_at, credits_used").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+        supabase.from("dream_interpretations").select("id, created_at, credits_used, dream_description").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+        supabase.from("palmistry_readings").select("id, created_at, credits_used").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+        supabase.from("daily_horoscopes").select("id, created_at, credits_used").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
       ]);
 
       // Combine all analyses into a single array
@@ -498,27 +496,22 @@ const Profile = () => {
         ...(tarotResult.data || []).map(item => ({
           ...item,
           analysis_type: "tarot",
-          result: item.interpretation
         })),
         ...(coffeeResult.data || []).map(item => ({
           ...item,
           analysis_type: "coffee_fortune",
-          result: item.interpretation
         })),
         ...(dreamResult.data || []).map(item => ({
           ...item,
           analysis_type: "dream",
-          result: item.interpretation
         })),
         ...(palmistryResult.data || []).map(item => ({
           ...item,
           analysis_type: "palmistry",
-          result: item.interpretation
         })),
         ...(horoscopeResult.data || []).map(item => ({
           ...item,
           analysis_type: "daily_horoscope",
-          result: item.horoscope_text
         })),
       ];
 
@@ -536,30 +529,19 @@ const Profile = () => {
     }
   };
 
-  const loadLatestAnalyses = async (userId: string) => {
-    // **PARALEL SORGULAR** - Latest analizleri paralel yükle
-    const [birthChartResult, numerologyResult] = await Promise.all([
-      supabase.from("birth_chart_analyses").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-      supabase.from("numerology_analyses").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-    ]);
-
-    if (birthChartResult.data) setLatestBirthChart(birthChartResult.data);
-    if (numerologyResult.data) setLatestNumerology(numerologyResult.data);
-  };
-
   const loadSharedAnalyses = async (userId: string) => {
     try {
-      // **PARALEL SORGULAR** - Tüm analiz türlerini aynı anda getir
+      // **PARALEL SORGULAR** - Tüm analiz türlerini aynı anda getir (only list fields, no heavy data)
       const [
         handwritingResult,
         numerologyResult,
         birthChartResult,
         compatibilityResult
       ] = await Promise.all([
-        supabase.from("analysis_history").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-        supabase.from("numerology_analyses").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-        supabase.from("birth_chart_analyses").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-        supabase.from("compatibility_analyses").select("*").eq("user_id", userId).order("created_at", { ascending: false })
+        supabase.from("analysis_history").select("id, analysis_type, created_at, credits_used, selected_topics").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+        supabase.from("numerology_analyses").select("id, created_at, credits_used, full_name, birth_date, selected_topics").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+        supabase.from("birth_chart_analyses").select("id, created_at, credits_used, full_name, birth_date, birth_time, birth_place, selected_topics").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+        supabase.from("compatibility_analyses").select("id, created_at, credits_used, gender1, gender2").eq("user_id", userId).order("created_at", { ascending: false }).limit(20)
       ]);
 
       const allAnalyses: Analysis[] = [
@@ -589,6 +571,41 @@ const Profile = () => {
       setAnalyses(allAnalyses);
     } catch (error: any) {
       console.error("Error loading shared analyses:", error);
+    }
+  };
+
+  const loadAnalysisDetail = async (analysis: Analysis) => {
+    try {
+      let fullData: any = null;
+      const tableMap: Record<string, string> = {
+        'handwriting': 'analysis_history',
+        'numerology': 'numerology_analyses',
+        'birth_chart': 'birth_chart_analyses',
+        'compatibility': 'compatibility_analyses',
+        'tarot': 'tarot_readings',
+        'coffee_fortune': 'coffee_fortune_readings',
+        'dream': 'dream_interpretations',
+        'palmistry': 'palmistry_readings',
+        'daily_horoscope': 'daily_horoscopes',
+      };
+
+      const table = tableMap[analysis.analysis_type];
+      if (!table) return;
+
+      const { data } = await supabase
+        .from(table)
+        .select('*')
+        .eq('id', analysis.id)
+        .single();
+
+      if (data) {
+        let result = data.result || data.interpretation || data.horoscope_text;
+        setSelectedAnalysis({ ...analysis, result });
+        setDetailDialogOpen(true);
+      }
+    } catch (error) {
+      console.error('Error loading analysis detail:', error);
+      toast({ title: 'Hata', description: 'Analiz detayı yüklenemedi.', variant: 'destructive' });
     }
   };
 
@@ -897,7 +914,7 @@ const Profile = () => {
 
     const { data: existingShare } = await supabase
       .from("shared_analyses")
-      .select("*")
+      .select("id, analysis_id, analysis_type, visibility_type, is_visible, allowed_user_ids")
       .eq("analysis_id", analysis.id)
       .eq("analysis_type", analysis.analysis_type)
       .maybeSingle();
@@ -1234,7 +1251,7 @@ const Profile = () => {
                   variant="outline"
                   className="bg-accent/20 border-accent/50 text-accent hover:bg-accent/40"
                   onClick={() => {
-                    supabase.from('profiles').update({ credits: Number(profile.credits || 0) + 1000 }).eq('user_id', profile.user_id)
+                    supabase.from('profiles').update({ credits: Number((profile as any).credits || 0) + 1000 }).eq('user_id', profile.user_id)
                       .then(() => {
                         toast({ title: 'Başarılı', description: '1000 kredi eklendi.' });
                         handleRefresh();
@@ -1267,203 +1284,6 @@ const Profile = () => {
               </Button>
             </div>
           )}
-        </div>
-
-        {/* Helper to hide old stats if they were inside the card we are NOT fully replacing yet? 
-            Wait, I'm replacing the START of the Card. 
-            The old Card content continues until line 1395 (approx).
-            I need to comment out or remove the old Card content. 
-        */}
-        <div className="hidden">
-          {/* Hiding old header content safely */}
-          <Card className="p-6 mb-6 animate-fade-in">
-            <div className="flex flex-col md:flex-row gap-6 items-start">
-              <div className="relative flex-shrink-0">
-                <Avatar
-                  className="w-32 h-32 md:w-40 md:h-40 border-4 border-primary/20 cursor-pointer hover:border-primary/40 transition-all"
-                  onClick={() => profile.profile_photo && setSelectedProfileImage(profile.profile_photo)}
-                >
-                  <AvatarImage src={profile.profile_photo} alt={profile.full_name} />
-                  <AvatarFallback className="bg-gradient-primary text-primary-foreground text-4xl">
-                    {profile.username.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                {isOwnProfile && (
-                  <label className="absolute bottom-0 right-0 p-2.5 bg-primary rounded-full cursor-pointer hover:opacity-90 transition-opacity shadow-lg">
-                    <Camera className="w-5 h-5 text-primary-foreground" />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageUpload}
-                    />
-                  </label>
-                )}
-              </div>
-
-              <div className="flex-1">
-                <div className="flex items-center gap-4 mb-4 flex-wrap">
-                  <h1 className="text-2xl md:text-3xl font-bold">
-                    {profile.full_name || profile.username}
-                  </h1>
-                  {isOwnProfile ? (
-                    <>
-                      <Link to="/settings">
-                        <Button size="sm" variant="outline">
-                          <Settings className="w-4 h-4 mr-2" />
-                          Düzenle
-                        </Button>
-                      </Link>
-                      <Button
-                        size="sm"
-                        onClick={handleProfileAnalysis}
-                        disabled={profileAnalysisLoading}
-                        className="gap-2"
-                      >
-                        {profileAnalysisLoading ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Analiz Ediliyor...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-4 h-4" />
-                            Profil Analizi (50₺)
-                          </>
-                        )}
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      {friendshipStatus === "none" && (
-                        <Button size="sm" onClick={handleSendFriendRequest}>
-                          <Plus className="w-4 h-4 mr-2" />
-                          Arkadaş Ekle
-                        </Button>
-                      )}
-                      {friendshipStatus === "pending_sent" && (
-                        <Button size="sm" variant="outline" onClick={handleCancelFriendRequest}>
-                          İstek Gönderildi
-                        </Button>
-                      )}
-                      {friendshipStatus === "pending_received" && (
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={handleAcceptFriendRequest}>
-                            Kabul Et
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={handleRejectFriendRequest}>
-                            Reddet
-                          </Button>
-                        </div>
-                      )}
-                      {friendshipStatus === "accepted" && (
-                        <Button size="sm" variant="outline" onClick={handleRemoveFriend}>
-                          Arkadaş
-                        </Button>
-                      )}
-
-                      {!isBlocked ? (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={handleBlockUser}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <UserX className="w-4 h-4 mr-2" />
-                          Engelle
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleUnblockUser}
-                        >
-                          <ShieldOff className="w-4 h-4 mr-2" />
-                          Engeli Kaldır
-                        </Button>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                <div className="flex gap-6 mb-4 text-sm flex-wrap">
-                  <button
-                    onClick={() => setActiveTab("photos")}
-                    className="hover:opacity-70 transition-opacity flex items-center gap-1.5"
-                  >
-                    <Camera className="w-4 h-4" />
-                    <span className="font-bold">{photos.length}</span> fotoğraf
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("analyses")}
-                    className="hover:opacity-70 transition-opacity"
-                  >
-                    <span className="font-bold">{analyses.length}</span> analiz
-                  </button>
-                  <button
-                    onClick={() => setFriendsDialogOpen(true)}
-                    className="hover:opacity-70 transition-opacity"
-                  >
-                    <span className="font-bold">{friends.length}</span> arkadaş
-                  </button>
-                </div>
-
-                <p className="text-sm text-muted-foreground mb-2">@{profile.username}</p>
-
-                {/* Online Status */}
-                {!isOwnProfile && profile.user_id && (
-                  <div className="mb-3">
-                    <OnlineStatusBadge userId={profile.user_id} showLastSeen={true} size="md" />
-                  </div>
-                )}
-
-                {profile.bio && (
-                  <p className="text-sm mb-3">{profile.bio}</p>
-                )}
-
-                <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                  {profile.birth_date && (
-                    <div className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-full">
-                      <Calendar className="w-3 h-3" />
-                      {new Date(profile.birth_date).toLocaleDateString('tr-TR')}
-                    </div>
-                  )}
-                  {profile.birth_place && (
-                    <div className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-full">
-                      <MapPin className="w-3 h-3" />
-                      Doğum: {profile.birth_place}
-                    </div>
-                  )}
-                  {profile.current_location && (
-                    <div className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-full">
-                      <MapPin className="w-3 h-3" />
-                      Yaşıyor: {profile.current_location}
-                    </div>
-                  )}
-                  {latestBirthChart?.result?.sun_sign && (
-                    <div className="flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-full text-primary font-medium">
-                      ☀️ {latestBirthChart.result.sun_sign}
-                    </div>
-                  )}
-                  {latestBirthChart?.result?.ascendant && (
-                    <div className="flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-full text-primary font-medium">
-                      ⬆️ Yükselen: {latestBirthChart.result.ascendant}
-                    </div>
-                  )}
-                  {latestNumerology?.result?.life_path_number && (
-                    <div className="flex items-center gap-1 bg-secondary/10 px-3 py-1.5 rounded-full text-secondary font-medium">
-                      🔢 Yaşam Yolu: {latestNumerology.result.life_path_number}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Mutual Friends - Show only if viewing another user's profile */}
-              {!isOwnProfile && currentUserId && profile.user_id && (
-                <MutualFriends userId={currentUserId} profileUserId={profile.user_id} />
-              )}
-            </div>
-          </Card>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -1527,10 +1347,7 @@ const Profile = () => {
                           )}
                           <div
                             className="flex-1 cursor-pointer"
-                            onClick={() => {
-                              setSelectedAnalysis(analysis);
-                              setDetailDialogOpen(true);
-                            }}
+                            onClick={() => loadAnalysisDetail(analysis)}
                           >
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex items-center gap-3 flex-1">
@@ -1604,12 +1421,14 @@ const Profile = () => {
                     </DialogDescription>
                   </DialogHeader>
                   {selectedAnalysis && (
-                    <div className="pt-4">
-                      <AnalysisDetailView
-                        result={selectedAnalysis.result}
-                        analysisType={selectedAnalysis.analysis_type}
-                      />
-                    </div>
+                    <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+                      <div className="pt-4">
+                        <AnalysisDetailView
+                          result={selectedAnalysis.result}
+                          analysisType={selectedAnalysis.analysis_type}
+                        />
+                      </div>
+                    </Suspense>
                   )}
                 </DialogContent>
               </Dialog>
@@ -1826,7 +1645,7 @@ const Profile = () => {
                       variant="outline"
                       className="flex-1"
                     >
-                      📋 Kopyala
+                      Kopyala
                     </Button>
                     <Button
                       onClick={() => setProfileAnalysisDialogOpen(false)}
@@ -2085,20 +1904,22 @@ const Profile = () => {
         </Dialog>
 
         {/* Create Post Dialog */}
-        <CreatePostDialog
-          open={createPostDialogOpen}
-          onOpenChange={setCreatePostDialogOpen}
-          userId={currentUserId}
-          username={profile.username}
-          profilePhoto={profile.profile_photo}
-          onPostCreated={() => {
-            setFeedRefreshKey(prev => prev + 1);
-            toast({
-              title: "Başarılı",
-              description: "Gönderi oluşturuldu",
-            });
-          }}
-        />
+        <Suspense fallback={null}>
+          <CreatePostDialog
+            open={createPostDialogOpen}
+            onOpenChange={setCreatePostDialogOpen}
+            userId={currentUserId}
+            username={profile.username}
+            profilePhoto={profile.profile_photo}
+            onPostCreated={() => {
+              setFeedRefreshKey(prev => prev + 1);
+              toast({
+                title: "Başarılı",
+                description: "Gönderi oluşturuldu",
+              });
+            }}
+          />
+        </Suspense>
 
         {/* Profile Image Zoom Dialog */}
         <Dialog open={!!selectedProfileImage} onOpenChange={() => setSelectedProfileImage(null)}>

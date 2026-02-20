@@ -14,7 +14,7 @@ import { useDraft } from "@/hooks/use-draft";
 import { Loader2, Send, Search, ArrowLeft, FileText, Smile, Paperclip, Ban, Check, CheckCheck, Mic, Image as ImageIcon, Pin, Forward, MoreVertical, Users, Phone, Video, Clock, MessageSquare, UserPlus, Heart, Save, ShieldMinus } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
 import { useIsMobile } from "@/hooks/use-mobile";
-import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
+import { LazyEmojiPicker, type EmojiClickData } from "@/components/LazyEmojiPicker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { soundEffects } from "@/utils/soundEffects";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
@@ -186,7 +186,7 @@ const Messages = () => {
         // Load call from database
         const { data: call } = await supabase
           .from('call_logs')
-          .select('*')
+          .select('id, call_id, caller_id, call_type, status')
           .eq('call_id', urlCallId)
           .eq('receiver_id', user.id)
           .eq('status', 'ringing')
@@ -222,7 +222,7 @@ const Messages = () => {
         // Check for any pending calls in the database
         const { data: pendingCalls } = await supabase
           .from('call_logs')
-          .select('*')
+          .select('id, call_id, caller_id, call_type, status')
           .eq('receiver_id', user.id)
           .eq('status', 'ringing')
           .order('started_at', { ascending: false })
@@ -523,7 +523,7 @@ const Messages = () => {
 
               const { data: lastMsg } = await supabase
                 .from("messages")
-                .select("*")
+                .select("id, sender_id, receiver_id, content, created_at, read, message_category")
                 .or(`and(sender_id.eq.${profile.user_id},receiver_id.eq.${user.id}),and(sender_id.eq.${user.id},receiver_id.eq.${profile.user_id})`)
                 .order("created_at", { ascending: false })
                 .limit(1)
@@ -588,7 +588,7 @@ const Messages = () => {
 
           const { data: lastMessages } = await supabase
             .from("group_messages")
-            .select("*")
+            .select("id, group_id, sender_id, content, created_at")
             .eq("group_id", group.id)
             .order("created_at", { ascending: false })
             .limit(1);
@@ -726,7 +726,7 @@ const Messages = () => {
 
       const { data, error } = await supabase
         .from("messages")
-        .select("*")
+        .select("id, sender_id, receiver_id, content, read, created_at, message_category, pinned_at, forwarded_from")
         .or(`and(sender_id.eq.${friendId},receiver_id.eq.${effectiveUserId}),and(sender_id.eq.${effectiveUserId},receiver_id.eq.${friendId})`)
         .order("created_at", { ascending: true });
 
@@ -785,7 +785,7 @@ const Messages = () => {
       // First check if the analysis is shared with the current user
       const { data: sharedData } = await supabase
         .from("shared_analyses")
-        .select("*")
+        .select("analysis_id, is_public, shared_with_user_id, allowed_user_ids")
         .eq("analysis_id", analysisId)
         .maybeSingle();
 
@@ -794,7 +794,7 @@ const Messages = () => {
         // For compatibility, check compatibility_analyses table
         const { data } = await supabase
           .from("compatibility_analyses")
-          .select("*")
+          .select("id, user_id, created_at, result")
           .eq("id", analysisId)
           .maybeSingle();
 
@@ -808,7 +808,7 @@ const Messages = () => {
         // For tarot, check matches table
         const { data } = await supabase
           .from("matches")
-          .select("*")
+          .select("id, user1_id, matched_at, tarot_reading")
           .eq("id", analysisId)
           .maybeSingle();
 
@@ -824,56 +824,56 @@ const Messages = () => {
       } else if (analysisType === "numerology") {
         const { data } = await supabase
           .from("numerology_analyses")
-          .select("*")
+          .select("id, user_id, created_at, result")
           .eq("id", analysisId)
           .maybeSingle();
         analysisData = data;
       } else if (analysisType === "birth_chart") {
         const { data } = await supabase
           .from("birth_chart_analyses")
-          .select("*")
+          .select("id, user_id, created_at, result")
           .eq("id", analysisId)
           .maybeSingle();
         analysisData = data;
       } else if (analysisType === "tarot") {
         const { data } = await supabase
           .from("tarot_readings")
-          .select("*")
+          .select("id, user_id, created_at, interpretation")
           .eq("id", analysisId)
           .maybeSingle();
         analysisData = data ? { ...data, result: data.interpretation } : null;
       } else if (analysisType === "coffee_fortune") {
         const { data } = await supabase
           .from("coffee_fortune_readings")
-          .select("*")
+          .select("id, user_id, created_at, interpretation")
           .eq("id", analysisId)
           .maybeSingle();
         analysisData = data ? { ...data, result: data.interpretation } : null;
       } else if (analysisType === "dream") {
         const { data } = await supabase
           .from("dream_interpretations")
-          .select("*")
+          .select("id, user_id, created_at, interpretation")
           .eq("id", analysisId)
           .maybeSingle();
         analysisData = data ? { ...data, result: data.interpretation } : null;
       } else if (analysisType === "palmistry") {
         const { data } = await supabase
           .from("palmistry_readings")
-          .select("*")
+          .select("id, user_id, created_at, interpretation")
           .eq("id", analysisId)
           .maybeSingle();
         analysisData = data ? { ...data, result: data.interpretation } : null;
       } else if (analysisType === "daily_horoscope") {
         const { data } = await supabase
           .from("daily_horoscopes")
-          .select("*")
+          .select("id, user_id, created_at, horoscope_text")
           .eq("id", analysisId)
           .maybeSingle();
         analysisData = data ? { ...data, result: data.horoscope_text } : null;
       } else {
         const { data } = await supabase
           .from("analysis_history")
-          .select("*")
+          .select("id, user_id, created_at, result, analysis_type")
           .eq("id", analysisId)
           .maybeSingle();
         analysisData = data;
@@ -1286,7 +1286,7 @@ const Messages = () => {
       // Search in direct messages
       const { data: directMessages } = await supabase
         .from("messages")
-        .select("*")
+        .select("id, sender_id, receiver_id, content, read, created_at, message_category, pinned_at, forwarded_from")
         .or(`sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`)
         .ilike("content", `%${query}%`)
         .order("created_at", { ascending: false })
@@ -1304,7 +1304,7 @@ const Messages = () => {
       if (groupIds.length > 0) {
         const { data } = await supabase
           .from("group_messages")
-          .select("*")
+          .select("id, group_id, sender_id, content, created_at")
           .in("group_id", groupIds)
           .ilike("content", `%${query}%`)
           .order("created_at", { ascending: false })
@@ -2056,7 +2056,7 @@ const Messages = () => {
                         {showEmojiPicker && (
                           <div className="absolute bottom-20 left-4 z-50 animate-in slide-in-from-bottom-5 fade-in">
                             <div className="bg-black/90 border border-white/10 rounded-xl shadow-2xl p-1">
-                              <EmojiPicker onEmojiClick={onEmojiClick} theme={"dark" as any} width={320} height={400} />
+                              <LazyEmojiPicker onEmojiClick={onEmojiClick} theme="dark" width={320} height={400} />
                             </div>
                             <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
                           </div>
@@ -2140,7 +2140,7 @@ const Messages = () => {
             // First check if they already sent us a request
             const { data: existingRequest } = await supabase
               .from("friends")
-              .select("*")
+              .select("id, status")
               .eq("user_id", tempProfileData.user_id)
               .eq("friend_id", currentUserId)
               .maybeSingle();

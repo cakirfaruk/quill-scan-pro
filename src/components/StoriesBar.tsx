@@ -1,4 +1,4 @@
-import { useEffect, useState, memo, useCallback } from "react";
+import { useEffect, useState, useRef, memo, useCallback } from "react";
 import { getOptimizedImageUrl } from "@/utils/image-optimizer";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -50,7 +50,7 @@ export const StoriesBar = memo(({ currentUserId }: StoriesBarProps) => {
       const [ownStoriesResult, ownProfileResult, friendsResult] = await Promise.all([
         supabase
           .from("stories")
-          .select("*")
+          .select("id, user_id, media_url, media_type, created_at, expires_at")
           .eq("user_id", currentUserId)
           .gt("expires_at", new Date().toISOString())
           .order("created_at", { ascending: false }),
@@ -119,10 +119,10 @@ export const StoriesBar = memo(({ currentUserId }: StoriesBarProps) => {
       }
 
       // **STEP 2: PARALEL** - Friends stories, profiles, view data
-      const [friendsStoriesResult, profilesResult, viewsResult, allViewsResult] = await Promise.all([
+      const [friendsStoriesResult, profilesResult, viewsResult] = await Promise.all([
         supabase
           .from("stories")
-          .select("*")
+          .select("id, user_id, media_url, media_type, created_at, expires_at")
           .in("user_id", friendIds)
           .gt("expires_at", new Date().toISOString())
           .order("created_at", { ascending: false }),
@@ -136,18 +136,21 @@ export const StoriesBar = memo(({ currentUserId }: StoriesBarProps) => {
           .from("story_views")
           .select("story_id")
           .eq("viewer_id", currentUserId),
-
-        supabase
-          .from("story_views")
-          .select("story_id")
       ]);
 
       if (friendsStoriesResult.data && friendsStoriesResult.data.length > 0) {
+        // Get view counts only for friend stories (not ALL story_views)
+        const friendStoryIds = friendsStoriesResult.data.map((s: any) => s.id);
+        const { data: friendViewsData } = await supabase
+          .from("story_views")
+          .select("story_id")
+          .in("story_id", friendStoryIds);
+
         // Create maps for quick lookups
         const profilesMap = new Map(profilesResult.data?.map((p: any) => [p.user_id, p]) || []);
         const viewedStoriesSet = new Set(viewsResult.data?.map((v: any) => v.story_id) || []);
         const viewCountsMap = new Map<string, number>();
-        allViewsResult.data?.forEach((view: any) => {
+        (friendViewsData || []).forEach((view: any) => {
           viewCountsMap.set(view.story_id, (viewCountsMap.get(view.story_id) || 0) + 1);
         });
 
@@ -195,27 +198,34 @@ export const StoriesBar = memo(({ currentUserId }: StoriesBarProps) => {
     }
   }, [currentUserId]);
 
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
   useEffect(() => {
     loadStories();
 
-    // Subscribe to realtime updates
-    const channel = supabase
-      .channel("stories-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "stories",
-        },
-        () => {
-          loadStories();
-        }
-      )
-      .subscribe();
+    // Defer realtime subscription by 5 seconds to not block initial load
+    const timerId = setTimeout(() => {
+      channelRef.current = supabase
+        .channel("stories-changes")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "stories",
+          },
+          () => {
+            loadStories();
+          }
+        )
+        .subscribe();
+    }, 5000);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearTimeout(timerId);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
     };
   }, [loadStories]);
 
@@ -225,7 +235,16 @@ export const StoriesBar = memo(({ currentUserId }: StoriesBarProps) => {
     setViewerOpen(true);
   }, []);
 
-  if (loading) return null;
+  if (loading) return (
+    <div className="w-full h-[88px] flex gap-3 p-4 pb-2">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="flex flex-col items-center gap-1.5 flex-shrink-0">
+          <div className="w-16 h-16 rounded-full bg-muted/30 animate-pulse" />
+          <div className="w-10 h-2 rounded bg-muted/20 animate-pulse" />
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <>
