@@ -1,50 +1,114 @@
-/**
- * Query Optimization Utilities
- * Prevents N+1 queries and improves database performance
- */
-
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Batch fetch user profiles to avoid N+1 queries
- * Use this when you need to fetch multiple user profiles at once
+ * Query Optimization Utilities
+ * Helps prevent N+1 query problems and optimize database access
+ */
+
+/**
+ * Batch fetch profiles for multiple user IDs to prevent N+1 queries
+ * Instead of fetching profiles one by one, fetch them all at once
  */
 export async function batchFetchProfiles(userIds: string[]) {
-  if (!userIds || userIds.length === 0) return [];
-  
+  if (userIds.length === 0) return new Map();
+
   const uniqueIds = [...new Set(userIds)];
   
   const { data, error } = await supabase
     .from('profiles')
-    .select('user_id, username, full_name, profile_photo, is_online, last_seen')
+    .select('user_id, username, full_name, profile_photo')
     .in('user_id', uniqueIds);
-  
+
   if (error) {
     console.error('Error batch fetching profiles:', error);
-    return [];
+    return new Map();
   }
-  
-  return data || [];
+
+  // Return as Map for O(1) lookup
+  return new Map(data.map(profile => [profile.user_id, profile]));
 }
 
 /**
- * Fetch posts with all related data in a single query (JOIN)
- * Prevents N+1 queries for post author, likes, and comments count
+ * Batch fetch post likes count and user's like status
+ * Prevents N+1 when showing multiple posts
  */
-export async function fetchPostsOptimized(limit = 20, offset = 0) {
+export async function batchFetchPostLikes(postIds: string[], userId: string) {
+  if (postIds.length === 0) return { likesMap: new Map(), userLikesMap: new Map() };
+
+  const uniqueIds = [...new Set(postIds)];
+
+  // Fetch all likes in one query
   const { data, error } = await supabase
+    .from('post_likes')
+    .select('post_id, user_id')
+    .in('post_id', uniqueIds);
+
+  if (error) {
+    console.error('Error batch fetching likes:', error);
+    return { likesMap: new Map(), userLikesMap: new Map() };
+  }
+
+  // Count likes per post
+  const likesMap = new Map<string, number>();
+  const userLikesMap = new Map<string, boolean>();
+
+  data.forEach(like => {
+    // Count total likes
+    likesMap.set(like.post_id, (likesMap.get(like.post_id) || 0) + 1);
+    
+    // Track user's likes
+    if (like.user_id === userId) {
+      userLikesMap.set(like.post_id, true);
+    }
+  });
+
+  return { likesMap, userLikesMap };
+}
+
+/**
+ * Batch fetch comments count for multiple posts
+ */
+export async function batchFetchCommentsCount(postIds: string[]) {
+  if (postIds.length === 0) return new Map();
+
+  const uniqueIds = [...new Set(postIds)];
+
+  const { data, error } = await supabase
+    .from('post_comments')
+    .select('post_id')
+    .in('post_id', uniqueIds);
+
+  if (error) {
+    console.error('Error batch fetching comments:', error);
+    return new Map();
+  }
+
+  // Count comments per post
+  const commentsMap = new Map<string, number>();
+  data.forEach(comment => {
+    commentsMap.set(comment.post_id, (commentsMap.get(comment.post_id) || 0) + 1);
+  });
+
+  return commentsMap;
+}
+
+/**
+ * Optimized feed query that fetches everything in minimal queries
+ * Prevents N+1 by using joins and batch operations
+ */
+export async function fetchOptimizedFeed(userId: string, limit: number = 20, offset: number = 0) {
+  // 1. Fetch posts with profiles in ONE query using join
+  const { data: posts, error: postsError } = await supabase
     .from('posts')
     .select(`
       id,
+      user_id,
       content,
       media_url,
       media_type,
-      media_urls,
-      media_types,
       created_at,
-      user_id,
+      shares_count,
       profiles!posts_user_id_fkey (
-        user_id,
         username,
         full_name,
         profile_photo
@@ -53,284 +117,106 @@ export async function fetchPostsOptimized(limit = 20, offset = 0) {
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (error) {
-    console.error('Error fetching posts:', error);
-    return { posts: [], profiles: [] };
-  }
-
-  return { posts: data || [], profiles: [] };
-}
-
-/**
- * Keyset pagination for better performance than OFFSET
- * Use created_at + id for stable cursor-based pagination
- */
-export async function fetchPostsKeyset(
-  limit = 20,
-  lastCreatedAt?: string,
-  lastId?: string
-) {
-  let query = supabase
-    .from('posts')
-    .select(`
-      id,
-      content,
-      media_url,
-      media_type,
-      media_urls,
-      media_types,
-      created_at,
-      user_id,
-      shares_count,
-      location_name,
-      location_latitude,
-      location_longitude,
-      analysis_type,
-      analysis_data,
-      quoted_post_id,
-      shared_post_id,
-      profiles!posts_user_id_fkey (
-        user_id,
-        username,
-        full_name,
-        profile_photo
-      ),
-      quoted_post:posts!quoted_post_id (
-        id,
-        content,
-        user_id,
-        media_urls,
-        media_types,
-        created_at,
-        profiles!posts_user_id_fkey (
-          username,
-          full_name,
-          profile_photo
-        )
-      ),
-      shared_post:posts!shared_post_id (
-        id,
-        content,
-        user_id,
-        media_urls,
-        media_types,
-        created_at,
-        profiles!posts_user_id_fkey (
-          username,
-          full_name,
-          profile_photo
-        )
-      )
-    `)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
-  if (lastCreatedAt && lastId) {
-    query = query.or(`created_at.lt.${lastCreatedAt},and(created_at.eq.${lastCreatedAt},id.lt.${lastId})`);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('Error fetching posts (keyset):', error);
+  if (postsError || !posts) {
+    console.error('Error fetching posts:', postsError);
     return [];
   }
 
-  return data || [];
-}
-
-/**
- * Fetch messages with sender profiles in a single query
- * Optimized for chat performance
- */
-export async function fetchMessagesOptimized(
-  senderId: string,
-  receiverId: string,
-  limit = 50
-) {
-  const { data, error } = await supabase
-    .from('messages')
-    .select(`
-      id,
-      content,
-      sender_id,
-      receiver_id,
-      created_at,
-      media_url,
-      media_type,
-      voice_note_url,
-      voice_duration,
-      gif_url,
-      reply_to_message_id,
-      profiles!messages_sender_id_fkey (
-        user_id,
-        username,
-        full_name,
-        profile_photo
-      )
-    `)
-    .or(`and(sender_id.eq.${senderId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${senderId})`)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
-  if (error) {
-    console.error('Error fetching messages:', error);
-    return [];
-  }
-
-  return (data || []).reverse(); // Reverse to show oldest first
-}
-
-/**
- * Fetch friends with profile data in a single query
- */
-export async function fetchFriendsOptimized(userId: string, status = 'accepted') {
-  const { data, error } = await supabase
-    .from('friends')
-    .select(`
-      id,
-      user_id,
-      friend_id,
-      status,
-      created_at,
-      friend_profile:profiles!friends_friend_id_fkey (
-        user_id,
-        username,
-        full_name,
-        profile_photo,
-        is_online,
-        last_seen
-      )
-    `)
-    .eq('user_id', userId)
-    .eq('status', status)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching friends:', error);
-    return [];
-  }
-
-  return data || [];
-}
-
-/**
- * Batch fetch like counts for multiple posts
- * More efficient than individual queries
- */
-export async function batchFetchLikeCounts(postIds: string[]) {
-  if (!postIds || postIds.length === 0) return {};
+  // 2. Batch fetch all likes and comments in parallel
+  const postIds = posts.map(p => p.id);
   
+  const [likesData, commentsData] = await Promise.all([
+    batchFetchPostLikes(postIds, userId),
+    batchFetchCommentsCount(postIds)
+  ]);
+
+  // 3. Combine all data
+  return posts.map(post => ({
+    ...post,
+    profile: post.profiles,
+    likes: likesData.likesMap.get(post.id) || 0,
+    hasLiked: likesData.userLikesMap.get(post.id) || false,
+    comments: commentsData.get(post.id) || 0
+  }));
+}
+
+/**
+ * Batch fetch group members to prevent N+1
+ */
+export async function batchFetchGroupMembers(groupIds: string[]) {
+  if (groupIds.length === 0) return new Map();
+
+  const uniqueIds = [...new Set(groupIds)];
+
   const { data, error } = await supabase
-    .from('post_likes')
-    .select('post_id')
-    .in('post_id', postIds);
+    .from('group_members')
+    .select('group_id, user_id, role, profiles(username, full_name, profile_photo)')
+    .in('group_id', uniqueIds);
 
   if (error) {
-    console.error('Error fetching like counts:', error);
-    return {};
+    console.error('Error batch fetching group members:', error);
+    return new Map();
   }
 
-  // Count likes per post
-  const counts: Record<string, number> = {};
-  data?.forEach(like => {
-    counts[like.post_id] = (counts[like.post_id] || 0) + 1;
+  // Group members by group_id
+  const membersMap = new Map<string, any[]>();
+  data.forEach(member => {
+    if (!membersMap.has(member.group_id)) {
+      membersMap.set(member.group_id, []);
+    }
+    membersMap.get(member.group_id)!.push(member);
   });
 
-  return counts;
+  return membersMap;
 }
 
 /**
- * Check if current user liked multiple posts at once
+ * Cache utility for storing frequently accessed data in memory
+ * Reduces database queries for static or rarely-changing data
  */
-export async function batchCheckUserLikes(userId: string, postIds: string[]) {
-  if (!postIds || postIds.length === 0) return {};
-  
-  const { data, error } = await supabase
-    .from('post_likes')
-    .select('post_id')
-    .eq('user_id', userId)
-    .in('post_id', postIds);
+class InMemoryCache<T> {
+  private cache = new Map<string, { data: T; timestamp: number }>();
+  private ttl: number; // Time to live in milliseconds
 
-  if (error) {
-    console.error('Error checking user likes:', error);
-    return {};
+  constructor(ttlMinutes: number = 5) {
+    this.ttl = ttlMinutes * 60 * 1000;
   }
 
-  const likes: Record<string, boolean> = {};
-  data?.forEach(like => {
-    likes[like.post_id] = true;
-  });
-
-  return likes;
-}
-
-/**
- * Fetch group messages with sender profiles optimized
- */
-export async function fetchGroupMessagesOptimized(groupId: string, limit = 50) {
-  const { data, error } = await supabase
-    .from('group_messages')
-    .select(`
-      id,
-      content,
-      sender_id,
-      group_id,
-      created_at,
-      media_url,
-      media_type,
-      profiles!group_messages_sender_id_fkey (
-        user_id,
-        username,
-        full_name,
-        profile_photo
-      )
-    `)
-    .eq('group_id', groupId)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
-  if (error) {
-    console.error('Error fetching group messages:', error);
-    return [];
+  set(key: string, data: T) {
+    this.cache.set(key, { data, timestamp: Date.now() });
   }
 
-  return (data || []).reverse();
-}
+  get(key: string): T | null {
+    const cached = this.cache.get(key);
+    if (!cached) return null;
 
-/**
- * Profile lookup cache to reduce duplicate queries
- */
-const profileCache = new Map<string, any>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+    // Check if cache is still valid
+    if (Date.now() - cached.timestamp > this.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
 
-export async function getCachedProfile(userId: string) {
-  const cached = profileCache.get(userId);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
     return cached.data;
   }
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('user_id, username, full_name, profile_photo, is_online, last_seen')
-    .eq('user_id', userId)
-    .single();
-
-  if (!error && data) {
-    profileCache.set(userId, { data, timestamp: Date.now() });
-    return data;
+  clear() {
+    this.cache.clear();
   }
 
-  return null;
-}
-
-/**
- * Clear profile cache for a specific user
- */
-export function clearProfileCache(userId?: string) {
-  if (userId) {
-    profileCache.delete(userId);
-  } else {
-    profileCache.clear();
+  has(key: string): boolean {
+    const cached = this.cache.get(key);
+    if (!cached) return false;
+    
+    if (Date.now() - cached.timestamp > this.ttl) {
+      this.cache.delete(key);
+      return false;
+    }
+    
+    return true;
   }
 }
+
+// Export cache instances for common use cases
+export const profilesCache = new InMemoryCache<any>(10); // 10 minutes
+export const groupsCache = new InMemoryCache<any>(5); // 5 minutes
+export const hashtagsCache = new InMemoryCache<any>(15); // 15 minutes

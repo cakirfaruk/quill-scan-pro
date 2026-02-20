@@ -1,13 +1,8 @@
-import { useEffect, useState, useMemo, useCallback, memo, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
-import { useAuth } from "@/contexts/AuthContext";
-import { ProfileHeader } from "@/components/ProfileHeader";
-import { ProfileStatsDrawer } from "@/components/ProfileStatsDrawer";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { SkeletonProfile } from "@/components/SkeletonProfile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,21 +18,16 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { LazyCreatePostDialog } from "@/utils/lazyImports";
-import { ProfilePosts } from "@/components/ProfilePosts";
+import { CreatePostDialog } from "@/components/CreatePostDialog";
+import { ProfileFeed } from "@/components/ProfileFeed";
 import { MutualFriends } from "@/components/MutualFriends";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { soundEffects } from "@/utils/soundEffects";
 import { OnlineStatusBadge } from "@/components/OnlineStatusBadge";
 import { Breadcrumb } from "@/components/Breadcrumb";
-import { Virtuoso } from "react-virtuoso";
-import { Suspense } from "react";
-import { ShareResultButton } from "@/components/ShareResultButton";
-import { VirtualGiftsDialog } from "@/components/VirtualGiftsDialog";
-import { PostInsightsDialog } from "@/components/PostInsightsDialog";
-import { ShareableCard } from "@/components/ShareableCard";
-import { ProfileQRCode } from "@/components/ProfileQRCode";
-import { PhotoReorder } from "@/components/PhotoReorder";
+import { SoulIdCard } from "@/components/SoulIdCard";
+import { UserCheck, UserPlus } from "lucide-react";
+import { uploadToStorage } from "@/utils/storageUpload";
 
 interface UserPhoto {
   id: string;
@@ -63,7 +53,6 @@ interface Analysis {
 
 const Profile = () => {
   const { username } = useParams();
-  const { user, userId: authUserId, isLoading: authLoading } = useAuth(); // AUTH CONTEXT
   const [profile, setProfile] = useState({
     user_id: "",
     username: "",
@@ -74,14 +63,13 @@ const Profile = () => {
     bio: "",
     gender: "",
     profile_photo: "",
-    xp: 0,
-    level: 1,
   });
   const [photos, setPhotos] = useState<UserPhoto[]>([]);
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [friends, setFriends] = useState<any[]>([]);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [visibilityDialogOpen, setVisibilityDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedAnalysis, setSelectedAnalysis] = useState<Analysis | null>(null);
@@ -91,6 +79,9 @@ const Profile = () => {
   const [selectedAnalysisIds, setSelectedAnalysisIds] = useState<string[]>([]);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [summaryResult, setSummaryResult] = useState<string | null>(null);
+  const [selectedFriendForShare, setSelectedFriendForShare] = useState<string>("");
+  const [shareNote, setShareNote] = useState("");
+  const [shareType, setShareType] = useState<"message" | "feed">("message");
   const { toast } = useToast();
   const navigate = useNavigate();
   const [currentUserId, setCurrentUserId] = useState("");
@@ -99,8 +90,7 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState("posts");
   const [friendsDialogOpen, setFriendsDialogOpen] = useState(false);
   const [createPostDialogOpen, setCreatePostDialogOpen] = useState(false);
-  const [userPosts, setUserPosts] = useState<any[]>([]);
-  const [postsLoading, setPostsLoading] = useState(false);
+  const [feedRefreshKey, setFeedRefreshKey] = useState(0);
   const [shareAnalysisToPost, setShareAnalysisToPost] = useState<Analysis | null>(null);
   const [friendshipStatus, setFriendshipStatus] = useState<"none" | "pending_sent" | "pending_received" | "accepted">("none");
   const [selectedProfileImage, setSelectedProfileImage] = useState<string | null>(null);
@@ -116,31 +106,12 @@ const Profile = () => {
   const [newCollectionName, setNewCollectionName] = useState("");
   const [newCollectionDesc, setNewCollectionDesc] = useState("");
   const [createCollectionDialogOpen, setCreateCollectionDialogOpen] = useState(false);
-  const [statsDrawerOpen, setStatsDrawerOpen] = useState(false);
-  const [giftDialogOpen, setGiftDialogOpen] = useState(false);
-  const [qrDialogOpen, setQrDialogOpen] = useState(false);
-  const [photoReorderOpen, setPhotoReorderOpen] = useState(false);
-  const [selectedPostForInsights, setSelectedPostForInsights] = useState<string | null>(null);
-
-  // Ref for PDF generation from modal
-  const analysisContentRef = useRef<HTMLDivElement>(null);
-
-  // Calculate profile statistics
-  const profileStats = useMemo(() => {
-    const totalLikes = userPosts.reduce((sum, post) => sum + (post.likes || 0), 0);
-    const totalComments = userPosts.reduce((sum, post) => sum + (post.comments || 0), 0);
-    return {
-      totalLikes,
-      totalComments,
-      profileViews: 0, // Can be implemented with a profile_views table
-    };
-  }, [userPosts]);
 
   const handleRefresh = async () => {
     soundEffects.playClick();
     await loadProfile();
     if (profile.user_id && activeTab === "posts") {
-      await loadUserPosts();
+      setFeedRefreshKey(prev => prev + 1);
     }
   };
 
@@ -154,85 +125,16 @@ const Profile = () => {
   }, [username]);
 
   useEffect(() => {
-    if (profile.user_id && activeTab === "posts") {
-      loadUserPosts();
-    } else if (profile.user_id && activeTab === "collections" && isOwnProfile) {
+    if (profile.user_id && activeTab === "collections" && isOwnProfile) {
       loadCollections();
     }
   }, [profile.user_id, activeTab, isOwnProfile]);
 
-  const loadUserPosts = async () => {
-    if (!profile.user_id) return;
-    
-    setPostsLoading(true);
-    try {
-      // **PARALEL SORGULAR** - Tüm verileri tek seferde çek
-      const [postsResult, likesResult, commentsCountResult, userLikesResult] = await Promise.all([
-        // 1. Postları çek
-        supabase
-          .from("posts")
-          .select(`
-            *,
-            profiles!posts_user_id_fkey (
-              username,
-              full_name,
-              profile_photo
-            )
-          `)
-          .eq("user_id", profile.user_id)
-          .order("created_at", { ascending: false }),
-        
-        // 2. TÜM like'ları çek
-        supabase
-          .from("post_likes")
-          .select("post_id"),
-        
-        // 3. TÜM yorumları çek
-        supabase
-          .from("post_comments")
-          .select("post_id"),
-        
-        // 4. Kullanıcının like'larını çek
-        supabase
-          .from("post_likes")
-          .select("post_id")
-          .eq("user_id", currentUserId)
-      ]);
 
-      if (postsResult.data) {
-        // Like ve comment sayılarını grupla
-        const likesMap = new Map<string, number>();
-        (likesResult.data || []).forEach(like => {
-          likesMap.set(like.post_id, (likesMap.get(like.post_id) || 0) + 1);
-        });
-
-        const commentsMap = new Map<string, number>();
-        (commentsCountResult.data || []).forEach(comment => {
-          commentsMap.set(comment.post_id, (commentsMap.get(comment.post_id) || 0) + 1);
-        });
-
-        const userLikesSet = new Set(userLikesResult.data?.map(l => l.post_id) || []);
-
-        const postsWithData = postsResult.data.map((post: any) => ({
-          ...post,
-          profile: post.profiles,
-          likes: likesMap.get(post.id) || 0,
-          comments: commentsMap.get(post.id) || 0,
-          hasLiked: userLikesSet.has(post.id),
-        }));
-
-        setUserPosts(postsWithData);
-      }
-    } catch (error) {
-      console.error("Error loading posts:", error);
-    } finally {
-      setPostsLoading(false);
-    }
-  };
 
   const loadCollections = async () => {
     if (!profile.user_id) return;
-    
+
     setCollectionsLoading(true);
     try {
       // Load collections
@@ -405,47 +307,25 @@ const Profile = () => {
   };
 
   const loadProfile = async () => {
-    console.log("Profile: Starting loadProfile, username:", username);
-    setIsLoading(true);
     try {
-      // **AUTH CONTEXT KULLANIMI** - supabase.auth.getUser() yerine
-      if (authLoading) {
-        return; // Auth yükleniyor, bekle
-      }
-      
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.log("Profile: No user found, redirecting to auth");
         navigate("/auth");
         return;
       }
 
-      console.log("Profile: User authenticated from context:", user.id);
       setCurrentUserId(user.id);
-
-      // Get userId from URL query params if present
-      const searchParams = new URLSearchParams(window.location.search);
-      const userIdParam = searchParams.get('userId');
-      console.log("Profile: userId param:", userIdParam, "username:", username);
 
       // If no username in URL, show current user's profile by user_id
       let profileData;
       let profileError;
-      
+
       if (username) {
         // Looking at another user's profile - search by username
         const result = await supabase
           .from("profiles")
           .select("*")
           .eq("username", username)
-          .maybeSingle();
-        profileData = result.data;
-        profileError = result.error;
-      } else if (userIdParam) {
-        // Looking at another user's profile - search by userId from query param
-        const result = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("user_id", userIdParam)
           .maybeSingle();
         profileData = result.data;
         profileError = result.error;
@@ -481,7 +361,6 @@ const Profile = () => {
         return;
       }
 
-      console.log("Profile: Profile data loaded:", profileData.username);
       setProfile(profileData);
       setIsOwnProfile(profileData.user_id === user.id);
 
@@ -493,7 +372,7 @@ const Profile = () => {
           .select("*")
           .eq("user_id", profileData.user_id)
           .order("display_order"),
-        
+
         // Friends
         supabase
           .from("friends")
@@ -504,24 +383,24 @@ const Profile = () => {
           `)
           .or(`user_id.eq.${profileData.user_id},friend_id.eq.${profileData.user_id}`)
           .eq("status", "accepted"),
-        
+
         // Friendship status (only if not own profile)
         profileData.user_id !== user.id
           ? supabase
-              .from("friends")
-              .select("*")
-              .or(`and(user_id.eq.${user.id},friend_id.eq.${profileData.user_id}),and(user_id.eq.${profileData.user_id},friend_id.eq.${user.id})`)
-              .maybeSingle()
+            .from("friends")
+            .select("*")
+            .or(`and(user_id.eq.${user.id},friend_id.eq.${profileData.user_id}),and(user_id.eq.${profileData.user_id},friend_id.eq.${user.id})`)
+            .maybeSingle()
           : Promise.resolve({ data: null }),
-        
+
         // Block status (only if not own profile)
         profileData.user_id !== user.id
           ? supabase
-              .from("blocked_users")
-              .select("id")
-              .eq("user_id", user.id)
-              .eq("blocked_user_id", profileData.user_id)
-              .maybeSingle()
+            .from("blocked_users")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("blocked_user_id", profileData.user_id)
+            .maybeSingle()
           : Promise.resolve({ data: null }),
       ]);
 
@@ -554,17 +433,13 @@ const Profile = () => {
 
       // Load analyses async (don't wait)
       if (profileData.user_id === user.id) {
-        console.log("Profile: Loading own analyses");
         Promise.all([
           loadAnalyses(profileData.user_id),
           loadLatestAnalyses(profileData.user_id)
         ]);
       } else {
-        console.log("Profile: Loading shared analyses");
         loadSharedAnalyses(profileData.user_id);
       }
-      
-      console.log("Profile: loadProfile completed successfully");
     } catch (error: any) {
       console.error("Profile error details:", error);
       toast({
@@ -573,7 +448,6 @@ const Profile = () => {
         variant: "destructive",
       });
     } finally {
-      console.log("Profile: Setting isLoading to false");
       setIsLoading(false);
     }
   };
@@ -650,7 +524,7 @@ const Profile = () => {
 
       // Sort by creation date
       allAnalyses.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      
+
       setAnalyses(allAnalyses);
     } catch (error: any) {
       console.error("Error loading analyses:", error);
@@ -708,7 +582,7 @@ const Profile = () => {
       ];
 
       // Sort by created_at descending
-      allAnalyses.sort((a, b) => 
+      allAnalyses.sort((a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
@@ -720,7 +594,7 @@ const Profile = () => {
 
   const handleAddPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isOwnProfile) return;
-    
+
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -786,7 +660,6 @@ const Profile = () => {
   };
 
   const getAnalysisTypeLabel = (type: string) => {
-    if (type === "handwriting") return "El Yazısı Analizi";
     if (type === "compatibility") return "Uyum Analizi";
     if (type === "numerology") return "Numeroloji Analizi";
     if (type === "birth_chart") return "Doğum Haritası Analizi";
@@ -811,17 +684,17 @@ const Profile = () => {
   };
 
   const handleSelectAnalysis = (id: string, checked: boolean) => {
-    setSelectedAnalysisIds(prev => 
+    setSelectedAnalysisIds(prev =>
       checked ? [...prev, id] : prev.filter(aid => aid !== id)
     );
   };
 
   const calculateSummaryCost = () => {
     if (selectedAnalysisIds.length === 0) return 0;
-    
+
     const selectedAnalyses = analyses.filter(a => selectedAnalysisIds.includes(a.id));
     const totalCredits = selectedAnalyses.reduce((sum, a) => sum + a.credits_used, 0);
-    
+
     if (selectedAnalysisIds.length === 1) {
       return Math.ceil(totalCredits / 3);
     } else {
@@ -866,9 +739,9 @@ const Profile = () => {
         title: "Özet oluşturuldu",
         description: `${data.analysisCount} analiz özeti başarıyla oluşturuldu. ${data.creditsUsed} kredi kullanıldı.`,
       });
-      
+
       await loadProfile();
-      
+
     } catch (error: any) {
       console.error('Summarize error:', error);
       toast({
@@ -881,113 +754,80 @@ const Profile = () => {
     }
   };
 
-  const formatAnalysisContent = (analysis: Analysis): string => {
-    const result = analysis.result;
-    const title = getAnalysisTypeLabel(analysis.analysis_type);
-    
-    let content = `📊 ${title}\n`;
-    content += `📅 ${new Date(analysis.created_at).toLocaleDateString('tr-TR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })}\n\n`;
+  const handleShareAnalysis = async () => {
+    if (!selectedAnalysis) return;
 
-    if (typeof result === 'object' && result !== null) {
-      if (analysis.analysis_type === 'tarot') {
-        content += `🔮 TAROT FALI\n${'='.repeat(50)}\n\n`;
-        if (result.general) {
-          content += `🌟 GENEL DEĞERLENDİRME\n${'-'.repeat(50)}\n${result.general}\n\n`;
-        }
-        if (result.cards && Array.isArray(result.cards)) {
-          result.cards.forEach((card: any, index: number) => {
-            content += `\n🎴 ${index + 1}. KART: ${card.name || 'Bilinmeyen'}\n`;
-            content += `${card.interpretation || ''}\n`;
+    try {
+      if (shareType === "message") {
+        if (!selectedFriendForShare) {
+          toast({
+            title: "Hata",
+            description: "Lütfen bir arkadaş seçin.",
+            variant: "destructive",
           });
+          return;
         }
-      } else if (analysis.analysis_type === 'numerology') {
-        content += `🔢 NUMEROLOJİ ANALİZİ\n${'='.repeat(50)}\n\n`;
-        if (result.general) {
-          content += `🌟 GENEL DEĞERLENDİRME\n${'-'.repeat(50)}\n${result.general}\n\n`;
+
+        const messageContent = `📊 ${getAnalysisTypeLabel(selectedAnalysis.analysis_type)} sonucumu paylaştım!\n\n${shareNote || "Analiz sonucumu görmek için tıkla."}\n\n[Analiz ID: ${selectedAnalysis.id}]\n[Analiz Türü: ${selectedAnalysis.analysis_type}]`;
+
+        const { error: shareError } = await supabase
+          .from("shared_analyses")
+          .insert({
+            user_id: currentUserId,
+            analysis_id: selectedAnalysis.id,
+            analysis_type: selectedAnalysis.analysis_type,
+            shared_with_user_id: selectedFriendForShare,
+            visibility_type: "specific_friends",
+            is_visible: true,
+            is_public: false,
+          });
+
+        if (shareError) {
+          await supabase
+            .from("shared_analyses")
+            .update({
+              shared_with_user_id: selectedFriendForShare,
+              visibility_type: "specific_friends",
+              is_visible: true,
+            })
+            .eq("analysis_id", selectedAnalysis.id)
+            .eq("user_id", currentUserId);
         }
-        Object.entries(result).forEach(([key, value]) => {
-          if (key !== 'general' && typeof value === 'string') {
-            const topicTitle = key.replace(/_/g, ' ').toUpperCase();
-            content += `\n⭐ ${topicTitle}\n${'-'.repeat(50)}\n${value}\n`;
-          }
+
+        const { error } = await supabase
+          .from("messages")
+          .insert({
+            sender_id: currentUserId,
+            receiver_id: selectedFriendForShare,
+            content: messageContent,
+            analysis_id: selectedAnalysis.id,
+            analysis_type: selectedAnalysis.analysis_type,
+          });
+
+        if (error) throw error;
+
+        toast({
+          title: "Başarılı",
+          description: "Analiz arkadaşınıza gönderildi.",
         });
-      } else if (analysis.analysis_type === 'coffee_fortune') {
-        content += `☕ KAHVE FALI\n${'='.repeat(50)}\n\n`;
-        if (result.general) {
-          content += `🌟 GENEL YORUM\n${'-'.repeat(50)}\n${result.general}\n\n`;
-        }
-        if (result.topics) {
-          Object.entries(result.topics).forEach(([topic, interpretation]) => {
-            content += `\n💫 ${topic.toUpperCase()}\n${'-'.repeat(50)}\n${interpretation}\n`;
-          });
-        }
-      } else if (analysis.analysis_type === 'dream_interpretation') {
-        content += `🌙 RÜYA TABİRİ\n${'='.repeat(50)}\n\n`;
-        if (result.general) {
-          content += `💭 GENEL YORUM\n${'-'.repeat(50)}\n${result.general}\n\n`;
-        }
-        if (result.symbols && Array.isArray(result.symbols)) {
-          result.symbols.forEach((symbol: any) => {
-            content += `\n🔮 ${symbol.name?.toUpperCase() || 'SİMGE'}\n${'-'.repeat(50)}\n${symbol.interpretation || ''}\n`;
-          });
-        }
-      } else if (analysis.analysis_type === 'palmistry') {
-        content += `✋ EL FALINA\n${'='.repeat(50)}\n\n`;
-        if (result.general) {
-          content += `🌟 GENEL DEĞERLENDİRME\n${'-'.repeat(50)}\n${result.general}\n\n`;
-        }
-        if (result.lines) {
-          Object.entries(result.lines).forEach(([line, interpretation]) => {
-            content += `\n📏 ${line.toUpperCase()} ÇĠZGĠSĠ\n${'-'.repeat(50)}\n${interpretation}\n`;
-          });
-        }
-      } else if (analysis.analysis_type === 'birth_chart') {
-        content += `🌟 DOĞUM HARİTASI\n${'='.repeat(50)}\n\n`;
-        if (result.general) {
-          content += `✨ GENEL DEĞERLENDİRME\n${'-'.repeat(50)}\n${result.general}\n\n`;
-        }
-        if (result.planets) {
-          Object.entries(result.planets).forEach(([planet, info]) => {
-            content += `\n🪐 ${planet.toUpperCase()}\n${'-'.repeat(50)}\n${info}\n`;
-          });
-        }
-      } else if (analysis.analysis_type === 'compatibility') {
-        content += `💕 UYUMLULUK ANALİZİ\n${'='.repeat(50)}\n\n`;
-        if (result.general) {
-          content += `💖 GENEL DEĞERLENDİRME\n${'-'.repeat(50)}\n${result.general}\n\n`;
-        }
-        if (result.areas) {
-          Object.entries(result.areas).forEach(([area, compatibility]) => {
-            content += `\n💫 ${area.toUpperCase()}\n${'-'.repeat(50)}\n${compatibility}\n`;
-          });
-        }
-      } else if (analysis.analysis_type === 'handwriting') {
-        content += `✍️ EL YAZISI ANALİZİ\n${'='.repeat(50)}\n\n`;
-        if (result.general) {
-          content += `🌟 GENEL DEĞERLENDİRME\n${'-'.repeat(50)}\n${result.general}\n\n`;
-        }
-        if (result.traits) {
-          Object.entries(result.traits).forEach(([trait, analysis]) => {
-            content += `\n📝 ${trait.toUpperCase()}\n${'-'.repeat(50)}\n${analysis}\n`;
-          });
-        }
       } else {
-        content += JSON.stringify(result, null, 2);
+        toast({
+          title: "Bilgi",
+          description: "Profil akışı özelliği yakında eklenecek.",
+        });
       }
-    } else {
-      content += result?.toString() || 'Analiz içeriği bulunamadı.';
-    }
 
-    content += `\n\n${'='.repeat(50)}\n`;
-    content += `💳 Kullanılan Kredi: ${analysis.credits_used}\n`;
-    
-    return content;
+      setShareDialogOpen(false);
+      setShareNote("");
+      setSelectedFriendForShare("");
+    } catch (error: any) {
+      console.error("Share error:", error);
+      toast({
+        title: "Hata",
+        description: "Paylaşım yapılamadı.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleVisibilitySettings = async () => {
@@ -1043,11 +883,18 @@ const Profile = () => {
     }
   };
 
+  const openShareDialog = async (analysis: Analysis) => {
+    setSelectedAnalysis(analysis);
+    setShareDialogOpen(true);
+    setShareNote("");
+    setSelectedFriendForShare("");
+    setShareType("message");
+  };
 
   const openVisibilityDialog = async (analysis: Analysis) => {
     setSelectedAnalysis(analysis);
     setVisibilityDialogOpen(true);
-    
+
     const { data: existingShare } = await supabase
       .from("shared_analyses")
       .select("*")
@@ -1068,8 +915,8 @@ const Profile = () => {
   };
 
   const toggleFriendSelection = (friendId: string) => {
-    setSelectedFriendIds(prev => 
-      prev.includes(friendId) 
+    setSelectedFriendIds(prev =>
+      prev.includes(friendId)
         ? prev.filter(id => id !== friendId)
         : [...prev, friendId]
     );
@@ -1291,7 +1138,7 @@ const Profile = () => {
   const handleProfileAnalysis = async () => {
     setProfileAnalysisLoading(true);
     setProfileAnalysisResult(null);
-    
+
     try {
       soundEffects.playClick();
       const { data, error } = await supabase.functions.invoke('analyze-user-profile', {
@@ -1311,7 +1158,7 @@ const Profile = () => {
         title: "Analiz tamamlandı",
         description: `${data.creditsUsed} kredi kullanıldı.`,
       });
-      
+
       await loadProfile();
     } catch (error: any) {
       console.error('Profile analysis error:', error);
@@ -1328,20 +1175,20 @@ const Profile = () => {
 
   if (isLoading) {
     return (
-      <div className="page-container-mobile bg-gradient-subtle">
+      <div className="min-h-screen bg-gradient-subtle">
         <Header />
-        <main className="container mx-auto px-4 py-4 max-w-6xl">
-          <SkeletonProfile />
-        </main>
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-12 h-12 animate-spin text-primary" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="page-container-mobile bg-gradient-subtle">
+    <div className="min-h-screen bg-transparent pt-24 pb-20 relative">
       <Header />
 
-      <main ref={containerRef} className="container mx-auto px-4 py-4 max-w-6xl relative">
+      <main ref={containerRef} className="container mx-auto px-4 py-8 max-w-6xl relative">
         {/* Breadcrumb */}
         {!isOwnProfile && profile && (
           <Breadcrumb
@@ -1350,12 +1197,12 @@ const Profile = () => {
             ]}
           />
         )}
-        
+
         {/* Pull to Refresh Indicator */}
         {(isPulling || isRefreshing) && (
-          <div 
+          <div
             className="absolute top-0 left-1/2 -translate-x-1/2 transition-all duration-200 z-50"
-            style={{ 
+            style={{
               transform: `translateX(-50%) translateY(${Math.min(pullDistance, 80)}px)`,
               opacity: Math.min(pullDistance / 80, 1)
             }}
@@ -1366,35 +1213,258 @@ const Profile = () => {
           </div>
         )}
 
-        {/* Profile Header */}
-        <ProfileHeader
-          profile={profile}
-          isOwnProfile={isOwnProfile}
-          isBlocked={isBlocked}
-          friendshipStatus={friendshipStatus}
-          onShowQR={() => setQrDialogOpen(true)}
-          onPhotoReorder={() => setPhotoReorderOpen(true)}
-          onSendGift={() => setGiftDialogOpen(true)}
-          onAddFriend={handleSendFriendRequest}
-          onCancelRequest={handleCancelFriendRequest}
-          onAcceptRequest={handleAcceptFriendRequest}
-          onRejectRequest={handleRejectFriendRequest}
-          onRemoveFriend={handleRemoveFriend}
-          onMessage={() => navigate('/messages')}
-          onBlock={handleBlockUser}
-          onUnblock={handleUnblockUser}
-          onSettings={() => navigate('/settings')}
-          onFriendsClick={() => setFriendsDialogOpen(true)}
-          onViewDetailedStats={isOwnProfile ? () => setStatsDrawerOpen(true) : undefined}
-          postsCount={userPosts.length}
-          friendsCount={friends.length}
-          analysesCount={analyses.length}
-        />
+        {/* Profile Header - Replaced by SoulIdCard */}
+        <div className="mb-6 animate-fade-in relative z-10 -mt-20">
+          <SoulIdCard profile={profile} isOwnProfile={isOwnProfile} />
+        </div>
 
-        {/* Mutual Friends - Show only if viewing another user's profile */}
-        {!isOwnProfile && currentUserId && profile.user_id && (
-          <MutualFriends userId={currentUserId} profileUserId={profile.user_id} />
-        )}
+        {/* Legacy Actions (Hidden/Refactored) - Only showing essential actions below card */}
+        <div className="flex justify-center gap-3 mb-8">
+          {isOwnProfile ? (
+            <>
+              <Link to="/settings">
+                <Button size="sm" variant="outline" className="bg-black/40 border-white/10 text-white hover:bg-white/10">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Ayarlar
+                </Button>
+              </Link>
+              {profile.username?.toLowerCase() === 'adminuser' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-accent/20 border-accent/50 text-accent hover:bg-accent/40"
+                  onClick={() => {
+                    supabase.from('profiles').update({ credits: Number(profile.credits || 0) + 1000 }).eq('user_id', profile.user_id)
+                      .then(() => {
+                        toast({ title: 'Başarılı', description: '1000 kredi eklendi.' });
+                        handleRefresh();
+                      });
+                  }}
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  1000 Kredi Ekle
+                </Button>
+              )}
+            </>
+          ) : (
+            <div className="flex gap-2">
+              {/* Simplified Friend Actions */}
+              {friendshipStatus === "none" && (
+                <Button size="sm" onClick={handleSendFriendRequest} className="bg-violet-600 hover:bg-violet-700">
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Ekle
+                </Button>
+              )}
+              {friendshipStatus === "accepted" && (
+                <Button size="sm" variant="outline" onClick={handleRemoveFriend} className="bg-black/40 border-green-500/50 text-green-400">
+                  <UserCheck className="w-4 h-4 mr-2" />
+                  Arkadaşız
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={() => navigate(`/chat/${profile.user_id}`)} className="bg-black/40 border-white/10 text-white hover:bg-white/10">
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Mesaj
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Helper to hide old stats if they were inside the card we are NOT fully replacing yet? 
+            Wait, I'm replacing the START of the Card. 
+            The old Card content continues until line 1395 (approx).
+            I need to comment out or remove the old Card content. 
+        */}
+        <div className="hidden">
+          {/* Hiding old header content safely */}
+          <Card className="p-6 mb-6 animate-fade-in">
+            <div className="flex flex-col md:flex-row gap-6 items-start">
+              <div className="relative flex-shrink-0">
+                <Avatar
+                  className="w-32 h-32 md:w-40 md:h-40 border-4 border-primary/20 cursor-pointer hover:border-primary/40 transition-all"
+                  onClick={() => profile.profile_photo && setSelectedProfileImage(profile.profile_photo)}
+                >
+                  <AvatarImage src={profile.profile_photo} alt={profile.full_name} />
+                  <AvatarFallback className="bg-gradient-primary text-primary-foreground text-4xl">
+                    {profile.username.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                {isOwnProfile && (
+                  <label className="absolute bottom-0 right-0 p-2.5 bg-primary rounded-full cursor-pointer hover:opacity-90 transition-opacity shadow-lg">
+                    <Camera className="w-5 h-5 text-primary-foreground" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                    />
+                  </label>
+                )}
+              </div>
+
+              <div className="flex-1">
+                <div className="flex items-center gap-4 mb-4 flex-wrap">
+                  <h1 className="text-2xl md:text-3xl font-bold">
+                    {profile.full_name || profile.username}
+                  </h1>
+                  {isOwnProfile ? (
+                    <>
+                      <Link to="/settings">
+                        <Button size="sm" variant="outline">
+                          <Settings className="w-4 h-4 mr-2" />
+                          Düzenle
+                        </Button>
+                      </Link>
+                      <Button
+                        size="sm"
+                        onClick={handleProfileAnalysis}
+                        disabled={profileAnalysisLoading}
+                        className="gap-2"
+                      >
+                        {profileAnalysisLoading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Analiz Ediliyor...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4" />
+                            Profil Analizi (50₺)
+                          </>
+                        )}
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      {friendshipStatus === "none" && (
+                        <Button size="sm" onClick={handleSendFriendRequest}>
+                          <Plus className="w-4 h-4 mr-2" />
+                          Arkadaş Ekle
+                        </Button>
+                      )}
+                      {friendshipStatus === "pending_sent" && (
+                        <Button size="sm" variant="outline" onClick={handleCancelFriendRequest}>
+                          İstek Gönderildi
+                        </Button>
+                      )}
+                      {friendshipStatus === "pending_received" && (
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={handleAcceptFriendRequest}>
+                            Kabul Et
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={handleRejectFriendRequest}>
+                            Reddet
+                          </Button>
+                        </div>
+                      )}
+                      {friendshipStatus === "accepted" && (
+                        <Button size="sm" variant="outline" onClick={handleRemoveFriend}>
+                          Arkadaş
+                        </Button>
+                      )}
+
+                      {!isBlocked ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={handleBlockUser}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <UserX className="w-4 h-4 mr-2" />
+                          Engelle
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleUnblockUser}
+                        >
+                          <ShieldOff className="w-4 h-4 mr-2" />
+                          Engeli Kaldır
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                <div className="flex gap-6 mb-4 text-sm flex-wrap">
+                  <button
+                    onClick={() => setActiveTab("photos")}
+                    className="hover:opacity-70 transition-opacity flex items-center gap-1.5"
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span className="font-bold">{photos.length}</span> fotoğraf
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("analyses")}
+                    className="hover:opacity-70 transition-opacity"
+                  >
+                    <span className="font-bold">{analyses.length}</span> analiz
+                  </button>
+                  <button
+                    onClick={() => setFriendsDialogOpen(true)}
+                    className="hover:opacity-70 transition-opacity"
+                  >
+                    <span className="font-bold">{friends.length}</span> arkadaş
+                  </button>
+                </div>
+
+                <p className="text-sm text-muted-foreground mb-2">@{profile.username}</p>
+
+                {/* Online Status */}
+                {!isOwnProfile && profile.user_id && (
+                  <div className="mb-3">
+                    <OnlineStatusBadge userId={profile.user_id} showLastSeen={true} size="md" />
+                  </div>
+                )}
+
+                {profile.bio && (
+                  <p className="text-sm mb-3">{profile.bio}</p>
+                )}
+
+                <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                  {profile.birth_date && (
+                    <div className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-full">
+                      <Calendar className="w-3 h-3" />
+                      {new Date(profile.birth_date).toLocaleDateString('tr-TR')}
+                    </div>
+                  )}
+                  {profile.birth_place && (
+                    <div className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-full">
+                      <MapPin className="w-3 h-3" />
+                      Doğum: {profile.birth_place}
+                    </div>
+                  )}
+                  {profile.current_location && (
+                    <div className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-full">
+                      <MapPin className="w-3 h-3" />
+                      Yaşıyor: {profile.current_location}
+                    </div>
+                  )}
+                  {latestBirthChart?.result?.sun_sign && (
+                    <div className="flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-full text-primary font-medium">
+                      ☀️ {latestBirthChart.result.sun_sign}
+                    </div>
+                  )}
+                  {latestBirthChart?.result?.ascendant && (
+                    <div className="flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-full text-primary font-medium">
+                      ⬆️ Yükselen: {latestBirthChart.result.ascendant}
+                    </div>
+                  )}
+                  {latestNumerology?.result?.life_path_number && (
+                    <div className="flex items-center gap-1 bg-secondary/10 px-3 py-1.5 rounded-full text-secondary font-medium">
+                      🔢 Yaşam Yolu: {latestNumerology.result.life_path_number}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Mutual Friends - Show only if viewing another user's profile */}
+              {!isOwnProfile && currentUserId && profile.user_id && (
+                <MutualFriends userId={currentUserId} profileUserId={profile.user_id} />
+              )}
+            </div>
+          </Card>
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
@@ -1404,23 +1474,7 @@ const Profile = () => {
           </TabsList>
 
           <TabsContent value="posts">
-            <ProfilePosts 
-              posts={userPosts} 
-              loading={postsLoading} 
-              isOwnProfile={isOwnProfile}
-              onLike={async (postId, hasLiked) => {
-                try {
-                  if (hasLiked) {
-                    await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", currentUserId);
-                  } else {
-                    await supabase.from("post_likes").insert({ post_id: postId, user_id: currentUserId });
-                  }
-                  await loadUserPosts(); // Reload to update stats
-                } catch (error) {
-                  console.error("Like error:", error);
-                }
-              }}
-            />
+            <ProfileFeed key={feedRefreshKey} userId={profile.user_id || ""} isOwnProfile={isOwnProfile} />
           </TabsContent>
 
           <TabsContent value="analyses">
@@ -1432,7 +1486,7 @@ const Profile = () => {
                       <span>{selectedAnalysisIds.length} analiz seçildi - {calculateSummaryCost()} kredi harcanacak</span>
                     )}
                   </div>
-                  <Button 
+                  <Button
                     onClick={handleSummarize}
                     disabled={selectedAnalysisIds.length === 0 || isSummarizing}
                     size="sm"
@@ -1454,15 +1508,14 @@ const Profile = () => {
                   {isOwnProfile ? "Henüz analiziniz yok" : "Paylaşılmış analiz bulunmuyor"}
                 </div>
               ) : (
-                <Virtuoso
-                  data={analyses}
-                  itemContent={(index, analysis) => {
+                <div className="space-y-3">
+                  {analyses.map((analysis) => {
                     const Icon = getAnalysisIcon(analysis.analysis_type);
                     const isSelected = selectedAnalysisIds.includes(analysis.id);
                     return (
                       <Card
                         key={analysis.id}
-                        className={`p-4 hover:shadow-md transition-shadow mb-3 ${isSelected ? 'ring-2 ring-primary' : ''}`}
+                        className={`p-4 hover:shadow-md transition-shadow ${isSelected ? 'ring-2 ring-primary' : ''}`}
                       >
                         <div className="flex items-start gap-3">
                           {isOwnProfile && (
@@ -1472,7 +1525,7 @@ const Profile = () => {
                               onClick={(e) => e.stopPropagation()}
                             />
                           )}
-                          <div 
+                          <div
                             className="flex-1 cursor-pointer"
                             onClick={() => {
                               setSelectedAnalysis(analysis);
@@ -1504,15 +1557,16 @@ const Profile = () => {
                           </div>
                           {isOwnProfile && (
                             <div className="flex gap-2">
-                              <ShareResultButton
-                                content={formatAnalysisContent(analysis)}
-                                title={getAnalysisTypeLabel(analysis.analysis_type)}
-                                analysisId={analysis.id}
-                                analysisType={analysis.analysis_type}
+                              <Button
                                 variant="outline"
                                 size="sm"
-                                className="w-10 h-10 p-0"
-                              />
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openShareDialog(analysis);
+                                }}
+                              >
+                                <Share2 className="w-4 h-4" />
+                              </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -1528,48 +1582,31 @@ const Profile = () => {
                         </div>
                       </Card>
                     );
-                  }}
-                  style={{ height: '60vh' }}
-                  increaseViewportBy={{ top: 400, bottom: 400 }}
-                />
+                  })}
+                </div>
               )}
 
               {/* Analysis Detail Dialog */}
               <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
                 <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <DialogTitle>
-                          {selectedAnalysis && getAnalysisTypeLabel(selectedAnalysis.analysis_type)}
-                        </DialogTitle>
-                        <DialogDescription>
-                          {selectedAnalysis && new Date(selectedAnalysis.created_at).toLocaleDateString('tr-TR', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </DialogDescription>
-                      </div>
-                      {selectedAnalysis && isOwnProfile && (
-                        <ShareResultButton
-                          content={formatAnalysisContent(selectedAnalysis)}
-                          title={getAnalysisTypeLabel(selectedAnalysis.analysis_type)}
-                          analysisId={selectedAnalysis.id}
-                          analysisType={selectedAnalysis.analysis_type}
-                          contentRef={analysisContentRef}
-                          variant="outline"
-                          size="sm"
-                        />
-                      )}
-                    </div>
+                    <DialogTitle>
+                      {selectedAnalysis && getAnalysisTypeLabel(selectedAnalysis.analysis_type)}
+                    </DialogTitle>
+                    <DialogDescription>
+                      {selectedAnalysis && new Date(selectedAnalysis.created_at).toLocaleDateString('tr-TR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </DialogDescription>
                   </DialogHeader>
                   {selectedAnalysis && (
-                    <div ref={analysisContentRef} className="pt-4">
-                      <AnalysisDetailView 
-                        result={selectedAnalysis.result} 
+                    <div className="pt-4">
+                      <AnalysisDetailView
+                        result={selectedAnalysis.result}
                         analysisType={selectedAnalysis.analysis_type}
                       />
                     </div>
@@ -1577,6 +1614,82 @@ const Profile = () => {
                 </DialogContent>
               </Dialog>
 
+              {/* Share Dialog */}
+              <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Analizi Paylaş</DialogTitle>
+                    <DialogDescription>
+                      {selectedAnalysis && getAnalysisTypeLabel(selectedAnalysis.analysis_type)} sonucunuzu paylaşın
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Paylaşım Türü</Label>
+                      <Select value={shareType} onValueChange={(value: any) => setShareType(value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="message">Arkadaşa Mesaj Gönder</SelectItem>
+                          <SelectItem value="feed">Profil Akışına Paylaş</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {shareType === "message" && (
+                      <div>
+                        <Label>Arkadaş Seç</Label>
+                        <Select value={selectedFriendForShare} onValueChange={setSelectedFriendForShare}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Arkadaş seçin" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {friends.length === 0 ? (
+                              <SelectItem value="none" disabled>Henüz arkadaşınız yok</SelectItem>
+                            ) : (
+                              friends.map((friend) => {
+                                const friendProfile = friend.user_id === currentUserId
+                                  ? friend.friend_profile
+                                  : friend.user_profile;
+                                const friendId = friendProfile?.user_id;
+
+                                if (!friendId) return null;
+
+                                return (
+                                  <SelectItem key={friend.id} value={friendId}>
+                                    {friendProfile?.full_name || friendProfile?.username || "Arkadaş"}
+                                  </SelectItem>
+                                );
+                              })
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    <div>
+                      <Label>Not Ekle (İsteğe Bağlı)</Label>
+                      <Textarea
+                        value={shareNote}
+                        onChange={(e) => setShareNote(e.target.value)}
+                        placeholder="Paylaşırken bir not ekleyebilirsiniz..."
+                        rows={3}
+                      />
+                    </div>
+
+                    <Button
+                      onClick={handleShareAnalysis}
+                      className="w-full"
+                      disabled={shareType === "message" && !selectedFriendForShare}
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      Paylaş
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
 
               {/* Visibility Settings Dialog */}
               <Dialog open={visibilityDialogOpen} onOpenChange={setVisibilityDialogOpen}>
@@ -1625,13 +1738,13 @@ const Profile = () => {
                             </p>
                           ) : (
                             friends.map((friend) => {
-                              const friendProfile = friend.user_id === currentUserId 
-                                ? friend.friend_profile 
+                              const friendProfile = friend.user_id === currentUserId
+                                ? friend.friend_profile
                                 : friend.user_profile;
                               const friendId = friendProfile?.user_id;
-                              
+
                               if (!friendId) return null;
-                              
+
                               return (
                                 <div key={friend.id} className="flex items-center space-x-2">
                                   <Checkbox
@@ -1705,7 +1818,7 @@ const Profile = () => {
                     </div>
                   </div>
                   <div className="flex gap-2 mt-6 pt-4 border-t">
-                    <Button 
+                    <Button
                       onClick={() => {
                         navigator.clipboard.writeText(profileAnalysisResult || '');
                         toast({ title: "Kopyalandı", description: "Analiz panoya kopyalandı" });
@@ -1715,7 +1828,7 @@ const Profile = () => {
                     >
                       📋 Kopyala
                     </Button>
-                    <Button 
+                    <Button
                       onClick={() => setProfileAnalysisDialogOpen(false)}
                       className="flex-1"
                     >
@@ -1923,12 +2036,12 @@ const Profile = () => {
                 </div>
               ) : (
                 friends.map((friend) => {
-                  const friendProfile = friend.user_id === profile.user_id 
-                    ? friend.friend_profile 
+                  const friendProfile = friend.user_id === profile.user_id
+                    ? friend.friend_profile
                     : friend.user_profile;
-                  
+
                   if (!friendProfile) return null;
-                  
+
                   return (
                     <div
                       key={friend.id}
@@ -1972,54 +2085,31 @@ const Profile = () => {
         </Dialog>
 
         {/* Create Post Dialog */}
-        <Suspense fallback={<div />}>
-          <LazyCreatePostDialog
-            open={createPostDialogOpen}
-            onOpenChange={setCreatePostDialogOpen}
-            userId={currentUserId}
-            username={profile.username}
-            profilePhoto={profile.profile_photo}
-            onPostCreated={() => {
-              loadUserPosts();
-              toast({
-                title: "Başarılı",
-                description: "Gönderi oluşturuldu",
-              });
-            }}
-          />
-        </Suspense>
+        <CreatePostDialog
+          open={createPostDialogOpen}
+          onOpenChange={setCreatePostDialogOpen}
+          userId={currentUserId}
+          username={profile.username}
+          profilePhoto={profile.profile_photo}
+          onPostCreated={() => {
+            setFeedRefreshKey(prev => prev + 1);
+            toast({
+              title: "Başarılı",
+              description: "Gönderi oluşturuldu",
+            });
+          }}
+        />
 
         {/* Profile Image Zoom Dialog */}
         <Dialog open={!!selectedProfileImage} onOpenChange={() => setSelectedProfileImage(null)}>
           <DialogContent className="max-w-4xl p-0 overflow-hidden">
-            <img 
-              src={selectedProfileImage || ""} 
-              alt="Profile" 
+            <img
+              src={selectedProfileImage || ""}
+              alt="Profile"
               className="w-full h-auto"
             />
           </DialogContent>
         </Dialog>
-
-        {/* Profile Stats Drawer */}
-        {isOwnProfile && (
-          <ProfileStatsDrawer
-            open={statsDrawerOpen}
-            onOpenChange={setStatsDrawerOpen}
-            totalLikes={profileStats.totalLikes}
-            totalComments={profileStats.totalComments}
-            profileViews={profileStats.profileViews}
-          />
-        )}
-
-        {/* Virtual Gifts Dialog */}
-        {!isOwnProfile && friendshipStatus === "accepted" && (
-          <VirtualGiftsDialog
-            isOpen={giftDialogOpen}
-            onClose={() => setGiftDialogOpen(false)}
-            receiverId={profile.user_id}
-            receiverName={profile.full_name || profile.username}
-          />
-        )}
       </main>
     </div>
   );

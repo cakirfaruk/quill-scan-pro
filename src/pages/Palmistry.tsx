@@ -4,11 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PhotoCaptureEditor } from "@/components/PhotoCaptureEditor";
 import { toast } from "sonner";
-import { Upload, X, Sparkles, Hand, Camera } from "lucide-react";
+import { Upload, X, Sparkles, Hand } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
-import { logError } from "@/utils/analytics";
+import { ShareButton } from "@/components/ShareButton";
 
 const Palmistry = () => {
   const navigate = useNavigate();
@@ -16,7 +15,6 @@ const Palmistry = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [userCredits, setUserCredits] = useState(0);
-  const [showPhotoEditor, setShowPhotoEditor] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -61,10 +59,6 @@ const Palmistry = () => {
     reader.readAsDataURL(file);
   };
 
-  const handlePhotoCapture = (imageData: string) => {
-    setHandImage(imageData);
-  };
-
   const handleAnalyze = async () => {
     if (!handImage) {
       toast.error("Lütfen avuç içi fotoğrafı yükleyin");
@@ -90,28 +84,13 @@ const Palmistry = () => {
       });
 
       if (error) throw error;
-      
-      if (data?.error) {
-        throw new Error(data.error);
-      }
 
       setResult(data.interpretation);
       setUserCredits(prev => prev - 35);
       toast.success("El okumanız hazır!");
     } catch (error: any) {
-      console.error("Palmistry analysis error:", error);
-      
-      const errorMessage = error.message || "Analiz sırasında hata oluştu";
-      
-      logError(
-        'El okuma analizi hatası',
-        error.stack,
-        'PalmistryAnalysisError',
-        'error',
-        { hasHandImage: !!handImage }
-      );
-      
-      toast.error(errorMessage);
+      console.error("Error:", error);
+      toast.error(error.message || "Analiz sırasında hata oluştu");
     } finally {
       setIsAnalyzing(false);
     }
@@ -162,28 +141,17 @@ const Palmistry = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <Button
-                    onClick={() => setShowPhotoEditor(true)}
-                    className="w-full gap-2"
-                    size="lg"
-                  >
-                    <Camera className="w-5 h-5" />
-                    Kamera ile Çek
-                  </Button>
-                  
-                  <label className="flex flex-col items-center justify-center aspect-square max-w-md mx-auto border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer">
-                    <Hand className="w-16 h-16 text-muted-foreground mb-4" />
-                    <span className="text-lg font-medium mb-2">veya Galeriden Seç</span>
-                    <span className="text-sm text-muted-foreground">Tıklayın veya sürükleyin</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageUpload}
-                    />
-                  </label>
-                </div>
+                <label className="flex flex-col items-center justify-center aspect-square max-w-md mx-auto border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer">
+                  <Hand className="w-16 h-16 text-muted-foreground mb-4" />
+                  <span className="text-lg font-medium mb-2">Avuç İçi Fotoğrafı Yükle</span>
+                  <span className="text-sm text-muted-foreground">Tıklayın veya sürükleyin</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
+                </label>
               )}
 
               <div className="p-4 bg-teal-50 dark:bg-teal-900/20 rounded-lg">
@@ -218,8 +186,18 @@ const Palmistry = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>🤲 El Okuma Sonucu</CardTitle>
-                <CardDescription>Eliniz yorumlandı</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>🤲 El Okuma Sonucu</CardTitle>
+                    <CardDescription>Eliniz yorumlandı</CardDescription>
+                  </div>
+                  <ShareButton
+                    title="El Okuma Sonucum - Astro Social"
+                    text="El çizgilerim yorumlandı! 🤲 Avuç içi analizi sonuçlarımı Astro Social'da keşfedin!"
+                    variant="outline"
+                    size="sm"
+                  />
+                </div>
               </CardHeader>
               <CardContent>
                 <AnalysisDetailView result={result} analysisType="palmistry" />
@@ -232,14 +210,6 @@ const Palmistry = () => {
           </div>
         )}
       </main>
-
-      <PhotoCaptureEditor
-        open={showPhotoEditor}
-        onOpenChange={setShowPhotoEditor}
-        onCapture={handlePhotoCapture}
-        title="Avuç İçi Fotoğrafı"
-        description="Avuç içinizin net bir fotoğrafını çekin"
-      />
     </div>
   );
 };

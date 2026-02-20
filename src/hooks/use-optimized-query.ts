@@ -1,18 +1,17 @@
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 
 /**
- * Pre-configured useQuery hook with AGGRESSIVE caching for maximum performance
+ * Pre-configured useQuery hook with optimal caching settings
  */
 export const useOptimizedQuery = <TData = unknown, TError = unknown>(
   options: UseQueryOptions<TData, TError>
 ) => {
   return useQuery<TData, TError>({
     ...options,
-    staleTime: 15 * 60 * 1000, // 15 minutes - AGRESIF CACHE
-    gcTime: 30 * 60 * 1000, // 30 minutes - AGRESIF CACHE
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false, // YENİ - Reconnect'te refetch yapma
-    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh
+    gcTime: 10 * 60 * 1000, // 10 minutes - cache garbage collection
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnMount: false, // Don't refetch on component mount if data exists
+    retry: 1, // Only retry failed requests once
   });
 };

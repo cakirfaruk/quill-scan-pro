@@ -7,14 +7,14 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { 
-  Phone, 
-  Video, 
-  PhoneIncoming, 
-  PhoneOutgoing, 
-  PhoneMissed, 
+import {
+  Phone,
+  Video,
+  PhoneIncoming,
+  PhoneOutgoing,
+  PhoneMissed,
   Clock,
-  Loader2 
+  Loader2
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -80,10 +80,15 @@ const CallHistory = () => {
       });
 
       // Fetch profiles
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, username, full_name, profile_photo")
-        .in("user_id", Array.from(userIds));
+      let profiles: any[] = [];
+      if (userIds.size > 0) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("user_id, username, full_name, profile_photo")
+          .in("user_id", Array.from(userIds));
+
+        profiles = data || [];
+      }
 
       const profileMap = new Map(
         profiles?.map(p => [p.user_id, p]) || []
@@ -122,13 +127,13 @@ const CallHistory = () => {
     if (call.status === "missed" || call.status === "failed") {
       return <PhoneMissed className="w-5 h-5 text-destructive" />;
     }
-    
+
     if (isOutgoing) {
-      return call.call_type === "video" 
+      return call.call_type === "video"
         ? <Video className="w-5 h-5 text-primary" />
         : <PhoneOutgoing className="w-5 h-5 text-primary" />;
     }
-    
+
     return call.call_type === "video"
       ? <Video className="w-5 h-5 text-green-500" />
       : <PhoneIncoming className="w-5 h-5 text-green-500" />;
@@ -155,7 +160,7 @@ const CallHistory = () => {
     const isOutgoing = call.caller_id === currentUserId;
     const otherUserId = isOutgoing ? call.receiver_id : call.caller_id;
     const otherProfile = isOutgoing ? call.receiver_profile : call.caller_profile;
-    
+
     // Navigate to messages page with the user
     navigate(`/messages?userId=${otherUserId}`);
   };
@@ -180,7 +185,7 @@ const CallHistory = () => {
 
     calls.forEach(call => {
       const callDate = new Date(call.started_at);
-      
+
       if (callDate >= today) {
         groups["Bugün"].push(call);
       } else if (callDate >= yesterday) {
@@ -202,7 +207,7 @@ const CallHistory = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="container mx-auto px-4 pt-20 pb-8">
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">
@@ -238,8 +243,8 @@ const CallHistory = () => {
                       <Card className="divide-y">
                         {groupCalls.map(call => {
                           const isOutgoing = call.caller_id === currentUserId;
-                          const otherProfile = isOutgoing 
-                            ? call.receiver_profile 
+                          const otherProfile = isOutgoing
+                            ? call.receiver_profile
                             : call.caller_profile;
                           const displayName = otherProfile?.full_name || otherProfile?.username || "Bilinmeyen";
 

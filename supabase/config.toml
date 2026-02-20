@@ -1,7 +1,7 @@
 project_id = "ekkymypfvixlysrgtabz"
 
 [functions.test-push-notification]
-verify_jwt = true
+verify_jwt = false
 
 [functions.analyze-handwriting]
 verify_jwt = true
@@ -36,44 +36,11 @@ verify_jwt = true
 [functions.send-call-notification]
 verify_jwt = true
 
-[functions.translate-message]
+[functions.send-analysis-notification]
 verify_jwt = true
 
-[functions.transcribe-audio]
+[functions.generate-og-image]
 verify_jwt = true
 
-[functions.send-alert]
-verify_jwt = true
-
-[functions.check-alert-escalations]
-verify_jwt = false
-
-[functions.retry-failed-cron-jobs]
-verify_jwt = false
-
-[functions.auto-scale-cron-jobs]
-verify_jwt = false
-
-[functions.send-cron-notification]
-verify_jwt = false
-
-[functions.trigger-cron-job]
-verify_jwt = true
-
-[functions.manage-cron-job]
-verify_jwt = true
-
-[functions.list-cron-jobs]
-verify_jwt = true
-
-[functions.oracle-chat]
-verify_jwt = true
-
-[functions.send-contact-email]
-verify_jwt = false
-
-[functions.verify-purchase]
-verify_jwt = true
-
-[functions.activate-package]
+[functions.delete-user]
 verify_jwt = true

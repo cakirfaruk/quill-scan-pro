@@ -13,7 +13,8 @@ export const useOnboarding = () => {
       setIsLoading(false);
     };
 
-    checkOnboarding();
+    // Small delay to ensure page is fully loaded
+    setTimeout(checkOnboarding, 500);
   }, []);
 
   const markOnboardingComplete = () => {

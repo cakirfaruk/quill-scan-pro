@@ -41,9 +41,9 @@ export const usePullToRefresh = ({
 
       if (distance > 0) {
         setPullDistance(distance);
-        
+
         // Prevent default scroll behavior when pulling
-        if (distance > 5) {
+        if (distance > 5 && e.cancelable) {
           e.preventDefault();
         }
       }

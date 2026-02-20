@@ -59,12 +59,10 @@ export const CreateGroupFileDialog = ({
 
       if (uploadError) throw uploadError;
 
-      // Get signed URL (1 year expiry)
-      const { data: signedData, error: signedError } = await supabase.storage
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
         .from('group-media')
-        .createSignedUrl(uploadData.path, 31536000); // 365 days
-
-      if (signedError) throw signedError;
+        .getPublicUrl(uploadData.path);
 
       // Save metadata to database
       const { error: dbError } = await supabase
@@ -73,7 +71,7 @@ export const CreateGroupFileDialog = ({
           group_id: groupId,
           uploaded_by: user.id,
           file_name: selectedFile.name,
-          file_url: signedData.signedUrl,
+          file_url: publicUrl,
           file_type: selectedFile.type,
           file_size: selectedFile.size,
         });

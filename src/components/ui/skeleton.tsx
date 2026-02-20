@@ -1,11 +1,10 @@
-import { type HTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 function Skeleton({ 
   className, 
   shimmer = true,
   ...props 
-}: HTMLAttributes<HTMLDivElement> & { shimmer?: boolean }) {
+}: React.HTMLAttributes<HTMLDivElement> & { shimmer?: boolean }) {
   return (
     <div 
       className={cn(

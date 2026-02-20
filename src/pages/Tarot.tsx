@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Sparkles, ArrowRight, Shuffle } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
-import { logError } from "@/utils/analytics";
+import { ShareButton } from "@/components/ShareButton";
+import { useOGImage } from "@/hooks/use-og-image";
+import { sendAnalysisNotification } from "@/utils/sendAnalysisNotification";
 
 // Import tarot card images
 import cardBackImg from "@/assets/tarot/card-back.png";
@@ -80,6 +82,13 @@ const Tarot = () => {
   const [userCredits, setUserCredits] = useState(0);
 
   const selectedSpread = SPREAD_TYPES.find(s => s.value === spreadType);
+  
+  // Generate OG image when result is available
+  useOGImage({
+    title: result ? `Tarot Falı - ${question || 'Kişisel Analiz'}` : '',
+    description: result?.interpretation?.overview || '',
+    type: 'tarot'
+  });
 
   useEffect(() => {
     checkAuth();
@@ -145,6 +154,7 @@ const Tarot = () => {
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const { data: { user } } = await supabase.auth.getUser();
       
       const { data, error } = await supabase.functions.invoke('analyze-tarot', {
         body: { 
@@ -158,28 +168,22 @@ const Tarot = () => {
       });
 
       if (error) throw error;
-      
-      if (data?.error) {
-        throw new Error(data.error);
-      }
 
       setResult(data.interpretation);
       setUserCredits(prev => prev - 30);
       toast.success("Tarot okuma tamamlandı!");
+      
+      // Send push notification
+      if (user) {
+        sendAnalysisNotification(
+          user.id,
+          'tarot',
+          question || 'Tarot Falı Tamamlandı'
+        );
+      }
     } catch (error: any) {
-      console.error("Tarot analysis error:", error);
-      
-      const errorMessage = error.message || "Analiz sırasında hata oluştu";
-      
-      logError(
-        'Tarot analizi hatası',
-        error.stack,
-        'TarotAnalysisError',
-        'error',
-        { spreadType, hasQuestion: !!question, cardCount: selectedCards.length }
-      );
-      
-      toast.error(errorMessage);
+      console.error("Error:", error);
+      toast.error(error.message || "Analiz sırasında hata oluştu");
     } finally {
       setIsAnalyzing(false);
     }
@@ -329,8 +333,18 @@ const Tarot = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>🔮 Tarot Okuma Sonucu</CardTitle>
-                <CardDescription>Kartlarınız yorumlandı</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>🔮 Tarot Okuma Sonucu</CardTitle>
+                    <CardDescription>Kartlarınız yorumlandı</CardDescription>
+                  </div>
+                  <ShareButton
+                    title="Tarot Falım - Astro Social"
+                    text={`${selectedSpread?.label} yöntemiyle tarot falına baktım!\n\nSeçilen kartlar: ${selectedCards.map(c => c.name).join(', ')}\n\nSonuçlarımı Astro Social'da keşfedin!`}
+                    variant="outline"
+                    size="sm"
+                  />
+                </div>
               </CardHeader>
               <CardContent>
                 <AnalysisDetailView result={result} analysisType="tarot" />

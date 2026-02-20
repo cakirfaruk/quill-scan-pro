@@ -5,18 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Coins, Sparkles, AlertTriangle, Clock, CreditCard, ExternalLink } from "lucide-react";
+import { Coins, Sparkles } from "lucide-react";
 import { Header } from "@/components/Header";
 import { PersonSelector } from "@/components/PersonSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+import { ShareAnalysisButton } from "@/components/ShareAnalysisButton";
 import { z } from "zod";
-import { logError } from "@/utils/analytics";
 
 const numerologySchema = z.object({
   fullName: z.string()
@@ -30,24 +27,19 @@ const numerologySchema = z.object({
 });
 
 const allTopics = [
-  { name: "Kader Rakamı (Yaşam Yolu Sayısı)", badge: "Popüler", color: "bg-blue-500/10 text-blue-500" },
-  { name: "İsim Analizi ve Dokuzlu Vefk", badge: "Popüler", color: "bg-blue-500/10 text-blue-500" },
-  { name: "Doğum Tarihi Numerolojisi", badge: "Hızlı", color: "bg-green-500/10 text-green-500" },
-  { name: "Yaşam Döngüleri (0-28, 29-56, 56+)", badge: "Detaylı", color: "bg-purple-500/10 text-purple-500" },
-  { name: "Zirve Döngüsü Rakamları", badge: "Hızlı", color: "bg-green-500/10 text-green-500" },
-  { name: "Ruhun Arzusu Rakamı", badge: "Popüler", color: "bg-blue-500/10 text-blue-500" },
-  { name: "Kişisel Rakam (Dış Dünya İlişkisi)", badge: "Hızlı", color: "bg-green-500/10 text-green-500" },
-  { name: "Kemal (Olgunluk) Rakamı", badge: "Detaylı", color: "bg-purple-500/10 text-purple-500" },
-  { name: "Karmik Borç Rakamı", badge: "Detaylı", color: "bg-purple-500/10 text-purple-500" },
-  { name: "Dominant Rakamlar", badge: "Hızlı", color: "bg-green-500/10 text-green-500" },
-  { name: "Şanslı ve Şanssız Rakamlar", badge: "Hızlı", color: "bg-green-500/10 text-green-500" },
-  { name: "Kişisel Döngüler ve Evrensel Döngüler", badge: "Detaylı", color: "bg-purple-500/10 text-purple-500" },
-  { name: "1-9 Arası Rakamların Ezoterik Anlamları", badge: "Detaylı", color: "bg-purple-500/10 text-purple-500" },
-];
-
-const topicPackages = [
-  { name: "Temel Analiz", topics: ["Kader Rakamı (Yaşam Yolu Sayısı)", "İsim Analizi ve Dokuzlu Vefk", "Doğum Tarihi Numerolojisi", "Ruhun Arzusu Rakamı", "Kişisel Rakam (Dış Dünya İlişkisi)"], credits: 5 },
-  { name: "Detaylı Analiz", topics: ["Kader Rakamı (Yaşam Yolu Sayısı)", "İsim Analizi ve Dokuzlu Vefk", "Yaşam Döngüleri (0-28, 29-56, 56+)", "Ruhun Arzusu Rakamı", "Kemal (Olgunluk) Rakamı", "Karmik Borç Rakamı", "Dominant Rakamlar", "1-9 Arası Rakamların Ezoterik Anlamları"], credits: 8 },
+  "Kader Rakamı (Yaşam Yolu Sayısı)",
+  "İsim Analizi ve Dokuzlu Vefk",
+  "Doğum Tarihi Numerolojisi",
+  "Yaşam Döngüleri (0-28, 29-56, 56+)",
+  "Zirve Döngüsü Rakamları",
+  "Ruhun Arzusu Rakamı",
+  "Kişisel Rakam (Dış Dünya İlişkisi)",
+  "Kemal (Olgunluk) Rakamı",
+  "Karmik Borç Rakamı",
+  "Dominant Rakamlar",
+  "Şanslı ve Şanssız Rakamlar",
+  "Kişisel Döngüler ve Evrensel Döngüler",
+  "1-9 Arası Rakamların Ezoterik Anlamları",
 ];
 
 export default function Numerology() {
@@ -57,6 +49,7 @@ export default function Numerology() {
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [analysisId, setAnalysisId] = useState<string | null>(null);
   const [availableCredits, setAvailableCredits] = useState(0);
   const [selectAll, setSelectAll] = useState(false);
 
@@ -90,31 +83,17 @@ export default function Numerology() {
     if (selectAll) {
       setSelectedTopics([]);
     } else {
-      setSelectedTopics(allTopics.map(t => t.name));
+      setSelectedTopics([...allTopics]);
     }
     setSelectAll(!selectAll);
   };
 
-  const selectPackage = (packageTopics: string[]) => {
-    setSelectedTopics(packageTopics);
-    setSelectAll(false);
-  };
-
   const handleAnalyze = async () => {
-    // Debug logging
-    console.log("🔍 Analyze button clicked - Debug Info:", {
-      availableCredits,
-      requiredCredits: selectedTopics.length,
-      hasFullName: !!personData.fullName,
-      hasBirthDate: !!personData.birthDate,
-      selectedTopicsCount: selectedTopics.length,
-    });
-
     // Check if profile is complete when using "myself" option
     const missingFields: string[] = [];
     if (!personData.fullName?.trim()) missingFields.push("Ad Soyad");
     if (!personData.birthDate) missingFields.push("Doğum Tarihi");
-    
+
     if (missingFields.length > 0) {
       toast({
         title: "Eksik Profil Bilgileri",
@@ -129,7 +108,7 @@ export default function Numerology() {
       fullName: personData.fullName,
       birthDate: personData.birthDate,
     });
-    
+
     if (!validation.success) {
       toast({
         title: "Geçersiz Veri",
@@ -159,54 +138,25 @@ export default function Numerology() {
     }
 
     setIsAnalyzing(true);
-    
-    const estimatedTime = selectedTopics.length <= 3 ? "20-30" : selectedTopics.length <= 5 ? "30-45" : selectedTopics.length <= 8 ? "45-60" : "60-120";
-    toast({
-      title: "Analiz Başlatıldı",
-      description: `Analiz ediliyor, bu işlem ${estimatedTime} saniye sürebilir...`,
-    });
-    
     try {
       const { data, error } = await supabase.functions.invoke("analyze-numerology", {
         body: { fullName: personData.fullName, birthDate: personData.birthDate, selectedTopics },
       });
 
-      if (error) {
-        console.error('Numerology analysis error:', error);
-        throw error;
-      }
-
-      if (data?.error) {
-        throw new Error(data.error);
-      }
+      if (error) throw error;
 
       setAnalysisResult(data.result);
+      if (data.id) setAnalysisId(data.id);
       setAvailableCredits((prev) => prev - requiredCredits);
-      
+
       toast({
         title: "Analiz Tamamlandı",
         description: `${requiredCredits} kredi kullanıldı.`,
       });
     } catch (error: any) {
-      console.error('Numerology analysis error:', error);
-      
-      const errorMessage = error.message || "Analiz sırasında bir hata oluştu.";
-      
-      logError(
-        'Numeroloji analizi hatası',
-        error.stack,
-        'NumerologyAnalysisError',
-        'error',
-        { 
-          fullName: personData.fullName, 
-          birthDate: personData.birthDate, 
-          selectedTopicsCount: selectedTopics.length 
-        }
-      );
-      
       toast({
         title: "Hata",
-        description: errorMessage,
+        description: error.message || "Analiz sırasında bir hata oluştu.",
         variant: "destructive",
       });
     } finally {
@@ -216,6 +166,7 @@ export default function Numerology() {
 
   const handleReset = () => {
     setAnalysisResult(null);
+    setAnalysisId(null);
     setPersonData({ fullName: "", birthDate: "" });
     setSelectedTopics([]);
     setSelectAll(false);
@@ -223,17 +174,30 @@ export default function Numerology() {
 
   if (analysisResult) {
     const analysisData = analysisResult.analiz || analysisResult;
-    
+
     return (
       <div className="min-h-screen bg-background">
         <Header />
         <main className="container mx-auto px-4 py-8 mt-20">
           <Card>
             <CardHeader>
-              <CardTitle className="text-3xl">Numeroloji Analiz Sonuçları</CardTitle>
-              <CardDescription>
-                {analysisData.isim || personData.fullName} - {analysisData.dogum_tarihi ? new Date(analysisData.dogum_tarihi).toLocaleDateString("tr-TR") : (personData.birthDate ? new Date(personData.birthDate).toLocaleDateString("tr-TR") : "")}
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <CardTitle className="text-3xl">Numeroloji Analiz Sonuçları</CardTitle>
+                  <CardDescription>
+                    {analysisData.isim || personData.fullName} - {analysisData.dogum_tarihi ? new Date(analysisData.dogum_tarihi).toLocaleDateString("tr-TR") : (personData.birthDate ? new Date(personData.birthDate).toLocaleDateString("tr-TR") : "")}
+                  </CardDescription>
+                </div>
+                {analysisId && (
+                  <ShareAnalysisButton
+                    analysisId={analysisId}
+                    analysisType="numerology"
+                    analysisTitle="Numeroloji"
+                    variant="outline"
+                    size="sm"
+                  />
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <AnalysisDetailView result={analysisData} analysisType="numerology" />
@@ -272,81 +236,25 @@ export default function Numerology() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Hazır Paketler</CardTitle>
-                  <CardDescription>Hızlı başlamak için hazır konu paketlerini kullanın</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {topicPackages.map((pkg) => (
-                  <Card key={pkg.name} className="cursor-pointer hover:border-primary" onClick={() => selectPackage(pkg.topics)}>
-                    <CardHeader>
-                      <CardTitle className="text-lg">{pkg.name}</CardTitle>
-                      <CardDescription>{pkg.topics.length} konu - {pkg.credits} kredi</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="w-4 h-4" />
-                        {pkg.credits <= 3 ? "20-30 saniye" : pkg.credits <= 5 ? "30-45 saniye" : "45-60 saniye"}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
                   <CardTitle>Analiz Konuları</CardTitle>
-                  <CardDescription>Her konu 1 kredi kullanır</CardDescription>
+                  <CardDescription>Her konu 1 kredi - Mevcut: {availableCredits} kredi</CardDescription>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
-                    <Coins className="w-4 h-4 text-primary" />
-                    <span className="font-semibold text-primary">{availableCredits} kredi</span>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => navigate("/credits")}
-                    className="h-8"
-                  >
-                    <CreditCard className="w-3 h-3 mr-1.5" />
-                    Kredi Ekle
-                  </Button>
-                  <Button variant="outline" onClick={toggleSelectAll}>
-                    {selectAll ? "Tümünü Kaldır" : "Tümünü Seç"}
-                  </Button>
-                </div>
+                <Button variant="outline" onClick={toggleSelectAll}>
+                  {selectAll ? "Tümünü Kaldır" : "Tümünü Seç"}
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
-              {selectedTopics.length > 10 && (
-                <Alert className="mb-4 border-orange-500/50 bg-orange-500/10">
-                  <AlertTriangle className="h-4 w-4 text-orange-500" />
-                  <AlertDescription className="text-orange-500">
-                    10'dan fazla konu seçtiniz. Analiz daha uzun sürebilir (90-120 saniye).
-                  </AlertDescription>
-                </Alert>
-              )}
               <ScrollArea className="h-96">
                 <div className="space-y-3">
                   {allTopics.map((topic) => (
-                    <div key={topic.name} className="flex items-center space-x-2 p-3 rounded-lg hover:bg-accent">
+                    <div key={topic} className="flex items-center space-x-2 p-3 rounded-lg hover:bg-accent">
                       <Checkbox
-                        id={topic.name}
-                        checked={selectedTopics.includes(topic.name)}
-                        onCheckedChange={() => toggleTopic(topic.name)}
-                        disabled={selectedTopics.length >= 13 && !selectedTopics.includes(topic.name)}
+                        id={topic}
+                        checked={selectedTopics.includes(topic)}
+                        onCheckedChange={() => toggleTopic(topic)}
                       />
-                      <Label htmlFor={topic.name} className="flex-1 cursor-pointer">{topic.name}</Label>
-                      <Badge variant="secondary" className={topic.color}>
-                        {topic.badge}
-                      </Badge>
+                      <Label htmlFor={topic} className="flex-1 cursor-pointer">{topic}</Label>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Coins className="w-4 h-4" />1
                       </div>
@@ -368,56 +276,17 @@ export default function Numerology() {
                   {selectedTopics.length} kredi
                 </div>
               </div>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <Button
-                        onClick={handleAnalyze}
-                        disabled={isAnalyzing || selectedTopics.length === 0 || selectedTopics.length > 13 || availableCredits < selectedTopics.length || !personData.fullName || !personData.birthDate}
-                        className="w-full"
-                      >
-                        <Sparkles className="w-4 h-4 mr-2" />
-                        {isAnalyzing ? "Analiz Ediliyor..." : "Analizi Başlat"} ({selectedTopics.length} kredi)
-                      </Button>
-                    </div>
-                  </TooltipTrigger>
-                  {(availableCredits < selectedTopics.length || !personData.fullName || !personData.birthDate) && selectedTopics.length > 0 && (
-                    <TooltipContent>
-                      <p className="text-xs">
-                        {!personData.fullName || !personData.birthDate ? "Profil bilgileriniz eksik" : 
-                         availableCredits < selectedTopics.length ? `Yetersiz kredi (${selectedTopics.length} kredi gerekli)` : ""}
-                      </p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
-              
-              {/* Error explanations below button */}
-              {(!personData.fullName || !personData.birthDate) && selectedTopics.length > 0 && (
-                <Alert className="mt-3 border-destructive/50 bg-destructive/10">
-                  <AlertTriangle className="h-4 w-4 text-destructive" />
-                  <AlertDescription className="text-destructive text-sm">
-                    ❌ Profil bilgileriniz eksik. Lütfen yukarıdaki "Profili Düzenle" butonuna tıklayın.
-                  </AlertDescription>
-                </Alert>
+              {availableCredits < selectedTopics.length && (
+                <p className="text-destructive text-sm mb-4">Yetersiz kredi!</p>
               )}
-              
-              {personData.fullName && personData.birthDate && availableCredits < selectedTopics.length && selectedTopics.length > 0 && (
-                <Alert className="mt-3 border-orange-500/50 bg-orange-500/10">
-                  <Coins className="h-4 w-4 text-orange-500" />
-                  <AlertDescription className="text-orange-500 text-sm">
-                    ❌ Yetersiz kredi: {selectedTopics.length} kredi gerekli, mevcut: {availableCredits}. Yukarıdaki "Kredi Ekle" butonuna tıklayın.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {selectedTopics.length > 0 && personData.fullName && personData.birthDate && availableCredits >= selectedTopics.length && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
-                  <Clock className="w-4 h-4" />
-                  Tahmini süre: {selectedTopics.length <= 3 ? "20-30" : selectedTopics.length <= 5 ? "30-45" : selectedTopics.length <= 8 ? "45-60" : "60-120"} saniye
-                </div>
-              )}
+              <Button
+                onClick={handleAnalyze}
+                disabled={isAnalyzing || selectedTopics.length === 0 || availableCredits < selectedTopics.length || !personData.fullName || !personData.birthDate}
+                className="w-full"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                {isAnalyzing ? "Analiz Ediliyor..." : "Analizi Başlat"}
+              </Button>
             </CardContent>
           </Card>
         </div>

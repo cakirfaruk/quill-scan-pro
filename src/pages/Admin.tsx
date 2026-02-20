@@ -7,26 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Users, CreditCard, History, Loader2, Eye, Trash2, BarChart3, AlertTriangle, Activity, Bell, Package, Target } from "lucide-react";
+import { Shield, Users, CreditCard, History, Loader2, Eye, Trash2, BarChart3, Activity } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
-import { AnalyticsOverview } from "@/components/admin/AnalyticsOverview";
-import { EventsChart } from "@/components/admin/EventsChart";
-import { ErrorLogsList } from "@/components/admin/ErrorLogsList";
-import { PerformanceMetrics } from "@/components/admin/PerformanceMetrics";
-import { UserBehaviorAnalysis } from "@/components/admin/UserBehaviorAnalysis";
-import { RealtimeIndicator } from "@/components/admin/RealtimeIndicator";
-import { LiveActivityFeed } from "@/components/admin/LiveActivityFeed";
-import { AlertSettings } from "@/components/admin/AlertSettings";
-import { RealTimeStats } from "@/components/admin/RealTimeStats";
-import { SystemHealth } from "@/components/admin/SystemHealth";
-import { PopularFeatures } from "@/components/admin/PopularFeatures";
-import { UserManagement } from "@/components/admin/UserManagement";
-import { CreditPackageManager } from "@/components/admin/CreditPackageManager";
-import { DailyMissionManager } from "@/components/admin/DailyMissionManager";
-import { useRealtimeAnalytics } from "@/hooks/use-realtime-analytics";
 import { z } from "zod";
 
 const creditSchema = z.object({
@@ -64,9 +48,6 @@ const Admin = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  
-  // Enable real-time analytics
-  useRealtimeAnalytics();
 
   useEffect(() => {
     checkAdminAndLoad();
@@ -291,23 +272,55 @@ const Admin = () => {
       <Header />
 
       <main className="container mx-auto px-4 py-12 max-w-7xl">
-        <div className="mb-8">
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-primary rounded-lg">
-                <Shield className="w-6 h-6 text-primary-foreground" />
+        <div className="mb-8 flex items-center gap-3">
+          <div className="p-3 bg-gradient-primary rounded-lg">
+            <Shield className="w-6 h-6 text-primary-foreground" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Admin Panel
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Kullanıcıları yönetin ve kredi ekleyin
+            </p>
+          </div>
+        </div>
+
+        {/* Admin Tools Navigation */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <Card 
+            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] group"
+            onClick={() => navigate("/error-monitor")}
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-gradient-primary rounded-lg group-hover:scale-110 transition-transform">
+                <Activity className="w-6 h-6 text-primary-foreground" />
               </div>
-              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  Admin Panel
-                </h1>
-                <p className="text-muted-foreground mt-1">
-                  Kullanıcıları yönetin, analytics görüntüleyin ve hataları takip edin
+              <div className="flex-1">
+                <h3 className="text-xl font-bold mb-1">Error Monitor</h3>
+                <p className="text-sm text-muted-foreground">
+                  Canlı hata takibi ve performans metrikleri
                 </p>
               </div>
             </div>
-            <RealtimeIndicator />
-          </div>
+          </Card>
+
+          <Card 
+            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] group"
+            onClick={() => navigate("/error-analytics")}
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-gradient-primary rounded-lg group-hover:scale-110 transition-transform">
+                <BarChart3 className="w-6 h-6 text-primary-foreground" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-bold mb-1">Error Analytics</h3>
+                <p className="text-sm text-muted-foreground">
+                  Hata trendleri, istatistikler ve detaylı analizler
+                </p>
+              </div>
+            </div>
+          </Card>
         </div>
 
         {isLoading ? (
@@ -315,62 +328,7 @@ const Admin = () => {
             <Loader2 className="w-12 h-12 animate-spin text-primary" />
           </div>
         ) : (
-          <Tabs defaultValue="management" className="space-y-6">
-            <div className="overflow-x-auto pb-2 mb-6">
-              <TabsList className="inline-flex w-auto min-w-full lg:grid lg:w-full lg:grid-cols-9 relative z-10 bg-card">
-                <TabsTrigger value="management" className="gap-2 flex-shrink-0 px-3 py-2.5">
-                  <Shield className="w-4 h-4" />
-                  <span className="whitespace-nowrap">Yönetim</span>
-                </TabsTrigger>
-                <TabsTrigger value="users" className="gap-2 flex-shrink-0 px-3 py-2.5">
-                  <Users className="w-4 h-4" />
-                  <span className="whitespace-nowrap">Kullanıcılar</span>
-                </TabsTrigger>
-                <TabsTrigger value="packages" className="gap-2 flex-shrink-0 px-3 py-2.5">
-                  <Package className="w-4 h-4" />
-                  <span className="whitespace-nowrap">Paketler</span>
-                </TabsTrigger>
-                <TabsTrigger value="missions" className="gap-2 flex-shrink-0 px-3 py-2.5">
-                  <Target className="w-4 h-4" />
-                  <span className="whitespace-nowrap">Görevler</span>
-                </TabsTrigger>
-                <TabsTrigger value="analytics" className="gap-2 flex-shrink-0 px-3 py-2.5">
-                  <BarChart3 className="w-4 h-4" />
-                  <span className="whitespace-nowrap">Analytics</span>
-                </TabsTrigger>
-                <TabsTrigger value="errors" className="gap-2 flex-shrink-0 px-3 py-2.5">
-                  <AlertTriangle className="w-4 h-4" />
-                  <span className="whitespace-nowrap">Hatalar</span>
-                </TabsTrigger>
-                <TabsTrigger value="performance" className="gap-2 flex-shrink-0 px-3 py-2.5">
-                  <Activity className="w-4 h-4" />
-                  <span className="whitespace-nowrap">Performans</span>
-                </TabsTrigger>
-                <TabsTrigger value="behavior" className="gap-2 flex-shrink-0 px-3 py-2.5">
-                  <Users className="w-4 h-4" />
-                  <span className="whitespace-nowrap">Davranış</span>
-                </TabsTrigger>
-                <TabsTrigger value="system" className="gap-2 flex-shrink-0 px-3 py-2.5">
-                  <Bell className="w-4 h-4" />
-                  <span className="whitespace-nowrap">Sistem</span>
-                </TabsTrigger>
-              </TabsList>
-            </div>
-
-            <TabsContent value="management" className="space-y-6">
-              <UserManagement />
-            </TabsContent>
-
-            <TabsContent value="packages" className="space-y-6">
-              <CreditPackageManager />
-            </TabsContent>
-
-            <TabsContent value="missions" className="space-y-6">
-              <DailyMissionManager />
-            </TabsContent>
-
-            <TabsContent value="users" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Users List */}
             <Card className="p-6 lg:col-span-1">
               <div className="flex items-center gap-2 mb-4">
@@ -535,40 +493,6 @@ const Admin = () => {
               )}
             </div>
           </div>
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-6">
-          {/* Real-time Stats */}
-          <RealTimeStats />
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <SystemHealth />
-            <PopularFeatures />
-          </div>
-          
-          <AnalyticsOverview />
-          <div className="grid gap-6 lg:grid-cols-2">
-            <EventsChart />
-            <LiveActivityFeed />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="errors" className="space-y-6">
-          <ErrorLogsList />
-        </TabsContent>
-
-        <TabsContent value="performance" className="space-y-6">
-          <PerformanceMetrics />
-        </TabsContent>
-
-        <TabsContent value="behavior" className="space-y-6">
-          <UserBehaviorAnalysis />
-        </TabsContent>
-
-        <TabsContent value="system" className="space-y-6">
-          <AlertSettings />
-        </TabsContent>
-      </Tabs>
         )}
       </main>
 

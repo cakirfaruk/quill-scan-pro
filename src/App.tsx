@@ -1,151 +1,75 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { Suspense, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { RouteProgressBar } from "@/components/AnimationWrappers";
+import { EnhancedOfflineIndicator } from "@/components/EnhancedOfflineIndicator";
+
+import { MainLayout } from "@/components/layout/MainLayout";
+
+import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingFallback } from "@/components/LoadingFallback";
 import { IncomingCallDialog } from "@/components/IncomingCallDialog";
 import { IncomingGroupCallDialog } from "@/components/IncomingGroupCallDialog";
-import { PermissionManager } from "@/components/PermissionManager";
-import { useUpdateOnlineStatus } from "@/hooks/use-online-status";
-import { initPerformanceMonitoring } from "@/utils/performanceMonitoring";
-import { EnhancedOfflineIndicator } from "@/components/EnhancedOfflineIndicator";
-import { MobileNav } from "@/components/MobileNav";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { lazyWithPreload } from "@/utils/lazyWithPreload";
-import { useRoutePreloader } from "@/hooks/use-route-preloader";
-import { useLinkIntersectionPreloader } from "@/hooks/use-link-intersection-preloader";
+import { useErrorAlerts } from "@/hooks/use-error-alerts";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
-import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
-import { OfflineCacheStatus } from "@/components/OfflineCacheStatus";
-import { InAppNotification } from "@/components/InAppNotification";
-import { useAnalytics } from "@/hooks/use-analytics";
-import { clearOldCaches, forceServiceWorkerUpdate, checkAppVersion } from "@/utils/cacheManager";
-import { CookieConsent } from "@/components/CookieConsent";
+import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
 
-// Critical pages - load immediately (no lazy loading)
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
+// Lazy load ALL pages including Index for optimal code splitting
+const Index = lazy(() => import("./pages/Index"));
 
-// Lazy load other pages with preload capability
-const Feed = lazyWithPreload(() => import("./pages/Feed"));
-const Credits = lazyWithPreload(() => import("./pages/Credits"));
-const Compatibility = lazyWithPreload(() => import("./pages/Compatibility"));
-const About = lazyWithPreload(() => import("./pages/About"));
-const FAQ = lazyWithPreload(() => import("./pages/FAQ"));
-const Numerology = lazyWithPreload(() => import("./pages/Numerology"));
-const BirthChart = lazyWithPreload(() => import("./pages/BirthChart"));
-const Admin = lazyWithPreload(() => import("./pages/Admin"));
-const Profile = lazyWithPreload(() => import("./pages/Profile"));
-const Friends = lazyWithPreload(() => import("./pages/Friends"));
-const Messages = lazyWithPreload(() => import("./pages/Messages"));
-const Settings = lazyWithPreload(() => import("./pages/Settings"));
-const Match = lazyWithPreload(() => import("./pages/Match"));
-const Tarot = lazyWithPreload(() => import("./pages/Tarot"));
-const CoffeeFortune = lazyWithPreload(() => import("./pages/CoffeeFortune"));
-const DreamInterpretation = lazyWithPreload(() => import("./pages/DreamInterpretation"));
-const DailyHoroscope = lazyWithPreload(() => import("./pages/DailyHoroscope"));
-const Palmistry = lazyWithPreload(() => import("./pages/Palmistry"));
-const Handwriting = lazyWithPreload(() => import("./pages/Handwriting"));
-const SavedPosts = lazyWithPreload(() => import("./pages/SavedPosts"));
-const Reels = lazyWithPreload(() => import("./pages/Reels"));
-const Explore = lazyWithPreload(() => import("./pages/Explore"));
-const Groups = lazyWithPreload(() => import("./pages/Groups"));
-const GroupChat = lazyWithPreload(() => import("./pages/GroupChat"));
-const GroupSettings = lazyWithPreload(() => import("./pages/GroupSettings"));
-const Discovery = lazyWithPreload(() => import("./pages/Discovery"));
-const CallHistory = lazyWithPreload(() => import("./pages/CallHistory"));
-const VapidKeyGenerator = lazyWithPreload(() => import("./pages/VapidKeyGenerator"));
-const AnalysisHistory = lazyWithPreload(() => import("./pages/AnalysisHistory"));
-const CacheManagement = lazyWithPreload(() => import("./pages/CacheManagement"));
-const NotificationCenter = lazyWithPreload(() => import("./pages/NotificationCenter"));
-const DailyRewards = lazyWithPreload(() => import("./pages/DailyRewards"));
-const Badges = lazyWithPreload(() => import("./pages/Badges"));
-const TrendingHashtags = lazyWithPreload(() => import("./pages/TrendingHashtags"));
-const Leaderboard = lazyWithPreload(() => import("./pages/Leaderboard"));
-const Privacy = lazyWithPreload(() => import("./pages/Privacy"));
-const Terms = lazyWithPreload(() => import("./pages/Terms"));
-const KVKK = lazyWithPreload(() => import("./pages/KVKK"));
-const Contact = lazyWithPreload(() => import("./pages/Contact"));
-const Oracle = lazyWithPreload(() => import("./pages/Oracle"));
-const Install = lazyWithPreload(() => import("./pages/Install"));
-const Offline = lazyWithPreload(() => import("./pages/Offline"));
-const NotFound = lazyWithPreload(() => import("./pages/NotFound"));
-const Store = lazyWithPreload(() => import("./pages/Store"));
+// Lazy load routes for better performance
+const Auth = lazy(() => import("./pages/Auth"));
+const Credits = lazy(() => import("./pages/Credits"));
+const Compatibility = lazy(() => import("./pages/Compatibility"));
+const About = lazy(() => import("./pages/About"));
+const FAQ = lazy(() => import("./pages/FAQ"));
+const Numerology = lazy(() => import("./pages/Numerology"));
+const BirthChart = lazy(() => import("./pages/BirthChart"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Friends = lazy(() => import("./pages/Friends"));
+const Messages = lazy(() => import("./pages/Messages"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Match = lazy(() => import("./pages/Match"));
+const Tarot = lazy(() => import("./pages/Tarot"));
+const CoffeeFortune = lazy(() => import("./pages/CoffeeFortune"));
+const DreamInterpretation = lazy(() => import("./pages/DreamInterpretation"));
+const DailyHoroscope = lazy(() => import("./pages/DailyHoroscope"));
+const Palmistry = lazy(() => import("./pages/Palmistry"));
+const SavedPosts = lazy(() => import("./pages/SavedPosts"));
+const Reels = lazy(() => import("./pages/Reels"));
+const Explore = lazy(() => import("./pages/Explore"));
+const Groups = lazy(() => import("./pages/Groups"));
+const GroupChat = lazy(() => import("./pages/GroupChat"));
+const GroupSettings = lazy(() => import("./pages/GroupSettings"));
+const Discovery = lazy(() => import("./pages/Discovery"));
+const CallHistory = lazy(() => import("./pages/CallHistory"));
+const VapidKeyGenerator = lazy(() => import("./pages/VapidKeyGenerator"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const ErrorMonitor = lazy(() => import("./pages/ErrorMonitor"));
+const ErrorAnalytics = lazy(() => import("./pages/ErrorAnalytics"));
+const ErrorDetail = lazy(() => import("./pages/ErrorDetail"));
+const Install = lazy(() => import("./pages/Install"));
+const Feed = lazy(() => import("./pages/Feed"));
 
-// Route component map for preloading
-const routeComponents: { [path: string]: any } = {
-  '/feed': Feed,
-  '/credits': Credits,
-  '/compatibility': Compatibility,
-  '/about': About,
-  '/faq': FAQ,
-  '/numerology': Numerology,
-  '/birth-chart': BirthChart,
-  '/admin': Admin,
-  '/profile': Profile,
-  '/friends': Friends,
-  '/messages': Messages,
-  '/settings': Settings,
-  '/match': Match,
-  '/tarot': Tarot,
-  '/coffee-fortune': CoffeeFortune,
-  '/dream': DreamInterpretation,
-  '/daily-horoscope': DailyHoroscope,
-  '/palmistry': Palmistry,
-  '/handwriting': Handwriting,
-  '/saved': SavedPosts,
-  '/reels': Reels,
-  '/explore': Explore,
-  '/groups': Groups,
-  '/discovery': Discovery,
-  '/call-history': CallHistory,
-  '/analysis-history': AnalysisHistory,
-  '/cache-management': CacheManagement,
-  '/notifications': NotificationCenter,
-  '/daily-rewards': DailyRewards,
-  '/badges': Badges,
-  '/trending': TrendingHashtags,
-  '/leaderboard': Leaderboard,
-  '/contact': Contact,
-  '/oracle': Oracle,
-  '/install': Install,
-  '/offline': Offline,
-  '/store': Store,
-};
-
-// Optimized QueryClient with AGGRESSIVE cache settings
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 15 * 60 * 1000, // 15 minutes - AGRESIF
-      gcTime: 30 * 60 * 1000, // 30 minutes - AGRESIF
-      refetchOnWindowFocus: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false, // YENİ - Reconnect'te refetch yapma
-      retry: 1,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 // Component that uses hooks - must be inside providers
 const AppRoutes = () => {
   useUpdateOnlineStatus();
-  useAnalytics(); // 📊 Track analytics and user behavior
+  useErrorAlerts(); // Real-time error alerting
   const location = useLocation();
   const [incomingCall, setIncomingCall] = useState<any>(null);
   const [incomingGroupCall, setIncomingGroupCall] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
-
-  // 🚀 Smart route preloading based on current location
-  useRoutePreloader(routeComponents);
-  
-  // 👁️ Automatic preload when links enter viewport
-  useLinkIntersectionPreloader(routeComponents);
 
   // Get current user
   useEffect(() => {
@@ -153,53 +77,6 @@ const AppRoutes = () => {
       if (user) setCurrentUserId(user.id);
     });
   }, []);
-
-  // Prefetch critical data on app load
-  useEffect(() => {
-    if (!currentUserId) return;
-
-    // Prefetch user profile
-    queryClient.prefetchQuery({
-      queryKey: ['profile', currentUserId],
-      queryFn: async () => {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', currentUserId)
-          .single();
-        return data;
-      },
-      staleTime: 30 * 60 * 1000,
-    });
-
-    // Prefetch friends
-    queryClient.prefetchQuery({
-      queryKey: ['friends', currentUserId],
-      queryFn: async () => {
-        const { data } = await supabase
-          .from('friends')
-          .select('*, friend_profile:profiles!friends_friend_id_fkey(*)')
-          .eq('user_id', currentUserId)
-          .eq('status', 'accepted');
-        return data;
-      },
-      staleTime: 30 * 60 * 1000,
-    });
-
-    // Prefetch initial feed
-    queryClient.prefetchQuery({
-      queryKey: ['feed', 'optimized', undefined, undefined],
-      queryFn: async () => {
-        const { data } = await supabase
-          .from('posts')
-          .select('*, profiles!posts_user_id_fkey(*)')
-          .order('created_at', { ascending: false })
-          .limit(20);
-        return data;
-      },
-      staleTime: 30 * 60 * 1000,
-    });
-  }, [currentUserId]);
 
   // Track route changes for progress bar
   useEffect(() => {
@@ -227,7 +104,7 @@ const AppRoutes = () => {
         },
         async (payload) => {
           const call = payload.new;
-          
+
           // Only show dialog if status is ringing
           if (call.status === "ringing") {
             // Get caller info
@@ -272,7 +149,7 @@ const AppRoutes = () => {
         },
         async (payload) => {
           const participant = payload.new;
-          
+
           // Only show dialog if status is invited
           if (participant.status === "invited") {
             // Get group call info
@@ -311,13 +188,25 @@ const AppRoutes = () => {
       supabase.removeChannel(channel);
     };
   }, [currentUserId]);
-  
-  const showNav = ['/feed', '/explore', '/reels', '/discovery', '/messages', '/profile', '/match', '/friends', '/analysis-history'].some(
-    path => location.pathname === path || location.pathname.startsWith('/profile/')
-  );
+
+
+
+
+
+  // Page transition variants
+  const pageTransition = {
+    initial: { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -10 },
+    transition: {
+      duration: 0.3,
+      ease: "easeInOut" as const
+    }
+  };
 
   return (
     <>
+      <RouteProgressBar isAnimating={isNavigating} />
       {incomingCall && (
         <IncomingCallDialog
           isOpen={true}
@@ -343,101 +232,79 @@ const AppRoutes = () => {
         />
       )}
       <Suspense fallback={<LoadingFallback />}>
-        <Routes location={location}>
-              <Route path="/" element={<Index />} />
-              <Route path="/feed" element={<Feed />} />
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={location.pathname}
+            initial={pageTransition.initial}
+            animate={pageTransition.animate}
+            exit={pageTransition.exit}
+            transition={pageTransition.transition}
+            className="w-full"
+          >
+            <Routes location={location}>
               <Route path="/auth" element={<Auth />} />
-              <Route path="/profile/:username?" element={<Profile />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/faq" element={<FAQ />} />
-              <Route path="/credits" element={<Credits />} />
-              <Route path="/messages" element={<Messages />} />
-              <Route path="/friends" element={<Friends />} />
-              <Route path="/saved" element={<SavedPosts />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/tarot" element={<Tarot />} />
-              <Route path="/coffee-fortune" element={<CoffeeFortune />} />
-              <Route path="/palmistry" element={<Palmistry />} />
-              <Route path="/handwriting" element={<Handwriting />} />
-              <Route path="/birth-chart" element={<BirthChart />} />
-              <Route path="/numerology" element={<Numerology />} />
-              <Route path="/compatibility" element={<Compatibility />} />
-              <Route path="/daily-horoscope" element={<DailyHoroscope />} />
-              <Route path="/dream" element={<DreamInterpretation />} />
-              <Route path="/reels" element={<Reels />} />
-              <Route path="/explore" element={<Explore />} />
-              <Route path="/discovery" element={<Discovery />} />
-              <Route path="/groups" element={<Groups />} />
-              <Route path="/groups/:groupId" element={<GroupChat />} />
-              <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
-              <Route path="/match" element={<Match />} />
-              <Route path="/call-history" element={<CallHistory />} />
-              <Route path="/analysis-history" element={<AnalysisHistory />} />
-              <Route path="/cache-management" element={<CacheManagement />} />
-              <Route path="/notifications" element={<NotificationCenter />} />
-              <Route path="/daily-rewards" element={<DailyRewards />} />
-              <Route path="/badges" element={<Badges />} />
-              <Route path="/trending" element={<TrendingHashtags />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/kvkk" element={<KVKK />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/oracle" element={<Oracle />} />
-          <Route path="/install" element={<Install />} />
-          <Route path="/offline" element={<Offline />} />
-          <Route path="/store" element={<Store />} />
+              <Route path="/install" element={<Install />} />
+
+              <Route element={<MainLayout />}>
+                <Route path="/" element={<Index />} />
+                <Route path="/profile/:username?" element={<Profile />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/faq" element={<FAQ />} />
+                <Route path="/credits" element={<Credits />} />
+                <Route path="/messages" element={<Messages />} />
+                <Route path="/friends" element={<Friends />} />
+                <Route path="/saved" element={<SavedPosts />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/tarot" element={<Tarot />} />
+                <Route path="/coffee-fortune" element={<CoffeeFortune />} />
+                <Route path="/palmistry" element={<Palmistry />} />
+                {/* Handwriting Removed */}
+                <Route path="/birth-chart" element={<BirthChart />} />
+                <Route path="/numerology" element={<Numerology />} />
+                <Route path="/compatibility" element={<Compatibility />} />
+                <Route path="/daily-horoscope" element={<DailyHoroscope />} />
+                <Route path="/dream" element={<DreamInterpretation />} />
+                <Route path="/reels" element={<Reels />} />
+                <Route path="/explore" element={<Explore />} />
+                <Route path="/discovery" element={<Discovery />} />
+                <Route path="/groups" element={<Groups />} />
+                <Route path="/groups/:groupId" element={<GroupChat />} />
+                <Route path="/groups/:groupId/settings" element={<GroupSettings />} />
+                <Route path="/match" element={<Match />} />
+                <Route path="/call-history" element={<CallHistory />} />
+                <Route path="/vapid-keys" element={<VapidKeyGenerator />} />
+                <Route path="/error-monitor" element={<ErrorMonitor />} />
+                <Route path="/error-analytics" element={<ErrorAnalytics />} />
+                <Route path="/error/:errorId" element={<ErrorDetail />} />
+                <Route path="/feed" element={<Feed />} />
+              </Route>
+
               <Route path="*" element={<NotFound />} />
             </Routes>
+          </motion.div>
+        </AnimatePresence>
       </Suspense>
-      <InAppNotification />
-      {showNav && <MobileNav />}
+      <PWAInstallPrompt />
     </>
   );
 };
 
 const App = () => {
-  // Initialize performance monitoring and cache management
-  useEffect(() => {
-    initPerformanceMonitoring();
-    
-    // Check app version and clear old caches on startup
-    const performCacheCheck = async () => {
-      const { needsUpdate, currentVersion } = checkAppVersion();
-      
-      if (needsUpdate) {
-        console.log(`🔄 App updated to version ${currentVersion}, clearing old caches...`);
-        await clearOldCaches();
-        await forceServiceWorkerUpdate();
-      } else {
-        console.log(`✅ App version ${currentVersion} is current`);
-        // Still clear old caches periodically
-        await clearOldCaches();
-      }
-    };
-    
-    performCacheCheck();
-  }, []);
-
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <AuthProvider>
-            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+            <TooltipProvider>
               <Toaster />
               <Sonner />
-              <PermissionManager />
               <EnhancedOfflineIndicator />
-              <PWAInstallPrompt />
-              <PWAUpdatePrompt />
-              <OfflineCacheStatus />
-              <CookieConsent />
+
+              <PushNotificationPrompt />
               <AppRoutes />
-            </ThemeProvider>
-          </AuthProvider>
+            </TooltipProvider>
+          </ThemeProvider>
         </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>

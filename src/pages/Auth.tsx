@@ -7,11 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Loader2 } from "lucide-react";
+import { FileText, Loader2 } from "lucide-react";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { z } from "zod";
-import { Link } from "react-router-dom";
-import { Checkbox } from "@/components/ui/checkbox";
 
 const authSchema = z.object({
   username: z.string()
@@ -34,8 +32,6 @@ const Auth = () => {
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showResetPassword, setShowResetPassword] = useState(false);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -43,14 +39,14 @@ const Auth = () => {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/feed");
+        navigate("/");
       }
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        navigate("/feed");
+        navigate("/");
       }
     });
 
@@ -63,46 +59,32 @@ const Auth = () => {
 
     try {
       // Validate inputs
-      const validation = authSchema.safeParse({ 
-        username: username.trim(), 
-        email: email.trim(), 
-        password 
-      });
+      const validation = authSchema.safeParse({ username, email, password });
       if (!validation.success) {
         throw new Error(validation.error.errors[0].message);
       }
 
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
+      const { error } = await supabase.auth.signUp({
+        email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
-            username: username.trim(),
+            username,
           },
         },
       });
 
-      if (error) {
-        if (error.message.includes("already registered")) {
-          throw new Error("Bu e-posta adresi zaten kayıtlı. Lütfen giriş yapın veya şifrenizi sıfırlayın.");
-        }
-        throw error;
-      }
-
-      if (import.meta.env.DEV) {
-        console.log("Signup successful:", data.user?.email);
-      }
+      if (error) throw error;
 
       // Show onboarding for new users
       setShowOnboarding(true);
 
       toast({
         title: "Kayıt başarılı!",
-        description: "Hesabınız oluşturuldu. Hemen giriş yapabilirsiniz.",
+        description: "Hesabınız oluşturuldu.",
       });
     } catch (error: any) {
-      console.error("Signup error:", error.message);
       toast({
         title: "Kayıt hatası",
         description: error.message,
@@ -122,74 +104,26 @@ const Auth = () => {
       const validation = z.object({
         email: z.string().trim().email("Geçerli bir e-posta adresi girin"),
         password: z.string().min(1, "Şifre gerekli"),
-      }).safeParse({ email: email.trim(), password });
+      }).safeParse({ email, password });
       
       if (!validation.success) {
         throw new Error(validation.error.errors[0].message);
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
         password,
       });
 
-      if (error) {
-        // Provide more specific error messages
-        if (error.message.includes("Invalid login credentials")) {
-          throw new Error("E-posta veya şifre hatalı. Lütfen tekrar deneyin veya şifrenizi sıfırlayın.");
-        } else if (error.message.includes("Email not confirmed")) {
-          throw new Error("E-posta adresiniz henüz onaylanmamış. Lütfen e-postanızı kontrol edin.");
-        }
-        throw error;
-      }
-
-      if (import.meta.env.DEV) {
-        console.log("Login successful:", data.user?.email);
-      }
+      if (error) throw error;
 
       toast({
         title: "Giriş başarılı!",
         description: "Hoş geldiniz.",
       });
     } catch (error: any) {
-      console.error("Login error:", error.message);
       toast({
         title: "Giriş hatası",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const validation = z.object({
-        email: z.string().trim().email("Geçerli bir e-posta adresi girin"),
-      }).safeParse({ email });
-      
-      if (!validation.success) {
-        throw new Error(validation.error.errors[0].message);
-      }
-
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth`,
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Şifre sıfırlama e-postası gönderildi",
-        description: "E-posta adresinizi kontrol edin.",
-      });
-      setShowResetPassword(false);
-    } catch (error: any) {
-      toast({
-        title: "Hata",
         description: error.message,
         variant: "destructive",
       });
@@ -203,15 +137,15 @@ const Auth = () => {
       <Card className="w-full max-w-md p-8 shadow-elegant">
         <div className="flex items-center justify-center mb-8">
           <div className="p-3 bg-gradient-primary rounded-lg">
-            <Sparkles className="w-8 h-8 text-primary-foreground" />
+            <FileText className="w-8 h-8 text-primary-foreground" />
           </div>
         </div>
 
         <h1 className="text-3xl font-bold text-center mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-          Stellara
+          El Yazısı Analizi
         </h1>
         <p className="text-center text-muted-foreground mb-8">
-          Yıldızların Rehberliğinde Keşfet
+          Grafolog AI ile profesyonel analiz
         </p>
 
         <Tabs defaultValue="signin" className="w-full">
@@ -221,95 +155,46 @@ const Auth = () => {
           </TabsList>
 
           <TabsContent value="signin">
-            {!showResetPassword ? (
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">E-posta</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="ornek@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
+            <form onSubmit={handleSignIn} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">E-posta</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="ornek@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Şifre</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Şifre</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
 
-                <Button
-                  type="submit"
-                  className="w-full bg-gradient-primary hover:opacity-90"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Giriş yapılıyor...
-                    </>
-                  ) : (
-                    "Giriş Yap"
-                  )}
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="link"
-                  className="w-full"
-                  onClick={() => setShowResetPassword(true)}
-                >
-                  Şifremi unuttum
-                </Button>
-              </form>
-            ) : (
-              <form onSubmit={handleResetPassword} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reset-email">E-posta</Label>
-                  <Input
-                    id="reset-email"
-                    type="email"
-                    placeholder="ornek@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full bg-gradient-primary hover:opacity-90"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Gönderiliyor...
-                    </>
-                  ) : (
-                    "Şifre Sıfırlama Linki Gönder"
-                  )}
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="link"
-                  className="w-full"
-                  onClick={() => setShowResetPassword(false)}
-                >
-                  Giriş sayfasına dön
-                </Button>
-              </form>
-            )}
+              <Button
+                type="submit"
+                className="w-full bg-gradient-primary hover:opacity-90"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Giriş yapılıyor...
+                  </>
+                ) : (
+                  "Giriş Yap"
+                )}
+              </Button>
+            </form>
           </TabsContent>
 
           <TabsContent value="signup">
@@ -355,24 +240,10 @@ const Auth = () => {
                 />
               </div>
 
-              <div className="flex items-start gap-2">
-                <Checkbox
-                  id="terms"
-                  checked={acceptedTerms}
-                  onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
-                />
-                <label htmlFor="terms" className="text-sm text-muted-foreground">
-                  <Link to="/terms" className="text-primary hover:underline">Kullanım Şartları</Link>
-                  'nı ve{" "}
-                  <Link to="/privacy" className="text-primary hover:underline">Gizlilik Politikası</Link>
-                  'nı okudum ve kabul ediyorum.
-                </label>
-              </div>
-
               <Button
                 type="submit"
                 className="w-full bg-gradient-primary hover:opacity-90"
-                disabled={isLoading || !acceptedTerms}
+                disabled={isLoading}
               >
                 {isLoading ? (
                   <>
@@ -396,7 +267,7 @@ const Auth = () => {
         open={showOnboarding} 
         onComplete={() => {
           setShowOnboarding(false);
-          navigate("/feed");
+          navigate("/");
         }}
       />
     </div>

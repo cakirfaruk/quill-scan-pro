@@ -1,25 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.78.0";
-import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts';
-import { createLogger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const logger = createLogger('generate-friend-suggestions');
-
 serve(async (req) => {
-  const startTime = performance.now();
-  const requestId = crypto.randomUUID();
-  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    logger.success({ requestId, action: 'request_received' });
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -36,31 +28,6 @@ serve(async (req) => {
 
     if (userError || !user) {
       throw new Error("Unauthorized");
-    }
-
-    // Rate limiting for resource-intensive operation
-    const rateLimitResult = await checkRateLimit(
-      supabase,
-      user.id,
-      {
-        ...RateLimitPresets.RESOURCE_INTENSIVE,
-        endpoint: 'generate-friend-suggestions',
-      }
-    );
-
-    if (!rateLimitResult.allowed) {
-      return new Response(JSON.stringify({ 
-        error: 'Çok fazla istek. Lütfen daha sonra tekrar deneyin.',
-        resetAt: rateLimitResult.resetAt
-      }), {
-        status: 429,
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json',
-          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-          'X-RateLimit-Reset': rateLimitResult.resetAt.toISOString(),
-        }
-      });
     }
 
     console.log("Generating friend suggestions for user:", user.id);

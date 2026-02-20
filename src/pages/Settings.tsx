@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX, LogOut, Phone, RotateCcw, Shield, Eye, Palette, FileText, ShieldCheck, Database, Download, Trash2 } from "lucide-react";
+import { Loader2, Calendar, MapPin, Clock, User, Lock, Mail, Moon, Sun, Bell, Heart, UserX, LogOut, Phone, RotateCcw } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { requestNotificationPermission } from "@/utils/notifications";
 import { subscribeToPushNotifications } from "@/utils/pushNotifications";
@@ -20,18 +20,9 @@ import { AutoResponseSettings } from "@/components/AutoResponseSettings";
 import { resetOnboarding } from "@/components/OnboardingTour";
 import { ThemeCustomizationPanel } from "@/components/ThemeCustomizationPanel";
 import { NotificationPreferences } from "@/components/NotificationPreferences";
-import { PermissionSettings } from "@/components/PermissionSettings";
-import { OfflineCacheStatus } from "@/components/OfflineCacheStatus";
-import { PushNotificationSettings } from "@/components/PushNotificationSettings";
-import { performFullCacheRefresh } from "@/utils/cacheManager";
-import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
-import { ExportDataButton } from "@/components/ExportDataButton";
-import { HiddenWordsSettings } from "@/components/HiddenWordsSettings";
-import { VoicePromptRecorder } from "@/components/VoicePromptRecorder";
-import { VideoPromptRecorder } from "@/components/VideoPromptRecorder";
+import { ErrorAlertSettings } from "@/components/ErrorAlertSettings";
 
 const Settings = () => {
-  const [userId, setUserId] = useState("");
   const [profile, setProfile] = useState({
     username: "",
     full_name: "",
@@ -43,8 +34,6 @@ const Settings = () => {
     gender: "",
     email: "",
     show_in_matches: true,
-    preferred_language: "tr",
-    auto_translate_messages: false,
   });
   const [passwords, setPasswords] = useState({
     currentPassword: "",
@@ -57,14 +46,12 @@ const Settings = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
   const [isLoadingBlocked, setIsLoadingBlocked] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
     loadSettings();
     loadBlockedUsers();
-    checkAdminStatus();
     
     // Check for dark mode preference
     const isDark = document.documentElement.classList.contains('dark');
@@ -76,24 +63,6 @@ const Settings = () => {
     }
   }, []);
 
-  const checkAdminStatus = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-
-      setIsAdmin(!!roles);
-    } catch (error) {
-      console.error("Error checking admin status:", error);
-    }
-  };
-
   const loadSettings = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -101,8 +70,6 @@ const Settings = () => {
         navigate("/auth");
         return;
       }
-      
-      setUserId(user.id);
 
       const { data, error } = await supabase
         .from("profiles")
@@ -153,8 +120,6 @@ const Settings = () => {
           gender: newData.gender || "",
           email: user.email || "",
           show_in_matches: newData.show_in_matches ?? true,
-          preferred_language: newData.preferred_language || "tr",
-          auto_translate_messages: newData.auto_translate_messages ?? false,
         });
       } else {
         setProfile({
@@ -168,8 +133,6 @@ const Settings = () => {
           gender: data.gender || "",
           email: user.email || "",
           show_in_matches: data.show_in_matches ?? true,
-          preferred_language: data.preferred_language || "tr",
-          auto_translate_messages: data.auto_translate_messages ?? false,
         });
       }
     } catch (error: any) {
@@ -207,8 +170,6 @@ const Settings = () => {
           bio: profile.bio || null,
           gender: profile.gender || null,
           show_in_matches: profile.show_in_matches,
-          preferred_language: profile.preferred_language,
-          auto_translate_messages: profile.auto_translate_messages,
         })
         .eq("user_id", user.id);
 
@@ -510,41 +471,13 @@ const Settings = () => {
         </h1>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className={`grid w-full gap-1 ${isAdmin ? 'grid-cols-8' : 'grid-cols-7'}`}>
-            <TabsTrigger value="profile" className="flex flex-col gap-1 h-auto py-2">
-              <User className="w-4 h-4" />
-              <span className="text-[10px] hidden sm:inline">Profil</span>
-            </TabsTrigger>
-            <TabsTrigger value="account" className="flex flex-col gap-1 h-auto py-2">
-              <FileText className="w-4 h-4" />
-              <span className="text-[10px] hidden sm:inline">Hesap</span>
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex flex-col gap-1 h-auto py-2">
-              <Bell className="w-4 h-4" />
-              <span className="text-[10px] hidden sm:inline">Bildirim</span>
-            </TabsTrigger>
-            <TabsTrigger value="permissions" className="flex flex-col gap-1 h-auto py-2">
-              <Shield className="w-4 h-4" />
-              <span className="text-[10px] hidden sm:inline">İzinler</span>
-            </TabsTrigger>
-            <TabsTrigger value="security" className="flex flex-col gap-1 h-auto py-2">
-              <Lock className="w-4 h-4" />
-              <span className="text-[10px] hidden sm:inline">Güvenlik</span>
-            </TabsTrigger>
-            <TabsTrigger value="blocked" className="flex flex-col gap-1 h-auto py-2">
-              <UserX className="w-4 h-4" />
-              <span className="text-[10px] hidden sm:inline">Engelli</span>
-            </TabsTrigger>
-            <TabsTrigger value="appearance" className="flex flex-col gap-1 h-auto py-2">
-              <Palette className="w-4 h-4" />
-              <span className="text-[10px] hidden sm:inline">Görünüm</span>
-            </TabsTrigger>
-            {isAdmin && (
-              <TabsTrigger value="admin" className="flex flex-col gap-1 h-auto py-2">
-                <ShieldCheck className="w-4 h-4" />
-                <span className="text-[10px] hidden sm:inline">Admin</span>
-              </TabsTrigger>
-            )}
+          <TabsList className="grid w-full grid-cols-6 gap-1">
+            <TabsTrigger value="profile" className="text-xs sm:text-sm">Profil</TabsTrigger>
+            <TabsTrigger value="account" className="text-xs sm:text-sm">Hesap</TabsTrigger>
+            <TabsTrigger value="notifications" className="text-xs sm:text-sm">Bildirimler</TabsTrigger>
+            <TabsTrigger value="security" className="text-xs sm:text-sm">Güvenlik</TabsTrigger>
+            <TabsTrigger value="blocked" className="text-xs sm:text-sm">Engelli</TabsTrigger>
+            <TabsTrigger value="appearance" className="text-xs sm:text-sm">Görünüm</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile">
@@ -663,53 +596,6 @@ const Settings = () => {
                     onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
                     placeholder="Kendiniz hakkında kısa bir açıklama yazın..."
                     className="mt-2 min-h-[100px]"
-                    maxLength={300}
-                  />
-                  <p className="text-xs text-muted-foreground text-right mt-1">
-                    {profile.bio?.length || 0}/300 karakter
-                  </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="preferred_language">Tercih Edilen Dil</Label>
-                  <Select
-                    value={profile.preferred_language}
-                    onValueChange={(value) => setProfile({ ...profile, preferred_language: value })}
-                  >
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Dil seçin" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="tr">Türkçe</SelectItem>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="es">Español</SelectItem>
-                      <SelectItem value="fr">Français</SelectItem>
-                      <SelectItem value="de">Deutsch</SelectItem>
-                      <SelectItem value="ar">العربية</SelectItem>
-                      <SelectItem value="zh">中文</SelectItem>
-                      <SelectItem value="ja">日本語</SelectItem>
-                      <SelectItem value="ko">한국어</SelectItem>
-                      <SelectItem value="pt">Português</SelectItem>
-                      <SelectItem value="ru">Русский</SelectItem>
-                      <SelectItem value="it">Italiano</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Mesajlar için varsayılan dil
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="auto_translate">Otomatik Çeviri</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Gelen mesajlar otomatik olarak tercih ettiğiniz dile çevrilsin
-                    </p>
-                  </div>
-                  <Switch
-                    id="auto_translate"
-                    checked={profile.auto_translate_messages}
-                    onCheckedChange={(checked) => setProfile({ ...profile, auto_translate_messages: checked })}
                   />
                 </div>
 
@@ -765,130 +651,69 @@ const Settings = () => {
                     E-posta değiştirdiğinizde doğrulama linki gönderilecektir
                   </p>
                 </div>
-
-                <div className="pt-6 border-t">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <Database className="w-5 h-5" />
-                    Veri ve Gizlilik
-                  </h3>
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Verilerinizi JSON formatında indirin veya hesabınızı kalıcı olarak silin.
-                      </p>
-                      <ExportDataButton />
-                    </div>
-                    <div className="pt-3 border-t">
-                      <p className="text-sm text-destructive mb-3 font-medium">
-                        ⚠️ Tehlikeli İşlem: Bu işlem geri alınamaz!
-                      </p>
-                      <DeleteAccountDialog />
-                    </div>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="security">
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Güvenlik</CardTitle>
-                  <CardDescription>
-                    Şifrenizi ve güvenlik ayarlarınızı yönetin
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <Label htmlFor="new_password">
-                      <Lock className="w-4 h-4 inline mr-2" />
-                      Yeni Şifre
-                    </Label>
-                    <Input
-                      id="new_password"
-                      type="password"
-                      value={passwords.newPassword}
-                      onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
-                      placeholder="En az 6 karakter"
-                      className="mt-2"
-                    />
-                  </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Güvenlik</CardTitle>
+                <CardDescription>
+                  Şifrenizi ve güvenlik ayarlarınızı yönetin
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <Label htmlFor="new_password">
+                    <Lock className="w-4 h-4 inline mr-2" />
+                    Yeni Şifre
+                  </Label>
+                  <Input
+                    id="new_password"
+                    type="password"
+                    value={passwords.newPassword}
+                    onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
+                    placeholder="En az 6 karakter"
+                    className="mt-2"
+                  />
+                </div>
 
-                  <div>
-                    <Label htmlFor="confirm_password">
-                      <Lock className="w-4 h-4 inline mr-2" />
-                      Yeni Şifre (Tekrar)
-                    </Label>
-                    <Input
-                      id="confirm_password"
-                      type="password"
-                      value={passwords.confirmPassword}
-                      onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
-                      placeholder="Şifrenizi tekrar girin"
-                      className="mt-2"
-                    />
-                  </div>
+                <div>
+                  <Label htmlFor="confirm_password">
+                    <Lock className="w-4 h-4 inline mr-2" />
+                    Yeni Şifre (Tekrar)
+                  </Label>
+                  <Input
+                    id="confirm_password"
+                    type="password"
+                    value={passwords.confirmPassword}
+                    onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
+                    placeholder="Şifrenizi tekrar girin"
+                    className="mt-2"
+                  />
+                </div>
 
-                  <Button
-                    onClick={handleChangePassword}
-                    disabled={isSaving || !passwords.newPassword || !passwords.confirmPassword}
-                    className="w-full"
-                  >
-                    {isSaving ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Değiştiriliyor...
-                      </>
-                    ) : (
-                      "Şifreyi Değiştir"
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-              
-              {userId && <HiddenWordsSettings userId={userId} />}
-
-              {/* Voice Prompt */}
-              {userId && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      🎤 Sesli Tanıtım
-                    </CardTitle>
-                    <CardDescription>
-                      Profilinize kısa bir sesli tanıtım ekleyin
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <VoicePromptRecorder userId={userId} onSaved={() => {}} />
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Video Prompt */}
-              {userId && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      🎬 Video Tanıtım
-                    </CardTitle>
-                    <CardDescription>
-                      Profilinize kısa bir video tanıtım ekleyin
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <VideoPromptRecorder userId={userId} onSaved={() => {}} />
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+                <Button
+                  onClick={handleChangePassword}
+                  disabled={isSaving || !passwords.newPassword || !passwords.confirmPassword}
+                  className="w-full"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Değiştiriliyor...
+                    </>
+                  ) : (
+                    "Şifreyi Değiştir"
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="notifications">
             <div className="space-y-4">
-              <PushNotificationSettings />
-              
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -903,41 +728,8 @@ const Settings = () => {
                   <NotificationPreferences />
                 </CardContent>
               </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="permissions">
-            <div className="space-y-4">
-              <PermissionSettings />
               
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    Çevrimdışı Veri Önbelleği
-                  </CardTitle>
-                  <CardDescription>
-                    Çevrimdışıyken içerikleri görüntülemek için önbelleğe alınan verileri yönetin
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">
-                      Önbelleğe alınmış veriler, internet bağlantısı olmadan da gönderileri, 
-                      mesajları ve profilleri görüntülemenize olanak tanır.
-                    </p>
-                    <OfflineCacheStatus />
-                  </div>
-                  
-                  <Button
-                    onClick={() => navigate("/cache-management")}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <Database className="w-4 h-4 mr-2" />
-                    Cache Yönetimi
-                  </Button>
-                </CardContent>
-              </Card>
+              <ErrorAlertSettings />
             </div>
           </TabsContent>
 
@@ -1101,51 +893,7 @@ const Settings = () => {
                     />
                   </div>
 
-                  <div className="pt-6 border-t space-y-4">
-                    <div>
-                      <Label className="text-base flex items-center gap-2 mb-2">
-                        <Database className="w-4 h-4" />
-                        Önbellek Yönetimi
-                      </Label>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Eski PDF'leri ve önbellekleri temizleyerek en güncel özellikleri kullanın
-                      </p>
-                      <Button
-                        variant="outline"
-                        onClick={async () => {
-                          try {
-                            toast({
-                              title: "Önbellek Temizleniyor",
-                              description: "Lütfen bekleyin...",
-                            });
-                            
-                            await performFullCacheRefresh();
-                            
-                            toast({
-                              title: "Başarılı",
-                              description: "Önbellek temizlendi. Sayfa yenileniyor...",
-                            });
-                            
-                            // Reload page after 1 second
-                            setTimeout(() => {
-                              window.location.reload();
-                            }, 1000);
-                          } catch (error) {
-                            console.error("Cache clear error:", error);
-                            toast({
-                              title: "Hata",
-                              description: "Önbellek temizlenemedi",
-                              variant: "destructive",
-                            });
-                          }
-                        }}
-                        className="w-full gap-2"
-                      >
-                        <RotateCcw className="w-4 h-4" />
-                        Önbelleği Temizle ve Yenile
-                      </Button>
-                    </div>
-                    
+                  <div className="pt-6 border-t space-y-3">
                     <Button
                       variant="outline"
                       onClick={() => navigate("/call-history")}
@@ -1172,31 +920,6 @@ const Settings = () => {
               <ThemeCustomizationPanel />
             </div>
           </TabsContent>
-
-          {isAdmin && (
-            <TabsContent value="admin">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5" />
-                    Admin Panel
-                  </CardTitle>
-                  <CardDescription>
-                    Kullanıcıları ve sistemi yönetin
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button
-                    onClick={() => navigate("/admin")}
-                    className="w-full bg-gradient-primary hover:opacity-90 gap-2"
-                  >
-                    <Shield className="w-4 h-4" />
-                    Admin Paneline Git
-                  </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          )}
         </Tabs>
       </main>
     </div>

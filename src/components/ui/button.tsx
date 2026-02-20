@@ -1,4 +1,4 @@
-import { forwardRef, useRef, useImperativeHandle, type ButtonHTMLAttributes, type MouseEvent } from "react";
+import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 
@@ -11,7 +11,7 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md hover:shadow-primary/20 hover:-translate-y-0.5",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm hover:shadow-md hover:shadow-destructive/20 hover:-translate-y-0.5",
-        outline: "border-2 border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground hover:border-primary shadow-sm",
+        outline: "border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground hover:border-primary/30",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm",
         ghost: "text-foreground hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
@@ -32,20 +32,20 @@ const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement>,
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   ripple?: boolean;
 }
 
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ripple = true, onClick, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
-    const buttonRef = useRef<HTMLButtonElement>(null);
+    const buttonRef = React.useRef<HTMLButtonElement>(null);
     
-    useImperativeHandle(ref, () => buttonRef.current!);
+    React.useImperativeHandle(ref, () => buttonRef.current!);
 
-    const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
       if (ripple && buttonRef.current) {
         const button = buttonRef.current;
         const rippleElement = document.createElement("span");

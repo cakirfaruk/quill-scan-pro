@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Coins, CheckCircle2, Sparkles } from "lucide-react";
@@ -21,15 +20,6 @@ const Credits = () => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  // Premium features pricing
-  const premiumFeatures = [
-    { icon: "⚡", name: "Super Like", description: "Özel ilgi göster, öne çık", cost: 10 },
-    { icon: "🚀", name: "Boost", description: "30 dakika profilini öne çıkar", cost: 20 },
-    { icon: "↩️", name: "Geri Al", description: "Son eylemi geri al", cost: 5 },
-    { icon: "❤️", name: "Normal Beğeni", description: "Profil beğen", cost: 5 },
-    { icon: "➡️", name: "Geç", description: "Profili atla", cost: 1 },
-  ];
 
   useEffect(() => {
     checkAuth();
@@ -141,49 +131,20 @@ const Credits = () => {
         </div>
 
         <Card className="mt-12 p-8 bg-gradient-to-br from-primary/5 to-accent/5">
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-foreground mb-2">Krediler Nasıl Kullanılır?</h2>
-              <p className="text-sm text-muted-foreground">Her özellik için farklı kredi miktarı gerekir</p>
-            </div>
-            
-            {/* Analysis costs */}
-            <div>
-              <h3 className="text-lg font-semibold mb-3">📊 Analiz Maliyetleri</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 rounded-lg bg-background/50 border">
-                  <div className="text-2xl font-bold text-primary mb-1">1 kredi</div>
-                  <p className="text-sm text-muted-foreground">Her analiz başlığı için</p>
-                </div>
-                <div className="p-4 rounded-lg bg-background/50 border">
-                  <div className="text-2xl font-bold text-primary mb-1">13 kredi</div>
-                  <p className="text-sm text-muted-foreground">Tam analiz için</p>
-                </div>
-                <div className="p-4 rounded-lg bg-background/50 border">
-                  <div className="text-2xl font-bold text-primary mb-1">50 kredi</div>
-                  <p className="text-sm text-muted-foreground">Uyum analizi için</p>
-                </div>
+          <div className="text-center space-y-4">
+            <h2 className="text-2xl font-bold text-foreground">Krediler Nasıl Kullanılır?</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+              <div className="space-y-2">
+                <div className="text-3xl font-bold text-primary">1 kredi</div>
+                <p className="text-sm text-muted-foreground">Her analiz başlığı için</p>
               </div>
-            </div>
-
-            {/* Match features */}
-            <div>
-              <h3 className="text-lg font-semibold mb-3">💝 Eşleşme Özellikleri</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {premiumFeatures.map((feature, index) => (
-                  <div key={index} className="p-3 rounded-lg bg-background/50 border hover:border-primary/50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="text-3xl">{feature.icon}</div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-semibold text-sm">{feature.name}</span>
-                          <Badge variant="secondary" className="text-xs">{feature.cost}₭</Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">{feature.description}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="space-y-2">
+                <div className="text-3xl font-bold text-primary">13 kredi</div>
+                <p className="text-sm text-muted-foreground">Tam analiz için</p>
+              </div>
+              <div className="space-y-2">
+                <div className="text-3xl font-bold text-primary">50 kredi</div>
+                <p className="text-sm text-muted-foreground">Uyum analizi için</p>
               </div>
             </div>
           </div>

@@ -1,9 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.78.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
-import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts';
-import { createLogger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,7 +9,26 @@ const corsHeaders = {
 };
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-const logger = createLogger('analyze-palmistry');
+
+// Rate limiting map
+const rateLimits = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const limit = rateLimits.get(userId);
+  
+  if (!limit || now > limit.resetAt) {
+    rateLimits.set(userId, { count: 1, resetAt: now + 60000 }); // 1 minute window
+    return true;
+  }
+  
+  if (limit.count >= 10) { // 10 requests per minute
+    return false;
+  }
+  
+  limit.count++;
+  return true;
+}
 
 // Input validation schema - max 10MB base64 image
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
@@ -28,15 +45,11 @@ const palmistrySchema = z.object({
 });
 
 serve(async (req) => {
-  const startTime = performance.now();
-  const requestId = crypto.randomUUID();
-  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    logger.success({ requestId, action: 'request_received' });
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Authorization header gerekli' }), {
@@ -55,46 +68,27 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !user) {
-      await logger.error('Authentication failed', { requestId, error: userError });
+      console.error('Auth error:', userError);
       return new Response(JSON.stringify({ error: 'Yetkisiz erişim' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Rate limiting using shared utility
-    const rateLimitResult = await checkRateLimit(
-      supabaseClient,
-      user.id,
-      {
-        ...RateLimitPresets.ANALYSIS,
-        endpoint: 'analyze-palmistry',
-      }
-    );
-
-    if (!rateLimitResult.allowed) {
-      return new Response(JSON.stringify({ 
-        error: 'Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin.',
-        resetAt: rateLimitResult.resetAt
-      }), {
+    // Rate limiting
+    if (!checkRateLimit(user.id)) {
+      return new Response(JSON.stringify({ error: 'Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin.' }), {
         status: 429,
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json',
-          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-          'X-RateLimit-Reset': rateLimitResult.resetAt.toISOString(),
-        }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    
-    logger.success({ requestId, action: 'user_authenticated', userId: user.id });
 
     const body = await req.json();
     
     // Validate input
     const validation = palmistrySchema.safeParse(body);
     if (!validation.success) {
-      await logger.warning('Validation failed', { requestId, userId: user.id, error: validation.error });
+      console.error('Validation error:', validation.error);
       return new Response(JSON.stringify({ 
         error: 'Geçersiz veri formatı',
         details: validation.error.errors[0].message 
@@ -105,7 +99,7 @@ serve(async (req) => {
     }
 
     const { handImage } = validation.data;
-    logger.success({ requestId, action: 'validation_passed', userId: user.id });
+    console.log('Palmistry reading request received');
 
     // Check and deduct credits
     const { data: profile } = await supabaseClient
@@ -115,21 +109,20 @@ serve(async (req) => {
       .single();
 
     if (!profile || profile.credits < 35) {
-      await logger.warning('Insufficient credits', { requestId, userId: user.id, available: profile?.credits });
       return new Response(JSON.stringify({ error: 'Yetersiz kredi' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const prompt = `Sen deneyimli bir el okuma uzmanısın. Bu avuç içi fotoğrafını detaylı analiz et ve TAMAMEN TÜRKÇE yorum yap.
+    const prompt = `Sen deneyimli bir el falı (palmistry) uzmanısın. Bu avuç içi fotoğrafını detaylı analiz et ve Türkçe yorum yap.
 
-El okumada analiz edilmesi gerekenler:
+El falında analiz edilmesi gerekenler:
 1. Ana Çizgiler:
-   - Hayat çizgisi - 2-3 paragraf analiz
-   - Akıl çizgisi - 2-3 paragraf analiz
-   - Kalp çizgisi - 2-3 paragraf analiz
-   - Kader çizgisi - 2-3 paragraf analiz
+   - Hayat çizgisi (Life line) - 2-3 paragraf analiz
+   - Akıl çizgisi (Head line) - 2-3 paragraf analiz
+   - Kalp çizgisi (Heart line) - 2-3 paragraf analiz
+   - Kader çizgisi (Fate line) - 2-3 paragraf analiz
 
 2. İkincil Çizgiler ve İşaretler (2-3 paragraf)
 
@@ -142,14 +135,13 @@ Her çizgi için:
 - Kesintiler, dallanmalar, işaretler yorumla
 - Kişilik, sağlık, kariyer, ilişkiler açısından anlam belirt
 - Yaklaşık 200-300 kelime kullan
-- TAMAMEN TÜRKÇE yaz, hiçbir İngilizce kelime kullanma
 
 Her alan için (kişilik, sağlık, kariyer, ilişkiler, gelecek):
 - 3-4 paragraf detaylı analiz yap
 - Eldeki işaretlere göre kişiye özel yorumlar sun
-- Mistik ve geleneksel el okuma bilgilerini birleştir
+- Mistik ve geleneksel palmistry bilgilerini birleştir
 
-ÖNEMLİ: Analizin detaylı olmalı. Elde gördüğün önemli detayları yorumla. Cevabın TAMAMEN TÜRKÇE olmalı.
+ÖNEMLİ: Analizin detaylı olmalı. Elde gördüğün önemli detayları yorumla.
 
 JSON formatında şu yapıda cevap ver:
 {
@@ -179,7 +171,7 @@ JSON formatında şu yapıda cevap ver:
         messages: [
           { 
             role: 'system', 
-            content: 'Sen el okuma konusunda uzman bir yorumcusun. Avuç çizgilerini ve işaretlerini okursun. TAMAMEN TÜRKÇE yanıt verirsin, hiçbir İngilizce kelime kullanmazsın.' 
+            content: 'Sen el falı (palmistry) konusunda uzman bir yorumcusun. Avuç çizgilerini ve işaretlerini okursun.' 
           },
           { 
             role: 'user', 
@@ -194,10 +186,10 @@ JSON formatında şu yapıda cevap ver:
     });
 
     const data = await response.json();
-    logger.success({ requestId, action: 'ai_response_received', userId: user.id });
+    console.log('AI response received:', JSON.stringify(data).slice(0, 200));
 
     if (!response.ok || !data.choices || !data.choices[0]) {
-      await logger.error('AI API error', { requestId, userId: user.id, error: data });
+      console.error('AI API error:', data);
       return new Response(JSON.stringify({ error: 'AI servisi geçici olarak kullanılamıyor' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -245,7 +237,7 @@ JSON formatında şu yapıda cevap ver:
       .single();
 
     if (saveError) {
-      await logger.error('Error saving reading', { requestId, userId: user.id, error: saveError });
+      console.error('Error saving reading:', saveError);
       return new Response(JSON.stringify({ error: 'Okuma kaydedilemedi' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -263,45 +255,17 @@ JSON formatında şu yapıda cevap ver:
         reference_id: reading.id
       });
 
-    const duration = performance.now() - startTime;
-    logger.performance(duration, true);
-    logger.success({ 
-      requestId, 
-      action: 'request_completed',
-      userId: user.id,
-      duration: `${duration.toFixed(2)}ms` 
-    });
+    console.log('Palmistry reading completed successfully');
 
     return new Response(JSON.stringify({ interpretation, readingId: reading.id }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    const duration = performance.now() - startTime;
-    await logger.critical(error as Error, {
-      requestId,
-      duration: `${duration.toFixed(2)}ms`
-    });
-    logger.performance(duration, false, (error as Error).constructor.name);
-    
-    let errorMessage = "El okuma analizi sırasında bir hata oluştu";
-    let statusCode = 500;
-    
-    if (error instanceof Error) {
-      if (error.message === "Unauthorized") {
-        errorMessage = "Oturum açmanız gerekiyor";
-        statusCode = 401;
-      } else if (error.message === "Insufficient credits") {
-        errorMessage = "Yetersiz kredi. Lütfen kredi satın alın.";
-        statusCode = 402;
-      } else if (error.message.includes("AI")) {
-        errorMessage = "AI servisi şu anda kullanılamıyor. Lütfen tekrar deneyin.";
-      }
-    }
-    
+    console.error('Error in analyze-palmistry function:', error);
     return new Response(JSON.stringify({ 
-      error: errorMessage
+      error: 'İşlem sırasında bir hata oluştu'
     }), {
-      status: statusCode,
+      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

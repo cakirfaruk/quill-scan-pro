@@ -1,25 +1,17 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.78.0'
-import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts'
-import { createLogger } from '../_shared/logger.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const logger = createLogger('delete-user');
-
 Deno.serve(async (req) => {
-  const startTime = performance.now();
-  const requestId = crypto.randomUUID();
-  
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    logger.success({ requestId, action: 'request_received' });
     const authHeader = req.headers.get('Authorization')!
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -27,7 +19,7 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     )
 
-    // Check if user is authenticated
+    // Check if user is admin
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -36,28 +28,18 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Rate limiting - sensitive operation
-    const rateLimitResult = await checkRateLimit(
-      supabaseClient,
-      user.id,
-      {
-        ...RateLimitPresets.SENSITIVE,
-        endpoint: 'delete-user',
-      }
-    )
+    // Check if user has admin role using user_roles table
+    const { data: userRole } = await supabaseClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .single()
 
-    if (!rateLimitResult.allowed) {
-      return new Response(JSON.stringify({ 
-        error: 'Çok fazla istek. Lütfen daha sonra tekrar deneyin.',
-        resetAt: rateLimitResult.resetAt
-      }), {
-        status: 429,
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json',
-          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-          'X-RateLimit-Reset': rateLimitResult.resetAt.toISOString(),
-        }
+    if (!userRole) {
+      return new Response(JSON.stringify({ error: 'Not admin' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
@@ -69,125 +51,21 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Check if user is deleting their own account OR is an admin
-    const isOwnAccount = user.id === userId
-    const { data: userRole } = await supabaseClient
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .single()
-    const isAdmin = !!userRole
-
-    if (!isOwnAccount && !isAdmin) {
-      return new Response(JSON.stringify({ error: 'Unauthorized: You can only delete your own account' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    console.log(`Starting cascade deletion for user: ${userId}`)
-
-    // Create admin client for cascade deletion
+    // Delete user from auth
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Cascade delete all user data (order matters due to foreign keys)
-    const deletions = [
-      // Analysis history
-      supabaseAdmin.from('analysis_history').delete().eq('user_id', userId),
-      supabaseAdmin.from('birth_chart_analyses').delete().eq('user_id', userId),
-      supabaseAdmin.from('coffee_fortune_readings').delete().eq('user_id', userId),
-      supabaseAdmin.from('compatibility_analyses').delete().eq('user_id', userId),
-      supabaseAdmin.from('daily_horoscopes').delete().eq('user_id', userId),
-      supabaseAdmin.from('dream_interpretations').delete().eq('user_id', userId),
-      supabaseAdmin.from('numerology_analyses').delete().eq('user_id', userId),
-      supabaseAdmin.from('palmistry_readings').delete().eq('user_id', userId),
-      supabaseAdmin.from('tarot_readings').delete().eq('user_id', userId),
-      
-      // Social content
-      supabaseAdmin.from('post_shares').delete().eq('user_id', userId),
-      supabaseAdmin.from('post_comments').delete().eq('user_id', userId),
-      supabaseAdmin.from('post_likes').delete().eq('user_id', userId),
-      supabaseAdmin.from('posts').delete().eq('user_id', userId),
-      supabaseAdmin.from('stories').delete().eq('user_id', userId),
-      supabaseAdmin.from('reels').delete().eq('user_id', userId),
-      
-      // Messages
-      supabaseAdmin.from('messages').delete().eq('sender_id', userId),
-      supabaseAdmin.from('messages').delete().eq('receiver_id', userId),
-      supabaseAdmin.from('scheduled_messages').delete().eq('sender_id', userId),
-      
-      // Social connections
-      supabaseAdmin.from('friends').delete().eq('user_id', userId),
-      supabaseAdmin.from('friends').delete().eq('friend_id', userId),
-      supabaseAdmin.from('blocked_users').delete().eq('user_id', userId),
-      supabaseAdmin.from('blocked_users').delete().eq('blocked_user_id', userId),
-      
-      // Matching
-      supabaseAdmin.from('swipes').delete().eq('user_id', userId),
-      supabaseAdmin.from('swipes').delete().eq('target_user_id', userId),
-      supabaseAdmin.from('matches').delete().eq('user1_id', userId),
-      supabaseAdmin.from('matches').delete().eq('user2_id', userId),
-      
-      // Notifications
-      supabaseAdmin.from('notifications').delete().eq('user_id', userId),
-      
-      // Gamification
-      supabaseAdmin.from('user_badges').delete().eq('user_id', userId),
-      supabaseAdmin.from('mission_completions').delete().eq('user_id', userId),
-      supabaseAdmin.from('user_mission_progress').delete().eq('user_id', userId),
-      supabaseAdmin.from('user_weekly_progress').delete().eq('user_id', userId),
-      
-      // Transactions
-      supabaseAdmin.from('credit_transactions').delete().eq('user_id', userId),
-      
-      // Sessions and tracking
-      supabaseAdmin.from('user_sessions').delete().eq('user_id', userId),
-      
-      // Finally, delete profile
-      supabaseAdmin.from('profiles').delete().eq('user_id', userId),
-    ]
-
-    // Execute all deletions
-    const results = await Promise.allSettled(deletions)
-    
-    // Log any deletion errors (but don't fail the entire process)
-    results.forEach((result, index) => {
-      if (result.status === 'rejected') {
-        console.error(`Deletion ${index} failed:`, result.reason)
-      }
-    })
-
-    console.log('Cascade deletion completed, deleting auth user')
-
-    // Delete user from auth (this will cascade delete user_roles automatically)
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
-    if (deleteError) {
-      console.error('Auth deletion error:', deleteError)
-      throw deleteError
-    }
+    if (deleteError) throw deleteError
 
-    const duration = performance.now() - startTime;
-    logger.performance(duration, true);
-    logger.success({ requestId, action: 'user_deleted', userId, duration: `${duration.toFixed(2)}ms` });
-
-    return new Response(JSON.stringify({ 
-      success: true,
-      message: 'Hesabınız ve tüm verileriniz başarıyla silindi'
-    }), {
+    return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (error: any) {
-    const duration = performance.now() - startTime;
-    await logger.critical(error as Error, { requestId, duration: `${duration.toFixed(2)}ms` });
-    logger.performance(duration, false, (error as Error).constructor.name);
-    return new Response(JSON.stringify({ 
-      error: 'Kullanıcı silinirken hata oluştu',
-      details: error.message 
-    }), {
+    console.error('Error deleting user:', error)
+    return new Response(JSON.stringify({ error: 'Kullanıcı silinirken hata oluştu' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })

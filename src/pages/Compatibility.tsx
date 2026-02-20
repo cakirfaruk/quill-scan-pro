@@ -38,7 +38,7 @@ const Compatibility = () => {
     birthPlace?: string;
     gender?: string;
   }>({ gender: "male" });
-  
+
   const [file2, setFile2] = useState<File | null>(null);
   const [preview2, setPreview2] = useState<string | null>(null);
   const [person2Data, setPerson2Data] = useState<{
@@ -48,19 +48,18 @@ const Compatibility = () => {
     birthPlace?: string;
     gender?: string;
   }>({ gender: "female" });
-  
+
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<CompatibilityResult | null>(null);
   const [credits, setCredits] = useState(0);
-  
-  const [selectedAnalysisTypes, setSelectedAnalysisTypes] = useState<string[]>(["handwriting"]);
-  
+
+  const [selectedAnalysisTypes, setSelectedAnalysisTypes] = useState<string[]>(["numerology"]);
+
   const analysisTypes = [
-    { id: "handwriting", name: "El Yazısı Analizi", cost: 50 },
     { id: "numerology", name: "Numeroloji Analizi", cost: 50 },
     { id: "birth_chart", name: "Doğum Haritası Analizi", cost: 50 },
   ];
-  
+
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -104,25 +103,19 @@ const Compatibility = () => {
   };
 
   const validateInputs = () => {
-    const needsHandwriting = selectedAnalysisTypes.includes("handwriting");
     const needsNumerology = selectedAnalysisTypes.includes("numerology");
     const needsBirthChart = selectedAnalysisTypes.includes("birth_chart");
-
-    // El yazısı seçiliyse dosya zorunlu
-    if (needsHandwriting && (!file1 || !file2)) {
-      return "El yazısı analizi için her iki kişinin de yazı örneği gerekli.";
-    }
 
     // Numeroloji seçiliyse isim ve doğum tarihi zorunlu
     if (needsNumerology) {
       const missingFields1: string[] = [];
       const missingFields2: string[] = [];
-      
+
       if (!person1Data.fullName) missingFields1.push("Ad Soyad");
       if (!person1Data.birthDate) missingFields1.push("Doğum Tarihi");
       if (!person2Data.fullName) missingFields2.push("Ad Soyad");
       if (!person2Data.birthDate) missingFields2.push("Doğum Tarihi");
-      
+
       if (missingFields1.length > 0) {
         return `Birinci kişi için eksik bilgiler: ${missingFields1.join(", ")}. Lütfen Ayarlar > Profil Düzenle sayfasından profil bilgilerinizi güncelleyin.`;
       }
@@ -135,17 +128,17 @@ const Compatibility = () => {
     if (needsBirthChart) {
       const missingFields1: string[] = [];
       const missingFields2: string[] = [];
-      
+
       if (!person1Data.fullName) missingFields1.push("Ad Soyad");
       if (!person1Data.birthDate) missingFields1.push("Doğum Tarihi");
       if (!person1Data.birthTime) missingFields1.push("Doğum Saati");
       if (!person1Data.birthPlace) missingFields1.push("Doğum Yeri");
-      
+
       if (!person2Data.fullName) missingFields2.push("Ad Soyad");
       if (!person2Data.birthDate) missingFields2.push("Doğum Tarihi");
       if (!person2Data.birthTime) missingFields2.push("Doğum Saati");
       if (!person2Data.birthPlace) missingFields2.push("Doğum Yeri");
-      
+
       if (missingFields1.length > 0) {
         return `Birinci kişi için eksik bilgiler: ${missingFields1.join(", ")}. Lütfen Ayarlar > Profil Düzenle sayfasından profil bilgilerinizi güncelleyin.`;
       }
@@ -171,7 +164,7 @@ const Compatibility = () => {
     }
 
     const totalCost = getTotalCost();
-    
+
     if (credits < totalCost) {
       toast({
         title: "Yetersiz kredi",
@@ -184,31 +177,14 @@ const Compatibility = () => {
     setIsAnalyzing(true);
 
     try {
-      const reader1 = new FileReader();
-      const reader2 = new FileReader();
-
-      const base64Promise1 = new Promise<string>((resolve) => {
-        reader1.onload = () => resolve(reader1.result as string);
-      });
-      const base64Promise2 = new Promise<string>((resolve) => {
-        reader2.onload = () => resolve(reader2.result as string);
-      });
-
       let image1 = null;
       let image2 = null;
 
-      // Sadece el yazısı analizi seçiliyse dosyaları oku
-      if (selectedAnalysisTypes.includes("handwriting")) {
-        reader1.readAsDataURL(file1!);
-        reader2.readAsDataURL(file2!);
-        [image1, image2] = await Promise.all([base64Promise1, base64Promise2]);
-      }
-
       const { data, error } = await supabase.functions.invoke("analyze-compatibility", {
-        body: { 
-          image1, 
-          image2, 
-          gender1: person1Data.gender || "male", 
+        body: {
+          image1,
+          image2,
+          gender1: person1Data.gender || "male",
           gender2: person2Data.gender || "female",
           name1: person1Data.fullName,
           birthDate1: person1Data.birthDate,
@@ -382,11 +358,10 @@ const Compatibility = () => {
             {analysisTypes.map((type) => (
               <div
                 key={type.id}
-                className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-colors ${
-                  selectedAnalysisTypes.includes(type.id)
-                    ? "bg-primary/10 border-primary"
-                    : "bg-card hover:bg-accent"
-                }`}
+                className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-colors ${selectedAnalysisTypes.includes(type.id)
+                  ? "bg-primary/10 border-primary"
+                  : "bg-card hover:bg-accent"
+                  }`}
                 onClick={() => toggleAnalysisType(type.id)}
               >
                 <div className="flex items-center space-x-3">
@@ -418,6 +393,7 @@ const Compatibility = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Person 1 */}
+          {/* Person 1 */}
           <div className="space-y-6">
             <PersonSelector
               label="Birinci Kişi"
@@ -431,34 +407,6 @@ const Compatibility = () => {
                 gender: true,
               }}
             />
-
-            {selectedAnalysisTypes.includes("handwriting") && (
-              <Card className="p-6">
-                <Label className="mb-3 block">El Yazısı Örneği</Label>
-                {!file1 ? (
-                  <UploadZone onFileSelect={(file, preview) => { setFile1(file); setPreview1(preview); }} />
-                ) : (
-                  <div className="space-y-4">
-                    {preview1 === "pdf" ? (
-                      <div className="flex items-center gap-4 p-6 bg-muted rounded-lg">
-                        <FileText className="w-12 h-12 text-primary" />
-                        <div>
-                          <p className="font-semibold text-foreground">{file1.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {(file1.size / 1024).toFixed(2)} KB
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <img src={preview1} alt="Birinci yazı" className="w-full h-48 object-contain bg-muted rounded-lg" />
-                    )}
-                    <Button variant="outline" onClick={() => { setFile1(null); setPreview1(null); }}>
-                      Değiştir
-                    </Button>
-                  </div>
-                )}
-              </Card>
-            )}
           </div>
 
           {/* Person 2 */}
@@ -475,34 +423,6 @@ const Compatibility = () => {
                 gender: true,
               }}
             />
-
-            {selectedAnalysisTypes.includes("handwriting") && (
-              <Card className="p-6">
-                <Label className="mb-3 block">El Yazısı Örneği</Label>
-                {!file2 ? (
-                  <UploadZone onFileSelect={(file, preview) => { setFile2(file); setPreview2(preview); }} />
-                ) : (
-                  <div className="space-y-4">
-                    {preview2 === "pdf" ? (
-                      <div className="flex items-center gap-4 p-6 bg-muted rounded-lg">
-                        <FileText className="w-12 h-12 text-primary" />
-                        <div>
-                          <p className="font-semibold text-foreground">{file2.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {(file2.size / 1024).toFixed(2)} KB
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <img src={preview2} alt="İkinci yazı" className="w-full h-48 object-contain bg-muted rounded-lg" />
-                    )}
-                    <Button variant="outline" onClick={() => { setFile2(null); setPreview2(null); }}>
-                      Değiştir
-                    </Button>
-                  </div>
-                )}
-              </Card>
-            )}
           </div>
         </div>
 
@@ -531,7 +451,7 @@ const Compatibility = () => {
               Yetersiz kredi! Bu analiz için {getTotalCost()} kredi gerekli.
             </p>
           )}
-          
+
           {selectedAnalysisTypes.length === 0 && (
             <p className="text-sm text-destructive mt-4">
               Lütfen en az bir analiz türü seçin.

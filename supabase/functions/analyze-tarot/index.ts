@@ -1,9 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.78.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
-import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts';
-import { createLogger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,19 +21,12 @@ const tarotSchema = z.object({
   })).min(1).max(10)
 });
 
-const logger = createLogger('analyze-tarot');
-
 serve(async (req) => {
-  const startTime = performance.now();
-  const requestId = crypto.randomUUID();
-  let userId: string | undefined;
-  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    logger.success({ requestId, action: 'request_received' });
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Authorization header gerekli' }), {
@@ -61,31 +52,41 @@ serve(async (req) => {
       });
     }
 
-    userId = user.id; // Store userId for error logging
+    // Database-backed rate limiting
+    const rateLimitWindow = 60000; // 1 minute
+    const rateLimitMax = 10;
+    const now = new Date();
+    const windowStart = new Date(now.getTime() - rateLimitWindow);
 
-    // Rate limiting using shared utility
-    const rateLimitResult = await checkRateLimit(
-      supabaseClient,
-      user.id,
-      {
-        ...RateLimitPresets.ANALYSIS,
-        endpoint: 'analyze-tarot',
-      }
-    );
+    const { data: rateLimit } = await supabaseClient
+      .from('rate_limits')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('endpoint', 'analyze-tarot')
+      .gte('window_start', windowStart.toISOString())
+      .single();
 
-    if (!rateLimitResult.allowed) {
-      return new Response(JSON.stringify({ 
-        error: 'Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin.',
-        resetAt: rateLimitResult.resetAt
-      }), {
+    if (rateLimit && rateLimit.request_count >= rateLimitMax) {
+      return new Response(JSON.stringify({ error: 'Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin.' }), {
         status: 429,
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json',
-          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-          'X-RateLimit-Reset': rateLimitResult.resetAt.toISOString(),
-        }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    if (rateLimit) {
+      await supabaseClient
+        .from('rate_limits')
+        .update({ request_count: rateLimit.request_count + 1 })
+        .eq('id', rateLimit.id);
+    } else {
+      await supabaseClient
+        .from('rate_limits')
+        .insert({ 
+          user_id: user.id, 
+          endpoint: 'analyze-tarot', 
+          request_count: 1, 
+          window_start: now.toISOString() 
+        });
     }
 
     const body = await req.json();
@@ -93,11 +94,7 @@ serve(async (req) => {
     // Validate input
     const validation = tarotSchema.safeParse(body);
     if (!validation.success) {
-      await logger.warning('Validation error', { 
-        requestId,
-        userId: user?.id,
-        errors: validation.error.errors 
-      });
+      console.error('Validation error:', validation.error);
       return new Response(JSON.stringify({ 
         error: 'Geçersiz veri formatı',
         details: validation.error.errors[0].message 
@@ -108,12 +105,7 @@ serve(async (req) => {
     }
 
     const { spreadType, question, selectedCards } = validation.data;
-    logger.success({ 
-      requestId, 
-      action: 'input_validated',
-      spreadType, 
-      cardsCount: selectedCards.length 
-    });
+    console.log('Tarot reading request:', { spreadType, question, cardsCount: selectedCards.length });
 
     // Check and deduct credits
     const { data: profile } = await supabaseClient
@@ -123,19 +115,11 @@ serve(async (req) => {
       .single();
 
     if (!profile || profile.credits < 30) {
-      await logger.warning('Insufficient credits', {
-        requestId,
-        userId: user.id,
-        currentCredits: profile?.credits || 0,
-        requiredCredits: 30
-      });
       return new Response(JSON.stringify({ error: 'Yetersiz kredi' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    logger.success({ requestId, action: 'credits_verified', credits: profile.credits });
 
     // Create detailed prompt based on spread type
     const spreadDescriptions: Record<string, string> = {
@@ -170,19 +154,19 @@ Sonunda:
 - Tavsiyeler sun (2-3 paragraf)
 - Dikkat edilmesi gerekenleri belirt (2 paragraf)
 
-ÖNEMLİ: Yorumlar mistik, derin ve rehberlik edici olsun. Her kart için ne kadar detay gerekiyorsa o kadar yaz, içerik zengin ve kapsamlı olmalı.
+ÖNEMLİ: Yorumlar mistik, derin ve rehberlik edici olsun. Her kart için yaklaşık 300-400 kelime kullan.
 
 JSON formatında şu yapıda cevap ver:
 {
   "cards": [
     {
       "position": "Pozisyon adı",
-      "interpretation": "Detaylı ve kapsamlı yorum",
+      "interpretation": "Detaylı yorum",
       "keywords": ["anahtar", "kelimeler"]
     }
   ],
-  "overall": "Genel özet ve detaylı yorum",
-  "advice": "Detaylı tavsiyeler",
+  "overall": "Genel özet ve yorum",
+  "advice": "Tavsiyeler",
   "warnings": "Dikkat edilmesi gerekenler"
 }`;
 
@@ -195,7 +179,7 @@ JSON formatında şu yapıda cevap ver:
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'Sen uzman bir tarot okuyucususun. Kartları derinlemesine ve mistik bir şekilde yorumlarsın. TAMAMEN TÜRKÇE yanıt verirsin, hiçbir İngilizce kelime kullanmazsın.' },
+          { role: 'system', content: 'Sen uzman bir tarot okuyucususun. Kartları derinlemesine ve mistik bir şekilde yorumlarsın.' },
           { role: 'user', content: prompt }
         ],
         response_format: { type: "json_object" },
@@ -256,22 +240,12 @@ JSON formatında şu yapıda cevap ver:
       .single();
 
     if (saveError) {
-      await logger.error('Error saving reading', {
-        requestId,
-        userId: user.id,
-        error: saveError
-      });
+      console.error('Error saving reading:', saveError);
       return new Response(JSON.stringify({ error: 'Okuma kaydedilemedi' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    logger.success({ 
-      requestId, 
-      action: 'reading_saved', 
-      readingId: reading.id 
-    });
 
     // Record transaction
     await supabaseClient
@@ -284,46 +258,17 @@ JSON formatında şu yapıda cevap ver:
         reference_id: reading.id
       });
 
-    const duration = performance.now() - startTime;
-    logger.performance(duration, true);
-    logger.success({ 
-      requestId, 
-      action: 'request_completed',
-      duration: `${duration.toFixed(2)}ms` 
-    });
+    console.log('Tarot reading completed successfully');
 
     return new Response(JSON.stringify({ interpretation, readingId: reading.id }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    const duration = performance.now() - startTime;
-    await logger.critical(error as Error, {
-      requestId,
-      userId,
-      duration: `${duration.toFixed(2)}ms`,
-      stack: (error as Error).stack
-    });
-    logger.performance(duration, false, (error as Error).constructor.name);
-    
-    let errorMessage = "Tarot okuma sırasında bir hata oluştu";
-    let statusCode = 500;
-    
-    if (error instanceof Error) {
-      if (error.message === "Unauthorized") {
-        errorMessage = "Oturum açmanız gerekiyor";
-        statusCode = 401;
-      } else if (error.message === "Insufficient credits") {
-        errorMessage = "Yetersiz kredi. Lütfen kredi satın alın.";
-        statusCode = 402;
-      } else if (error.message.includes("AI")) {
-        errorMessage = "AI servisi şu anda kullanılamıyor. Lütfen tekrar deneyin.";
-      }
-    }
-    
+    console.error('Error in analyze-tarot function:', error);
     return new Response(JSON.stringify({ 
-      error: errorMessage 
+      error: 'İşlem sırasında bir hata oluştu'
     }), {
-      status: statusCode,
+      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

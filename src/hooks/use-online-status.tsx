@@ -54,50 +54,54 @@ export const useOnlineStatus = (userId: string | null) => {
 
 export const useUpdateOnlineStatus = () => {
   useEffect(() => {
+    let intervalId: NodeJS.Timeout;
     let userId: string | null = null;
-    let isUpdating = false;
 
-    const updateStatus = async (online: boolean) => {
-      if (isUpdating) return; // Eğer zaten güncelleme yapılıyorsa çık
-      isUpdating = true;
+    const updateStatus = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+      userId = user.id;
 
-        userId = user.id;
-
-        await supabase
-          .from("profiles")
-          .update({
-            is_online: online,
-            last_seen: new Date().toISOString(),
-          })
-          .eq("user_id", user.id);
-      } finally {
-        isUpdating = false;
-      }
+      await supabase
+        .from("profiles")
+        .update({
+          is_online: true,
+          last_seen: new Date().toISOString(),
+        })
+        .eq("user_id", user.id);
     };
 
-    // İLK yükleme: Online yap
-    updateStatus(true);
-
-    // SADECE sayfa kapatılırken offline yap - 30 saniyede bir güncelleme YOK!
-    const handleBeforeUnload = () => {
-      if (userId) {
-        // Sync call for beforeunload
-        navigator.sendBeacon(
-          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}`,
-          JSON.stringify({ is_online: false, last_seen: new Date().toISOString() })
-        );
+    const setOffline = async () => {
+      if (!userId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        userId = user.id;
       }
+
+      await supabase
+        .from("profiles")
+        .update({
+          is_online: false,
+          last_seen: new Date().toISOString(),
+        })
+        .eq("user_id", userId);
+    };
+
+    // Update status immediately and then every 30 seconds
+    updateStatus();
+    intervalId = setInterval(updateStatus, 30000);
+
+    // Set offline when leaving page
+    const handleBeforeUnload = () => {
+      setOffline();
     };
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        updateStatus(false);
+        setOffline();
       } else {
-        updateStatus(true);
+        updateStatus();
       }
     };
 
@@ -105,9 +109,10 @@ export const useUpdateOnlineStatus = () => {
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
+      clearInterval(intervalId);
       window.removeEventListener("beforeunload", handleBeforeUnload);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      updateStatus(false);
+      setOffline();
     };
   }, []);
 };

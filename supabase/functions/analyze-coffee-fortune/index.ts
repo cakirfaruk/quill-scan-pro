@@ -1,9 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.78.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
-import { checkRateLimit, RateLimitPresets } from '../_shared/rateLimit.ts';
-import { createLogger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,7 +9,26 @@ const corsHeaders = {
 };
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-const logger = createLogger('analyze-coffee-fortune');
+
+// Rate limiting map
+const rateLimits = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const limit = rateLimits.get(userId);
+  
+  if (!limit || now > limit.resetAt) {
+    rateLimits.set(userId, { count: 1, resetAt: now + 60000 }); // 1 minute window
+    return true;
+  }
+  
+  if (limit.count >= 10) { // 10 requests per minute
+    return false;
+  }
+  
+  limit.count++;
+  return true;
+}
 
 // Input validation schema - max 10MB base64 images
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
@@ -31,15 +48,11 @@ const coffeeFortuneSchema = z.object({
 });
 
 serve(async (req) => {
-  const startTime = performance.now();
-  const requestId = crypto.randomUUID();
-  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    logger.success({ requestId, action: 'request_received' });
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Authorization header gerekli' }), {
@@ -58,46 +71,27 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !user) {
-      await logger.error('Authentication failed', { requestId, error: userError });
+      console.error('Auth error:', userError);
       return new Response(JSON.stringify({ error: 'Yetkisiz erişim' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Rate limiting using shared utility
-    const rateLimitResult = await checkRateLimit(
-      supabaseClient,
-      user.id,
-      {
-        ...RateLimitPresets.ANALYSIS,
-        endpoint: 'analyze-coffee-fortune',
-      }
-    );
-
-    if (!rateLimitResult.allowed) {
-      return new Response(JSON.stringify({ 
-        error: 'Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin.',
-        resetAt: rateLimitResult.resetAt
-      }), {
+    // Rate limiting
+    if (!checkRateLimit(user.id)) {
+      return new Response(JSON.stringify({ error: 'Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin.' }), {
         status: 429,
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json',
-          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-          'X-RateLimit-Reset': rateLimitResult.resetAt.toISOString(),
-        }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    
-    logger.success({ requestId, action: 'user_authenticated', userId: user.id });
 
     const body = await req.json();
     
     // Validate input
     const validation = coffeeFortuneSchema.safeParse(body);
     if (!validation.success) {
-      await logger.warning('Validation failed', { requestId, userId: user.id, error: validation.error });
+      console.error('Validation error:', validation.error);
       return new Response(JSON.stringify({ 
         error: 'Geçersiz veri formatı',
         details: validation.error.errors[0].message 
@@ -108,7 +102,7 @@ serve(async (req) => {
     }
 
     const { image1, image2, image3 } = validation.data;
-    logger.success({ requestId, action: 'validation_passed', userId: user.id });
+    console.log('Coffee fortune reading request received');
 
     // Check and deduct credits
     const { data: profile } = await supabaseClient
@@ -118,14 +112,13 @@ serve(async (req) => {
       .single();
 
     if (!profile || profile.credits < 40) {
-      await logger.warning('Insufficient credits', { requestId, userId: user.id, available: profile?.credits });
       return new Response(JSON.stringify({ error: 'Yetersiz kredi' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const prompt = `Sen uzman bir falcısın. Bu 3 farklı açıdan çekilmiş kahve fincanı fotoğraflarını detaylı analiz et ve TAMAMEN TÜRKÇE fal yorumu yap.
+    const prompt = `Sen uzman bir falcısın. Bu 3 farklı açıdan çekilmiş kahve fincanı fotoğraflarını detaylı analiz et ve Türkçe fal yorumu yap.
 
 İlk fotoğraf: Fincanın ana görünümü
 İkinci fotoğraf: Farklı açıdan görünüm
@@ -144,9 +137,8 @@ Her bölümde:
 - Mistik ve anlayışlı ol
 - Kişiye özel yorumlar yap
 - Yaklaşık 200-300 kelime kullan
-- TAMAMEN TÜRKÇE yaz, hiçbir İngilizce kelime kullanma
 
-ÖNEMLİ: Fotoğraflardaki detayları incele ve yorumla. Cevabın TAMAMEN TÜRKÇE olmalı.
+ÖNEMLİ: Fotoğraflardaki detayları incele ve yorumla.
 
 JSON formatında şu yapıda cevap ver:
 {
@@ -172,7 +164,7 @@ JSON formatında şu yapıda cevap ver:
         messages: [
           { 
             role: 'system', 
-            content: 'Sen deneyimli bir kahve falı uzmanısın. Fotoğraflardaki kahve telve şekillerini yorumlarsın. TAMAMEN TÜRKÇE yanıt verirsin, hiçbir İngilizce kelime kullanmazsın.' 
+            content: 'Sen deneyimli bir kahve falı uzmanısın. Fotoğraflardaki kahve telve şekillerini yorumlarsın.' 
           },
           { 
             role: 'user', 
@@ -189,10 +181,10 @@ JSON formatında şu yapıda cevap ver:
     });
 
     const data = await response.json();
-    logger.success({ requestId, action: 'ai_response_received', userId: user.id });
+    console.log('AI response received:', JSON.stringify(data).slice(0, 200));
 
     if (!response.ok || !data.choices || !data.choices[0]) {
-      await logger.error('AI API error', { requestId, userId: user.id, error: data });
+      console.error('AI API error:', data);
       return new Response(JSON.stringify({ error: 'AI servisi geçici olarak kullanılamıyor' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -242,7 +234,7 @@ JSON formatında şu yapıda cevap ver:
       .single();
 
     if (saveError) {
-      await logger.error('Error saving reading', { requestId, userId: user.id, error: saveError });
+      console.error('Error saving reading:', saveError);
       return new Response(JSON.stringify({ error: 'Okuma kaydedilemedi' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -260,45 +252,17 @@ JSON formatında şu yapıda cevap ver:
         reference_id: reading.id
       });
 
-    const duration = performance.now() - startTime;
-    logger.performance(duration, true);
-    logger.success({ 
-      requestId, 
-      action: 'request_completed',
-      userId: user.id,
-      duration: `${duration.toFixed(2)}ms` 
-    });
+    console.log('Coffee fortune reading completed successfully');
 
     return new Response(JSON.stringify({ interpretation, readingId: reading.id }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    const duration = performance.now() - startTime;
-    await logger.critical(error as Error, {
-      requestId,
-      duration: `${duration.toFixed(2)}ms`
-    });
-    logger.performance(duration, false, (error as Error).constructor.name);
-    
-    let errorMessage = "Kahve falı analizi sırasında bir hata oluştu";
-    let statusCode = 500;
-    
-    if (error instanceof Error) {
-      if (error.message === "Unauthorized") {
-        errorMessage = "Oturum açmanız gerekiyor";
-        statusCode = 401;
-      } else if (error.message === "Insufficient credits") {
-        errorMessage = "Yetersiz kredi. Lütfen kredi satın alın.";
-        statusCode = 402;
-      } else if (error.message.includes("AI")) {
-        errorMessage = "AI servisi şu anda kullanılamıyor. Lütfen tekrar deneyin.";
-      }
-    }
-    
+    console.error('Error in analyze-coffee-fortune function:', error);
     return new Response(JSON.stringify({ 
-      error: errorMessage
+      error: 'İşlem sırasında bir hata oluştu'
     }), {
-      status: statusCode,
+      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

@@ -1,0 +1,114 @@
+
+> vite_react_shadcn_ts@0.0.0 build
+> vite build
+
+[36mvite v5.4.19 [32mbuilding for production...[36m[39m
+transforming...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[32m✓[39m 4116 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mregisterSW.js                         [39m[1m[2m  0.13 kB[22m[1m[22m
+[2mdist/[22m[32mmanifest.webmanifest                  [39m[1m[2m  1.06 kB[22m[1m[22m
+[2mdist/[22m[32mindex.html                            [39m[1m[2m  6.54 kB[22m[1m[22m[2m │ gzip:   2.65 kB[22m
+[2mdist/[22m[32massets/App-BbUYDs4p.tsx               [39m[1m[2m 12.12 kB[22m[1m[22m
+[2mdist/[22m[32massets/asilan-adam-DuTlvgPJ.png       [39m[1m[2m 47.51 kB[22m[1m[22m
+[2mdist/[22m[32massets/deli-CkOBcarM.png              [39m[1m[2m 52.05 kB[22m[1m[22m
+[2mdist/[22m[32massets/ermis-BEQEg2Q4.png             [39m[1m[2m 52.59 kB[22m[1m[22m
+[2mdist/[22m[32massets/bas-rahip-aziz-DFr0clWu.png    [39m[1m[2m 56.01 kB[22m[1m[22m
+[2mdist/[22m[32massets/bas-rahibe-azize-B-UFqSn3.png  [39m[1m[2m 57.23 kB[22m[1m[22m
+[2mdist/[22m[32massets/yildiz-BpGoDxBr.png            [39m[1m[2m 58.67 kB[22m[1m[22m
+[2mdist/[22m[32massets/kader-carki-BKL_s-hZ.png       [39m[1m[2m 60.18 kB[22m[1m[22m
+[2mdist/[22m[32massets/seytan-DNSxpdPx.png            [39m[1m[2m 62.39 kB[22m[1m[22m
+[2mdist/[22m[32massets/imparator-OeN4lyHa.png         [39m[1m[2m 62.51 kB[22m[1m[22m
+[2mdist/[22m[32massets/guc-C8yFchbM.png               [39m[1m[2m 62.83 kB[22m[1m[22m
+[2mdist/[22m[32massets/ay-DhPxJSQJ.png                [39m[1m[2m 65.12 kB[22m[1m[22m
+[2mdist/[22m[32massets/buyucu-y5y0yc16.png            [39m[1m[2m 65.24 kB[22m[1m[22m
+[2mdist/[22m[32massets/savas-arabasi-CIPsGQs2.png     [39m[1m[2m 66.25 kB[22m[1m[22m
+[2mdist/[22m[32massets/yikilan-kule-C9amEdTp.png      [39m[1m[2m 67.15 kB[22m[1m[22m
+[2mdist/[22m[32massets/adalet-DriONdMk.png            [39m[1m[2m 68.49 kB[22m[1m[22m
+[2mdist/[22m[32massets/olum-D6brGABC.png              [39m[1m[2m 70.02 kB[22m[1m[22m
+[2mdist/[22m[32massets/imparatorice-CW4aNMEj.png      [39m[1m[2m 79.32 kB[22m[1m[22m
+[2mdist/[22m[32massets/card-back-BFp6wRXc.png         [39m[1m[2m 81.16 kB[22m[1m[22m
+[2mdist/[22m[32massets/dunya-Dq2cf7fL.png             [39m[1m[2m 83.29 kB[22m[1m[22m
+[2mdist/[22m[32massets/asiklar-DslJ6AAj.png           [39m[1m[2m 86.86 kB[22m[1m[22m
+[2mdist/[22m[32massets/denge-A74_2kH3.png             [39m[1m[2m 87.98 kB[22m[1m[22m
+[2mdist/[22m[32massets/gunes-CCnijZFm.png             [39m[1m[2m 88.94 kB[22m[1m[22m
+[2mdist/[22m[32massets/mahkeme-Df-ZGmow.png           [39m[1m[2m 92.87 kB[22m[1m[22m
+[2mdist/[22m[35massets/index-BDaPJ5Qv.css             [39m[1m[2m138.78 kB[22m[1m[22m[2m │ gzip:  20.69 kB[22m
+[2mdist/[22m[36massets/radix-vendor-CttiZxwU.js       [39m[1m[2m  0.22 kB[22m[1m[22m[2m │ gzip:   0.17 kB[22m
+[2mdist/[22m[36massets/NotFound-DY5Q9oRl.js           [39m[1m[2m  0.64 kB[22m[1m[22m[2m │ gzip:   0.38 kB[22m
+[2mdist/[22m[36massets/Credits-DLlRdAgJ.js            [39m[1m[2m  3.99 kB[22m[1m[22m[2m │ gzip:   1.47 kB[22m
+[2mdist/[22m[36massets/FAQ-uWwo8pSp.js                [39m[1m[2m  5.84 kB[22m[1m[22m[2m │ gzip:   2.65 kB[22m
+[2mdist/[22m[36massets/About-CV61xlIJ.js              [39m[1m[2m  6.10 kB[22m[1m[22m[2m │ gzip:   1.72 kB[22m
+[2mdist/[22m[36massets/VapidKeyGenerator-B6H_A8ts.js  [39m[1m[2m  6.43 kB[22m[1m[22m[2m │ gzip:   2.38 kB[22m
+[2mdist/[22m[36massets/page-groups-BcuUx-5c.js        [39m[1m[2m  6.58 kB[22m[1m[22m[2m │ gzip:   2.44 kB[22m
+[2mdist/[22m[36massets/date-vendor-bp21y9uV.js        [39m[1m[2m 30.70 kB[22m[1m[22m[2m │ gzip:   8.30 kB[22m
+[2mdist/[22m[36massets/page-match-DDACLvAN.js         [39m[1m[2m 37.62 kB[22m[1m[22m[2m │ gzip:  10.65 kB[22m
+[2mdist/[22m[36massets/index-ATuXD9aj.js              [39m[1m[2m 46.03 kB[22m[1m[22m[2m │ gzip:  13.09 kB[22m
+[2mdist/[22m[36massets/page-profile-BVhWYIMY.js       [39m[1m[2m 52.14 kB[22m[1m[22m[2m │ gzip:  13.40 kB[22m
+[2mdist/[22m[36massets/page-messages--5Pua6sy.js      [39m[1m[2m 74.63 kB[22m[1m[22m[2m │ gzip:  18.35 kB[22m
+[2mdist/[22m[36massets/framer-vendor-Dk5sQTei.js      [39m[1m[2m 79.39 kB[22m[1m[22m[2m │ gzip:  24.75 kB[22m
+[2mdist/[22m[36massets/page-feed-Cd63W1NG.js          [39m[1m[2m119.46 kB[22m[1m[22m[2m │ gzip:  31.80 kB[22m
+[2mdist/[22m[36massets/supabase-vendor-B0uCpknZ.js    [39m[1m[2m157.25 kB[22m[1m[22m[2m │ gzip:  38.88 kB[22m
+[2mdist/[22m[36massets/pages-medium-DvjPB92O.js       [39m[1m[2m312.13 kB[22m[1m[22m[2m │ gzip:  69.41 kB[22m
+[2mdist/[22m[36massets/react-core-DpdwCLji.js         [39m[1m[2m640.47 kB[22m[1m[22m[2m │ gzip: 176.48 kB[22m
+[2mdist/[22m[36massets/vendor-CcpqcUrj.js             [39m[1m[2m850.97 kB[22m[1m[22m[2m │ gzip: 257.90 kB[22m
+[32m✓ built in 24.29s[39m
+
+✨ [vite-plugin-compression]:algorithm=gzip - compressed file successfully: 
+dist/C:/Users/msi/astro_son/assets/About-CV61xlIJ.js.gz               6.09kb / gzip: 1.68kb
+dist/C:/Users/msi/astro_son/assets/FAQ-uWwo8pSp.js.gz                 5.96kb / gzip: 2.59kb
+dist/C:/Users/msi/astro_son/assets/Credits-DLlRdAgJ.js.gz             3.92kb / gzip: 1.43kb
+dist/C:/Users/msi/astro_son/assets/date-vendor-bp21y9uV.js.gz         30.16kb / gzip: 8.10kb
+dist/C:/Users/msi/astro_son/assets/page-groups-BcuUx-5c.js.gz         6.45kb / gzip: 2.38kb
+dist/C:/Users/msi/astro_son/assets/page-match-DDACLvAN.js.gz          36.91kb / gzip: 10.36kb
+dist/C:/Users/msi/astro_son/assets/index-ATuXD9aj.js.gz               45.13kb / gzip: 12.76kb
+dist/C:/Users/msi/astro_son/index.html.gz                             6.42kb / gzip: 2.58kb
+dist/C:/Users/msi/astro_son/assets/VapidKeyGenerator-B6H_A8ts.js.gz   6.37kb / gzip: 2.32kb
+dist/C:/Users/msi/astro_son/assets/page-profile-BVhWYIMY.js.gz        51.32kb / gzip: 13.01kb
+dist/C:/Users/msi/astro_son/manifest.json.gz                          1.82kb / gzip: 0.58kb
+dist/C:/Users/msi/astro_son/sw.js.gz                                  2.34kb / gzip: 0.90kb
+dist/C:/Users/msi/astro_son/assets/page-messages--5Pua6sy.js.gz       73.23kb / gzip: 17.84kb
+dist/C:/Users/msi/astro_son/assets/framer-vendor-Dk5sQTei.js.gz       77.53kb / gzip: 24.07kb
+dist/C:/Users/msi/astro_son/assets/page-feed-Cd63W1NG.js.gz           117.24kb / gzip: 30.93kb
+dist/C:/Users/msi/astro_son/assets/index-BDaPJ5Qv.css.gz              135.52kb / gzip: 19.99kb
+dist/C:/Users/msi/astro_son/assets/supabase-vendor-B0uCpknZ.js.gz     153.56kb / gzip: 37.87kb
+dist/C:/Users/msi/astro_son/assets/pages-medium-DvjPB92O.js.gz        307.44kb / gzip: 67.30kb
+dist/C:/Users/msi/astro_son/assets/react-core-DpdwCLji.js.gz          625.47kb / gzip: 171.61kb
+dist/C:/Users/msi/astro_son/assets/vendor-CcpqcUrj.js.gz              831.04kb / gzip: 251.30kb
+dist/C:/Users/msi/astro_son/stats.html.gz                             2076.57kb / gzip: 200.41kb
+
+
+
+✨ [vite-plugin-compression]:algorithm=brotliCompress - compressed file successfully: 
+dist/C:/Users/msi/astro_son/assets/FAQ-uWwo8pSp.js.br                 5.96kb / brotliCompress: 2.36kb
+dist/C:/Users/msi/astro_son/assets/About-CV61xlIJ.js.br               6.09kb / brotliCompress: 1.52kb
+dist/C:/Users/msi/astro_son/assets/index-ATuXD9aj.js.br               45.13kb / brotliCompress: 11.21kb
+dist/C:/Users/msi/astro_son/assets/date-vendor-bp21y9uV.js.br         30.16kb / brotliCompress: 7.19kb
+dist/C:/Users/msi/astro_son/assets/page-groups-BcuUx-5c.js.br         6.45kb / brotliCompress: 2.15kb
+dist/C:/Users/msi/astro_son/assets/Credits-DLlRdAgJ.js.br             3.92kb / brotliCompress: 1.30kb
+dist/C:/Users/msi/astro_son/assets/page-profile-BVhWYIMY.js.br        51.32kb / brotliCompress: 11.59kb
+dist/C:/Users/msi/astro_son/assets/index-BDaPJ5Qv.css.br              135.52kb / brotliCompress: 15.64kb
+dist/C:/Users/msi/astro_son/assets/page-match-DDACLvAN.js.br          36.91kb / brotliCompress: 9.24kb
+dist/C:/Users/msi/astro_son/assets/VapidKeyGenerator-B6H_A8ts.js.br   6.37kb / brotliCompress: 2.08kb
+dist/C:/Users/msi/astro_son/index.html.br                             6.42kb / brotliCompress: 2.22kb
+dist/C:/Users/msi/astro_son/manifest.json.br                          1.82kb / brotliCompress: 0.51kb
+dist/C:/Users/msi/astro_son/sw.js.br                                  2.34kb / brotliCompress: 0.75kb
+dist/C:/Users/msi/astro_son/assets/page-messages--5Pua6sy.js.br       73.23kb / brotliCompress: 15.71kb
+dist/C:/Users/msi/astro_son/assets/framer-vendor-Dk5sQTei.js.br       77.53kb / brotliCompress: 21.50kb
+dist/C:/Users/msi/astro_son/assets/page-feed-Cd63W1NG.js.br           117.24kb / brotliCompress: 25.59kb
+dist/C:/Users/msi/astro_son/assets/supabase-vendor-B0uCpknZ.js.br     153.56kb / brotliCompress: 32.83kb
+dist/C:/Users/msi/astro_son/assets/pages-medium-DvjPB92O.js.br        307.44kb / brotliCompress: 53.17kb
+dist/C:/Users/msi/astro_son/assets/react-core-DpdwCLji.js.br          625.47kb / brotliCompress: 139.60kb
+dist/C:/Users/msi/astro_son/assets/vendor-CcpqcUrj.js.br              831.04kb / brotliCompress: 212.26kb
+dist/C:/Users/msi/astro_son/stats.html.br                             2076.57kb / brotliCompress: 136.15kb
+
+
+
+PWA v1.1.0
+mode      generateSW
+precache  57 entries (4132.12 KiB)
+files generated
+  dist/sw.js
+  dist/workbox-4f46c945.js

@@ -4,11 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PhotoCaptureEditor } from "@/components/PhotoCaptureEditor";
 import { toast } from "sonner";
-import { Upload, X, Sparkles, Camera } from "lucide-react";
+import { Upload, X, Sparkles } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
-import { logError } from "@/utils/analytics";
+import { ShareButton } from "@/components/ShareButton";
+import { useOGImage } from "@/hooks/use-og-image";
+import { sendAnalysisNotification } from "@/utils/sendAnalysisNotification";
 
 const CoffeeFortune = () => {
   const navigate = useNavigate();
@@ -16,8 +17,13 @@ const CoffeeFortune = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [userCredits, setUserCredits] = useState(0);
-  const [showPhotoEditor, setShowPhotoEditor] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
+  
+  // Generate OG image when result is available
+  useOGImage({
+    title: result ? 'Kahve Falı Yorumu' : '',
+    description: result?.interpretation?.overview || '',
+    type: 'coffee'
+  });
 
   useEffect(() => {
     checkAuth();
@@ -64,17 +70,6 @@ const CoffeeFortune = () => {
     reader.readAsDataURL(file);
   };
 
-  const handlePhotoCapture = (imageData: string) => {
-    const newImages = [...images];
-    newImages[currentImageIndex] = imageData;
-    setImages(newImages);
-  };
-
-  const openPhotoEditor = (index: number) => {
-    setCurrentImageIndex(index);
-    setShowPhotoEditor(true);
-  };
-
   const removeImage = (index: number) => {
     const newImages = [...images];
     newImages[index] = "";
@@ -97,6 +92,7 @@ const CoffeeFortune = () => {
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const { data: { user } } = await supabase.auth.getUser();
       
       const { data, error } = await supabase.functions.invoke('analyze-coffee-fortune', {
         body: { 
@@ -110,28 +106,22 @@ const CoffeeFortune = () => {
       });
 
       if (error) throw error;
-      
-      if (data?.error) {
-        throw new Error(data.error);
-      }
 
       setResult(data.interpretation);
       setUserCredits(prev => prev - 40);
       toast.success("Kahve falınız hazır!");
+      
+      // Send push notification
+      if (user) {
+        sendAnalysisNotification(
+          user.id,
+          'coffee',
+          'Kahve Falı Yorumlandı'
+        );
+      }
     } catch (error: any) {
-      console.error("Coffee fortune analysis error:", error);
-      
-      const errorMessage = error.message || "Analiz sırasında hata oluştu";
-      
-      logError(
-        'Kahve falı analizi hatası',
-        error.stack,
-        'CoffeeFortuneError',
-        'error',
-        { hasImages: images.filter(Boolean).length }
-      );
-      
-      toast.error(errorMessage);
+      console.error("Error:", error);
+      toast.error(error.message || "Analiz sırasında hata oluştu");
     } finally {
       setIsAnalyzing(false);
     }
@@ -190,26 +180,16 @@ const CoffeeFortune = () => {
                         </Button>
                       </div>
                     ) : (
-                      <div className="space-y-2">
-                        <Button
-                          onClick={() => openPhotoEditor(index)}
-                          className="w-full gap-2"
-                          variant="outline"
-                        >
-                          <Camera className="w-4 h-4" />
-                          Kamera ile Çek
-                        </Button>
-                        <label className="flex flex-col items-center justify-center aspect-square border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer">
-                          <Upload className="w-8 h-8 text-muted-foreground mb-2" />
-                          <span className="text-sm text-muted-foreground">veya Galeri</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => handleImageUpload(e, index)}
-                          />
-                        </label>
-                      </div>
+                      <label className="flex flex-col items-center justify-center aspect-square border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer">
+                        <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                        <span className="text-sm text-muted-foreground">Fotoğraf Yükle</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleImageUpload(e, index)}
+                        />
+                      </label>
                     )}
                   </div>
                 ))}
@@ -246,8 +226,18 @@ const CoffeeFortune = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>☕ Kahve Falı Sonucu</CardTitle>
-                <CardDescription>Fincanınız yorumlandı</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>☕ Kahve Falı Sonucu</CardTitle>
+                    <CardDescription>Fincanınız yorumlandı</CardDescription>
+                  </div>
+                  <ShareButton
+                    title="Kahve Falım - Astro Social"
+                    text="Kahve falına baktım! ☕ Fincanımdaki semboller yorumlandı. Sonuçlarımı Astro Social'da keşfedin!"
+                    variant="outline"
+                    size="sm"
+                  />
+                </div>
               </CardHeader>
               <CardContent>
                 <AnalysisDetailView result={result} analysisType="coffee_fortune" />
@@ -260,14 +250,6 @@ const CoffeeFortune = () => {
           </div>
         )}
       </main>
-
-      <PhotoCaptureEditor
-        open={showPhotoEditor}
-        onOpenChange={setShowPhotoEditor}
-        onCapture={handlePhotoCapture}
-        title="Kahve Fincanı Fotoğrafı"
-        description="Fincanınızın net bir fotoğrafını çekin"
-      />
     </div>
   );
 };

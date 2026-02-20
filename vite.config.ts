@@ -2,8 +2,9 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
-import { visualizer } from "rollup-plugin-visualizer";
 import { VitePWA } from 'vite-plugin-pwa';
+import { visualizer } from 'rollup-plugin-visualizer';
+import viteCompression from 'vite-plugin-compression';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -14,139 +15,154 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
-    mode === "development" && visualizer({
+    // Bundle analyzer - run 'npm run build' to see stats.html
+    mode === 'production' && visualizer({
+      filename: './dist/stats.html',
       open: false,
-      filename: 'dist/stats.html',
       gzipSize: true,
       brotliSize: true,
     }),
+    // Gzip and Brotli compression
+    mode === 'production' && viteCompression({
+      algorithm: 'gzip',
+      ext: '.gz',
+      threshold: 1024, // Only compress files larger than 1KB
+      deleteOriginFile: false,
+    }),
+    mode === 'production' && viteCompression({
+      algorithm: 'brotliCompress',
+      ext: '.br',
+      threshold: 1024,
+      deleteOriginFile: false,
+    }),
     VitePWA({
       registerType: 'autoUpdate',
-      devOptions: {
-        enabled: false // Disable PWA in development to prevent caching issues
-      },
-      includeAssets: ['icon-192.png', 'icon-512.png', 'robots.txt'],
-      
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff,woff2,ttf,otf}'],
-        
-          runtimeCaching: [
-            // JavaScript files - Always check network first for updates
-            {
-              urlPattern: /\.js$/,
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'js-cache',
-                networkTimeoutSeconds: 3,
-                expiration: {
-                  maxEntries: 50,
-                  maxAgeSeconds: 60 * 60 * 24 // 24 hours
-                }
-              }
-            },
-            {
-              urlPattern: /^https:\/\/ekkymypfvixlysrgtabz\.supabase\.co\/rest\/v1\/.*/,
-              handler: 'StaleWhileRevalidate',
-              options: {
-                cacheName: 'supabase-api-cache',
-                expiration: {
-                  maxEntries: 200,
-                  maxAgeSeconds: 60 * 60 * 24 * 7
-                },
-                cacheableResponse: {
-                  statuses: [0, 200]
-                }
-              }
-            },
-          {
-            urlPattern: /^https:\/\/ekkymypfvixlysrgtabz\.supabase\.co\/auth\/.*/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'auth-cache',
-              networkTimeoutSeconds: 3,
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 30
-              }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'images-cache',
-              expiration: {
-                maxEntries: 500,
-                maxAgeSeconds: 60 * 60 * 24 * 90
-              }
-            }
-          },
-          {
-            urlPattern: /\/assets\/tarot\/.*/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'tarot-images-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 365
-              }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 20,
-                maxAgeSeconds: 60 * 60 * 24 * 365
-              }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/cdn\..*/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'cdn-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30
-              }
-            }
-          }
-        ],
-        
-        cleanupOutdatedCaches: true,
-        skipWaiting: true,
-        clientsClaim: true,
-        navigationPreload: true,
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024
-      },
-      
+      injectRegister: 'script-defer',
+      includeAssets: ['favicon.ico', 'robots.txt', 'icon-*.png', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Stellara - Kendini Keşfet',
-        short_name: 'Stellara',
-        description: 'Analizler, Fallar, Kehanetler, Eşleşmeler',
-        theme_color: '#8B5CF6',
-        background_color: '#0F172A',
+        name: 'Astro Social - Analizler, Fallar, Kehanetler',
+        short_name: 'Astro Social',
+        description: 'AI destekli çoklu analiz platformu - Tarot, kahve falı, rüya tabiri, astroloji ve daha fazlası',
+        theme_color: '#9b87f5',
+        background_color: '#0a0a0a',
         display: 'standalone',
-        orientation: 'portrait-primary',
-        start_url: '/feed',
+        orientation: 'portrait',
         scope: '/',
+        start_url: '/',
         icons: [
           {
             src: '/icon-192.png',
             sizes: '192x192',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
           },
           {
             src: '/icon-512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: '/icon-maskable-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
+          }
+        ],
+        screenshots: [
+          {
+            src: '/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            form_factor: 'narrow'
+          }
+        ],
+        categories: ['lifestyle', 'entertainment', 'social'],
+        shortcuts: [
+          {
+            name: 'Tarot Falı',
+            short_name: 'Tarot',
+            description: 'Tarot kartları ile fal bak',
+            url: '/tarot',
+            icons: [{ src: '/icon-192.png', sizes: '192x192' }]
+          },
+          {
+            name: 'Kahve Falı',
+            short_name: 'Kahve',
+            description: 'Kahve falı yorumla',
+            url: '/coffee-fortune',
+            icons: [{ src: '/icon-192.png', sizes: '192x192' }]
           }
         ]
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        globIgnores: ['**/stats.html'],
+        // Aggressive caching for better performance
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'supabase-api-cache',
+              networkTimeoutSeconds: 3,
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 5 // 5 minutes for API responses
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'supabase-storage-cache',
+              expiration: {
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days for storage
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/.*\.(png|jpg|jpeg|svg|gif|webp)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images-cache',
+              expiration: {
+                maxEntries: 300,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              },
+              plugins: [
+                {
+                  cacheWillUpdate: async ({ response }) => {
+                    // Only cache successful responses
+                    return response.status === 200 ? response : null;
+                  }
+                }
+              ]
+            }
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              }
+            }
+          }
+        ]
+      },
+      devOptions: {
+        enabled: false
       }
     })
   ].filter(Boolean),
@@ -156,41 +172,78 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
+    // Manual chunk splitting for better caching
     rollupOptions: {
       output: {
-        // Simplified chunking - let Vite handle React automatically
         manualChunks: (id) => {
-          // Only split very heavy libraries
-          if (id.includes('fabric')) {
-            return 'fabric';
+          // CRITICAL: Keep React and React-DOM together to avoid dispatcher issues
+          if (id.includes('node_modules')) {
+            // React ecosystem - MUST be in same chunk
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-is') || id.includes('scheduler')) {
+              return 'react-core';
+            }
+            // React Router
+            if (id.includes('react-router')) {
+              return 'react-router';
+            }
+            // Framer Motion (animation library)
+            if (id.includes('framer-motion')) {
+              return 'framer-vendor';
+            }
+            // Radix UI (component library) - group together
+            if (id.includes('@radix-ui')) {
+              return 'radix-vendor';
+            }
+            // Supabase
+            if (id.includes('@supabase')) {
+              return 'supabase-vendor';
+            }
+            // React Query
+            if (id.includes('@tanstack/react-query')) {
+              return 'query-vendor';
+            }
+            // Date utilities
+            if (id.includes('date-fns')) {
+              return 'date-vendor';
+            }
+            // Other vendors
+            return 'vendor';
           }
-          
-          if (id.includes('recharts')) {
-            return 'recharts';
+
+          // Page chunks - only split large pages
+          if (id.includes('src/pages/')) {
+            const pageName = id.split('src/pages/')[1]?.split('.')[0];
+            if (!pageName) return undefined;
+
+            // Keep smaller pages in main bundle
+            const smallPages = ['About', 'FAQ', 'Credits', 'NotFound', 'VapidKeyGenerator'];
+            if (smallPages.some(p => pageName.includes(p))) {
+              return undefined; // Include in main bundle
+            }
+
+            // Large pages get their own chunks
+            const largePages = ['Feed', 'Messages', 'Groups', 'Match', 'Profile'];
+            if (largePages.some(p => pageName.includes(p))) {
+              return `page-${pageName.toLowerCase()}`;
+            }
+
+            // Group medium pages
+            return 'pages-medium';
           }
-          
-          if (id.includes('emoji-picker-react')) {
-            return 'emoji-picker';
-          }
-          
-          // Let Vite handle everything else including React
         },
       },
     },
+    // Increase chunk size warning limit
     chunkSizeWarningLimit: 1000,
+    // Enable source maps for production debugging (optional)
     sourcemap: false,
-    minify: 'esbuild',
-    cssMinify: true,
-    target: 'es2020',
-  },
-  // Optimize dependencies
-  optimizeDeps: {
-    include: [
-      'react', 
-      'react-dom', 
-      'react-router-dom',
-      '@supabase/supabase-js',
-      '@supabase/postgrest-js'
-    ],
+    // Minify with terser for better compression
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console logs in production
+        drop_debugger: true,
+      },
+    },
   },
 }));

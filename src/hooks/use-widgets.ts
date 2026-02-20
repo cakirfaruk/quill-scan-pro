@@ -81,17 +81,6 @@ const DEFAULT_WIDGETS: Widget[] = [
     order: 5,
   },
   {
-    id: "handwriting",
-    title: "El Yazısı Analizi",
-    description: "Kişilik özelliklerinizi el yazınızdan keşfedin",
-    icon: "✍️",
-    color: "from-blue-500 to-cyan-500",
-    path: "/handwriting",
-    category: "analysis",
-    isPinned: false,
-    order: 6,
-  },
-  {
     id: "numerology",
     title: "Numeroloji",
     description: "İsim ve doğum tarihinizle sayıların gücünü keşfedin",

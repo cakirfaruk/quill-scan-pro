@@ -6,24 +6,10 @@ import { Header } from "@/components/Header";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useSwipe } from "@/hooks/use-gestures";
-import { Heart, MessageCircle, Share2, Bookmark, Flag, Music, Volume2, VolumeX, Maximize, Minimize, Send, MoreVertical } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreVertical, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SkeletonReel } from "@/components/SkeletonReel";
-import { motion, AnimatePresence } from "framer-motion";
-import { formatDistanceToNow } from "date-fns";
-import { tr } from "date-fns/locale";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface Reel {
   id: string;
@@ -40,7 +26,6 @@ interface Reel {
   likes_count?: number;
   comments_count?: number;
   is_liked?: boolean;
-  is_saved?: boolean;
 }
 
 const Reels = () => {
@@ -48,18 +33,6 @@ const Reels = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showComments, setShowComments] = useState(false);
-  const [showReport, setShowReport] = useState(false);
-  const [reportReason, setReportReason] = useState("");
-  const [reportDetails, setReportDetails] = useState("");
-  const [comments, setComments] = useState<any[]>([]);
-  const [commentText, setCommentText] = useState("");
-  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
-  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
-  const [swipeDirection, setSwipeDirection] = useState<"up" | "down" | null>(null);
-  const [likeAnimation, setLikeAnimation] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -67,20 +40,12 @@ const Reels = () => {
   const swipeHandlers = useSwipe({
     onSwipeUp: () => {
       if (currentIndex < reels.length - 1) {
-        setSwipeDirection("up");
-        setTimeout(() => {
-          setCurrentIndex(prev => prev + 1);
-          setSwipeDirection(null);
-        }, 150);
+        setCurrentIndex(prev => prev + 1);
       }
     },
     onSwipeDown: () => {
       if (currentIndex > 0) {
-        setSwipeDirection("down");
-        setTimeout(() => {
-          setCurrentIndex(prev => prev - 1);
-          setSwipeDirection(null);
-        }, 150);
+        setCurrentIndex(prev => prev - 1);
       }
     },
     threshold: 50,
@@ -91,6 +56,7 @@ const Reels = () => {
   }, []);
 
   useEffect(() => {
+    // Scroll to current reel
     if (containerRef.current) {
       const reelElements = containerRef.current.children;
       if (reelElements[currentIndex]) {
@@ -112,6 +78,7 @@ const Reels = () => {
 
       setCurrentUserId(user.id);
 
+      // Get friends' reels and own reels
       const { data: friendsData } = await supabase
         .from("friends")
         .select("friend_id, user_id")
@@ -124,6 +91,7 @@ const Reels = () => {
 
       const userIds = [user.id, ...friendIds];
 
+      // Get only reels posts (post_type='reels')
       const { data: reelsData, error } = await supabase
         .from("posts")
         .select(`
@@ -141,30 +109,11 @@ const Reels = () => {
 
       if (error) throw error;
 
-      // Get likes for these posts
-      const postIds = reelsData?.map(p => p.id) || [];
-      const { data: likesData } = await supabase
-        .from("post_likes")
-        .select("post_id")
-        .eq("user_id", user.id)
-        .in("post_id", postIds);
-
-      const likedPostIds = new Set(likesData?.map(l => l.post_id) || []);
-
-      // Get saves for these posts
-      const { data: savesData } = await supabase
-        .from("saved_posts")
-        .select("post_id")
-        .eq("user_id", user.id)
-        .in("post_id", postIds);
-
-      const savedPostIds = new Set(savesData?.map(s => s.post_id) || []);
-
       const reelsWithData = reelsData?.map(post => ({
         id: post.id,
         user_id: post.user_id,
         video_url: post.media_url || "",
-        thumbnail_url: "",
+        thumbnail_url: "", // posts don't have thumbnails, can be added later if needed
         title: post.content || "",
         description: post.content,
         created_at: post.created_at,
@@ -172,10 +121,6 @@ const Reels = () => {
           username: post.profiles?.username || "Unknown",
           profile_photo: post.profiles?.profile_photo || "",
         },
-        likes_count: (post as any).likes_count || 0,
-        comments_count: (post as any).comments_count || 0,
-        is_liked: likedPostIds.has(post.id),
-        is_saved: savedPostIds.has(post.id),
       })) || [];
 
       setReels(reelsWithData);
@@ -195,214 +140,15 @@ const Reels = () => {
     if (!currentUserId) return;
 
     try {
-      setLikeAnimation(true);
-      setTimeout(() => setLikeAnimation(false), 1000);
-
-      const { data: existingLike } = await supabase
-        .from("post_likes")
-        .select("*")
-        .eq("post_id", reelId)
-        .eq("user_id", currentUserId)
-        .single();
-
-      if (existingLike) {
-        await supabase
-          .from("post_likes")
-          .delete()
-          .eq("post_id", reelId)
-          .eq("user_id", currentUserId);
-
-        setReels(prev => prev.map(r => 
-          r.id === reelId 
-            ? { ...r, is_liked: false, likes_count: (r.likes_count || 1) - 1 }
-            : r
-        ));
-      } else {
-        await supabase.from("post_likes").insert({
-          post_id: reelId,
-          user_id: currentUserId,
-        });
-
-        setReels(prev => prev.map(r => 
-          r.id === reelId 
-            ? { ...r, is_liked: true, likes_count: (r.likes_count || 0) + 1 }
-            : r
-        ));
-      }
+      // Toggle like logic here
+      toast({
+        title: "Beğenildi!",
+        description: "Video beğenildi.",
+      });
     } catch (error: any) {
       console.error("Like error:", error);
-      toast({
-        title: "Hata",
-        description: "Beğeni kaydedilemedi",
-        variant: "destructive",
-      });
     }
   };
-
-  const handleSave = async (reelId: string) => {
-    if (!currentUserId) return;
-
-    try {
-      const reel = reels.find(r => r.id === reelId);
-      if (!reel) return;
-
-      if (reel.is_saved) {
-        await supabase
-          .from("saved_posts")
-          .delete()
-          .eq("post_id", reelId)
-          .eq("user_id", currentUserId);
-
-        setReels(prev => prev.map(r => 
-          r.id === reelId ? { ...r, is_saved: false } : r
-        ));
-
-        toast({
-          title: "Kaydedilenden kaldırıldı",
-        });
-      } else {
-        await supabase.from("saved_posts").insert({
-          post_id: reelId,
-          user_id: currentUserId,
-        });
-
-        setReels(prev => prev.map(r => 
-          r.id === reelId ? { ...r, is_saved: true } : r
-        ));
-
-        toast({
-          title: "Kaydedildi",
-          description: "Kaydettiğin gönderiler profilinde görünür.",
-        });
-      }
-    } catch (error) {
-      console.error("Save error:", error);
-      toast({
-        title: "Hata",
-        description: "İşlem gerçekleştirilemedi",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleReport = async () => {
-    if (!currentUserId || !reportReason) return;
-
-    setIsSubmittingReport(true);
-    try {
-      const currentReel = reels[currentIndex];
-      
-      await (supabase.from("reports") as any).insert({
-        reporter_id: currentUserId,
-        reported_content_type: "post",
-        reported_content_id: currentReel.id,
-        reported_user_id: currentReel.user_id,
-        reason: reportReason,
-        details: reportDetails,
-      });
-
-      toast({
-        title: "Rapor gönderildi",
-        description: "İncelememiz tamamlandığında size bilgi vereceğiz.",
-      });
-
-      setShowReport(false);
-      setReportReason("");
-      setReportDetails("");
-    } catch (error) {
-      console.error("Report error:", error);
-      toast({
-        title: "Hata",
-        description: "Rapor gönderilemedi",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmittingReport(false);
-    }
-  };
-
-  const loadComments = async (reelId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("post_comments")
-        .select(`
-          *,
-          profiles:user_id (
-            username,
-            full_name,
-            profile_photo
-          )
-        `)
-        .eq("post_id", reelId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setComments(data || []);
-    } catch (error) {
-      console.error("Error loading comments:", error);
-    }
-  };
-
-  const handleOpenComments = (reelId: string) => {
-    setShowComments(true);
-    loadComments(reelId);
-  };
-
-  const handleSubmitComment = async () => {
-    if (!commentText.trim() || !currentUserId) return;
-
-    setIsSubmittingComment(true);
-    try {
-      const currentReel = reels[currentIndex];
-      const { error } = await supabase.from("post_comments").insert({
-        post_id: currentReel.id,
-        user_id: currentUserId,
-        content: commentText,
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Yorum eklendi",
-      });
-
-      setCommentText("");
-      loadComments(currentReel.id);
-      
-      setReels(prev => prev.map(r => 
-        r.id === currentReel.id 
-          ? { ...r, comments_count: (r.comments_count || 0) + 1 }
-          : r
-      ));
-    } catch (error) {
-      toast({
-        title: "Hata",
-        description: "Yorum eklenemedi",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmittingComment(false);
-    }
-  };
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
-    }
-  };
-
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
-  }, []);
 
   const handleViewTracked = async (duration: number) => {
     if (!currentUserId) return;
@@ -422,7 +168,7 @@ const Reels = () => {
 
   if (isLoading) {
     return (
-      <div className="page-container-mobile bg-black">
+      <div className="min-h-screen bg-black">
         <Header />
         <SkeletonReel />
       </div>
@@ -431,9 +177,9 @@ const Reels = () => {
 
   if (reels.length === 0) {
     return (
-      <div className="page-container-mobile bg-black">
+      <div className="min-h-screen bg-black">
         <Header />
-        <div className="flex flex-col items-center justify-center py-12 text-white p-8">
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] text-white p-8">
           <Music className="w-16 h-16 mb-4 opacity-50" />
           <h2 className="text-2xl font-bold mb-2">Henüz Video Yok</h2>
           <p className="text-muted-foreground text-center">
@@ -447,344 +193,116 @@ const Reels = () => {
   const currentReel = reels[currentIndex];
 
   return (
-    <div className={cn("bg-black", isFullscreen ? "fixed inset-0 z-50" : "page-container-mobile")}>
-      {!isFullscreen && <Header />}
+    <div className="min-h-screen bg-black">
+      <Header />
       
       <div
         ref={containerRef}
-        className={cn(
-          "overflow-hidden snap-y snap-mandatory",
-          isFullscreen ? "h-screen" : "h-[calc(100vh-64px)]"
-        )}
+        className="h-[calc(100vh-64px)] overflow-hidden snap-y snap-mandatory"
         {...swipeHandlers}
       >
-        <AnimatePresence mode="wait">
-          {reels.map((reel, index) => {
-            if (index !== currentIndex) return null;
-            
-            return (
-              <motion.div
-                key={reel.id}
-                initial={{ opacity: 0, y: swipeDirection === "up" ? 100 : swipeDirection === "down" ? -100 : 0 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: swipeDirection === "up" ? -100 : swipeDirection === "down" ? 100 : 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="h-full w-full snap-start relative"
-              >
-                <VideoPlayer
-                  src={reel.video_url}
-                  thumbnail={reel.thumbnail_url}
-                  className="h-full w-full"
-                  autoPlay={true}
-                  loop
-                  muted={isMuted}
-                  onViewTracked={handleViewTracked}
-                  reelsMode={true}
-                />
-
-                {/* Like Animation */}
-                <AnimatePresence>
-                  {likeAnimation && (
-                    <motion.div
-                      initial={{ scale: 0, opacity: 1 }}
-                      animate={{ scale: 1.5, opacity: 0 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.8 }}
-                      className="absolute inset-0 flex items-center justify-center pointer-events-none z-50"
-                    >
-                      <Heart className="w-32 h-32 fill-red-500 text-red-500" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Top Controls */}
-                <div className="absolute top-4 right-4 z-40 flex flex-col gap-3">
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setIsMuted(!isMuted)}
-                    className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center border border-white/20"
-                  >
-                    {isMuted ? (
-                      <VolumeX className="w-5 h-5 text-white" />
-                    ) : (
-                      <Volume2 className="w-5 h-5 text-white" />
-                    )}
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={toggleFullscreen}
-                    className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center border border-white/20"
-                  >
-                    {isFullscreen ? (
-                      <Minimize className="w-5 h-5 text-white" />
-                    ) : (
-                      <Maximize className="w-5 h-5 text-white" />
-                    )}
-                  </motion.button>
-                </div>
-
-                {/* Overlay UI */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
-                  <div className="flex items-end justify-between">
-                    {/* Left side - User info and caption */}
-                    <div className="flex-1 space-y-3">
-                      <div
-                        className="flex items-center gap-3 cursor-pointer group"
-                        onClick={() => navigate(`/profile/${reel.user_id}`)}
-                      >
-                        <Avatar className="w-12 h-12 border-2 border-white group-hover:scale-110 transition-transform">
-                          <AvatarImage src={reel.user?.profile_photo} />
-                          <AvatarFallback className="bg-primary">
-                            {reel.user?.username.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-semibold text-white">@{reel.user?.username}</p>
-                        </div>
-                      </div>
-
-                      {reel.description && (
-                        <p className="text-sm text-white line-clamp-2">
-                          {reel.description}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Right side - Action buttons */}
-                    <div className="flex flex-col items-center gap-4 ml-4">
-                      <motion.button
-                        whileTap={{ scale: 0.8 }}
-                        className="flex flex-col items-center gap-1 group"
-                        onClick={() => handleLike(reel.id)}
-                      >
-                        <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center group-hover:scale-110 transition-transform border border-white/20">
-                          <Heart className={cn(
-                            "w-6 h-6 transition-all",
-                            reel.is_liked ? "fill-red-500 text-red-500" : "text-white"
-                          )} />
-                        </div>
-                        <span className="text-xs text-white font-medium">
-                          {reel.likes_count || 0}
-                        </span>
-                      </motion.button>
-
-                      <motion.button
-                        whileTap={{ scale: 0.8 }}
-                        className="flex flex-col items-center gap-1 group"
-                        onClick={() => handleOpenComments(reel.id)}
-                      >
-                        <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center group-hover:scale-110 transition-transform border border-white/20">
-                          <MessageCircle className="w-6 h-6 text-white" />
-                        </div>
-                        <span className="text-xs text-white font-medium">
-                          {reel.comments_count || 0}
-                        </span>
-                      </motion.button>
-
-                      <motion.button
-                        whileTap={{ scale: 0.8 }}
-                        className="flex flex-col items-center gap-1 group"
-                        onClick={() => handleSave(reel.id)}
-                      >
-                        <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center group-hover:scale-110 transition-transform border border-white/20">
-                          <Bookmark className={cn(
-                            "w-6 h-6 transition-all",
-                            reel.is_saved ? "fill-white text-white" : "text-white"
-                          )} />
-                        </div>
-                      </motion.button>
-
-                      <motion.button
-                        whileTap={{ scale: 0.8 }}
-                        className="flex flex-col items-center gap-1 group"
-                      >
-                        <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center group-hover:scale-110 transition-transform border border-white/20">
-                          <Share2 className="w-6 h-6 text-white" />
-                        </div>
-                      </motion.button>
-
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <motion.button
-                            whileTap={{ scale: 0.8 }}
-                            className="flex flex-col items-center gap-1 group"
-                          >
-                            <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center group-hover:scale-110 transition-transform border border-white/20">
-                              <MoreVertical className="w-6 h-6 text-white" />
-                            </div>
-                          </motion.button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setShowReport(true)}>
-                            <Flag className="w-4 h-4 mr-2" />
-                            Bildir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-
-                  {/* Progress indicator */}
-                  <div className="mt-4 flex gap-1">
-                    {reels.map((_, idx) => (
-                      <div
-                        key={idx}
-                        className={cn(
-                          "h-1 flex-1 rounded-full transition-all",
-                          idx === currentIndex ? "bg-white" : "bg-white/30"
-                        )}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-      </div>
-
-      {/* Comments Dialog */}
-      <Dialog open={showComments} onOpenChange={setShowComments}>
-        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col p-0">
-          <DialogHeader className="px-6 pt-6 pb-4 border-b">
-            <DialogTitle className="flex items-center gap-2">
-              <MessageCircle className="w-5 h-5 text-primary" />
-              Yorumlar
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-            {comments.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <MessageCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>Henüz yorum yok</p>
-                <p className="text-sm">İlk yorumu sen yap!</p>
-              </div>
-            ) : (
-              comments.map((comment) => (
-                <div key={comment.id} className="flex gap-3">
-                  <Avatar className="w-10 h-10 flex-shrink-0">
-                    <AvatarImage src={comment.profiles?.profile_photo} />
-                    <AvatarFallback>
-                      {comment.profiles?.username?.[0]?.toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="bg-secondary rounded-2xl px-4 py-2">
-                      <p className="font-semibold text-sm">
-                        {comment.profiles?.full_name || comment.profiles?.username}
-                      </p>
-                      <p className="text-sm">{comment.content}</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1 px-4">
-                      {formatDistanceToNow(new Date(comment.created_at), {
-                        addSuffix: true,
-                        locale: tr,
-                      })}
-                    </p>
-                  </div>
-                </div>
-              ))
+        {reels.map((reel, index) => (
+          <div
+            key={reel.id}
+            className={cn(
+              "h-full w-full snap-start relative",
+              index === currentIndex ? "block" : "hidden md:block"
             )}
-          </div>
+          >
+            <VideoPlayer
+              src={reel.video_url}
+              thumbnail={reel.thumbnail_url}
+              className="h-full w-full"
+              autoPlay={index === currentIndex}
+              loop
+              muted={false}
+              onViewTracked={index === currentIndex ? handleViewTracked : undefined}
+            />
 
-          <div className="border-t px-6 py-4 bg-background">
-            <div className="flex gap-2">
-              <Input
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Yorum yaz..."
-                className="flex-1"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmitComment();
-                  }
-                }}
-              />
-              <Button
-                onClick={handleSubmitComment}
-                disabled={!commentText.trim() || isSubmittingComment}
-                size="icon"
-              >
-                {isSubmittingComment ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-              </Button>
+            {/* Overlay UI */}
+            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+              <div className="flex items-end justify-between">
+                {/* Left side - User info and caption */}
+                <div className="flex-1 space-y-3">
+                  <div
+                    className="flex items-center gap-3 cursor-pointer group"
+                    onClick={() => navigate(`/profile/${reel.user?.username}`)}
+                  >
+                    <Avatar className="w-12 h-12 border-2 border-white group-hover:scale-110 transition-transform">
+                      <AvatarImage src={reel.user?.profile_photo} />
+                      <AvatarFallback className="bg-primary">
+                        {reel.user?.username.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold text-white">@{reel.user?.username}</p>
+                      <p className="text-sm text-white/80">{reel.title}</p>
+                    </div>
+                  </div>
+
+                  {reel.description && (
+                    <p className="text-sm text-white line-clamp-2">
+                      {reel.description}
+                    </p>
+                  )}
+                </div>
+
+                {/* Right side - Action buttons */}
+                <div className="flex flex-col items-center gap-6 ml-4">
+                  <button
+                    className="flex flex-col items-center gap-1 group"
+                    onClick={() => handleLike(reel.id)}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Heart className={cn(
+                        "w-6 h-6 transition-colors",
+                        reel.is_liked ? "fill-red-500 text-red-500" : "text-white"
+                      )} />
+                    </div>
+                    <span className="text-xs text-white font-medium">
+                      {reel.likes_count || 0}
+                    </span>
+                  </button>
+
+                  <button className="flex flex-col items-center gap-1 group">
+                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <MessageCircle className="w-6 h-6 text-white" />
+                    </div>
+                    <span className="text-xs text-white font-medium">
+                      {reel.comments_count || 0}
+                    </span>
+                  </button>
+
+                  <button className="flex flex-col items-center gap-1 group">
+                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Share2 className="w-6 h-6 text-white" />
+                    </div>
+                  </button>
+
+                  <button className="flex flex-col items-center gap-1 group">
+                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <MoreVertical className="w-6 h-6 text-white" />
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Progress indicator */}
+              <div className="mt-4 flex gap-1">
+                {reels.map((_, idx) => (
+                  <div
+                    key={idx}
+                    className={cn(
+                      "h-1 flex-1 rounded-full transition-all",
+                      idx === currentIndex ? "bg-white" : "bg-white/30"
+                    )}
+                  />
+                ))}
+              </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Report Dialog */}
-      <Dialog open={showReport} onOpenChange={setShowReport}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Flag className="w-5 h-5 text-destructive" />
-              İçeriği Bildir
-            </DialogTitle>
-            <DialogDescription>
-              Bu içeriği neden bildirmek istediğinizi belirtin.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <RadioGroup value={reportReason} onValueChange={setReportReason}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="spam" id="spam" />
-                <Label htmlFor="spam">Spam veya yanıltıcı içerik</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="inappropriate" id="inappropriate" />
-                <Label htmlFor="inappropriate">Uygunsuz içerik</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="harassment" id="harassment" />
-                <Label htmlFor="harassment">Taciz veya zorbalık</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="violence" id="violence" />
-                <Label htmlFor="violence">Şiddet veya tehdit</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="copyright" id="copyright" />
-                <Label htmlFor="copyright">Telif hakkı ihlali</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="other" id="other" />
-                <Label htmlFor="other">Diğer</Label>
-              </div>
-            </RadioGroup>
-
-            <div className="space-y-2">
-              <Label htmlFor="details">Ek bilgi (opsiyonel)</Label>
-              <Textarea
-                id="details"
-                value={reportDetails}
-                onChange={(e) => setReportDetails(e.target.value)}
-                placeholder="Detaylı açıklama ekleyebilirsiniz..."
-                rows={3}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowReport(false)}>
-              İptal
-            </Button>
-            <Button 
-              onClick={handleReport} 
-              disabled={!reportReason || isSubmittingReport}
-              variant="destructive"
-            >
-              {isSubmittingReport ? "Gönderiliyor..." : "Bildir"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        ))}
+      </div>
     </div>
   );
 };

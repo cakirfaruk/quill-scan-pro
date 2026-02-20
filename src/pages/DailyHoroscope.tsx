@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { toast } from "sonner";
 import { Sparkles, Star } from "lucide-react";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+import { ShareButton } from "@/components/ShareButton";
 
 const DailyHoroscope = () => {
   const navigate = useNavigate();
@@ -141,16 +142,26 @@ const DailyHoroscope = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Star className="w-6 h-6 text-violet-600" />
-                  Bugünkü Falınız
-                </CardTitle>
-                <CardDescription>
-                  {alreadyGenerated 
-                    ? "Bugün zaten falınızı almıştınız. Yarın yeni bir fal alabilirsiniz." 
-                    : "Günlük kehanetiniz hazır"
-                  }
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Star className="w-6 h-6 text-violet-600" />
+                      Bugünkü Falınız
+                    </CardTitle>
+                    <CardDescription>
+                      {alreadyGenerated 
+                        ? "Bugün zaten falınızı almıştınız. Yarın yeni bir fal alabilirsiniz." 
+                        : "Günlük kehanetiniz hazır"
+                      }
+                    </CardDescription>
+                  </div>
+                  <ShareButton
+                    title="Günlük Burcum - Astro Social"
+                    text="Günlük burcuma baktım! ✨ Bugünkü kehanetimi Astro Social'da keşfedin!"
+                    variant="outline"
+                    size="sm"
+                  />
+                </div>
               </CardHeader>
               <CardContent>
                 <AnalysisDetailView result={result} analysisType="daily_horoscope" />

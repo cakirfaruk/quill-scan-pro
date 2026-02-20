@@ -47,17 +47,21 @@ export async function subscribeToPushNotifications(): Promise<boolean> {
     await navigator.serviceWorker.ready;
 
     // Check if already subscribed
-    const swRegistration = registration as ServiceWorkerRegistration & { pushManager: PushManager };
-    let subscription = await swRegistration.pushManager.getSubscription();
+    let subscription = await registration.pushManager.getSubscription();
 
     if (!subscription) {
-      // VAPID public key
-      const vapidPublicKey = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEq5JAhzneEPYGQVoNY9D7bk2YDbrGRKumsNFitz4Awsd3cq10USM0i3pUCYmuFEnw42Q9sgB9783DEEMhYydjGQ';
+      // VAPID public key from environment
+      const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+
+      if (!vapidPublicKey) {
+        console.error('VAPID public key not configured');
+        return false;
+      }
 
       const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
 
       // Subscribe to push notifications
-      subscription = await swRegistration.pushManager.subscribe({
+      subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: convertedVapidKey as BufferSource,
       });
@@ -109,8 +113,7 @@ export async function unsubscribeFromPushNotifications(): Promise<boolean> {
       return false;
     }
 
-    const swReg = registration as ServiceWorkerRegistration & { pushManager: PushManager };
-    const subscription = await swReg.pushManager.getSubscription();
+    const subscription = await registration.pushManager.getSubscription();
     if (!subscription) {
       console.log('No subscription found');
       return false;

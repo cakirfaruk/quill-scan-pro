@@ -1,113 +1,105 @@
 import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { loadGoogleMaps } from "@/utils/googleMaps";
 
 interface PlaceAutocompleteInputProps {
   value: string;
   onChange: (value: string) => void;
-  onPlaceSelect?: (place: { name: string; latitude: number; longitude: number }) => void;
   placeholder?: string;
   id?: string;
 }
 
+// Declare google as a global
 declare global {
   interface Window {
     google: any;
+    initAutocomplete: () => void;
   }
 }
 
 export const PlaceAutocompleteInput = ({
   value,
   onChange,
-  onPlaceSelect,
   placeholder = "Örn: İstanbul, Türkiye",
   id = "birthPlace"
 }: PlaceAutocompleteInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [error, setError] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
+    // Singleton pattern for Google Maps script
+    const apiKey = "AIzaSyCONL709dmB9jCd3Pd2li5xACFF7qltmSI";
+    const scriptId = "google-maps-script";
 
-    // Load Google Maps
-    loadGoogleMaps()
-      .then(() => {
-        if (mounted) {
-          setIsLoaded(true);
-          setError(false);
-        }
-      })
-      .catch((err) => {
-        console.error('Failed to load Google Maps:', err);
-        if (mounted) {
-          setError(true);
-        }
+    const loadScript = () => {
+      // Check if already loaded in window
+      if (window.google && window.google.maps) {
+        setIsLoaded(true);
+        return;
+      }
+
+      // Check if script tag already exists
+      const existingScript = document.getElementById(scriptId);
+      if (existingScript) {
+        // If script exists but window.google not yet available, wait for it
+        existingScript.addEventListener("load", () => setIsLoaded(true));
+        return;
+      }
+
+      // Define callback function globally
+      window.initAutocomplete = () => {
+        setIsLoaded(true);
+      };
+
+      // Load script
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initAutocomplete`;
+      script.async = true;
+      script.defer = true;
+
+      script.addEventListener("error", () => {
+        console.error("Failed to load Google Maps script");
       });
 
+      document.head.appendChild(script);
+    };
+
+    loadScript();
+
     return () => {
-      mounted = false;
+      // Do NOT remove the script tag. Let it persist.
+      // Just clean up the global callback if needed, but keeping it is safer for re-mounts.
+      // delete window.initAutocomplete; 
     };
   }, []);
 
   useEffect(() => {
-    if (!isLoaded || !inputRef.current || !window.google?.maps?.places) return;
+    if (!isLoaded || !inputRef.current || !window.google) return;
 
-    try {
-      // Initialize autocomplete
-      autocompleteRef.current = new window.google.maps.places.Autocomplete(
-        inputRef.current,
-        {
-          types: ["(cities)"],
-          fields: ["formatted_address", "geometry", "name"]
-        }
-      );
+    // Initialize autocomplete
+    autocompleteRef.current = new window.google.maps.places.Autocomplete(
+      inputRef.current,
+      {
+        types: ["(cities)"],
+        fields: ["formatted_address", "geometry", "name"]
+      }
+    );
 
-      // Listen for place selection
-      autocompleteRef.current.addListener("place_changed", () => {
-        const place = autocompleteRef.current.getPlace();
-        if (place.formatted_address) {
-          onChange(place.formatted_address);
-          
-          // Callback with place details including coordinates
-          if (onPlaceSelect && place.geometry?.location) {
-            onPlaceSelect({
-              name: place.formatted_address,
-              latitude: place.geometry.location.lat(),
-              longitude: place.geometry.location.lng(),
-            });
-          }
-        }
-      });
-    } catch (err) {
-      console.error('Failed to initialize autocomplete:', err);
-      setError(true);
-    }
+    // Listen for place selection
+    autocompleteRef.current.addListener("place_changed", () => {
+      const place = autocompleteRef.current.getPlace();
+      if (place.formatted_address) {
+        onChange(place.formatted_address);
+      }
+    });
 
     return () => {
-      if (autocompleteRef.current && window.google?.maps?.event) {
-        try {
-          window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
-        } catch (err) {
-          console.error('Failed to cleanup autocomplete:', err);
-        }
+      if (autocompleteRef.current) {
+        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
       }
     };
-  }, [isLoaded, onChange, onPlaceSelect]);
-
-  // Fallback to regular input if Google Maps fails
-  if (error) {
-    return (
-      <Input
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        autoComplete="off"
-      />
-    );
-  }
+  }, [isLoaded, onChange]);
 
   return (
     <Input

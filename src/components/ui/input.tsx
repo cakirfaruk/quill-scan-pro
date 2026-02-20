@@ -1,23 +1,23 @@
-import { forwardRef, useState, useId, type ComponentProps, type FocusEvent } from "react";
+import * as React from "react";
 import { cn } from "@/lib/utils";
 
-interface FloatingInputProps extends ComponentProps<"input"> {
+interface FloatingInputProps extends React.ComponentProps<"input"> {
   label: string;
 }
 
-const FloatingInput = forwardRef<HTMLInputElement, FloatingInputProps>(
+const FloatingInput = React.forwardRef<HTMLInputElement, FloatingInputProps>(
   ({ className, label, type, id, ...props }, ref) => {
-    const [isFocused, setIsFocused] = useState(false);
-    const [hasValue, setHasValue] = useState(false);
+    const [isFocused, setIsFocused] = React.useState(false);
+    const [hasValue, setHasValue] = React.useState(false);
 
     const handleFocus = () => setIsFocused(true);
-    const handleBlur = (e: FocusEvent<HTMLInputElement>) => {
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
       setIsFocused(false);
       setHasValue(!!e.target.value);
       props.onBlur?.(e);
     };
 
-    const inputId = id || useId();
+    const inputId = id || React.useId();
 
     return (
       <div className="relative">
@@ -58,7 +58,7 @@ const FloatingInput = forwardRef<HTMLInputElement, FloatingInputProps>(
 );
 FloatingInput.displayName = "FloatingInput";
 
-const Input = forwardRef<HTMLInputElement, ComponentProps<"input">>(
+const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, ...props }, ref) => {
     return (
       <input

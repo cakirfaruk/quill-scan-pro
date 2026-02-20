@@ -4,11 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { User, Users, UserPlus, Calendar, Clock, MapPin, AlertTriangle, Settings } from "lucide-react";
+import { User, Users, UserPlus, Calendar, Clock, MapPin } from "lucide-react";
 import { PlaceAutocompleteInput } from "@/components/PlaceAutocompleteInput";
-import { useNavigate } from "react-router-dom";
 
 interface PersonData {
   fullName?: string;
@@ -38,11 +35,14 @@ interface PersonSelectorProps {
     birthPlace?: boolean;
     gender?: boolean;
   };
+  className?: string;
+  inputClassName?: string;
+  labelClassName?: string;
 }
 
-export const PersonSelector = ({ 
-  label = "Kişi Seçin", 
-  personData, 
+export const PersonSelector = ({
+  label = "Kişi Seçin",
+  personData,
   onChange,
   requiredFields = {
     fullName: true,
@@ -52,7 +52,6 @@ export const PersonSelector = ({
     gender: false,
   }
 }: PersonSelectorProps) => {
-  const navigate = useNavigate();
   const [selectionType, setSelectionType] = useState<"myself" | "friend" | "other">("myself");
   const [friends, setFriends] = useState<Friend[]>([]);
   const [selectedFriendId, setSelectedFriendId] = useState<string>("");
@@ -72,7 +71,7 @@ export const PersonSelector = ({
         birthPlace: currentUser.birth_place || "",
         gender: currentUser.gender || "",
       };
-      
+
       // Check for missing required fields when "myself" is selected
       const missingFields: string[] = [];
       if (requiredFields.fullName && !profileData.fullName) missingFields.push("Ad Soyad");
@@ -80,9 +79,9 @@ export const PersonSelector = ({
       if (requiredFields.birthTime && !profileData.birthTime) missingFields.push("Doğum Saati");
       if (requiredFields.birthPlace && !profileData.birthPlace) missingFields.push("Doğum Yeri");
       if (requiredFields.gender && !profileData.gender) missingFields.push("Cinsiyet");
-      
+
       onChange(profileData);
-      
+
       // Store validation state for parent component
       if (missingFields.length > 0) {
         (onChange as any).missingFields = missingFields;
@@ -144,7 +143,7 @@ export const PersonSelector = ({
       .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
 
     if (friendships) {
-      const friendIds = friendships.map(f => 
+      const friendIds = friendships.map(f =>
         f.user_id === user.id ? f.friend_id : f.user_id
       );
 
@@ -177,11 +176,10 @@ export const PersonSelector = ({
             <button
               type="button"
               onClick={() => setSelectionType("myself")}
-              className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${
-                selectionType === "myself"
+              className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${selectionType === "myself"
                   ? "border-primary bg-primary/10"
                   : "border-border hover:border-primary/50"
-              }`}
+                }`}
             >
               <User className="w-6 h-6" />
               <span className="text-sm font-medium">Kendim</span>
@@ -190,11 +188,10 @@ export const PersonSelector = ({
             <button
               type="button"
               onClick={() => setSelectionType("friend")}
-              className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${
-                selectionType === "friend"
+              className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${selectionType === "friend"
                   ? "border-primary bg-primary/10"
                   : "border-border hover:border-primary/50"
-              }`}
+                }`}
             >
               <Users className="w-6 h-6" />
               <span className="text-sm font-medium">Arkadaşım</span>
@@ -203,11 +200,10 @@ export const PersonSelector = ({
             <button
               type="button"
               onClick={() => setSelectionType("other")}
-              className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${
-                selectionType === "other"
+              className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${selectionType === "other"
                   ? "border-primary bg-primary/10"
                   : "border-border hover:border-primary/50"
-              }`}
+                }`}
             >
               <UserPlus className="w-6 h-6" />
               <span className="text-sm font-medium">Diğer Kişi</span>
@@ -321,31 +317,25 @@ export const PersonSelector = ({
               {personData.birthDate && <p>Doğum Tarihi: {new Date(personData.birthDate).toLocaleDateString("tr-TR")}</p>}
               {personData.birthTime && <p>Doğum Saati: {personData.birthTime}</p>}
               {personData.birthPlace && <p>Doğum Yeri: {personData.birthPlace}</p>}
-              
+
               {selectionType === "myself" && (
                 <>
-                  {(!personData.fullName || !personData.birthDate || 
-                    (requiredFields.birthTime && !personData.birthTime) || 
+                  {(!personData.fullName || !personData.birthDate ||
+                    (requiredFields.birthTime && !personData.birthTime) ||
                     (requiredFields.birthPlace && !personData.birthPlace)) && (
-                    <Alert className="mt-3 border-destructive/50 bg-destructive/10">
-                      <AlertTriangle className="h-4 w-4 text-destructive" />
-                      <AlertDescription>
-                        <p className="text-sm font-semibold text-destructive mb-2">⚠️ Eksik Profil Bilgileri</p>
-                        <p className="text-xs text-destructive/90 mb-3">
+                      <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                        <p className="text-sm font-medium text-destructive">⚠️ Eksik Profil Bilgileri</p>
+                        <p className="text-xs text-destructive/80 mt-1">
                           Analiz yapabilmek için lütfen profil bilgilerinizi eksiksiz doldurun.
                         </p>
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          onClick={() => navigate("/settings")}
-                          className="h-8"
+                        <a
+                          href="/settings"
+                          className="text-xs text-primary hover:underline inline-block mt-2"
                         >
-                          <Settings className="w-3 h-3 mr-2" />
-                          Profili Düzenle
-                        </Button>
-                      </AlertDescription>
-                    </Alert>
-                  )}
+                          Ayarlar → Profil Düzenle
+                        </a>
+                      </div>
+                    )}
                 </>
               )}
             </div>
