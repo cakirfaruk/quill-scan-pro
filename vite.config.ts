@@ -154,6 +154,11 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
+        // Content-hash filenames guarantee cache busting on every deploy.
+        // Browsers can cache assets indefinitely; hash changes force re-fetch.
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
             // CRITICAL: Never split React ecosystem - causes duplicate context/hooks errors.
