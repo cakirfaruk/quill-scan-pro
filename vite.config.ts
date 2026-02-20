@@ -161,43 +161,36 @@ export default defineConfig(({ mode }) => ({
         assetFileNames: 'assets/[name]-[hash].[ext]',
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
-            // CRITICAL: Never split React ecosystem - causes duplicate context/hooks errors.
-            // These must all land in the same chunk Vite creates naturally.
-            if (
-              id.includes('/react/') ||
-              id.includes('/react-dom/') ||
-              id.includes('/react-is/') ||
-              id.includes('/scheduler/') ||
-              id.includes('/react-router') ||
-              id.includes('/framer-motion') ||
-              id.includes('/@radix-ui') ||
-              id.includes('/next-themes') ||
-              id.includes('/use-sync-external-store')
-            ) {
-              return undefined; // Vite handles deduplication naturally
-            }
-            // Supabase
+            // CRITICAL: Let Vite handle ALL React-dependent packages naturally.
+            // Any package that imports React must NOT be force-split into a separate
+            // chunk, otherwise React ends up undefined when that chunk loads first.
+            // This includes: react, react-dom, react-router, radix-ui, framer-motion,
+            // lucide-react, cmdk, react-hook-form, vaul, sonner, next-themes,
+            // embla-carousel-react, react-swipeable, react-resizable-panels, etc.
+            // Returning undefined lets Vite co-locate them with the React runtime.
+
+            // Only split truly standalone libraries with NO React dependency:
             if (id.includes('@supabase')) {
               return 'supabase-vendor';
             }
-            // React Query
             if (id.includes('@tanstack/react-query')) {
-              return 'query-vendor';
+              // react-query uses React context — let Vite decide
+              return undefined;
             }
-            // Recharts - heavy charting library, isolate it
-            if (id.includes('recharts') || id.includes('d3-')) {
+            // Recharts + D3 are heavy but standalone enough
+            if (id.includes('recharts') || id.includes('/d3-')) {
               return 'recharts-vendor';
             }
-            // Emoji picker - heavy, isolate it
+            // Emoji picker - very heavy, no React context needed
             if (id.includes('emoji-picker-react')) {
               return 'emoji-vendor';
             }
-            // Date utilities
+            // date-fns is fully standalone
             if (id.includes('date-fns')) {
               return 'date-vendor';
             }
-            // Other non-React vendors are safe to group
-            return 'vendor';
+            // Everything else: let Vite decide (prevents forwardRef/createContext errors)
+            return undefined;
           }
 
           // Page chunks - only split pages, not shared components
