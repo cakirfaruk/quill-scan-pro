@@ -23,9 +23,10 @@ export default defineConfig(({ mode }) => ({
       'react-dom/client',
       'react/jsx-runtime',
       'react/jsx-dev-runtime',
+      'react-router-dom',
+      'next-themes',
+      '@tanstack/react-query',
     ],
-    // Force all deps that import react to share the same pre-bundled copy
-    dedupe: ['react', 'react-dom'],
   },
   plugins: [
     react(),
