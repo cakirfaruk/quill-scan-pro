@@ -35,47 +35,15 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
-  ripple?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ripple = true, onClick, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
-    const buttonRef = React.useRef<HTMLButtonElement>(null);
-    
-    React.useImperativeHandle(ref, () => buttonRef.current!);
-
-    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-      if (ripple && buttonRef.current) {
-        const button = buttonRef.current;
-        const rippleElement = document.createElement("span");
-        const diameter = Math.max(button.clientWidth, button.clientHeight);
-        const radius = diameter / 2;
-
-        const rect = button.getBoundingClientRect();
-        rippleElement.style.width = rippleElement.style.height = `${diameter}px`;
-        rippleElement.style.left = `${e.clientX - rect.left - radius}px`;
-        rippleElement.style.top = `${e.clientY - rect.top - radius}px`;
-        rippleElement.classList.add("ripple");
-
-        const existingRipple = button.getElementsByClassName("ripple")[0];
-        if (existingRipple) {
-          existingRipple.remove();
-        }
-
-        button.appendChild(rippleElement);
-
-        setTimeout(() => rippleElement.remove(), 600);
-      }
-
-      onClick?.(e);
-    };
-
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
-        ref={buttonRef}
-        onClick={handleClick}
+        ref={ref}
         {...props}
       />
     );

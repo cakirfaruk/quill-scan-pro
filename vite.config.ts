@@ -174,7 +174,7 @@ export default defineConfig(({ mode }) => ({
     // This is the canonical fix for "Cannot read properties of null (reading 'useRef/useContext')"
     // caused by react-router-dom, @radix-ui, next-themes etc. each resolving
     // their own react instance instead of sharing one.
-    dedupe: ['react', 'react-dom', 'react-dom/client'],
+    dedupe: ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
   },
   // esbuild drop console/debugger in production
   esbuild: mode === 'production' ? {
