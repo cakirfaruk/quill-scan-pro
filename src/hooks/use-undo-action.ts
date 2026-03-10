@@ -22,7 +22,7 @@ const UNDO_TIMEOUT = 5000; // 5 seconds
 
 export const useUndoAction = () => {
   const [actionHistory, setActionHistory] = useState<UndoAction[]>([]);
-  const timeoutRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const timeoutRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const clearActionTimeout = useCallback((actionId: string) => {
     const timeout = timeoutRefs.current.get(actionId);

@@ -76,7 +76,7 @@ interface LongPressOptions {
 
 export const useLongPress = ({ onLongPress, delay = 500 }: LongPressOptions) => {
   const [longPressTriggered, setLongPressTriggered] = useState(false);
-  const timeout = useRef<NodeJS.Timeout>();
+  const timeout = useRef<ReturnType<typeof setTimeout>>();
   const target = useRef<EventTarget>();
 
   const start = (event: React.TouchEvent | React.MouseEvent) => {
