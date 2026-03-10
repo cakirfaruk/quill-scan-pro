@@ -56,7 +56,7 @@ export const useUpdateOnlineStatus = (userId: string | null) => {
   useEffect(() => {
     if (!userId) return;
 
-    let intervalId: NodeJS.Timeout;
+    let intervalId: ReturnType<typeof setInterval>;
 
     const updateStatus = async () => {
       await supabase

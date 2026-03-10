@@ -32,7 +32,7 @@ export function useThrottledCallback<T extends (...args: any[]) => any>(
   limit: number = 200
 ): (...args: Parameters<T>) => void {
   const lastRan = useRef(Date.now());
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   return (...args: Parameters<T>) => {
     const now = Date.now();

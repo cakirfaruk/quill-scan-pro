@@ -1,6 +1,6 @@
 // Call notification utilities
 export const playRingtone = () => {
-  let interval: NodeJS.Timeout;
+  let interval: ReturnType<typeof setInterval>;
   let currentAudioContext: AudioContext | null = null;
   
   const playBeep = () => {
